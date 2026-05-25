@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "FreightIQ",
+    "slug": "mfi",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/images/app-icon.png",
+    "scheme": "mfi",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "buildNumber": "7",
+      "icon": "./assets/images/app-icon.png",
+      "supportsTablet": true,
+      "bundleIdentifier": "com.robbyeickhof.mfi",
+      "bundleDisplayName": "FreightIQ",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0b0f14",
+          "dark": {
+            "backgroundColor": "#000000"
+          }
+        }
+      ]
+    ],
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
+      },
+
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCEgKDhcXkBhA9Xk0QMV8-TOTFDuGtOzOQ"
+        }
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.robbyeickhof.mfi"
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b81e86a8-2227-4492-aa98-085bd2c0072e"
+      }
+    },
+    "owner": "robbyeickhof"
+  }
+}
