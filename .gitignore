@@ -44,3 +44,7 @@ app-example
 
 # Local Android backup folders
 android.backup-before-prebuild/
+
+# Environment secrets
+.env
+.env.*
