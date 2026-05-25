@@ -39,11 +39,6 @@
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
 
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyCEgKDhcXkBhA9Xk0QMV8-TOTFDuGtOzOQ"
-        }
-      },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.robbyeickhof.mfi"
