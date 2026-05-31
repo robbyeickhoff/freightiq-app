@@ -48,3 +48,6 @@ android.backup-before-prebuild/
 # Environment secrets
 .env
 .env.*
+
+# Separate website repo
+freightiq-site/
