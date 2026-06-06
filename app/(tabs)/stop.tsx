@@ -1692,10 +1692,8 @@ export default function StopScreen() {
 
             {canDeleteStop && (
               <View style={styles.card}>
-                <Text style={styles.cardTitle}>Danger Zone</Text>
-                <Text style={styles.cardHelp}>
-                  Permanently delete this stop and all related intel.
-                </Text>
+                <Text style={styles.cardTitle}>Manage Stop</Text>
+                <Text style={styles.cardHelp}>Merge or delete this stop.</Text>
 
                 <Pressable
                   style={styles.secondaryBtn}
