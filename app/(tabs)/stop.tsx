@@ -1757,25 +1757,6 @@ export default function StopScreen() {
               >
                 <Text style={[styles.btnText, styles.btnTextGhost]}>Back</Text>
               </Pressable>
-
-              <Pressable
-                style={styles.btn}
-                onPress={() =>
-                  router.push({
-                    pathname: "/(tabs)",
-                    params: {
-                      focusStopId: stopId,
-                      showEntrance: "1",
-                      hidePreview: "1",
-                      entranceLat: String(entranceLat ?? ""),
-                      entranceLng: String(entranceLng ?? ""),
-                      revealAt: String(Date.now()),
-                    },
-                  })
-                }
-              >
-                <Text style={styles.btnText}>Show Delivery Zone</Text>
-              </Pressable>
             </View>
           </ScrollView>
 
