@@ -1284,9 +1284,6 @@ export default function StopScreen() {
               </Pressable>
 
               {address ? <Text style={styles.coords}>{address}</Text> : null}
-              <Text style={styles.coords}>
-                {lat.toFixed(5)}, {lng.toFixed(5)}
-              </Text>
             </View>
 
             <View style={styles.card}>
@@ -1354,11 +1351,6 @@ export default function StopScreen() {
             </View>
 
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>
-                {myReportId ? "Edit My Report" : "Add My Report"}
-              </Text>
-              <Text style={styles.cardHelp}>Your intel is tied to your username.</Text>
-
               <Text style={styles.sectionLabel}>Deliver From</Text>
               <View style={styles.chipRow}>
                 {deliverFromChips.map((c) => (
