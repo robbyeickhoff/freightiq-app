@@ -1306,19 +1306,6 @@ export default function StopScreen() {
                 style={styles.input}
                 multiline
               />
-
-              <Text style={styles.sectionLabel}>Best Approach</Text>
-              <View style={styles.chipRow}>
-                {approachChips.map((c) => (
-                  <Chip
-                    key={c}
-                    label={c}
-                    active={approachHint.toLowerCase().includes(c.toLowerCase())}
-                    onPress={() => appendApproach(c)}
-                  />
-                ))}
-              </View>
-
               <View style={styles.toggleRow}>
                 <Text style={styles.toggleLabel}>{backInLabel}</Text>
                 <View style={{ flexDirection: "row", gap: 10 }}>
@@ -1379,6 +1366,18 @@ export default function StopScreen() {
                     </Text>
                   </Pressable>
                 </View>
+              </View>
+
+              <Text style={styles.sectionLabel}>Best Approach</Text>
+              <View style={styles.chipRow}>
+                {approachChips.map((c) => (
+                  <Chip
+                    key={c}
+                    label={c}
+                    active={approachHint.toLowerCase().includes(c.toLowerCase())}
+                    onPress={() => appendApproach(c)}
+                  />
+                ))}
               </View>
 
               <TextInput
