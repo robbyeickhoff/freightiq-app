@@ -1287,70 +1287,6 @@ export default function StopScreen() {
             </View>
 
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Delivery Zone</Text>
-              {typeof entranceLat === "number" && typeof entranceLng === "number" ? (
-                <>
-                  <Text style={styles.entranceStatusCompact}>Saved ✓</Text>
-
-                  <View style={styles.entranceSmallRow}>
-                    <Pressable
-                      style={[styles.secondaryBtn, { flex: 1 }]}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/(tabs)",
-                          params: {
-                            focusStopId: stopId,
-                            showEntrance: "1",
-                            hidePreview: "1",
-                            entranceLat: String(entranceLat ?? ""),
-                            entranceLng: String(entranceLng ?? ""),
-                            revealAt: String(Date.now()),
-                          },
-                        })
-                      }
-                    >
-                      <Text style={styles.secondaryBtnText}>Show on Map</Text>
-                    </Pressable>
-
-                    <Pressable
-                      style={[styles.secondaryBtn, { flex: 1 }]}
-                      onPress={openEntrancePicker}
-                    >
-                      <Text style={styles.secondaryBtnText}>Update</Text>
-                    </Pressable>
-
-                    <Pressable style={[styles.secondaryBtn, { flex: 1 }]} onPress={clearEntrance}>
-                      <Text style={styles.secondaryBtnText}>Clear</Text>
-                    </Pressable>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.cardHelp}>
-                    Set the exact delivery zone drivers should use.
-                  </Text>
-
-                  <Text style={styles.entranceStatus}>No delivery zone set yet</Text>
-
-                  <View style={styles.entranceActions}>
-                    <Pressable style={styles.primaryWideBtn} onPress={openEntrancePicker}>
-                      <Text style={styles.primaryWideBtnText}>Set Delivery Zone</Text>
-                    </Pressable>
-
-                    <View style={styles.entranceSmallRow}>
-                      <Pressable
-                        style={[styles.secondaryBtn, { flex: 1 }]}
-                        onPress={useStopLocationAsEntrance}
-                      >
-                        <Text style={styles.secondaryBtnText}>Use Stop Location</Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                </>
-              )}
-            </View>
-
-            <View style={styles.card}>
               <Text style={styles.sectionLabel}>Deliver From</Text>
               <View style={styles.chipRow}>
                 {deliverFromChips.map((c) => (
@@ -1638,6 +1574,70 @@ export default function StopScreen() {
                     </View>
                   );
                 })
+              )}
+            </View>
+
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Delivery Zone</Text>
+              {typeof entranceLat === "number" && typeof entranceLng === "number" ? (
+                <>
+                  <Text style={styles.entranceStatusCompact}>Saved ✓</Text>
+
+                  <View style={styles.entranceSmallRow}>
+                    <Pressable
+                      style={[styles.secondaryBtn, { flex: 1 }]}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(tabs)",
+                          params: {
+                            focusStopId: stopId,
+                            showEntrance: "1",
+                            hidePreview: "1",
+                            entranceLat: String(entranceLat ?? ""),
+                            entranceLng: String(entranceLng ?? ""),
+                            revealAt: String(Date.now()),
+                          },
+                        })
+                      }
+                    >
+                      <Text style={styles.secondaryBtnText}>Show on Map</Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={[styles.secondaryBtn, { flex: 1 }]}
+                      onPress={openEntrancePicker}
+                    >
+                      <Text style={styles.secondaryBtnText}>Update</Text>
+                    </Pressable>
+
+                    <Pressable style={[styles.secondaryBtn, { flex: 1 }]} onPress={clearEntrance}>
+                      <Text style={styles.secondaryBtnText}>Clear</Text>
+                    </Pressable>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.cardHelp}>
+                    Set the exact delivery zone drivers should use.
+                  </Text>
+
+                  <Text style={styles.entranceStatus}>No delivery zone set yet</Text>
+
+                  <View style={styles.entranceActions}>
+                    <Pressable style={styles.primaryWideBtn} onPress={openEntrancePicker}>
+                      <Text style={styles.primaryWideBtnText}>Set Delivery Zone</Text>
+                    </Pressable>
+
+                    <View style={styles.entranceSmallRow}>
+                      <Pressable
+                        style={[styles.secondaryBtn, { flex: 1 }]}
+                        onPress={useStopLocationAsEntrance}
+                      >
+                        <Text style={styles.secondaryBtnText}>Use Stop Location</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </>
               )}
             </View>
 
