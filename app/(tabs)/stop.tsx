@@ -182,6 +182,7 @@ export default function StopScreen() {
   const [deliverFromDetails, setDeliverFromDetails] = useState("");
   const [deliveryType, setDeliveryType] = useState<"Dock" | "Forklift" | "Liftgate" | "">("");
   const [showApproach, setShowApproach] = useState(false);
+  const [showManageStop, setShowManageStop] = useState(false);
   const [approachHint, setApproachHint] = useState("");
   const [backInRequired, setBackInRequired] = useState<boolean | null>(null);
   const [truckFit, setTruckFit] = useState("");
@@ -1724,49 +1725,58 @@ export default function StopScreen() {
 
             {canDeleteStop && (
               <View style={styles.card}>
-                <Text style={styles.cardTitle}>Manage Stop</Text>
-                <Text style={styles.cardHelp}>Merge or delete this stop.</Text>
-
-                <Pressable
-                  style={styles.secondaryBtn}
-                  onPress={() => {
-                    Alert.alert(
-                      "Start merge?",
-                      "You are starting from the stop you want to get rid of. Next you will choose the stop you want to keep.",
-                      [
-                        { text: "Cancel", style: "cancel" },
-                        {
-                          text: "Continue",
-                          onPress: () => {
-                            setMergeSourceStopId(stopId);
-                            setMergeMode(true);
-
-                            router.push({
-                              pathname: "/(tabs)",
-                              params: {
-                                mergeMode: "1",
-                                mergeSourceStopId: stopId,
-                                hidePreview: "1",
-                              },
-                            });
-                          },
-                        },
-                      ],
-                    );
-                  }}
-                >
-                  <Text style={styles.secondaryBtnText}>Merge Duplicate Stop</Text>
-                </Pressable>
-
-                <Pressable
-                  style={styles.deleteBtn}
-                  onPress={confirmDeleteStop}
-                  disabled={deletingStop}
-                >
-                  <Text style={styles.deleteBtnText}>
-                    {deletingStop ? "Deleting..." : "Delete This Stop"}
+                <Pressable onPress={() => setShowManageStop((v) => !v)}>
+                  <Text style={styles.cardTitle}>
+                    {showManageStop ? "▼ Manage Stop" : "▶ Manage Stop"}
                   </Text>
                 </Pressable>
+
+                {showManageStop && (
+                  <>
+                    <Text style={styles.cardHelp}>Merge or delete this stop.</Text>
+
+                    <Pressable
+                      style={styles.secondaryBtn}
+                      onPress={() => {
+                        Alert.alert(
+                          "Start merge?",
+                          "You are starting from the stop you want to get rid of. Next you will choose the stop you want to keep.",
+                          [
+                            { text: "Cancel", style: "cancel" },
+                            {
+                              text: "Continue",
+                              onPress: () => {
+                                setMergeSourceStopId(stopId);
+                                setMergeMode(true);
+
+                                router.push({
+                                  pathname: "/(tabs)",
+                                  params: {
+                                    mergeMode: "1",
+                                    mergeSourceStopId: stopId,
+                                    hidePreview: "1",
+                                  },
+                                });
+                              },
+                            },
+                          ],
+                        );
+                      }}
+                    >
+                      <Text style={styles.secondaryBtnText}>Merge Duplicate Stop</Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={styles.deleteBtn}
+                      onPress={confirmDeleteStop}
+                      disabled={deletingStop}
+                    >
+                      <Text style={styles.deleteBtnText}>
+                        {deletingStop ? "Deleting..." : "Delete This Stop"}
+                      </Text>
+                    </Pressable>
+                  </>
+                )}
               </View>
             )}
 
