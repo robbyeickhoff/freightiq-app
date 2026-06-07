@@ -1373,6 +1373,25 @@ export default function StopScreen() {
                 </View>
               </View>
 
+              <Text style={styles.sectionLabel}>Delivery Type</Text>
+              <View style={styles.chipRow}>
+                <Chip
+                  label="🚚 Dock"
+                  active={deliveryType === "Dock"}
+                  onPress={() => setDeliveryType("Dock")}
+                />
+                <Chip
+                  label="🚜 Forklift"
+                  active={deliveryType === "Forklift"}
+                  onPress={() => setDeliveryType("Forklift")}
+                />
+                <Chip
+                  label="💪 Liftgate"
+                  active={deliveryType === "Liftgate"}
+                  onPress={() => setDeliveryType("Liftgate")}
+                />
+              </View>
+
               <Text style={styles.sectionLabel}>Best Approach</Text>
               <View style={styles.chipRow}>
                 {approachChips.map((c) => (
