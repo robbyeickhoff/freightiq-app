@@ -1288,10 +1288,6 @@ export default function StopScreen() {
                 </Text>
               ) : null}
 
-              <Pressable style={styles.editNameBtn} onPress={() => setEditNameOpen(true)}>
-                <Text style={styles.editNameBtnText}>Edit Business Name</Text>
-              </Pressable>
-
               {address ? <Text style={styles.coords}>{address}</Text> : null}
             </View>
 
@@ -1733,6 +1729,10 @@ export default function StopScreen() {
 
                 {showManageStop && (
                   <>
+                    <Pressable style={styles.editNameBtn} onPress={() => setEditNameOpen(true)}>
+                      <Text style={styles.editNameBtnText}>Edit Business Name</Text>
+                    </Pressable>
+
                     <Text style={styles.cardHelp}>Merge or delete this stop.</Text>
 
                     <Pressable
@@ -1785,6 +1785,7 @@ export default function StopScreen() {
                 style={[styles.btn, styles.btnGhost]}
                 onPress={() => {
                   setShowApproach(false);
+                  setShowManageStop(false);
                   router.replace({
                     pathname: "/(tabs)",
                     params:
