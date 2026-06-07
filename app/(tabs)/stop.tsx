@@ -551,11 +551,11 @@ export default function StopScreen() {
   ];
 
   const approachChips = [
+    "Any Direction",
     "Approach from North",
     "Approach from South",
     "Approach from East",
     "Approach from West",
-    "Avoid Main St",
     "Wide turn needed",
     "No turnaround",
   ];
