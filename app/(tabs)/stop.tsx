@@ -273,7 +273,7 @@ export default function StopScreen() {
   }, []);
 
   useEffect(() => {
-    if (!stopId) return;
+    if (!stopId || !sessionUserId) return;
     loadReports();
     loadEntranceAndPhoto();
     // eslint-disable-next-line react-hooks/exhaustive-deps
