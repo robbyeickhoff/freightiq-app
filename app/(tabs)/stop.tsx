@@ -181,6 +181,7 @@ export default function StopScreen() {
 
   const [deliverFromDetails, setDeliverFromDetails] = useState("");
   const [deliveryType, setDeliveryType] = useState<"Dock" | "Forklift" | "Liftgate" | "">("");
+  const [showApproach, setShowApproach] = useState(false);
   const [approachHint, setApproachHint] = useState("");
   const [backInRequired, setBackInRequired] = useState<boolean | null>(null);
   const [truckFit, setTruckFit] = useState("");
@@ -395,6 +396,7 @@ export default function StopScreen() {
         setTruckFit(mine.truck_fit ?? "");
         setContact(mine.contact ?? "");
         setNotes(mine.notes ?? "");
+        setShowApproach(false);
       } else {
         setMyReportId(null);
         setDeliverFromType("");
@@ -405,6 +407,7 @@ export default function StopScreen() {
         setTruckFit("");
         setContact("");
         setNotes("");
+        setShowApproach(false);
       }
 
       await loadVotesForReports(hydrated);
@@ -1392,17 +1395,23 @@ export default function StopScreen() {
                 />
               </View>
 
-              <Text style={styles.sectionLabel}>Best Approach</Text>
-              <View style={styles.chipRow}>
-                {approachChips.map((c) => (
-                  <Chip
-                    key={c}
-                    label={c}
-                    active={approachHint.toLowerCase().includes(c.toLowerCase())}
-                    onPress={() => appendApproach(c)}
-                  />
-                ))}
-              </View>
+              <Pressable onPress={() => setShowApproach((v) => !v)}>
+                <Text style={styles.sectionLabel}>
+                  {showApproach ? "▼ Best Approach" : "▶ Best Approach"}
+                </Text>
+              </Pressable>
+              {showApproach && (
+                <View style={styles.chipRow}>
+                  {approachChips.map((c) => (
+                    <Chip
+                      key={c}
+                      label={c}
+                      active={approachHint.toLowerCase().includes(c.toLowerCase())}
+                      onPress={() => appendApproach(c)}
+                    />
+                  ))}
+                </View>
+              )}
 
               <TextInput
                 value={approachHint}
@@ -1764,7 +1773,8 @@ export default function StopScreen() {
             <View style={styles.actions}>
               <Pressable
                 style={[styles.btn, styles.btnGhost]}
-                onPress={() =>
+                onPress={() => {
+                  setShowApproach(false);
                   router.replace({
                     pathname: "/(tabs)",
                     params:
@@ -1775,8 +1785,8 @@ export default function StopScreen() {
                             mergeStartedAt: String(Date.now()),
                           }
                         : {},
-                  })
-                }
+                  });
+                }}
               >
                 <Text style={[styles.btnText, styles.btnTextGhost]}>Back</Text>
               </Pressable>
