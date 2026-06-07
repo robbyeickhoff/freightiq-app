@@ -56,6 +56,7 @@ type ReportRow = {
   user_id: string;
   deliver_from_type: string | null;
   deliver_from_details: string | null;
+  delivery_type: string | null;
   approach_hint: string | null;
   back_in_required: boolean | null;
   truck_fit: string | null;
@@ -179,6 +180,7 @@ export default function StopScreen() {
   >("");
 
   const [deliverFromDetails, setDeliverFromDetails] = useState("");
+  const [deliveryType, setDeliveryType] = useState<"Dock" | "Forklift" | "Liftgate" | "">("");
   const [approachHint, setApproachHint] = useState("");
   const [backInRequired, setBackInRequired] = useState<boolean | null>(null);
   const [truckFit, setTruckFit] = useState("");
@@ -385,6 +387,7 @@ export default function StopScreen() {
         setMyReportId(mine.id);
         setDeliverFromType((mine.deliver_from_type as any) ?? "");
         setDeliverFromDetails(mine.deliver_from_details ?? "");
+        setDeliveryType((mine.delivery_type as any) ?? "");
         setApproachHint(mine.approach_hint ?? "");
         setBackInRequired(
           mine.back_in_required === true ? true : mine.back_in_required === false ? false : null,
@@ -396,6 +399,7 @@ export default function StopScreen() {
         setMyReportId(null);
         setDeliverFromType("");
         setDeliverFromDetails("");
+        setDeliveryType("");
         setApproachHint("");
         setBackInRequired(null);
         setTruckFit("");
@@ -643,6 +647,7 @@ export default function StopScreen() {
         user_id: sessionUserId,
         deliver_from_type: deliverFromType || null,
         deliver_from_details: deliverFromDetails || null,
+        delivery_type: deliveryType || null,
         approach_hint: approachHint || null,
         back_in_required: backInRequired,
         truck_fit: truckFit || null,
