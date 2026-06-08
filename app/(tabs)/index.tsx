@@ -2170,13 +2170,12 @@ export default function HomeScreen() {
             <>
               <View style={styles.previewMetaBlock}>
                 <Text style={styles.previewMetaLine}>
-                  Intel: {selectedStopId && intelByStopId[selectedStopId] ? "Yes" : "None yet"} •
-                  Delivery Zone: {selectedEntrance ? " Saved" : " None"} • Score{" "}
-                  {selectedScoreValue} (↑
-                  {selectedScore.up} ↓{selectedScore.down})
+                  Delivery Zone: {selectedEntrance ? "Saved" : "None"}
                 </Text>
 
-                <Text style={styles.previewMetaLine}>Reports: {selectedReportStats.count}</Text>
+                <Text style={styles.previewMetaLine}>
+                  Driver Reports: {selectedReportStats.count}
+                </Text>
               </View>
 
               {selectedStop?.id === "temp-search-result" ? (
