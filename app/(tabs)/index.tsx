@@ -2176,12 +2176,7 @@ export default function HomeScreen() {
                   {selectedScore.up} ↓{selectedScore.down})
                 </Text>
 
-                <Text style={styles.previewMetaLine}>
-                  Reports: {selectedReportStats.count}
-                  {selectedReportStats.count > 0
-                    ? ` • latest by ${selectedReportStats.latestUsername ?? "Driver"}`
-                    : ""}
-                </Text>
+                <Text style={styles.previewMetaLine}>Reports: {selectedReportStats.count}</Text>
               </View>
 
               {selectedStop?.id === "temp-search-result" ? (
