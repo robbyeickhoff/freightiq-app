@@ -78,14 +78,12 @@ type RecentItem = {
   lng: number;
   updatedAt: string;
   hasEntrance: boolean;
-  score: number;
-  up: number;
-  down: number;
 };
 
 type ReportStats = {
   count: number;
   latestUsername: string | null;
+  deliveryType: "Dock" | "Forklift" | "Liftgate" | "Mixed" | null;
 };
 
 const PINS_KEY = "mfi:pins:v1";
@@ -528,9 +526,6 @@ export default function HomeScreen() {
                   lng: pin.lng,
                   updatedAt,
                   hasEntrance,
-                  score: up - down,
-                  up,
-                  down,
                 });
               }
             }
@@ -653,7 +648,7 @@ export default function HomeScreen() {
 
       const { data: reports, error } = await supabase
         .from("mfi_reports")
-        .select("id, stop_id, user_id, updated_at")
+        .select("id, stop_id, user_id, updated_at, delivery_type")
         .in("stop_id", stopIds)
         .order("updated_at", { ascending: false });
 
@@ -666,11 +661,26 @@ export default function HomeScreen() {
       const counts: Record<string, number> = {};
       const latestUserByStop: Record<string, string> = {};
 
+      const deliveryTypeCounts: Record<
+        string,
+        {
+          Dock: number;
+          Forklift: number;
+          Liftgate: number;
+        }
+      > = {};
+
       const reportIds = rows.map((r: any) => r.id);
 
       const scoreMap: Record<string, { up: number; down: number }> = {};
       stopIds.forEach((id) => {
         scoreMap[id] = { up: 0, down: 0 };
+
+        deliveryTypeCounts[id] = {
+          Dock: 0,
+          Forklift: 0,
+          Liftgate: 0,
+        };
       });
 
       if (reportIds.length) {
@@ -699,8 +709,18 @@ export default function HomeScreen() {
 
       rows.forEach((r: any) => {
         counts[r.stop_id] = (counts[r.stop_id] ?? 0) + 1;
+
         if (!latestUserByStop[r.stop_id]) {
           latestUserByStop[r.stop_id] = r.user_id;
+        }
+
+        if (
+          r.delivery_type === "Dock" ||
+          r.delivery_type === "Forklift" ||
+          r.delivery_type === "Liftgate"
+        ) {
+          const deliveryType = r.delivery_type as "Dock" | "Forklift" | "Liftgate";
+          deliveryTypeCounts[r.stop_id][deliveryType] += 1;
         }
       });
 
@@ -723,6 +743,25 @@ export default function HomeScreen() {
           latestUsername: latestUserByStop[id]
             ? (usernameMap[latestUserByStop[id]] ?? "Driver")
             : null,
+          deliveryType: (() => {
+            const types = deliveryTypeCounts[id];
+
+            const values = [
+              { type: "Dock", count: types.Dock },
+              { type: "Forklift", count: types.Forklift },
+              { type: "Liftgate", count: types.Liftgate },
+            ];
+
+            const maxCount = Math.max(...values.map((v) => v.count));
+
+            if (maxCount === 0) return null;
+
+            const winners = values.filter((v) => v.count === maxCount);
+
+            if (winners.length > 1) return "Mixed";
+
+            return winners[0].type as "Dock" | "Forklift" | "Liftgate";
+          })(),
         };
       });
 
@@ -901,18 +940,10 @@ export default function HomeScreen() {
 
       const existing = prev.filter((r) => r.id !== stop.id);
 
-      const stats = reportStatsByStopId[stop.id];
-      const up = stats?.up ?? 0;
-      const down = stats?.down ?? 0;
-      const score = up - down;
-
       const newItem = {
         ...stop,
         updatedAt: new Date().toISOString(),
         hasEntrance: !!intelByStopId[stop.id],
-        score,
-        up,
-        down,
       };
 
       const next = [newItem, ...existing].slice(0, 10);
@@ -2035,7 +2066,7 @@ export default function HomeScreen() {
                       </Text>
                       <Text style={styles.recentMeta} numberOfLines={1}>
                         {r.address ?? "No address"} • {formatWhen(r.updatedAt)}
-                        {r.hasEntrance ? " • Delivery Zone ✅" : ""} • Score {r.score}
+                        {r.hasEntrance ? " • Delivery Zone ✅" : ""}
                       </Text>
                     </View>
 
