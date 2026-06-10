@@ -1464,10 +1464,7 @@ export default function StopScreen() {
             </View>
 
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Driver Intel</Text>
-              <Text style={styles.cardHelp}>
-                {sortedReports.length} report{sortedReports.length === 1 ? "" : "s"} for this stop
-              </Text>
+              <Text style={styles.cardTitle}>Driver Reports ({sortedReports.length})</Text>
 
               {sortedReports.length === 0 ? (
                 <Text style={styles.emptyText}>
@@ -1518,12 +1515,18 @@ export default function StopScreen() {
 
                       {r.deliver_from_type ? (
                         <Text style={styles.reportLine}>
-                          <Text style={styles.bold}>Deliver From:</Text> {r.deliver_from_type}
+                          <Text style={styles.bold}>Delivery Location:</Text> {r.deliver_from_type}
                         </Text>
                       ) : null}
 
                       {r.deliver_from_details ? (
                         <Text style={styles.reportLine}>{r.deliver_from_details}</Text>
+                      ) : null}
+
+                      {r.delivery_type ? (
+                        <Text style={styles.reportLine}>
+                          <Text style={styles.bold}>Delivery Type:</Text> {r.delivery_type}
+                        </Text>
                       ) : null}
 
                       {r.approach_hint ? (
