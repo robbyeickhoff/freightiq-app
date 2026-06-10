@@ -2204,6 +2204,12 @@ export default function HomeScreen() {
                   Delivery Zone: {selectedEntrance ? "Saved" : "None"}
                 </Text>
 
+                {selectedReportStats.deliveryType ? (
+                  <Text style={styles.previewMetaLine}>
+                    Delivery Type: {selectedReportStats.deliveryType}
+                  </Text>
+                ) : null}
+
                 <Text style={styles.previewMetaLine}>
                   Driver Reports: {selectedReportStats.count}
                 </Text>
