@@ -212,6 +212,7 @@ export default function StopScreen() {
   const [editedStopName, setEditedStopName] = useState(name);
   const [currentStopName, setCurrentStopName] = useState(name);
   const [savingName, setSavingName] = useState(false);
+  const [reportsExpanded, setReportsExpanded] = useState(false);
   const editNameInputRef = useRef<TextInput | null>(null);
   const title = useMemo(() => currentStopName, [currentStopName]);
   useEffect(() => {
@@ -1464,149 +1465,156 @@ export default function StopScreen() {
             </View>
 
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Driver Reports ({sortedReports.length})</Text>
-
-              {sortedReports.length === 0 ? (
-                <Text style={styles.emptyText}>
-                  No reports yet. Be the first driver to add intel.
+              <Pressable onPress={() => setReportsExpanded((v) => !v)}>
+                <Text style={styles.cardTitle}>
+                  {reportsExpanded ? "▼" : "▶"} Driver Reports ({sortedReports.length})
                 </Text>
-              ) : (
-                sortedReports.map((r, index) => {
-                  const stats = voteStatsByReportId[r.id] ?? {
-                    up: 0,
-                    down: 0,
-                    myVote: 0,
-                  };
-                  const score = stats.up - stats.down;
-                  const rep = reputationByUserId[r.user_id] ?? 0;
-                  const updated = new Date(r.updated_at);
-                  const now = new Date();
-                  const isFresh = now.getTime() - updated.getTime() < 24 * 60 * 60 * 1000;
+              </Pressable>
 
-                  return (
-                    <View
-                      key={r.id}
-                      style={[
-                        styles.reportCard,
-                        isFresh ? { borderColor: "#000", borderWidth: 1 } : { opacity: 0.85 },
-                      ]}
-                    >
-                      <View style={styles.reportHeader}>
-                        <View style={{ flex: 1, gap: 2 }}>
-                          <Text style={styles.reportUser}>{r.username ?? "Driver"}</Text>
+              {reportsExpanded ? (
+                sortedReports.length === 0 ? (
+                  <Text style={styles.emptyText}>
+                    No reports yet. Be the first driver to add intel.
+                  </Text>
+                ) : (
+                  sortedReports.map((r, index) => {
+                    const stats = voteStatsByReportId[r.id] ?? {
+                      up: 0,
+                      down: 0,
+                      myVote: 0,
+                    };
+                    const score = stats.up - stats.down;
+                    const rep = reputationByUserId[r.user_id] ?? 0;
+                    const updated = new Date(r.updated_at);
+                    const now = new Date();
+                    const isFresh = now.getTime() - updated.getTime() < 24 * 60 * 60 * 1000;
 
-                          {r.tractor_type ? (
-                            <Text style={{ color: "#666", marginTop: 2 }}>{r.tractor_type}</Text>
+                    return (
+                      <View
+                        key={r.id}
+                        style={[
+                          styles.reportCard,
+                          isFresh ? { borderColor: "#000", borderWidth: 1 } : { opacity: 0.85 },
+                        ]}
+                      >
+                        <View style={styles.reportHeader}>
+                          <View style={{ flex: 1, gap: 2 }}>
+                            <Text style={styles.reportUser}>{r.username ?? "Driver"}</Text>
+
+                            {r.tractor_type ? (
+                              <Text style={{ color: "#666", marginTop: 2 }}>{r.tractor_type}</Text>
+                            ) : null}
+
+                            <Text style={styles.reputationText}>Reputation {rep}</Text>
+                            <Text style={styles.reportMeta}>
+                              Updated {formatWhen(r.updated_at)}
+                              {isFresh ? " • Recent" : ""}
+                            </Text>
+                          </View>
+
+                          {index === 0 ? (
+                            <View style={styles.topBadge}>
+                              <Text style={styles.topBadgeText}>Top</Text>
+                            </View>
                           ) : null}
-
-                          <Text style={styles.reputationText}>Reputation {rep}</Text>
-                          <Text style={styles.reportMeta}>
-                            Updated {formatWhen(r.updated_at)}
-                            {isFresh ? " • Recent" : ""}
-                          </Text>
                         </View>
 
-                        {index === 0 ? (
-                          <View style={styles.topBadge}>
-                            <Text style={styles.topBadgeText}>Top</Text>
-                          </View>
+                        {r.deliver_from_type ? (
+                          <Text style={styles.reportLine}>
+                            <Text style={styles.bold}>Delivery Location:</Text>{" "}
+                            {r.deliver_from_type}
+                          </Text>
                         ) : null}
-                      </View>
 
-                      {r.deliver_from_type ? (
-                        <Text style={styles.reportLine}>
-                          <Text style={styles.bold}>Delivery Location:</Text> {r.deliver_from_type}
-                        </Text>
-                      ) : null}
+                        {r.deliver_from_details ? (
+                          <Text style={styles.reportLine}>{r.deliver_from_details}</Text>
+                        ) : null}
 
-                      {r.deliver_from_details ? (
-                        <Text style={styles.reportLine}>{r.deliver_from_details}</Text>
-                      ) : null}
-
-                      {r.delivery_type ? (
-                        <Text style={styles.reportLine}>
-                          <Text style={styles.bold}>Delivery Type:</Text> {r.delivery_type}
-                        </Text>
-                      ) : null}
-
-                      {r.approach_hint ? (
-                        <Text style={styles.reportLine}>
-                          <Text style={styles.bold}>Approach:</Text> {r.approach_hint}
-                        </Text>
-                      ) : null}
-
-                      {r.back_in_required !== null ? (
-                        <Text style={styles.reportLine}>
-                          <Text style={styles.bold}>Back in:</Text>{" "}
-                          {r.back_in_required ? "YES" : "NO"}
-                        </Text>
-                      ) : null}
-
-                      {r.truck_fit ? (
-                        <Text style={styles.reportLine}>
-                          <Text style={styles.bold}>Truck Fit:</Text> {r.truck_fit}
-                        </Text>
-                      ) : null}
-
-                      {r.contact ? (
-                        <Text style={styles.reportLine}>
-                          <Text style={styles.bold}>Contact:</Text> {r.contact}
-                        </Text>
-                      ) : null}
-
-                      {r.notes ? (
-                        <Text style={styles.reportLine}>
-                          <Text style={styles.bold}>Notes:</Text> {r.notes}
-                        </Text>
-                      ) : null}
-
-                      <Text style={styles.reportVotes}>
-                        Score {score} (↑{stats.up} ↓{stats.down})
-                      </Text>
-
-                      <View style={styles.voteRow}>
-                        <Pressable
-                          style={[
-                            styles.voteBtn,
-                            stats.myVote === 1 ? styles.voteBtnActive : styles.voteBtnGhost,
-                          ]}
-                          onPress={() => handleVote(r.id, 1)}
-                        >
-                          <Text
-                            style={[
-                              styles.voteBtnText,
-                              stats.myVote === 1
-                                ? styles.voteBtnTextActive
-                                : styles.voteBtnTextGhost,
-                            ]}
-                          >
-                            👍 Helpful
+                        {r.delivery_type ? (
+                          <Text style={styles.reportLine}>
+                            <Text style={styles.bold}>Delivery Type:</Text> {r.delivery_type}
                           </Text>
-                        </Pressable>
+                        ) : null}
 
-                        <Pressable
-                          style={[
-                            styles.voteBtn,
-                            stats.myVote === -1 ? styles.voteBtnActive : styles.voteBtnGhost,
-                          ]}
-                          onPress={() => handleVote(r.id, -1)}
-                        >
-                          <Text
-                            style={[
-                              styles.voteBtnText,
-                              stats.myVote === -1
-                                ? styles.voteBtnTextActive
-                                : styles.voteBtnTextGhost,
-                            ]}
-                          >
-                            👎 Not Helpful
+                        {r.approach_hint ? (
+                          <Text style={styles.reportLine}>
+                            <Text style={styles.bold}>Approach:</Text> {r.approach_hint}
                           </Text>
-                        </Pressable>
+                        ) : null}
+
+                        {r.back_in_required !== null ? (
+                          <Text style={styles.reportLine}>
+                            <Text style={styles.bold}>Back in:</Text>{" "}
+                            {r.back_in_required ? "YES" : "NO"}
+                          </Text>
+                        ) : null}
+
+                        {r.truck_fit ? (
+                          <Text style={styles.reportLine}>
+                            <Text style={styles.bold}>Truck Fit:</Text> {r.truck_fit}
+                          </Text>
+                        ) : null}
+
+                        {r.contact ? (
+                          <Text style={styles.reportLine}>
+                            <Text style={styles.bold}>Contact:</Text> {r.contact}
+                          </Text>
+                        ) : null}
+
+                        {r.notes ? (
+                          <Text style={styles.reportLine}>
+                            <Text style={styles.bold}>Notes:</Text> {r.notes}
+                          </Text>
+                        ) : null}
+
+                        <Text style={styles.reportVotes}>
+                          Score {score} (↑{stats.up} ↓{stats.down})
+                        </Text>
+
+                        <View style={styles.voteRow}>
+                          <Pressable
+                            style={[
+                              styles.voteBtn,
+                              stats.myVote === 1 ? styles.voteBtnActive : styles.voteBtnGhost,
+                            ]}
+                            onPress={() => handleVote(r.id, 1)}
+                          >
+                            <Text
+                              style={[
+                                styles.voteBtnText,
+                                stats.myVote === 1
+                                  ? styles.voteBtnTextActive
+                                  : styles.voteBtnTextGhost,
+                              ]}
+                            >
+                              👍 Helpful
+                            </Text>
+                          </Pressable>
+
+                          <Pressable
+                            style={[
+                              styles.voteBtn,
+                              stats.myVote === -1 ? styles.voteBtnActive : styles.voteBtnGhost,
+                            ]}
+                            onPress={() => handleVote(r.id, -1)}
+                          >
+                            <Text
+                              style={[
+                                styles.voteBtnText,
+                                stats.myVote === -1
+                                  ? styles.voteBtnTextActive
+                                  : styles.voteBtnTextGhost,
+                              ]}
+                            >
+                              👎 Not Helpful
+                            </Text>
+                          </Pressable>
+                        </View>
                       </View>
-                    </View>
-                  );
-                })
-              )}
+                    );
+                  })
+                )
+              ) : null}
             </View>
 
             <View style={styles.card}>
@@ -1789,6 +1797,7 @@ export default function StopScreen() {
                 onPress={() => {
                   setShowApproach(false);
                   setShowManageStop(false);
+                  setReportsExpanded(false);
                   router.replace({
                     pathname: "/(tabs)",
                     params:
