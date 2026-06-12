@@ -10,6 +10,7 @@ import {
   Image,
   Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -103,6 +104,39 @@ const ENTRANCE_BUCKET = "entrance-photos";
 
 function stopKey(stopId: string) {
   return `mfi:stop:${stopId}:v1`;
+}
+
+function extractPhoneNumber(text: string): string | null {
+  const match = text.match(/(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/);
+
+  return match ? match[0] : null;
+}
+
+function formatPhoneNumber(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+
+  return phone;
+}
+
+function getPhoneDisplayParts(text: string) {
+  const phone = extractPhoneNumber(text);
+
+  if (!phone) return null;
+
+  return {
+    phone,
+    formattedPhone: formatPhoneNumber(phone),
+    before: text.slice(0, text.indexOf(phone)),
+    after: text.slice(text.indexOf(phone) + phone.length),
+  };
 }
 
 function base64ToArrayBuffer(base64: string) {
@@ -1555,11 +1589,38 @@ export default function StopScreen() {
                           </Text>
                         ) : null}
 
-                        {r.contact ? (
-                          <Text style={styles.reportLine}>
-                            <Text style={styles.bold}>Contact:</Text> {r.contact}
-                          </Text>
-                        ) : null}
+                        {r.contact
+                          ? (() => {
+                              const phoneParts = getPhoneDisplayParts(r.contact);
+
+                              if (!phoneParts) {
+                                return (
+                                  <Text style={styles.reportLine}>
+                                    <Text style={styles.bold}>Contact:</Text> {r.contact}
+                                  </Text>
+                                );
+                              }
+
+                              return (
+                                <Text style={styles.reportLine}>
+                                  <Text style={styles.bold}>Contact:</Text> {phoneParts.before}
+                                  <Text
+                                    style={{
+                                      color: "#2563eb",
+                                      fontWeight: "700",
+                                      textDecorationLine: "underline",
+                                    }}
+                                    onPress={() =>
+                                      Linking.openURL(`tel:${phoneParts.phone.replace(/\D/g, "")}`)
+                                    }
+                                  >
+                                    {phoneParts.formattedPhone}
+                                  </Text>
+                                  {phoneParts.after}
+                                </Text>
+                              );
+                            })()
+                          : null}
 
                         {r.notes ? (
                           <Text style={styles.reportLine}>
