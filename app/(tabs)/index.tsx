@@ -2381,9 +2381,11 @@ export default function HomeScreen() {
             <Text style={styles.fabIcon}>＋</Text>
             <Text style={styles.fabSecondaryText}>Drop Stop</Text>
           </Pressable>
-          <Pressable style={styles.fabSecondary} onPress={() => setMapToolsOpen(true)}>
+          <Pressable
+            style={[styles.fabSecondary, { minWidth: 48, paddingVertical: 10 }]}
+            onPress={() => setMapToolsOpen(true)}
+          >
             <Text style={styles.fabIcon}>⚙︎</Text>
-            <Text style={styles.fabSecondaryText}>Map Tools</Text>
           </Pressable>
         </View>
       ) : null}
@@ -2852,7 +2854,7 @@ const styles = StyleSheet.create({
   },
 
   fabIcon: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: "900",
     color: "#111",
     marginBottom: 1,
