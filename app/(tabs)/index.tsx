@@ -2186,7 +2186,9 @@ export default function HomeScreen() {
                 {selectedStop?.name}
               </Text>
               <Text style={styles.previewAddress} numberOfLines={previewCollapsed ? 1 : 3}>
-                {selectedStop?.address ?? "No address saved"}
+                {(selectedStop?.address ?? "No address saved")
+                  .replace(", Colorado ", ", CO ")
+                  .replace(", United States", "")}
               </Text>
             </View>
           </View>
