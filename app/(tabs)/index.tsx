@@ -2262,14 +2262,35 @@ export default function HomeScreen() {
                       })
                     }
                   >
-                    <Text style={styles.previewPrimaryBtnText}>Open Stop</Text>
+                    <Text style={styles.previewPrimaryBtnText}>Add/Edit Intel</Text>
                   </Pressable>
 
                   <View style={styles.previewSecondaryRow}>
+                    <Pressable
+                      style={styles.previewSecondaryBtn}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(tabs)/stop",
+                          params: {
+                            id: selectedStop.id,
+                            lat: selectedStop.lat,
+                            lng: selectedStop.lng,
+                            name: selectedStop.name,
+                            address: selectedStop.address ?? "",
+                            viewReports: "1",
+                          },
+                        })
+                      }
+                    >
+                      <Text style={styles.previewSecondaryBtnText}>View Reports</Text>
+                    </Pressable>
+
                     <Pressable style={styles.previewSecondaryBtn} onPress={navToStop}>
                       <Text style={styles.previewSecondaryBtnText}>Nav Stop</Text>
                     </Pressable>
+                  </View>
 
+                  <View style={styles.previewSecondaryRow}>
                     {selectedEntrance ? (
                       <Pressable
                         style={styles.previewSecondaryBtn}

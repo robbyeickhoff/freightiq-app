@@ -190,6 +190,7 @@ export default function StopScreen() {
   const lng = Number(params.lng ?? 0);
   const name = String(params.name ?? "Unknown location");
   const address = String(params.address ?? "");
+  const viewReports = String(params.viewReports ?? "") === "1";
 
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
 
@@ -246,13 +247,19 @@ export default function StopScreen() {
   const [editedStopName, setEditedStopName] = useState(name);
   const [currentStopName, setCurrentStopName] = useState(name);
   const [savingName, setSavingName] = useState(false);
-  const [reportsExpanded, setReportsExpanded] = useState(false);
+  const [reportsExpanded, setReportsExpanded] = useState(viewReports);
   const editNameInputRef = useRef<TextInput | null>(null);
   const title = useMemo(() => currentStopName, [currentStopName]);
   useEffect(() => {
     setEditedStopName(name);
     setCurrentStopName(name);
   }, [name]);
+
+  useEffect(() => {
+    if (viewReports) {
+      setReportsExpanded(true);
+    }
+  }, [viewReports]);
 
   useEffect(() => {
     if (!stopId) return;
