@@ -2351,7 +2351,6 @@ export default function HomeScreen() {
               <Text style={styles.fabPrimaryText}>
                 {showingStops ? "Hide Stops" : "Show Stops"}
               </Text>
-              <Text style={styles.fabPrimarySubtext}>in view</Text>
             </Pressable>
           </View>
 
@@ -2809,7 +2808,7 @@ const styles = StyleSheet.create({
 
   fabPrimary: {
     minWidth: 100,
-    backgroundColor: "black",
+    backgroundColor: "white",
     borderRadius: 14,
     paddingVertical: 8,
     paddingHorizontal: 10,
@@ -2822,7 +2821,7 @@ const styles = StyleSheet.create({
   },
 
   fabPrimaryText: {
-    color: "white",
+    color: "#111",
     fontWeight: "900",
     fontSize: 12,
     lineHeight: 14,
