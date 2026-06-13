@@ -2258,6 +2258,7 @@ export default function HomeScreen() {
                           lng: String(selectedStop?.lng),
                           name: selectedStop?.name,
                           address: selectedStop?.address ?? "",
+                          openedAt: String(Date.now()),
                         },
                       })
                     }
@@ -2278,6 +2279,7 @@ export default function HomeScreen() {
                             name: selectedStop.name,
                             address: selectedStop.address ?? "",
                             viewReports: "1",
+                            openedAt: String(Date.now()),
                           },
                         })
                       }

@@ -182,6 +182,7 @@ function guessContentType(ext: string) {
 }
 
 export default function StopScreen() {
+  const scrollViewRef = useRef<ScrollView | null>(null);
   const router = useRouter();
   const params = useLocalSearchParams();
 
@@ -191,6 +192,7 @@ export default function StopScreen() {
   const name = String(params.name ?? "Unknown location");
   const address = String(params.address ?? "");
   const viewReports = String(params.viewReports ?? "") === "1";
+  const openedAt = String(params.openedAt ?? "");
 
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
 
@@ -248,6 +250,7 @@ export default function StopScreen() {
   const [currentStopName, setCurrentStopName] = useState(name);
   const [savingName, setSavingName] = useState(false);
   const [reportsExpanded, setReportsExpanded] = useState(viewReports);
+  const [reportsSectionY, setReportsSectionY] = useState(0);
   const editNameInputRef = useRef<TextInput | null>(null);
   const title = useMemo(() => currentStopName, [currentStopName]);
   useEffect(() => {
@@ -260,6 +263,33 @@ export default function StopScreen() {
       setReportsExpanded(true);
     }
   }, [viewReports]);
+
+  useEffect(() => {
+    if (!openedAt) return;
+
+    setShowApproach(false);
+    setShowManageStop(false);
+
+    if (viewReports) {
+      setReportsExpanded(true);
+
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({
+          y: reportsSectionY,
+          animated: false,
+        });
+      }, 0);
+    } else {
+      setReportsExpanded(false);
+
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({
+          y: 0,
+          animated: false,
+        });
+      }, 0);
+    }
+  }, [openedAt, viewReports, reportsSectionY]);
 
   useEffect(() => {
     if (!stopId) return;
@@ -1314,6 +1344,7 @@ export default function StopScreen() {
       >
         <View style={{ flex: 1 }}>
           <ScrollView
+            ref={scrollViewRef}
             style={{ flex: 1, backgroundColor: "white" }}
             contentContainerStyle={styles.container}
             keyboardShouldPersistTaps="handled"
@@ -1505,7 +1536,10 @@ export default function StopScreen() {
               ) : null}
             </View>
 
-            <View style={styles.card}>
+            <View
+              style={styles.card}
+              onLayout={(event) => setReportsSectionY(event.nativeEvent.layout.y)}
+            >
               <Pressable onPress={() => setReportsExpanded((v) => !v)}>
                 <Text style={styles.cardTitle}>
                   {reportsExpanded ? "▼" : "▶"} Driver Reports ({sortedReports.length})
