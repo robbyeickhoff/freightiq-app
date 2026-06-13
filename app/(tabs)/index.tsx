@@ -340,6 +340,7 @@ export default function HomeScreen() {
   const handledShowEntranceKeyRef = useRef<string | null>(null);
   const [selectedStop, setSelectedStop] = useState<Pin | null>(null);
   const [nearbyStopsOpen, setNearbyStopsOpen] = useState(false);
+  const [mapToolsOpen, setMapToolsOpen] = useState(false);
   const [nearbyStops, setNearbyStops] = useState<Pin[]>([]);
   const [previewVisible, setPreviewVisible] = useState(true);
   const [entranceHighlightOn, setEntranceHighlightOn] = useState(false);
@@ -2385,6 +2386,10 @@ export default function HomeScreen() {
             <Text style={styles.fabIcon}>＋</Text>
             <Text style={styles.fabSecondaryText}>Drop Stop</Text>
           </Pressable>
+          <Pressable style={styles.fabSecondary} onPress={() => setMapToolsOpen(true)}>
+            <Text style={styles.fabIcon}>⚙︎</Text>
+            <Text style={styles.fabSecondaryText}>Map Tools</Text>
+          </Pressable>
         </View>
       ) : null}
 
@@ -2440,6 +2445,47 @@ export default function HomeScreen() {
               }}
             >
               <Text style={styles.previewSecondaryBtnText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={mapToolsOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setMapToolsOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.mapToolsModalCard}>
+            <Text style={styles.modalTitle}>Map Tools</Text>
+
+            <Pressable
+              style={styles.mapToolsSheetRow}
+              onPress={() => {
+                setMapToolsOpen(false);
+                saveStopsForOffline();
+              }}
+            >
+              <Text style={styles.mapToolsSheetText}>Save Stops for Offline</Text>
+            </Pressable>
+
+            <View style={styles.mapToolsSheetRow}>
+              <Text style={styles.mapToolsSecondaryText}>Cached Stops: {cachedStopCount}</Text>
+            </View>
+
+            <Pressable
+              style={styles.mapToolsSheetRow}
+              onPress={() => {
+                setMapToolsOpen(false);
+                clearCachedStops();
+              }}
+            >
+              <Text style={[styles.mapToolsSheetText, { color: "#dc2626" }]}>Clear Cache</Text>
+            </Pressable>
+
+            <Pressable style={styles.mapToolsSheetRow} onPress={() => setMapToolsOpen(false)}>
+              <Text style={styles.mapToolsSheetText}>Cancel</Text>
             </Pressable>
           </View>
         </View>
@@ -3024,6 +3070,32 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 18,
   },
 
+  mapToolsModalCard: {
+    backgroundColor: "white",
+    padding: 14,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+  },
+
+  mapToolsSheetRow: {
+    paddingVertical: 16,
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#e5e7eb",
+  },
+
+  mapToolsSheetText: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#111827",
+  },
+
+  mapToolsSecondaryText: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#6b7280",
+  },
+
   modalTitle: { fontSize: 18, fontWeight: "900" },
   modalHelp: { color: "#666" },
   coords: { color: "#666" },
@@ -3040,7 +3112,6 @@ const styles = StyleSheet.create({
   modalRow: { flexDirection: "row", gap: 10, marginTop: 6 },
 
   modalBtn: {
-    flex: 1,
     backgroundColor: "black",
     paddingVertical: 12,
     borderRadius: 14,
@@ -3048,9 +3119,9 @@ const styles = StyleSheet.create({
   },
 
   modalBtnGhost: {
-    backgroundColor: "white",
+    backgroundColor: "#f8fafc",
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#e5e7eb",
   },
 
   modalBtnText: { color: "white", fontWeight: "900", fontSize: 16 },
