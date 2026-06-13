@@ -2370,11 +2370,6 @@ export default function HomeScreen() {
               </Text>
               <Text style={styles.fabPrimarySubtext}>in view</Text>
             </Pressable>
-
-            <Pressable style={styles.fabSecondaryCompact} onPress={saveStopsForOffline}>
-              <Text style={styles.fabSecondaryText}>Save Stops</Text>
-              <Text style={styles.fabSecondarySubtext}>for offline</Text>
-            </Pressable>
           </View>
 
           <Pressable style={styles.fabSecondary} onPress={centerOnMe}>
@@ -2392,14 +2387,6 @@ export default function HomeScreen() {
           </Pressable>
         </View>
       ) : null}
-
-      <View style={styles.cachePill}>
-        <Text style={styles.cachePillText}>Cached: {cachedStopCount}</Text>
-
-        <Pressable style={styles.cachePillClearBtn} onPress={clearCachedStops}>
-          <Text style={styles.cachePillClearText}>Clear</Text>
-        </Pressable>
-      </View>
 
       <Modal
         visible={nearbyStopsOpen}
