@@ -1995,23 +1995,6 @@ export default function HomeScreen() {
         </MapView>
       ) : null}
 
-      <Pressable
-        onPress={() => setMapType((prev) => (prev === "standard" ? "satellite" : "standard"))}
-        style={{
-          position: "absolute",
-          bottom: 96,
-          left: 16,
-          backgroundColor: "rgba(0,0,0,0.7)",
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          borderRadius: 8,
-        }}
-      >
-        <Text style={{ color: "#fff", fontWeight: "600" }}>
-          {mapType === "standard" ? "Satellite View" : "Map View"}
-        </Text>
-      </Pressable>
-
       <View pointerEvents="none" style={styles.crosshairWrap}>
         <View style={styles.crosshairOuter} />
         <View style={styles.crosshairDot} />
@@ -2372,21 +2355,32 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
-          <Pressable style={styles.fabSecondary} onPress={centerOnMe}>
-            <Text style={styles.fabIcon}>◎</Text>
-            <Text style={styles.fabSecondaryText}>Locate Me</Text>
-          </Pressable>
+          <View style={styles.mapControlGroup}>
+            <Pressable style={styles.mapControlIconButton} onPress={centerOnMe}>
+              <Text style={styles.fabIcon}>◎</Text>
+            </Pressable>
 
-          <Pressable style={styles.fabSecondary} onPress={startDropAtCenter}>
-            <Text style={styles.fabIcon}>＋</Text>
-            <Text style={styles.fabSecondaryText}>Drop Stop</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.fabSecondary, { minWidth: 48, paddingVertical: 10 }]}
-            onPress={() => setMapToolsOpen(true)}
-          >
-            <Text style={styles.fabIcon}>⚙︎</Text>
-          </Pressable>
+            <View style={styles.mapControlDivider} />
+
+            <Pressable style={styles.mapControlIconButton} onPress={startDropAtCenter}>
+              <Text style={styles.fabIcon}>＋</Text>
+            </Pressable>
+
+            <View style={styles.mapControlDivider} />
+
+            <Pressable
+              style={styles.mapControlIconButton}
+              onPress={() => setMapType((prev) => (prev === "standard" ? "satellite" : "standard"))}
+            >
+              <Text style={styles.fabIcon}>{mapType === "standard" ? "🛰" : "🗺"}</Text>
+            </Pressable>
+
+            <View style={styles.mapControlDivider} />
+
+            <Pressable style={styles.mapControlIconButton} onPress={() => setMapToolsOpen(true)}>
+              <Text style={styles.fabIcon}>⚙︎</Text>
+            </Pressable>
+          </View>
         </View>
       ) : null}
 
@@ -2602,6 +2596,31 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 6,
     elevation: 2,
+  },
+
+  mapControlGroup: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#e6e6e6",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+
+  mapControlIconButton: {
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  mapControlDivider: {
+    height: 1,
+    backgroundColor: "#e6e6e6",
+    marginHorizontal: 8,
   },
 
   fabSecondaryCompact: {
