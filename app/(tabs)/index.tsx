@@ -1690,8 +1690,16 @@ export default function HomeScreen() {
 
   const selectedScoreValue = selectedScore.up - selectedScore.down;
   const selectedReportStats = selectedStopId
-    ? (reportStatsByStopId[selectedStopId] ?? { count: 0, latestUsername: null })
-    : { count: 0, latestUsername: null };
+    ? (reportStatsByStopId[selectedStopId] ?? {
+        count: 0,
+        latestUsername: null,
+        deliveryType: null,
+      })
+    : {
+        count: 0,
+        latestUsername: null,
+        deliveryType: null,
+      };
 
   const selectedEntrancePhotoUrl = selectedStopId
     ? (entrancePhotoUrlByStopId[selectedStopId] ?? null)
@@ -1822,7 +1830,9 @@ export default function HomeScreen() {
 
       {mapInitialRegion ? (
         <MapView
-          ref={(r) => (mapRef.current = r)}
+          ref={(r) => {
+            mapRef.current = r;
+          }}
           style={styles.map}
           onLayout={(event) => {
             const { width, height } = event.nativeEvent.layout;
@@ -2406,10 +2416,10 @@ export default function HomeScreen() {
               {nearbyStops.map((stop) => (
                 <Pressable
                   key={stop.id}
-                  style={styles.secondaryBtn}
+                  style={styles.previewSecondaryBtn}
                   onPress={() => openNearbyStopChoice(stop)}
                 >
-                  <Text style={styles.secondaryBtnText} numberOfLines={1}>
+                  <Text style={styles.previewSecondaryBtnText} numberOfLines={1}>
                     {stop.name}
                   </Text>
                   <Text style={styles.previewAddress} numberOfLines={2}>
@@ -2862,13 +2872,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     fontSize: 12,
     lineHeight: 15,
-  },
-
-  fabSecondaryText: {
-    color: "#111",
-    fontWeight: "800",
-    fontSize: 11,
-    lineHeight: 13,
   },
 
   fabIcon: {

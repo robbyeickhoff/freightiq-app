@@ -68,6 +68,7 @@ type ReportRow = {
   created_at: string;
   updated_at: string;
   username?: string;
+  tractor_type?: string | null;
 };
 
 type VoteRow = {
@@ -1204,13 +1205,13 @@ export default function StopScreen() {
         deletedStopRows,
       });
 
-      if (!deletedStopRows || deletedStopRows.length === 0) {
-        Alert.alert("Delete failed", "No stop row was deleted.");
+      if (stopDeleteError) {
+        Alert.alert("Delete failed", stopDeleteError.message);
         return;
       }
 
-      if (stopDeleteError) {
-        Alert.alert("Delete failed", stopDeleteError.message);
+      if (!deletedStopRows || deletedStopRows.length === 0) {
+        Alert.alert("Delete failed", "No stop row was deleted.");
         return;
       }
 
@@ -1361,7 +1362,11 @@ export default function StopScreen() {
                 </Text>
               ) : null}
 
-              {address ? <Text style={styles.coords}>{address}</Text> : null}
+              {address ? (
+                <Text style={styles.coords}>
+                  {address.replace(", Colorado ", ", CO ").replace(", United States", "")}
+                </Text>
+              ) : null}
             </View>
 
             <View style={styles.card}>
@@ -1723,7 +1728,7 @@ export default function StopScreen() {
               <Text style={styles.cardTitle}>Delivery Zone</Text>
               {typeof entranceLat === "number" && typeof entranceLng === "number" ? (
                 <>
-                  <Text style={styles.entranceStatusCompact}>Saved ✓</Text>
+                  <Text style={styles.entranceStatus}>Saved ✓</Text>
 
                   <View style={styles.entranceSmallRow}>
                     <Pressable
