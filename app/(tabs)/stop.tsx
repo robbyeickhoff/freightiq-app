@@ -233,6 +233,7 @@ export default function StopScreen() {
   const [entrancePhotoPath, setEntrancePhotoPath] = useState<string | null>(null);
 
   const [entrancePickerOpen, setEntrancePickerOpen] = useState(false);
+  const [pickerMapType, setPickerMapType] = useState<"standard" | "satellite">("standard");
   const [entranceRegion, setEntranceRegion] = useState<Region>({
     latitude: lat || 39.7392,
     longitude: lng || -104.9903,
@@ -1939,6 +1940,7 @@ export default function StopScreen() {
               <View style={styles.pickerMapWrap}>
                 <MapView
                   style={styles.pickerMap}
+                  mapType={pickerMapType}
                   region={entranceRegion}
                   onRegionChangeComplete={setEntranceRegion}
                 >
@@ -1962,14 +1964,17 @@ export default function StopScreen() {
                   <View style={styles.crosshairOuter} />
                   <View style={styles.crosshairDot} />
                 </View>
+                <Pressable
+                  style={styles.pickerMapToggle}
+                  onPress={() =>
+                    setPickerMapType((prev) => (prev === "standard" ? "satellite" : "standard"))
+                  }
+                >
+                  <Text style={styles.fabIcon}>{pickerMapType === "standard" ? "🛰" : "🗺"}</Text>
+                </Pressable>
               </View>
 
               <View style={styles.pickerFooter}>
-                <Text style={styles.pickerCoords}>
-                  Center: {entranceRegion.latitude.toFixed(5)},{" "}
-                  {entranceRegion.longitude.toFixed(5)}
-                </Text>
-
                 <View style={styles.pickerRow}>
                   <Pressable
                     style={[styles.pickerBtn, styles.pickerBtnGhost]}
@@ -2415,6 +2420,23 @@ const styles = StyleSheet.create({
   },
   pickerMapWrap: {
     flex: 1,
+    position: "relative",
+  },
+  pickerMapToggle: {
+    position: "absolute",
+    right: 12,
+    bottom: 12,
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    backgroundColor: "white",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
   pickerMap: {
     flex: 1,
@@ -2475,5 +2497,8 @@ const styles = StyleSheet.create({
   },
   pickerBtnTextGhost: {
     color: "black",
+  },
+  fabIcon: {
+    fontSize: 30,
   },
 });
