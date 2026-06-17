@@ -1582,7 +1582,29 @@ export default function HomeScreen() {
         address: retrievedAddress || undefined,
       };
 
-      const nearest = pins
+      let candidatePins = pins;
+
+      try {
+        const { data: cloudStops, error } = await supabase
+          .from("mfi_stops")
+          .select("id, name, lat, lng, address");
+
+        if (!error) {
+          const cloudPins: Pin[] = sanitizePins(
+            (cloudStops ?? []).map((row: any) => ({
+              id: String(row.id),
+              name: row.name ?? "Unknown",
+              lat: Number(row.lat),
+              lng: Number(row.lng),
+              address: row.address ?? undefined,
+            })),
+          );
+
+          candidatePins = mergePinsById(pins, cloudPins);
+        }
+      } catch {}
+
+      const nearest = candidatePins
         .map((existing) => ({
           pin: existing,
           feet: feetBetween(lat, lng, existing.lat, existing.lng),
