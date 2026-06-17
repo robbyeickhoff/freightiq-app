@@ -255,6 +255,23 @@ function feetBetween(lat1: number, lng1: number, lat2: number, lng2: number) {
   return meters * 3.28084;
 }
 
+function namesLookLikeDuplicate(a: string, b: string) {
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\b(the|inc|llc|ltd|co|company)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const left = normalize(a);
+  const right = normalize(b);
+
+  if (!left || !right) return false;
+
+  return left === right || left.includes(right) || right.includes(left);
+}
+
 function StopMarkerVisual({
   hasIntel,
   reportCount,
@@ -1624,7 +1641,11 @@ export default function HomeScreen() {
       setQuery("");
       setResults([]);
 
-      if (nearest && nearest.feet <= DUPLICATE_DISTANCE_FEET) {
+      if (
+        nearest &&
+        nearest.feet <= DUPLICATE_DISTANCE_FEET &&
+        namesLookLikeDuplicate(name, nearest.pin.name)
+      ) {
         Alert.alert(
           "Existing stop found",
           `${nearest.pin.name}\n${nearest.pin.address ?? "No address"}\n\nOpen it and add your intel there?`,
