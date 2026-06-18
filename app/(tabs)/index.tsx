@@ -2705,12 +2705,10 @@ const styles = StyleSheet.create({
   },
 
   pinMarkerWrap: {
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
-    ...(Platform.OS === "android" && {
-      width: 40,
-      height: 40,
-    }),
   },
 
   pinDot: {
