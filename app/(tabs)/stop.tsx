@@ -679,8 +679,6 @@ export default function StopScreen() {
               .eq("id", myReportId)
               .select("id");
 
-            console.log("deleted report rows", data);
-
             if (error) {
               Alert.alert("Delete failed", error.message);
               return;
@@ -742,7 +740,6 @@ export default function StopScreen() {
         .single();
 
       if (!existingStop) {
-        console.log("⚠️ Stop not in cloud yet, skipping report save");
         return;
       }
 
@@ -1197,14 +1194,6 @@ export default function StopScreen() {
       }
 
       const { error: stopDeleteError, data: deletedStopRows } = await stopDeleteQuery.select("id");
-
-      console.log("delete stop debug", {
-        stopId,
-        stopOwnerId,
-        sessionUserId,
-        canDeleteStop,
-        deletedStopRows,
-      });
 
       if (stopDeleteError) {
         Alert.alert("Delete failed", stopDeleteError.message);
