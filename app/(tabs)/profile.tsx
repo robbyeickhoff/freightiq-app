@@ -59,15 +59,15 @@ export default function ProfileScreen() {
       return;
     }
 
-   Alert.alert("Saved", "Profile updated.", [
-  {
-    text: "OK",
-    onPress: () => router.replace("/(tabs)"),
-  },
-]);
+    Alert.alert("Saved", "Profile updated.", [
+      {
+        text: "OK",
+        onPress: () => router.replace("/(tabs)"),
+      },
+    ]);
   }
 
-    async function logOut() {
+  async function logOut() {
     const { error } = await supabase.auth.signOut();
 
     if (error) {
@@ -84,12 +84,7 @@ export default function ProfileScreen() {
       <Text style={styles.title}>Driver Profile</Text>
 
       <Text style={styles.label}>Driver Name</Text>
-      <TextInput
-        value={name}
-        onChangeText={setName}
-        placeholder="Your name"
-        style={styles.input}
-      />
+      <TextInput value={name} onChangeText={setName} placeholder="Your name" style={styles.input} />
 
       <Text style={styles.label}>Tractor Type</Text>
 
@@ -118,9 +113,13 @@ export default function ProfileScreen() {
         <Text style={styles.buttonText}>Save Profile</Text>
       </Pressable>
 
+      <Pressable style={styles.logoutButton} onPress={() => router.push("/help")}>
+        <Text style={styles.logoutButtonText}>Help Center</Text>
+      </Pressable>
+
       <Pressable style={styles.logoutButton} onPress={logOut}>
-  <Text style={styles.logoutButtonText}>Log Out</Text>
-</Pressable>
+        <Text style={styles.logoutButtonText}>Log Out</Text>
+      </Pressable>
     </SafeAreaView>
   );
 }
@@ -178,17 +177,17 @@ const styles = StyleSheet.create({
   },
 
   logoutButton: {
-  backgroundColor: "white",
-  borderWidth: 1,
-  borderColor: "#ddd",
-  padding: 14,
-  borderRadius: 10,
-  marginTop: 12,
-  alignItems: "center",
-},
+    backgroundColor: "white",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 14,
+    borderRadius: 10,
+    marginTop: 12,
+    alignItems: "center",
+  },
 
-logoutButtonText: {
-  color: "black",
-  fontWeight: "700",
-},
+  logoutButtonText: {
+    color: "black",
+    fontWeight: "700",
+  },
 });
