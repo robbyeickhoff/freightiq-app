@@ -1504,6 +1504,11 @@ export default function StopScreen() {
               />
 
               <Text style={styles.sectionLabel}>Driver Notes</Text>
+
+              <Text style={styles.helperText}>
+                💡 Driver Tip: Share delivery guidance, not gate codes or security credentials.
+              </Text>
+
               <TextInput
                 value={notes}
                 onChangeText={setNotes}
@@ -2322,6 +2327,12 @@ const styles = StyleSheet.create({
   reportLine: { color: "#222" },
   bold: { fontWeight: "800" },
   reportVotes: { color: "#666", marginTop: 4, fontWeight: "700" },
+  helperText: {
+    color: "#666",
+    fontSize: 13,
+    marginTop: 4,
+    marginBottom: 8,
+  },
   emptyText: { color: "#666" },
 
   voteRow: {
