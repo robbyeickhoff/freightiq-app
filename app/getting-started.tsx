@@ -10,32 +10,40 @@ export default function GettingStartedScreen() {
         <ScrollView>
           <Text style={styles.sectionTitle}>Before Your First Delivery</Text>
 
-          <View style={styles.card}>
-            <Text style={styles.stepTitle}>1️⃣ Search for a Stop</Text>
+          <View>
+            <View style={styles.expandedHeader}>
+              <Text style={styles.stepTitle}>▼ Search for a Stop</Text>
+            </View>
 
-            <Text style={styles.step}>Search for the delivery address or business name.</Text>
+            <View style={styles.contentPanel}>
+              <Text style={styles.step}>Search for the delivery address or business name.</Text>
+            </View>
+          </View>
 
-            <Text style={styles.stepTitle}>2️⃣ Open the Preview Card</Text>
+          <View>
+            <View style={styles.expandedHeader}>
+              <Text style={styles.stepTitle}>▼ Open the Preview Card</Text>
+            </View>
 
-            <Text style={styles.step}>Tap the stop pin to view available stop intel.</Text>
+            <View style={styles.contentPanel}>
+              <Text style={styles.body}>Tap the stop pin to view available stop intel.</Text>
+            </View>
 
-            <Text style={styles.stepTitle}>3️⃣ Review Driver Reports</Text>
+            <View style={styles.collapsedRow}>
+              <Text style={styles.stepTitle}>▶ Review Driver Reports</Text>
+            </View>
 
-            <Text style={styles.step}>Read delivery tips and notes shared by other drivers.</Text>
+            <View style={styles.collapsedRow}>
+              <Text style={styles.stepTitle}>▶ Review the Delivery Zone</Text>
+            </View>
 
-            <Text style={styles.stepTitle}>4️⃣ Review the Delivery Zone</Text>
+            <View style={styles.collapsedRow}>
+              <Text style={styles.stepTitle}>▶ Review Photos</Text>
+            </View>
 
-            <Text style={styles.step}>Locate the best delivery location before arriving.</Text>
-
-            <Text style={styles.stepTitle}>5️⃣ Review Photos</Text>
-
-            <Text style={styles.step}>View available photos before arriving at the stop.</Text>
-
-            <Text style={styles.stepTitle}>6️⃣ Deliver with Confidence</Text>
-
-            <Text style={styles.step}>
-              Use the available stop intel before arriving at the delivery.
-            </Text>
+            <View style={styles.collapsedRow}>
+              <Text style={styles.stepTitle}>▶ Deliver with Confidence</Text>
+            </View>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -60,9 +68,10 @@ const styles = StyleSheet.create({
   },
 
   step: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 12,
+    fontSize: 15,
+    lineHeight: 22,
+    marginHorizontal: 16,
+    marginBottom: 0,
   },
 
   stepTitle: {
@@ -81,5 +90,30 @@ const styles = StyleSheet.create({
   body: {
     fontSize: 16,
     lineHeight: 24,
+  },
+
+  expandedHeader: {
+    backgroundColor: "#f5f5f7",
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    marginBottom: 8,
+  },
+
+  contentPanel: {
+    backgroundColor: "#f5f5f7",
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+  },
+
+  collapsedRow: {
+    backgroundColor: "#f5f5f7",
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    marginTop: 12,
   },
 });
