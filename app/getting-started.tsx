@@ -26,23 +26,41 @@ export default function GettingStartedScreen() {
             </View>
 
             <View style={styles.contentPanel}>
-              <Text style={styles.body}>Tap the stop pin to view available stop intel.</Text>
+              <Text style={styles.step}>Tap the stop pin to view available stop intel.</Text>
             </View>
 
-            <View style={styles.collapsedRow}>
-              <Text style={styles.stepTitle}>▶ Review Driver Reports</Text>
+            <View style={styles.expandedHeader}>
+              <Text style={styles.stepTitle}>▼ Review Driver Reports</Text>
             </View>
 
-            <View style={styles.collapsedRow}>
-              <Text style={styles.stepTitle}>▶ Review the Delivery Zone</Text>
+            <View style={styles.contentPanel}>
+              <Text style={styles.step}>Learn how to make your delivery safer and easier.</Text>
             </View>
 
-            <View style={styles.collapsedRow}>
-              <Text style={styles.stepTitle}>▶ Review Photos</Text>
+            <View style={styles.expandedHeader}>
+              <Text style={styles.stepTitle}>▼ Review Delivery Zone</Text>
             </View>
 
-            <View style={styles.collapsedRow}>
-              <Text style={styles.stepTitle}>▶ Deliver with Confidence</Text>
+            <View style={styles.contentPanel}>
+              <Text style={styles.step}>Know the best place to park and unload.</Text>
+            </View>
+
+            <View style={styles.expandedHeader}>
+              <Text style={styles.stepTitle}>▼ Review Photos</Text>
+            </View>
+
+            <View style={styles.contentPanel}>
+              <Text style={styles.step}>Know what to look for before you arrive.</Text>
+            </View>
+
+            <View style={styles.expandedHeader}>
+              <Text style={styles.stepTitle}>▼ Deliver with Confidence</Text>
+            </View>
+
+            <View style={styles.contentPanel}>
+              <Text style={styles.step}>
+                Arrive prepared for a faster, safer, and easier delivery.
+              </Text>
             </View>
           </View>
         </ScrollView>
