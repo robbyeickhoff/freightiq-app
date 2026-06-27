@@ -12,7 +12,7 @@ export default function HelpScreen() {
           <Text style={styles.cardSubtitle}>First-time users</Text>
         </Pressable>
 
-        <Pressable style={styles.card}>
+        <Pressable style={styles.card} onPress={() => router.push("/finding-stops")}>
           <Text style={styles.cardTitle}>📍 Finding Stops</Text>
           <Text style={styles.cardSubtitle}>Search and browse stops</Text>
         </Pressable>
