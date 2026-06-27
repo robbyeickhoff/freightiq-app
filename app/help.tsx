@@ -17,9 +17,9 @@ export default function HelpScreen() {
           <Text style={styles.cardSubtitle}>Search and browse stops</Text>
         </Pressable>
 
-        <Pressable style={styles.card}>
+        <Pressable style={styles.card} onPress={() => router.push("/understanding-stop-intel")}>
           <Text style={styles.cardTitle}>📋 Understanding Stop Intel</Text>
-          <Text style={styles.cardSubtitle}>Reports, Zones, and Photos</Text>
+          <Text style={styles.cardSubtitle}>Learn what each report means</Text>
         </Pressable>
 
         <Pressable style={styles.card}>
