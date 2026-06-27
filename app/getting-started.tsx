@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 
 export default function GettingStartedScreen() {
-  const [expandedSection, setExpandedSection] = useState("search");
+  const [expandedSection, setExpandedSection] = useState("");
 
   return (
     <>
