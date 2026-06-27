@@ -32,47 +32,91 @@ export default function GettingStartedScreen() {
           </View>
 
           <View>
-            <View style={styles.expandedHeader}>
-              <Text style={styles.stepTitle}>▼ Open the Preview Card</Text>
-            </View>
+            <Pressable
+              onPress={() => setExpandedSection(expandedSection === "preview" ? "" : "preview")}
+            >
+              <View style={styles.expandedHeader}>
+                <Text style={styles.stepTitle}>
+                  {expandedSection === "preview" ? "▼" : "▶"} Open the Preview Card
+                </Text>
+              </View>
+            </Pressable>
 
-            <View style={styles.contentPanel}>
-              <Text style={styles.step}>Tap the stop pin to view available stop intel.</Text>
-            </View>
+            {expandedSection === "preview" && (
+              <View style={styles.contentPanel}>
+                <Text style={styles.step}>Tap the stop pin to view available stop intel.</Text>
+              </View>
+            )}
 
-            <View style={styles.expandedHeader}>
-              <Text style={styles.stepTitle}>▼ Review Driver Reports</Text>
-            </View>
+            <Pressable
+              onPress={() => setExpandedSection(expandedSection === "reports" ? "" : "reports")}
+            >
+              <View style={styles.expandedHeader}>
+                <Text style={styles.stepTitle}>
+                  {expandedSection === "reports" ? "▼" : "▶"} Review Driver Reports
+                </Text>
+              </View>
+            </Pressable>
 
-            <View style={styles.contentPanel}>
-              <Text style={styles.step}>Learn how to make your delivery safer and easier.</Text>
-            </View>
+            {expandedSection === "reports" && (
+              <View style={styles.contentPanel}>
+                <Text style={styles.step}>Learn how to make your delivery safer and easier.</Text>
+              </View>
+            )}
 
-            <View style={styles.expandedHeader}>
-              <Text style={styles.stepTitle}>▼ Review Delivery Zone</Text>
-            </View>
+            <Pressable
+              onPress={() =>
+                setExpandedSection(expandedSection === "deliveryZone" ? "" : "deliveryZone")
+              }
+            >
+              <View style={styles.expandedHeader}>
+                <Text style={styles.stepTitle}>
+                  {expandedSection === "deliveryZone" ? "▼" : "▶"} Review Delivery Zone
+                </Text>
+              </View>
+            </Pressable>
 
-            <View style={styles.contentPanel}>
-              <Text style={styles.step}>Know the best place to park and unload.</Text>
-            </View>
+            {expandedSection === "deliveryZone" && (
+              <View style={styles.contentPanel}>
+                <Text style={styles.step}>Know the best place to park and unload.</Text>
+              </View>
+            )}
 
-            <View style={styles.expandedHeader}>
-              <Text style={styles.stepTitle}>▼ Review Photos</Text>
-            </View>
+            <Pressable
+              onPress={() => setExpandedSection(expandedSection === "photos" ? "" : "photos")}
+            >
+              <View style={styles.expandedHeader}>
+                <Text style={styles.stepTitle}>
+                  {expandedSection === "photos" ? "▼" : "▶"} Review Photos
+                </Text>
+              </View>
+            </Pressable>
 
-            <View style={styles.contentPanel}>
-              <Text style={styles.step}>Know what to look for before you arrive.</Text>
-            </View>
+            {expandedSection === "photos" && (
+              <View style={styles.contentPanel}>
+                <Text style={styles.step}>Know what to look for before you arrive.</Text>
+              </View>
+            )}
 
-            <View style={styles.expandedHeader}>
-              <Text style={styles.stepTitle}>▼ Deliver with Confidence</Text>
-            </View>
+            <Pressable
+              onPress={() =>
+                setExpandedSection(expandedSection === "confidence" ? "" : "confidence")
+              }
+            >
+              <View style={styles.expandedHeader}>
+                <Text style={styles.stepTitle}>
+                  {expandedSection === "confidence" ? "▼" : "▶"} Deliver with Confidence
+                </Text>
+              </View>
+            </Pressable>
 
-            <View style={styles.contentPanel}>
-              <Text style={styles.step}>
-                Arrive prepared for a faster, safer, and easier delivery.
-              </Text>
-            </View>
+            {expandedSection === "confidence" && (
+              <View style={styles.contentPanel}>
+                <Text style={styles.step}>
+                  Arrive prepared for a faster, safer, and easier delivery.
+                </Text>
+              </View>
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>
