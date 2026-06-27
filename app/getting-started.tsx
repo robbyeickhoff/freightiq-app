@@ -1,7 +1,10 @@
 import { Stack } from "expo-router";
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 
 export default function GettingStartedScreen() {
+  const [expandedSection, setExpandedSection] = useState("search");
+
   return (
     <>
       <Stack.Screen options={{ title: "Getting Started" }} />
@@ -11,13 +14,21 @@ export default function GettingStartedScreen() {
           <Text style={styles.sectionTitle}>Before Your First Delivery</Text>
 
           <View>
-            <View style={styles.expandedHeader}>
-              <Text style={styles.stepTitle}>▼ Search for a Stop</Text>
-            </View>
+            <Pressable
+              onPress={() => setExpandedSection(expandedSection === "search" ? "" : "search")}
+            >
+              <View style={styles.expandedHeader}>
+                <Text style={styles.stepTitle}>
+                  {expandedSection === "search" ? "▼" : "▶"} Search for a Stop
+                </Text>
+              </View>
+            </Pressable>
 
-            <View style={styles.contentPanel}>
-              <Text style={styles.step}>Search for the delivery address or business name.</Text>
-            </View>
+            {expandedSection === "search" && (
+              <View style={styles.contentPanel}>
+                <Text style={styles.step}>Search for the delivery address or business name.</Text>
+              </View>
+            )}
           </View>
 
           <View>
