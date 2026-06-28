@@ -22,7 +22,7 @@ export default function HelpScreen() {
           <Text style={styles.cardSubtitle}>Learn what each report means</Text>
         </Pressable>
 
-        <Pressable style={styles.card}>
+        <Pressable style={styles.card} onPress={() => router.push("/contributing-stop-intel")}>
           <Text style={styles.cardTitle}>✏️ Contributing Stop Intel</Text>
           <Text style={styles.cardSubtitle}>Add and update information</Text>
         </Pressable>
