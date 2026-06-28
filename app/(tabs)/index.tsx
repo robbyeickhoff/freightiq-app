@@ -22,6 +22,7 @@ import {
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import Supercluster from "supercluster";
+import { MapIcon } from "../../components/MapIcon";
 import { supabase } from "../../utils/supabase";
 
 type Pin = {
@@ -2409,13 +2410,13 @@ export default function HomeScreen() {
 
           <View style={styles.mapControlGroup}>
             <Pressable style={styles.mapControlIconButton} onPress={centerOnMe}>
-              <Text style={styles.fabIcon}>◎</Text>
+              <MapIcon>◎</MapIcon>
             </Pressable>
 
             <View style={styles.mapControlDivider} />
 
             <Pressable style={styles.mapControlIconButton} onPress={startDropAtCenter}>
-              <Text style={styles.fabIcon}>＋</Text>
+              <MapIcon>＋</MapIcon>
             </Pressable>
 
             <View style={styles.mapControlDivider} />
@@ -2424,13 +2425,13 @@ export default function HomeScreen() {
               style={styles.mapControlIconButton}
               onPress={() => setMapType((prev) => (prev === "standard" ? "satellite" : "standard"))}
             >
-              <Text style={styles.fabIcon}>{mapType === "standard" ? "🛰" : "🗺"}</Text>
+              <MapIcon>{mapType === "standard" ? "🛰" : "🗺"}</MapIcon>
             </Pressable>
 
             <View style={styles.mapControlDivider} />
 
             <Pressable style={styles.mapControlIconButton} onPress={() => setMapToolsOpen(true)}>
-              <Text style={styles.fabIcon}>⚙︎</Text>
+              <MapIcon>⚙︎</MapIcon>
             </Pressable>
           </View>
         </View>

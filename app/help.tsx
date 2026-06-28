@@ -27,9 +27,9 @@ export default function HelpScreen() {
           <Text style={styles.cardSubtitle}>Add and update information</Text>
         </Pressable>
 
-        <Pressable style={styles.card}>
-          <Text style={styles.cardTitle}>🗺️ Map Icons</Text>
-          <Text style={styles.cardSubtitle}>Learn what icons mean</Text>
+        <Pressable style={styles.card} onPress={() => router.push("/using-the-map")}>
+          <Text style={styles.cardTitle}>🗺️ Using the Map</Text>
+          <Text style={styles.cardSubtitle}>Learn how to use map tools and controls</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

@@ -22,6 +22,7 @@ import {
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { MapIcon } from "../../components/MapIcon";
 import { supabase } from "../../utils/supabase";
 
 type ChipProps = {
@@ -1964,7 +1965,7 @@ export default function StopScreen() {
                     setPickerMapType((prev) => (prev === "standard" ? "satellite" : "standard"))
                   }
                 >
-                  <Text style={styles.fabIcon}>{pickerMapType === "standard" ? "🛰" : "🗺"}</Text>
+                  <MapIcon>{pickerMapType === "standard" ? "🛰" : "🗺"}</MapIcon>
                 </Pressable>
               </View>
 
