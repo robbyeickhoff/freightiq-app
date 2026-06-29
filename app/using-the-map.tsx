@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 import { useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { MapButton } from "../components/MapButton";
 import { MapIcon } from "../components/MapIcon";
 
 export default function UsingTheMapScreen() {
@@ -107,10 +108,21 @@ export default function UsingTheMapScreen() {
 
           {expandedSection === "showStops" && (
             <View style={styles.contentPanel}>
-              <Text style={styles.step}>
-                Show Stops loads every FreightIQ stop visible on the map.{"\n"}
-                Hide Stops removes the pins for a cleaner view.
-              </Text>
+              <View style={styles.exampleItem}>
+                <View style={styles.buttonWrapper}>
+                  <MapButton>Show Stops</MapButton>
+                </View>
+                <Text style={styles.exampleText}>
+                  Loads every FreightIQ stop visible on the map.
+                </Text>
+              </View>
+
+              <View style={styles.exampleItem}>
+                <View style={styles.buttonWrapper}>
+                  <MapButton>Hide Stops</MapButton>
+                </View>
+                <Text style={styles.exampleText}>Removes the pins for a cleaner view.</Text>
+              </View>
             </View>
           )}
 
@@ -218,6 +230,26 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 24,
     paddingVertical: 16,
+  },
+
+  exampleBlock: {
+    marginTop: 16,
+  },
+
+  exampleItem: {
+    marginBottom: 10,
+  },
+
+  buttonWrapper: {
+    width: "70%",
+    alignSelf: "flex-start",
+    marginBottom: 4,
+  },
+
+  exampleText: {
+    marginTop: 4,
+    fontSize: 15,
+    lineHeight: 22,
   },
 
   collapsedRow: {

@@ -22,6 +22,7 @@ import {
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import Supercluster from "supercluster";
+import { MapButton } from "../../components/MapButton";
 import { MapIcon } from "../../components/MapIcon";
 import { supabase } from "../../utils/supabase";
 
@@ -2401,10 +2402,8 @@ export default function HomeScreen() {
       {!showPreview ? (
         <View style={[styles.floatingActions, { bottom: 36 }]}>
           <View style={styles.mapToolsCard}>
-            <Pressable style={styles.fabPrimary} onPress={refreshStopsInView}>
-              <Text style={styles.fabPrimaryText}>
-                {showingStops ? "Hide Stops" : "Show Stops"}
-              </Text>
+            <Pressable onPress={refreshStopsInView}>
+              <MapButton>{showingStops ? "Hide Stops" : "Show Stops"}</MapButton>
             </Pressable>
           </View>
 
