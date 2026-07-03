@@ -7,11 +7,20 @@ export default function GettingStartedScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Getting Started" }} />
+      <Stack.Screen
+        options={{
+          title: "Getting Started",
+          headerBackButtonDisplayMode: "minimal",
+        }}
+      />
 
       <SafeAreaView style={styles.container}>
         <ScrollView>
           <Text style={styles.sectionTitle}>Before Your First Delivery</Text>
+          <Text style={styles.body}>
+            Start with the essentials so you're ready to use FreightIQ confidently on your first
+            delivery.
+          </Text>
 
           <View>
             <Pressable
@@ -161,8 +170,10 @@ const styles = StyleSheet.create({
   },
 
   body: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 15,
+    color: "#666",
+    lineHeight: 22,
+    marginBottom: 12,
   },
 
   expandedHeader: {

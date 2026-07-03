@@ -7,11 +7,20 @@ export default function UnderstandingStopIntelScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Understanding Stop Intel" }} />
+      <Stack.Screen
+        options={{
+          title: "Understanding Stop Intel",
+          headerBackButtonDisplayMode: "minimal",
+        }}
+      />
 
       <SafeAreaView style={styles.container}>
         <ScrollView>
-          <Text style={styles.sectionTitle}>Understanding Stop Intel</Text>
+          <Text style={styles.sectionTitle}>Know Before You Arrive</Text>
+          <Text style={styles.helperText}>
+            Learn how driver reports help you make better delivery decisions before you reach the
+            customer.
+          </Text>
 
           <View>
             <Pressable
@@ -151,6 +160,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     marginTop: 30,
+    marginBottom: 4,
+  },
+
+  helperText: {
+    fontSize: 14,
+    color: "#666",
+    lineHeight: 20,
     marginBottom: 12,
   },
 

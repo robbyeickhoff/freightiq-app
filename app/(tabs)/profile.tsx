@@ -7,6 +7,8 @@ import { supabase } from "../../utils/supabase";
 export default function ProfileScreen() {
   const [name, setName] = useState("");
   const [tractorType, setTractorType] = useState("");
+  const [initialName, setInitialName] = useState("");
+  const [initialTractorType, setInitialTractorType] = useState("");
   const router = useRouter();
   useEffect(() => {
     async function loadProfile() {
@@ -33,11 +35,15 @@ export default function ProfileScreen() {
       if (profile) {
         setName(profile.username ?? "");
         setTractorType(profile.tractor_type ?? "");
+        setInitialName(profile.username ?? "");
+        setInitialTractorType(profile.tractor_type ?? "");
       }
     }
 
     loadProfile();
   }, []);
+
+  const hasChanges = name !== initialName || tractorType !== initialTractorType;
 
   async function saveProfile() {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -58,6 +64,9 @@ export default function ProfileScreen() {
       Alert.alert("Save failed", error.message);
       return;
     }
+
+    setInitialName(name);
+    setInitialTractorType(tractorType);
 
     Alert.alert("Saved", "Profile updated.", [
       {
@@ -82,6 +91,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <Text style={styles.title}>Driver Profile</Text>
+      <Text style={styles.body}>Keep your driver name and equipment information up to date.</Text>
 
       <Text style={styles.label}>Driver Name</Text>
       <TextInput value={name} onChangeText={setName} placeholder="Your name" style={styles.input} />
@@ -109,8 +119,14 @@ export default function ProfileScreen() {
         <Text>Tandem Axle Sleeper</Text>
       </Pressable>
 
-      <Pressable style={styles.button} onPress={saveProfile}>
-        <Text style={styles.buttonText}>Save Profile</Text>
+      <Pressable
+        style={[styles.button, !hasChanges && styles.buttonDisabled]}
+        onPress={saveProfile}
+        disabled={!hasChanges}
+      >
+        <Text style={[styles.buttonText, !hasChanges && styles.buttonTextDisabled]}>
+          {initialName || initialTractorType ? "Update Profile" : "Save Profile"}
+        </Text>
       </Pressable>
 
       <Pressable style={styles.logoutButton} onPress={() => router.push("/help")}>
@@ -134,6 +150,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "700",
+    marginBottom: 20,
+  },
+  body: {
+    fontSize: 15,
+    color: "#666",
+    lineHeight: 22,
     marginBottom: 20,
   },
 
@@ -170,10 +192,16 @@ const styles = StyleSheet.create({
     marginTop: 25,
     alignItems: "center",
   },
+  buttonDisabled: {
+    backgroundColor: "#d9d9d9",
+  },
 
   buttonText: {
     color: "white",
     fontWeight: "700",
+  },
+  buttonTextDisabled: {
+    color: "#666",
   },
 
   logoutButton: {

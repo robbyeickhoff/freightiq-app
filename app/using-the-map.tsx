@@ -9,11 +9,19 @@ export default function UsingTheMapScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Using the Map" }} />
+      <Stack.Screen
+        options={{
+          title: "Using the Map",
+          headerBackButtonDisplayMode: "minimal",
+        }}
+      />
 
       <SafeAreaView style={styles.container}>
         <ScrollView>
-          <Text style={styles.sectionTitle}>Using the Map</Text>
+          <Text style={styles.sectionTitle}>Explore with Confidence</Text>
+          <Text style={styles.helperText}>
+            Learn the tools that make finding, saving, and navigating stops easier.
+          </Text>
 
           <View>
             <Pressable
@@ -207,6 +215,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     marginTop: 30,
+    marginBottom: 4,
+  },
+
+  helperText: {
+    fontSize: 14,
+    color: "#666",
+    lineHeight: 20,
     marginBottom: 12,
   },
 

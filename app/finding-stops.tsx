@@ -7,11 +7,19 @@ export default function FindingStopsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Finding Stops" }} />
+      <Stack.Screen
+        options={{
+          title: "Finding Stops",
+          headerBackButtonDisplayMode: "minimal",
+        }}
+      />
 
       <SafeAreaView style={styles.container}>
         <ScrollView>
-          <Text style={styles.sectionTitle}>Finding Stops</Text>
+          <Text style={styles.sectionTitle}>Find Customers Faster</Text>
+          <Text style={styles.helperText}>
+            Search, browse, and discover stops shared by other drivers before you arrive.
+          </Text>
 
           <View>
             <Pressable
@@ -137,6 +145,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     marginTop: 30,
+    marginBottom: 4,
+  },
+
+  helperText: {
+    fontSize: 14,
+    color: "#666",
+    lineHeight: 20,
     marginBottom: 12,
   },
 

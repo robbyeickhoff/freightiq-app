@@ -7,11 +7,19 @@ export default function ContributingStopIntelScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Contributing Stop Intel" }} />
+      <Stack.Screen
+        options={{
+          title: "Contributing Stop Intel",
+          headerBackButtonDisplayMode: "minimal",
+        }}
+      />
 
       <SafeAreaView style={styles.container}>
         <ScrollView>
-          <Text style={styles.sectionTitle}>Contributing Stop Intel</Text>
+          <Text style={styles.sectionTitle}>Help the Next Driver</Text>
+          <Text style={styles.helperText}>
+            Share what you learn to keep FreightIQ accurate, useful, and up to date.
+          </Text>
 
           <View>
             <Pressable
@@ -170,6 +178,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     marginTop: 30,
+    marginBottom: 4,
+  },
+
+  helperText: {
+    fontSize: 14,
+    color: "#666",
+    lineHeight: 20,
     marginBottom: 12,
   },
 
