@@ -41,6 +41,8 @@ Update only the sections that changed during the session.
 
 Review each section with the user before considering the update complete.
 
+Do not create or propose a patch until all changed sections have been reviewed and approved by the user.
+
 Record completed work, important discoveries, and the Next Safe Step before reviewing Git.
 
 Keep the document concise.

@@ -22,13 +22,13 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-Finalize the onboarding experience before implementing UI changes.
+Complete the remaining onboarding polish while preserving a safe, incremental implementation workflow.
 
 ---
 
 ## Current Focus
 
-Design the onboarding narrative and first-time user experience before making UI changes.
+Polish the onboarding and first-time user experience one small improvement at a time.
 
 ---
 
@@ -37,6 +37,9 @@ Design the onboarding narrative and first-time user experience before making UI 
 - Help Center polish completed.
 - Profile experience polish completed.
 - FreightIQ Operating System v1 completed.
+- Onboarding messaging refined.
+- Authentication screen significantly polished.
+- Profile setup screen significantly polished.
 
 ---
 
@@ -45,19 +48,22 @@ Design the onboarding narrative and first-time user experience before making UI 
 - Every onboarding screen should answer exactly one question.
 - Design first. Implement once.
 - The Operating System should reduce friction rather than create it.
+- During Build Mode, execute the Operating System exactly as written. Do not redesign features or workflows during implementation.
 
 ---
 
 ## Next Safe Step
 
-Finalize the onboarding messaging before implementing onboarding UI changes.
+Complete the remaining onboarding polish:
+
+- Refine the Tractor Type selector.
+- Introduce new users to the Help Center after Profile setup.
 
 ---
 
 ## Parking Lot
 
 - Future visual redesign of the onboarding screens using the FreightIQ brand style.
-- Welcome experience after Profile setup.
 
 ---
 

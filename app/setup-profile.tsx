@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, TextInput } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../utils/supabase";
 
@@ -10,6 +10,7 @@ const PROFILE_SETUP_COMPLETE_KEY = "freightiq:profile-setup-complete:v1";
 export default function SetupProfileScreen() {
   const [name, setName] = useState("");
   const [tractorType, setTractorType] = useState("");
+  const [tractorExpanded, setTractorExpanded] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -72,43 +73,70 @@ export default function SetupProfileScreen() {
       <Text style={styles.eyebrow}>One last step</Text>
       <Text style={styles.title}>Set up your driver profile</Text>
       <Text style={styles.body}>
-        This helps other drivers understand what kind of truck your intel is based on.
+        Your driver profile gives context to the intel you share so other drivers can make better
+        decisions.
       </Text>
 
       <Text style={styles.label}>Driver Name</Text>
       <TextInput value={name} onChangeText={setName} placeholder="Your name" style={styles.input} />
 
       <Text style={styles.label}>Tractor Type</Text>
-
-      <Pressable
-        style={[styles.option, tractorType === "Single Axle Day Cab" && styles.optionActive]}
-        onPress={() => setTractorType("Single Axle Day Cab")}
-      >
-        <Text>Single Axle Day Cab</Text>
-      </Pressable>
-
-      <Pressable
-        style={[styles.option, tractorType === "Tandem Axle Day Cab" && styles.optionActive]}
-        onPress={() => setTractorType("Tandem Axle Day Cab")}
-      >
-        <Text>Tandem Axle Day Cab</Text>
-      </Pressable>
-
-      <Pressable
-        style={[styles.option, tractorType === "Tandem Axle Sleeper" && styles.optionActive]}
-        onPress={() => setTractorType("Tandem Axle Sleeper")}
-      >
-        <Text>Tandem Axle Sleeper</Text>
-      </Pressable>
+      <View style={styles.selectorGroup}>
+        <Pressable
+          style={[styles.option, tractorExpanded && styles.selectorTopOpen]}
+          onPress={() => setTractorExpanded(!tractorExpanded)}
+        >
+          <View style={styles.selectorRow}>
+            <Text style={tractorType ? styles.selectedTractorValue : styles.selectorPlaceholder}>
+              {tractorType || "Select tractor type"}
+            </Text>
+            <Text style={styles.chevron}>{tractorExpanded ? "▲" : "▼"}</Text>
+          </View>
+        </Pressable>
+        {tractorExpanded &&
+          (() => {
+            // List of all options except the currently selected one
+            const options = [
+              "Single Axle Day Cab",
+              "Tandem Axle Day Cab",
+              "Tandem Axle Sleeper",
+            ].filter((option) => option !== tractorType);
+            return (
+              <>
+                {options.map((option, idx) => (
+                  <Pressable
+                    key={option}
+                    style={[
+                      styles.option,
+                      styles.selectorOption,
+                      idx === 0 && styles.selectorOptionFirst,
+                      idx === options.length - 1 && styles.selectorOptionLast,
+                      tractorType === option && styles.optionActive,
+                    ]}
+                    onPress={() => {
+                      setTractorType(option);
+                      setTractorExpanded(false);
+                    }}
+                  >
+                    <Text>{option}</Text>
+                  </Pressable>
+                ))}
+              </>
+            );
+          })()}
+      </View>
 
       <Pressable style={styles.button} onPress={saveProfile}>
-        <Text style={styles.buttonText}>Save and Continue</Text>
+        <Text style={styles.buttonText}>Continue</Text>
       </Pressable>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  selectorGroup: {
+    marginTop: 8,
+  },
   container: {
     flex: 1,
     padding: 20,
@@ -139,7 +167,7 @@ const styles = StyleSheet.create({
 
   label: {
     fontWeight: "600",
-    marginTop: 15,
+    marginTop: 24,
   },
 
   input: {
@@ -174,5 +202,48 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "white",
     fontWeight: "700",
+  },
+
+  selectorRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingRight: 4,
+  },
+
+  selectorPlaceholder: {
+    color: "#555",
+  },
+
+  selectedTractorValue: {
+    color: "black",
+    fontWeight: "500",
+  },
+
+  chevron: {
+    color: "#9ca3af",
+    fontSize: 18,
+  },
+
+  selectorTopOpen: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    borderBottomWidth: 0,
+    marginBottom: -1,
+  },
+
+  selectorOption: {
+    marginTop: 0,
+    borderTopWidth: 0,
+    borderRadius: 0,
+  },
+
+  selectorOptionFirst: {
+    borderTopWidth: 1,
+  },
+
+  selectorOptionLast: {
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
   },
 });
