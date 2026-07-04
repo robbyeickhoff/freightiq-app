@@ -40,25 +40,27 @@ export default function OnboardingScreen() {
       <View style={styles.card}>
         {step === 0 ? (
           <>
-            <Text style={styles.eyebrow}>Welcome to FreightIQ</Text>
+            <Text style={styles.eyebrow}>What is FreightIQ?</Text>
 
-            <Text style={styles.title}>Clean maps + real driver intel</Text>
+            <Text style={styles.title}>Deliver with confidence.</Text>
 
-            <Text style={styles.subtle}>Built by drivers, for drivers</Text>
+            <Text style={styles.subtle}>Real driver intel + clean maps</Text>
 
             <Text style={styles.body}>
-              Know where to go, how to get in, and what to expect before you arrive.
+              FreightIQ combines real driver intel with clean maps to help you know where to go, how
+              to get in, and what to expect before you arrive.
             </Text>
           </>
         ) : (
           <>
-            <Text style={styles.eyebrow}>Driver Intel</Text>
+            <Text style={styles.eyebrow}>Why should I trust it?</Text>
 
             <Text style={styles.title}>Real driver intel</Text>
 
             <Text style={styles.body}>
-              See how other drivers actually delivered — approach, backing, tight spots, and what to
-              expect when you get there.
+              Every stop is built from real delivery experience—not assumptions. Drivers who have
+              already made the delivery share what they learned to help the next driver arrive
+              prepared.
             </Text>
           </>
         )}

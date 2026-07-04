@@ -11,6 +11,7 @@ import {
   Text,
   TextInput,
   TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import { supabase } from "../utils/supabase";
 
@@ -156,19 +157,27 @@ export default function AuthScreen() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: "white" }}
+        style={styles.screen}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>FreightIQ</Text>
-
           {!showCodeStep && (
-            <>
-              <Text style={styles.label}>Email</Text>
+            <View style={styles.card}>
+              <>
+                <Text style={styles.label}>WHY DO I NEED AN ACCOUNT?</Text>
+                <Text style={styles.title}>Don't lose what you've learned.</Text>
+                <Text style={styles.body}>
+                  Your account keeps your intel connected to you, so you can update it over time and
+                  help the next driver—including future you.
+                  {"\n\n"}
+                  Enter your email and we'll send you a one-time login code.
+                </Text>
+              </>
               <TextInput
                 value={email}
                 onChangeText={setEmail}
                 placeholder="Email"
+                placeholderTextColor="#8b949e"
                 autoCapitalize="none"
                 keyboardType="email-address"
                 style={styles.input}
@@ -176,22 +185,20 @@ export default function AuthScreen() {
               />
 
               <Pressable style={styles.button} onPress={sendCode} disabled={loading}>
-                <Text style={styles.buttonText}>{loading ? "Working..." : "Send Login Code"}</Text>
+                <Text style={styles.buttonText}>{loading ? "Working..." : "Get Login Code"}</Text>
               </Pressable>
-
-              <Pressable style={styles.backBtn} onPress={() => router.replace("/(tabs)")}>
-                <Text style={styles.backBtnText}>Back to Map</Text>
-              </Pressable>
-            </>
+            </View>
           )}
 
           {showCodeStep && (
             <>
-              <Text style={styles.label}>Email code</Text>
+              <Text style={styles.title}>Almost there.</Text>
+
+              <Text style={styles.body}>Enter the login code we just sent you.</Text>
               <TextInput
                 value={code}
                 onChangeText={setCode}
-                placeholder="Enter code from email"
+                placeholder="Enter login code"
                 keyboardType="number-pad"
                 style={styles.input}
                 returnKeyType="done"
@@ -209,38 +216,57 @@ export default function AuthScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#0b0f14",
+  },
   container: {
     flexGrow: 1,
-    padding: 20,
-    gap: 12,
     justifyContent: "center",
-    backgroundColor: "white",
+    paddingHorizontal: 20,
+    backgroundColor: "#0b0f14",
+  },
+  card: {
+    backgroundColor: "#151b22",
+    borderRadius: 16,
+    padding: 24,
+    gap: 16,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "900",
-    marginBottom: 16,
+    color: "#ffffff",
+    fontSize: 28,
+    fontWeight: "800",
+    lineHeight: 34,
+    marginBottom: 0,
   },
   label: {
-    fontWeight: "800",
+    color: "#7aa2ff",
+    fontSize: 14,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#2d3742",
     borderRadius: 12,
     padding: 12,
-    backgroundColor: "white",
+    backgroundColor: "#0b0f14",
     fontSize: 16,
+    color: "#e6edf3",
+    marginTop: 12,
   },
   button: {
-    backgroundColor: "black",
-    padding: 14,
+    backgroundColor: "#3b82f6",
     borderRadius: 12,
+    paddingVertical: 14,
     alignItems: "center",
+    marginTop: 12,
   },
   buttonText: {
-    color: "white",
-    fontWeight: "800",
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "700",
   },
   statusCard: {
     marginTop: 8,
@@ -258,11 +284,21 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   backBtn: {
+    borderWidth: 1,
+    borderColor: "#2d3742",
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: "center",
-    paddingVertical: 10,
   },
   backBtnText: {
-    color: "#333",
-    fontWeight: "700",
+    color: "#e6edf3",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  body: {
+    color: "#c9d1d9",
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 12,
   },
 });
