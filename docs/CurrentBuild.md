@@ -22,42 +22,43 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-Complete the remaining onboarding polish while preserving a safe, incremental implementation workflow.
+Complete the remaining profile experience polish while preserving a safe, incremental implementation workflow.
 
 ---
 
 ## Current Focus
 
-Polish the onboarding and first-time user experience one small improvement at a time.
+Polish the Profile experience and overall navigation one small improvement at a time.
 
 ---
 
 ## Completed This Build
 
-- Help Center polish completed.
-- Profile experience polish completed.
-- FreightIQ Operating System v1 completed.
-- Onboarding messaging refined.
-- Authentication screen significantly polished.
-- Profile setup screen significantly polished.
+- Welcome screen integrated into the onboarding flow.
+- Profile tab converted to a nested navigation structure.
+- Help Center migrated into the Profile navigation stack.
+- Help articles migrated into the Profile navigation stack using lightweight route aliases.
+- Persistent bottom navigation now remains available throughout the entire Help experience.
+- Temporary development-only onboarding bypasses removed after verification.
 
 ---
 
 ## Key Discoveries
 
-- Every onboarding screen should answer exactly one question.
-- Design first. Implement once.
-- The Operating System should reduce friction rather than create it.
-- During Build Mode, execute the Operating System exactly as written. Do not redesign features or workflows during implementation.
+- Profile should become the home for Help, Settings, and other account-related experiences.
+- Nested navigation can be introduced safely through small, independently verifiable architectural changes.
+- Reusing existing screens through lightweight route aliases preserves a single source of truth and reduces long-term maintenance.
+- Real-device testing continues to uncover product behavior that cannot be identified through code inspection alone.
 
 ---
 
 ## Next Safe Step
 
-Complete the remaining onboarding polish:
+Complete the remaining Profile experience polish:
 
-- Refine the Tractor Type selector.
-- Introduce new users to the Help Center after Profile setup.
+- Update the Profile screen to match the new Setup Profile experience while reusing existing UI where appropriate.
+- Preserve the entered username when returning from the Tractor Type selector before saving.
+- Decide whether selecting the Profile tab should always return to the Profile home or restore the previous Help article.
 
 ---
 
@@ -69,6 +70,7 @@ Complete the remaining onboarding polish:
 
 ## Exit Criteria
 
-- Onboarding messaging approved.
-- Onboarding UI updated to match the approved messaging.
-- First-time user flow feels clear, intentional, and professional from onboarding through Profile setup into the map.
+- Profile screen matches the new Setup Profile experience.
+- Help Center and Help articles feel fully integrated into the Profile experience.
+- Profile navigation behavior is intentional and consistent throughout the app.
+- The Profile experience feels simple, intentional, and professional.
