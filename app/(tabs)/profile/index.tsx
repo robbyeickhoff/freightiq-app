@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { supabase } from "../../utils/supabase";
+import { supabase } from "../../../utils/supabase";
 
 export default function ProfileScreen() {
   const [name, setName] = useState("");
@@ -10,6 +10,7 @@ export default function ProfileScreen() {
   const [initialName, setInitialName] = useState("");
   const [initialTractorType, setInitialTractorType] = useState("");
   const router = useRouter();
+
   useEffect(() => {
     async function loadProfile() {
       const { data } = await supabase.auth.getSession();
@@ -41,7 +42,7 @@ export default function ProfileScreen() {
     }
 
     loadProfile();
-  }, []);
+  }, [router]);
 
   const hasChanges = name !== initialName || tractorType !== initialTractorType;
 
