@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -10,10 +10,15 @@ const PROFILE_SETUP_COMPLETE_KEY = "freightiq:profile-setup-complete:v1";
 export default function SetupProfileScreen() {
   const [name, setName] = useState("");
   const [tractorType, setTractorType] = useState("");
-  const [tractorExpanded, setTractorExpanded] = useState(false);
   const router = useRouter();
+  const params = useLocalSearchParams<{ tractorType?: string }>();
 
   useEffect(() => {
+    if (typeof params.tractorType === "string" && params.tractorType) {
+      setTractorType(params.tractorType);
+      return;
+    }
+
     async function loadProfile() {
       const { data } = await supabase.auth.getSession();
 
@@ -42,7 +47,7 @@ export default function SetupProfileScreen() {
     }
 
     void loadProfile();
-  }, [router]);
+  }, [params.tractorType, router]);
 
   async function saveProfile() {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -83,47 +88,16 @@ export default function SetupProfileScreen() {
       <Text style={styles.label}>Tractor Type</Text>
       <View style={styles.selectorGroup}>
         <Pressable
-          style={[styles.option, tractorExpanded && styles.selectorTopOpen]}
-          onPress={() => setTractorExpanded(!tractorExpanded)}
+          style={styles.option}
+          onPress={() => router.push({ pathname: "/tractor-type", params: { tractorType } })}
         >
           <View style={styles.selectorRow}>
             <Text style={tractorType ? styles.selectedTractorValue : styles.selectorPlaceholder}>
               {tractorType || "Select tractor type"}
             </Text>
-            <Text style={styles.chevron}>{tractorExpanded ? "▲" : "▼"}</Text>
+            <Text style={styles.chevron}>›</Text>
           </View>
         </Pressable>
-        {tractorExpanded &&
-          (() => {
-            // List of all options except the currently selected one
-            const options = [
-              "Single Axle Day Cab",
-              "Tandem Axle Day Cab",
-              "Tandem Axle Sleeper",
-            ].filter((option) => option !== tractorType);
-            return (
-              <>
-                {options.map((option, idx) => (
-                  <Pressable
-                    key={option}
-                    style={[
-                      styles.option,
-                      styles.selectorOption,
-                      idx === 0 && styles.selectorOptionFirst,
-                      idx === options.length - 1 && styles.selectorOptionLast,
-                      tractorType === option && styles.optionActive,
-                    ]}
-                    onPress={() => {
-                      setTractorType(option);
-                      setTractorExpanded(false);
-                    }}
-                  >
-                    <Text>{option}</Text>
-                  </Pressable>
-                ))}
-              </>
-            );
-          })()}
       </View>
 
       <Pressable style={styles.button} onPress={saveProfile}>
@@ -186,11 +160,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  optionActive: {
-    borderColor: "black",
-    backgroundColor: "#eee",
-  },
-
   button: {
     backgroundColor: "black",
     padding: 14,
@@ -222,28 +191,6 @@ const styles = StyleSheet.create({
 
   chevron: {
     color: "#9ca3af",
-    fontSize: 18,
-  },
-
-  selectorTopOpen: {
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    borderBottomWidth: 0,
-    marginBottom: -1,
-  },
-
-  selectorOption: {
-    marginTop: 0,
-    borderTopWidth: 0,
-    borderRadius: 0,
-  },
-
-  selectorOptionFirst: {
-    borderTopWidth: 1,
-  },
-
-  selectorOptionLast: {
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
+    fontSize: 24,
   },
 });
