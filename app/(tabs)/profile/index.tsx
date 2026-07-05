@@ -130,7 +130,7 @@ export default function ProfileScreen() {
         </Text>
       </Pressable>
 
-      <Pressable style={styles.logoutButton} onPress={() => router.push("/help")}>
+      <Pressable style={styles.logoutButton} onPress={() => router.push("/(tabs)/profile/help")}>
         <Text style={styles.logoutButtonText}>Help Center</Text>
       </Pressable>
 
