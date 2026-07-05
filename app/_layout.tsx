@@ -64,6 +64,12 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="setup-profile" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="tractor-type"
+          options={{
+            title: "Tractor Type",
+          }}
+        />
         <Stack.Screen name="auth" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: "modal", title: "Modal" }} />

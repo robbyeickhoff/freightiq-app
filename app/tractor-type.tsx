@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -25,7 +25,12 @@ export default function TractorTypeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <Text style={styles.title}>Choose Tractor Type</Text>
+      <Stack.Screen
+        options={{
+          title: "Tractor Type",
+          headerBackButtonDisplayMode: "minimal",
+        }}
+      />
 
       <View style={styles.list}>
         {TRACTOR_TYPES.map((option, index) => {
@@ -52,15 +57,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 8,
     backgroundColor: "white",
-  },
-
-  title: {
-    fontSize: 26,
-    fontWeight: "800",
-    marginBottom: 18,
-    color: "#111",
   },
 
   list: {

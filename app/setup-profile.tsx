@@ -70,7 +70,7 @@ export default function SetupProfileScreen() {
     }
 
     await AsyncStorage.setItem(PROFILE_SETUP_COMPLETE_KEY, "true");
-    router.replace("/(tabs)");
+    router.replace("/welcome");
   }
 
   return (
