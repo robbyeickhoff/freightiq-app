@@ -770,7 +770,7 @@ export default function StopScreen() {
       Alert.alert("Saved", myReportId ? "Report updated." : "Report posted.");
       await loadReports();
       router.replace({
-        pathname: "/(tabs)",
+        pathname: "/(tabs)/(map)",
         params: { refreshAt: String(Date.now()) },
       });
     } finally {
@@ -1227,7 +1227,7 @@ export default function StopScreen() {
           text: "OK",
           onPress: () =>
             router.replace({
-              pathname: "/(tabs)",
+              pathname: "/(tabs)/(map)",
               params: {
                 deletedStopId: stopId,
                 refreshAt: String(Date.now()),
@@ -1731,7 +1731,7 @@ export default function StopScreen() {
                       style={[styles.secondaryBtn, { flex: 1 }]}
                       onPress={() =>
                         router.push({
-                          pathname: "/(tabs)",
+                          pathname: "/(tabs)/(map)",
                           params: {
                             focusStopId: stopId,
                             showEntrance: "1",
@@ -1864,7 +1864,7 @@ export default function StopScreen() {
                                 setMergeMode(true);
 
                                 router.push({
-                                  pathname: "/(tabs)",
+                                  pathname: "/(tabs)/(map)",
                                   params: {
                                     mergeMode: "1",
                                     mergeSourceStopId: stopId,
@@ -1902,7 +1902,7 @@ export default function StopScreen() {
                   setShowManageStop(false);
                   setReportsExpanded(false);
                   router.replace({
-                    pathname: "/(tabs)",
+                    pathname: "/(tabs)/(map)",
                     params:
                       mergeMode && mergeSourceStopId
                         ? {

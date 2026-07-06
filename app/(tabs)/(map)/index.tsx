@@ -22,9 +22,9 @@ import {
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import Supercluster from "supercluster";
-import { MapButton } from "../../components/MapButton";
-import { MapIcon } from "../../components/MapIcon";
-import { supabase } from "../../utils/supabase";
+import { MapButton } from "../../../components/MapButton";
+import { MapIcon } from "../../../components/MapIcon";
+import { supabase } from "../../../utils/supabase";
 
 type Pin = {
   id: string;

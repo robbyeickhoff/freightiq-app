@@ -5,7 +5,7 @@ export default function WelcomeScreen() {
   const router = useRouter();
 
   function handleExploreMap() {
-    router.replace("/(tabs)");
+    router.replace("/(tabs)/(map)");
   }
 
   function handleHelpCenter() {
@@ -31,7 +31,7 @@ export default function WelcomeScreen() {
 
             <View style={styles.buttonStack}>
               <Pressable style={styles.primaryButton} onPress={handleExploreMap}>
-                <Text style={styles.primaryButtonText}>Explore the Map</Text>
+                <Text style={styles.primaryButtonText}>Use FreightIQ</Text>
               </Pressable>
 
               <Pressable style={styles.secondaryButton} onPress={handleHelpCenter}>

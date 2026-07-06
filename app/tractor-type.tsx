@@ -11,7 +11,9 @@ const TRACTOR_TYPES = [
 
 export default function TractorTypeScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ tractorType?: string }>();
+  const params = useLocalSearchParams<{ tractorType?: string; returnTo?: string; name?: string }>();
+  const returnTo: "/setup-profile" | "/(tabs)/profile" =
+    params.returnTo === "/(tabs)/profile" ? "/(tabs)/profile" : "/setup-profile";
   const [selectedType, setSelectedType] = useState<string>(
     typeof params.tractorType === "string" && params.tractorType
       ? params.tractorType
@@ -20,7 +22,7 @@ export default function TractorTypeScreen() {
 
   function handleSelect(option: string) {
     setSelectedType(option);
-    router.replace({ pathname: "/setup-profile", params: { tractorType: option } });
+    router.navigate({ pathname: returnTo, params: { name: params.name, tractorType: option } });
   }
 
   return (

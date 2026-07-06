@@ -1,8 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import ProfileForm from "../components/ProfileForm";
 import { supabase } from "../utils/supabase";
 
 const PROFILE_SETUP_COMPLETE_KEY = "freightiq:profile-setup-complete:v1";
@@ -11,14 +12,15 @@ export default function SetupProfileScreen() {
   const [name, setName] = useState("");
   const [tractorType, setTractorType] = useState("");
   const router = useRouter();
-  const params = useLocalSearchParams<{ tractorType?: string }>();
+  const params = useLocalSearchParams<{ tractorType?: string; name?: string }>();
 
   useEffect(() => {
     if (typeof params.tractorType === "string" && params.tractorType) {
       setTractorType(params.tractorType);
-      return;
     }
+  }, [params.tractorType]);
 
+  useEffect(() => {
     async function loadProfile() {
       const { data } = await supabase.auth.getSession();
 
@@ -41,13 +43,28 @@ export default function SetupProfileScreen() {
       }
 
       if (profile) {
-        setName(profile.username ?? "");
-        setTractorType(profile.tractor_type ?? "");
+        setName(
+          typeof params.name === "string" && params.name ? params.name : (profile.username ?? ""),
+        );
+        setTractorType(
+          typeof params.tractorType === "string" && params.tractorType
+            ? params.tractorType
+            : (profile.tractor_type ?? ""),
+        );
+        return;
+      }
+
+      if (typeof params.name === "string" && params.name) {
+        setName(params.name);
+      }
+
+      if (typeof params.tractorType === "string" && params.tractorType) {
+        setTractorType(params.tractorType);
       }
     }
 
     void loadProfile();
-  }, [params.tractorType, router]);
+  }, []);
 
   async function saveProfile() {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -82,23 +99,17 @@ export default function SetupProfileScreen() {
         decisions.
       </Text>
 
-      <Text style={styles.label}>Driver Name</Text>
-      <TextInput value={name} onChangeText={setName} placeholder="Your name" style={styles.input} />
-
-      <Text style={styles.label}>Tractor Type</Text>
-      <View style={styles.selectorGroup}>
-        <Pressable
-          style={styles.option}
-          onPress={() => router.push({ pathname: "/tractor-type", params: { tractorType } })}
-        >
-          <View style={styles.selectorRow}>
-            <Text style={tractorType ? styles.selectedTractorValue : styles.selectorPlaceholder}>
-              {tractorType || "Select tractor type"}
-            </Text>
-            <Text style={styles.chevron}>›</Text>
-          </View>
-        </Pressable>
-      </View>
+      <ProfileForm
+        name={name}
+        onChangeName={setName}
+        tractorType={tractorType}
+        onPressSelectTractorType={() =>
+          router.push({
+            pathname: "/tractor-type",
+            params: { name, tractorType, returnTo: "/setup-profile" },
+          })
+        }
+      />
 
       <Pressable style={styles.button} onPress={saveProfile}>
         <Text style={styles.buttonText}>Continue</Text>
@@ -108,9 +119,6 @@ export default function SetupProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  selectorGroup: {
-    marginTop: 8,
-  },
   container: {
     flex: 1,
     padding: 20,
@@ -139,27 +147,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  label: {
-    fontWeight: "600",
-    marginTop: 24,
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 6,
-  },
-
-  option: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 8,
-  },
-
   button: {
     backgroundColor: "black",
     padding: 14,
@@ -171,26 +158,5 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "white",
     fontWeight: "700",
-  },
-
-  selectorRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingRight: 4,
-  },
-
-  selectorPlaceholder: {
-    color: "#555",
-  },
-
-  selectedTractorValue: {
-    color: "black",
-    fontWeight: "500",
-  },
-
-  chevron: {
-    color: "#9ca3af",
-    fontSize: 24,
   },
 });

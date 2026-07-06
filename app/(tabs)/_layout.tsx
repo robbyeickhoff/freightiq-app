@@ -18,9 +18,10 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="(map)"
         options={{
           title: "Map",
+          popToTopOnBlur: true,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
         }}
       />
@@ -29,6 +30,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Profile",
+          popToTopOnBlur: true,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
         }}
       />

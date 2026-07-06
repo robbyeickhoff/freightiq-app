@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
-import { Redirect, Stack } from "expo-router";
+import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import "react-native-reanimated";
@@ -16,9 +16,7 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const [ready, setReady] = useState(false);
-  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
-  const [hasCompletedProfileSetup, setHasCompletedProfileSetup] = useState(false);
+  const [initialRouteName, setInitialRouteName] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -30,11 +28,19 @@ export default function RootLayout() {
 
         if (!mounted) return;
 
-        setHasSeenOnboarding(onboardingValue === "true");
-        setHasCompletedProfileSetup(profileValue === "true");
-      } finally {
+        const hasSeenOnboarding = onboardingValue === "true";
+        const hasCompletedProfileSetup = profileValue === "true";
+
+        setInitialRouteName(
+          !hasSeenOnboarding
+            ? "onboarding"
+            : !hasCompletedProfileSetup
+              ? "setup-profile"
+              : "(tabs)",
+        );
+      } catch {
         if (mounted) {
-          setReady(true);
+          setInitialRouteName("onboarding");
         }
       }
     }
@@ -46,22 +52,13 @@ export default function RootLayout() {
     };
   }, []);
 
-  if (!ready) {
+  if (!initialRouteName) {
     return null;
   }
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Redirect
-        href={
-          !hasSeenOnboarding
-            ? "/onboarding"
-            : !hasCompletedProfileSetup
-              ? "/setup-profile"
-              : "/(tabs)"
-        }
-      />
-      <Stack>
+      <Stack initialRouteName={initialRouteName}>
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="setup-profile" options={{ headerShown: false }} />
         <Stack.Screen

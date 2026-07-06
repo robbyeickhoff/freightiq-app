@@ -1,7 +1,8 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, TextInput } from "react-native";
+import { Alert, Pressable, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import ProfileForm from "../../../components/ProfileForm";
 import { supabase } from "../../../utils/supabase";
 
 export default function ProfileScreen() {
@@ -9,10 +10,23 @@ export default function ProfileScreen() {
   const [tractorType, setTractorType] = useState("");
   const [initialName, setInitialName] = useState("");
   const [initialTractorType, setInitialTractorType] = useState("");
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [hasExistingProfile, setHasExistingProfile] = useState(false);
   const router = useRouter();
+  const params = useLocalSearchParams<{ tractorType?: string }>();
+  const routeTractorType =
+    typeof params.tractorType === "string" && params.tractorType ? params.tractorType : undefined;
+  const hasRouteTractorType = !!routeTractorType;
+
+  useEffect(() => {
+    if (routeTractorType) {
+      setTractorType(routeTractorType);
+    }
+  }, [routeTractorType]);
 
   useEffect(() => {
     async function loadProfile() {
+      setIsInitialized(false);
       const { data } = await supabase.auth.getSession();
 
       if (!data.session) {
@@ -34,15 +48,22 @@ export default function ProfileScreen() {
       }
 
       if (profile) {
+        setHasExistingProfile(true);
         setName(profile.username ?? "");
-        setTractorType(profile.tractor_type ?? "");
+        if (!hasRouteTractorType) {
+          setTractorType(profile.tractor_type ?? "");
+        }
         setInitialName(profile.username ?? "");
         setInitialTractorType(profile.tractor_type ?? "");
+      } else {
+        setHasExistingProfile(false);
       }
+
+      setIsInitialized(true);
     }
 
     loadProfile();
-  }, [router]);
+  }, [hasRouteTractorType, router]);
 
   const hasChanges = name !== initialName || tractorType !== initialTractorType;
 
@@ -68,11 +89,11 @@ export default function ProfileScreen() {
 
     setInitialName(name);
     setInitialTractorType(tractorType);
+    setHasExistingProfile(true);
 
     Alert.alert("Saved", "Profile updated.", [
       {
         text: "OK",
-        onPress: () => router.replace("/(tabs)"),
       },
     ]);
   }
@@ -94,41 +115,30 @@ export default function ProfileScreen() {
       <Text style={styles.title}>Driver Profile</Text>
       <Text style={styles.body}>Keep your driver name and equipment information up to date.</Text>
 
-      <Text style={styles.label}>Driver Name</Text>
-      <TextInput value={name} onChangeText={setName} placeholder="Your name" style={styles.input} />
+      <ProfileForm
+        name={name}
+        onChangeName={setName}
+        tractorType={tractorType}
+        onPressSelectTractorType={() =>
+          router.push({
+            pathname: "/tractor-type",
+            params: { tractorType, returnTo: "/(tabs)/profile" },
+          })
+        }
+        labelMarginTop={15}
+      />
 
-      <Text style={styles.label}>Tractor Type</Text>
-
-      <Pressable
-        style={[styles.option, tractorType === "Single Axle Day Cab" && styles.optionActive]}
-        onPress={() => setTractorType("Single Axle Day Cab")}
-      >
-        <Text>Single Axle Day Cab</Text>
-      </Pressable>
-
-      <Pressable
-        style={[styles.option, tractorType === "Tandem Axle Day Cab" && styles.optionActive]}
-        onPress={() => setTractorType("Tandem Axle Day Cab")}
-      >
-        <Text>Tandem Axle Day Cab</Text>
-      </Pressable>
-
-      <Pressable
-        style={[styles.option, tractorType === "Tandem Axle Sleeper" && styles.optionActive]}
-        onPress={() => setTractorType("Tandem Axle Sleeper")}
-      >
-        <Text>Tandem Axle Sleeper</Text>
-      </Pressable>
-
-      <Pressable
-        style={[styles.button, !hasChanges && styles.buttonDisabled]}
-        onPress={saveProfile}
-        disabled={!hasChanges}
-      >
-        <Text style={[styles.buttonText, !hasChanges && styles.buttonTextDisabled]}>
-          {initialName || initialTractorType ? "Update Profile" : "Save Profile"}
-        </Text>
-      </Pressable>
+      {isInitialized ? (
+        <Pressable
+          style={[styles.button, !hasChanges && styles.buttonDisabled]}
+          onPress={saveProfile}
+          disabled={!hasChanges}
+        >
+          <Text style={[styles.buttonText, !hasChanges && styles.buttonTextDisabled]}>
+            {hasExistingProfile ? "Update Profile" : "Save Profile"}
+          </Text>
+        </Pressable>
+      ) : null}
 
       <Pressable style={styles.logoutButton} onPress={() => router.push("/(tabs)/profile/help")}>
         <Text style={styles.logoutButtonText}>Help Center</Text>
@@ -158,32 +168,6 @@ const styles = StyleSheet.create({
     color: "#666",
     lineHeight: 22,
     marginBottom: 20,
-  },
-
-  label: {
-    fontWeight: "600",
-    marginTop: 15,
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 6,
-  },
-
-  option: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 8,
-  },
-
-  optionActive: {
-    borderColor: "black",
-    backgroundColor: "#eee",
   },
 
   button: {
