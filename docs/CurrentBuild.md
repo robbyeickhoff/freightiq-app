@@ -22,43 +22,49 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-Complete the remaining profile experience polish while preserving a safe, incremental implementation workflow.
+Build upon the completed Help Center and navigation architecture while continuing safe, incremental improvements to the FreightIQ user experience.
 
 ---
 
 ## Current Focus
 
-Polish the Profile experience and overall navigation one small improvement at a time.
+Continue refining the user experience through small, independently verifiable improvements while preserving the new Help Center and navigation architecture.
 
 ---
 
 ## Completed This Build
 
-- Welcome screen integrated into the onboarding flow.
-- Profile tab converted to a nested navigation structure.
-- Help Center migrated into the Profile navigation stack.
-- Help articles migrated into the Profile navigation stack using lightweight route aliases.
-- Persistent bottom navigation now remains available throughout the entire Help experience.
-- Temporary development-only onboarding bypasses removed after verification.
+- Welcome screen fully integrated into the onboarding flow.
+- Help Center architecture refactored to support context-specific navigation while preserving a shared implementation.
+- Help navigation separated into Welcome, Profile, and Map contexts through reusable navigation handlers.
+- Profile Help navigation now correctly returns to the Profile screen after navigating through Help articles.
+- Welcome Help now operates as a standalone onboarding experience using the root Help flow instead of the authenticated Profile flow.
+- Bottom tabs intentionally remain available only after entering FreightIQ.
+- Welcome call-to-action updated from "Explore Map" to "Use FreightIQ" to better communicate the transition into the application.
+- Navigation behavior verified through real-device testing on iPhone.
 
 ---
 
 ## Key Discoveries
 
-- Profile should become the home for Help, Settings, and other account-related experiences.
-- Nested navigation can be introduced safely through small, independently verifiable architectural changes.
-- Reusing existing screens through lightweight route aliases preserves a single source of truth and reduces long-term maintenance.
-- Real-device testing continues to uncover product behavior that cannot be identified through code inspection alone.
+- Navigation behavior should be proven through small, isolated experiments before changing production architecture.
+- Shared UI components should not hardcode navigation when the parent already knows the correct navigation context.
+- Welcome is an onboarding experience, not part of the authenticated application. The application begins when the user chooses "Use FreightIQ."
+- Real-device testing continues to uncover product improvements that are not obvious through code inspection alone.
+- The simplest user experience often comes from removing unnecessary navigation choices rather than adding more navigation logic.
 
 ---
 
 ## Next Safe Step
 
-Complete the remaining Profile experience polish:
+Continue improving the FreightIQ user experience through one safe, verifiable change at a time.
 
-- Update the Profile screen to match the new Setup Profile experience while reusing existing UI where appropriate.
-- Preserve the entered username when returning from the Tractor Type selector before saving.
-- Decide whether selecting the Profile tab should always return to the Profile home or restore the previous Help article.
+Current priorities:
+
+- Complete the remaining Help Center articles and content polish.
+- Continue real-world testing to identify navigation and usability improvements.
+- Reuse the established Help navigation architecture for future shared experiences where appropriate.
+- Continue Profile experience refinement using the new shared ProfileForm foundation.
 
 ---
 
@@ -70,7 +76,7 @@ Complete the remaining Profile experience polish:
 
 ## Exit Criteria
 
-- Profile screen matches the new Setup Profile experience.
-- Help Center and Help articles feel fully integrated into the Profile experience.
-- Profile navigation behavior is intentional and consistent throughout the app.
-- The Profile experience feels simple, intentional, and professional.
+- The Help Center feels intentional and consistent across Welcome, Profile, and Map experiences.
+- The Profile experience continues to evolve using the shared ProfileForm foundation.
+- Remaining Help Center content is complete and polished.
+- Real-world testing confirms the user experience feels simple, intentional, and professional.
