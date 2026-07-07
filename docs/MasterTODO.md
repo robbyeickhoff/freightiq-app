@@ -18,7 +18,7 @@
 
 ---
 
-**Last Updated:** 2026-07-01
+Last Updated: 2026-07-06
 
 ---
 
@@ -61,9 +61,7 @@ Continue improving onboarding, tester communication, professional email infrastr
 - [ ] Continue gathering tester feedback.
 - [ ] Observe real-world driver workflows.
 - [ ] Identify friction points during normal use.
-- [ ] Validate the Preview Card redesign.
-- [ ] Validate the Map redesign.
-- [ ] Validate the Intel Page redesign.
+- [ ] Validate recent workflow improvements.
 - [ ] Continue collecting installation and onboarding feedback.
 - [ ] Verify Help Center effectiveness with new users.
 - [ ] Confirm onboarding successfully communicates FreightIQ's value proposition.
@@ -127,10 +125,10 @@ Continue refining FreightIQ's in-app documentation experience.
 
 ##### Active Tasks
 
-- [ ] Improve the Help Center page title.
-- [ ] Replace the "(tabs)" navigation title.
 - [ ] Continue polishing Help Center cards.
-- [ ] Evaluate persistent bottom navigation throughout the Help Center.
+- [ ] Refine Help Center copy and educational content.
+- [ ] Validate Help Center effectiveness through real-world testing.
+- [ ] Continue improving overall Help Center user experience.
 
 ---
 
@@ -142,10 +140,24 @@ Create a navigation experience that feels consistent throughout the application.
 
 ##### Active Tasks
 
-- [ ] Evaluate persistent bottom navigation across the app.
-- [ ] Review overall navigation consistency.
+- [ ] Continue reviewing overall navigation consistency.
+- [ ] Validate navigation through continued real-world testing.
 
 ---
+
+### Stop Intel Contribution Workflow
+
+#### Goals
+
+Continue refining how drivers contribute operational knowledge while minimizing effort.
+
+#### Active Tasks
+
+- [ ] Design a Quick Intel workflow.
+- [ ] Validate the proposed field order through real-world testing.
+- [ ] Determine which fields belong in Quick Intel versus Detailed Intel.
+- [ ] Explore progressive disclosure for advanced Intel.
+- [ ] Evaluate photos as optional enrichment.
 
 ### Map
 
@@ -377,7 +389,6 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 
 - [ ] Improve Driver Reports consumption.
 - [ ] Continue refining route knowledge workflows.
-- [ ] Evaluate persistent bottom navigation throughout the app.
 
 ---
 
@@ -504,6 +515,21 @@ Completed
 - ✓ Created reusable MapButton component.
 - ✓ Reduced duplicated navigation UI.
 - ✓ Reinforced one-source-of-truth component philosophy.
+
+---
+
+### Navigation Architecture
+
+Completed
+
+- ✓ Validated Expo Router navigation behavior through an isolated Navigation Lab.
+- ✓ Established shared Help Center navigation architecture using context-specific navigation handlers.
+- ✓ Completed Profile Help navigation workflow.
+- ✓ Separated Welcome Help from the authenticated application experience.
+- ✓ Simplified the Welcome experience by routing Help through the root navigation.
+- ✓ Updated the primary onboarding action from "Explore Map" to "Use FreightIQ."
+- ✓ Verified navigation behavior through real-world iPhone testing.
+- ✓ Documented the application navigation architecture and shared navigation pattern.
 
 ---
 
