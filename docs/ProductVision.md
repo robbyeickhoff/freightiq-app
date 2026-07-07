@@ -19,6 +19,18 @@ The map is the delivery mechanism.
 - Professional
 - Apple-quality polish
 
+## Knowledge Contribution
+
+FreightIQ should make contributing operational knowledge as fast and effortless as possible.
+
+The product should optimize for capturing the highest-value information with the least effort.
+
+No driver is expected to know everything.
+
+Instead, FreightIQ should encourage small, high-value contributions that accumulate into a complete understanding of a stop over time.
+
+Every useful contribution strengthens the shared knowledge of the network.
+
 ## Foundational Philosophy
 
 The Product Vision defines why FreightIQ exists.
