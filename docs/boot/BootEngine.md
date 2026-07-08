@@ -43,6 +43,18 @@ When this phrase is used, ChatGPT initializes the FreightIQ Boot Engine and guid
 
 ---
 
+## Documentation Placement
+
+When documentation work is part of the session, consult `docs/README.md` before creating a new project document.
+
+Prefer updating an existing document whenever appropriate.
+
+Create a new document only when it represents a new category of long-term project knowledge.
+
+Keep project knowledge organized according to the documentation structure defined in `docs/README.md`.
+
+---
+
 ## Operating Modes
 
 ### Product Mode

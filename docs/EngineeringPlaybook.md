@@ -421,6 +421,43 @@ Junior is an implementation assistant—not an autonomous developer.
 
 ---
 
+# CODEX WORKFLOW
+
+Codex is used as an engineering assistant for focused implementation work.
+
+It can investigate, explain, edit, verify, and prepare changes for human review.
+
+Codex does not replace human judgment.
+
+## Standard Workflow
+
+1. Define a focused task with clear scope and guardrails.
+2. For bugs or regressions, investigate before implementing.
+3. Review the investigation before approving implementation.
+4. Have Codex implement the approved change.
+5. Review every changed file in the diff before accepting the work.
+6. Test the implementation in Expo Go, iPhone, and Android when appropriate.
+7. Stage only the intended files.
+8. Commit with a clear, descriptive commit message.
+9. Verify the commit using:
+
+```bash
+git log --oneline -1
+git status
+```
+
+10. Push only after the commit has been verified.
+
+## Guiding Principles
+
+- Investigation before implementation.
+- One focused change per commit.
+- Review every diff.
+- Verify behavior before committing.
+- Git history should clearly tell the story of what changed.
+
+---
+
 # AI PROMPT TEMPLATES
 
 ## Template 1 — Copy File

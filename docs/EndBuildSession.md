@@ -20,10 +20,7 @@ Run when the user is ready to finish the current build session.
 
 1. Review the work completed during the session.
 2. Review and update CurrentBuild.md section by section.
-3. For each section:
-   - Propose the updated content.
-   - Wait for user approval.
-   - Continue to the next section.
+3. Perform Documentation Review.
 4. Review the Git diff.
 5. Stage only the intended files.
 6. Review the staged changes.
@@ -48,6 +45,20 @@ Record completed work, important discoveries, and the Next Safe Step before revi
 Keep the document concise.
 
 Do not turn CurrentBuild.md into historical documentation.
+
+---
+
+## Documentation Review
+
+Review any significant knowledge generated during the session.
+
+Determine whether it belongs in an existing project document before considering the creation of a new one.
+
+Consult `docs/README.md` when deciding where new knowledge should be recorded.
+
+Prefer updating an existing document whenever appropriate.
+
+Create a new document only when it represents a new category of long-term project knowledge.
 
 ---
 
