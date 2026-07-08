@@ -128,6 +128,40 @@ function formatPhoneNumber(phone: string): string {
   return phone;
 }
 
+function formatProgressivePhoneNumber(phone: string): string {
+  const rawDigits = phone.replace(/\D/g, "");
+  const digits =
+    rawDigits.length === 11 && rawDigits.startsWith("1")
+      ? rawDigits.slice(1)
+      : rawDigits.slice(0, 10);
+
+  if (digits.length <= 3) {
+    return digits;
+  }
+
+  if (digits.length <= 6) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  }
+
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
+function formatContactPhoneInput(text: string): string {
+  const match = text.match(/\(?\d(?:[\d().-]|\s(?=\d)){2,}/);
+
+  if (!match) return text;
+
+  const phoneText = match[0];
+  const digitCount = phoneText.replace(/\D/g, "").length;
+
+  if (digitCount < 4) return text;
+
+  const start = match.index ?? 0;
+  const end = start + phoneText.length;
+
+  return `${text.slice(0, start)}${formatProgressivePhoneNumber(phoneText)}${text.slice(end)}`;
+}
+
 function getPhoneDisplayParts(text: string) {
   const phone = extractPhoneNumber(text);
 
@@ -1498,7 +1532,7 @@ export default function StopScreen() {
               <Text style={styles.sectionLabel}>Contact / Check-in</Text>
               <TextInput
                 value={contact}
-                onChangeText={setContact}
+                onChangeText={(text) => setContact(formatContactPhoneInput(text))}
                 placeholder="e.g. call receiving / front desk"
                 style={styles.input}
                 multiline
