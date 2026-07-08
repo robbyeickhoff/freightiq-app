@@ -274,6 +274,27 @@ function namesLookLikeDuplicate(a: string, b: string) {
   return left === right || left.includes(right) || right.includes(left);
 }
 
+function findMatchingExistingStop(
+  name: string,
+  lat: number,
+  lng: number,
+  candidates: Pin[],
+): { pin: Pin; feet: number } | null {
+  return (
+    candidates
+      .map((pin) => ({
+        pin,
+        feet: feetBetween(lat, lng, pin.lat, pin.lng),
+      }))
+      .filter(
+        (candidate) =>
+          candidate.feet <= DUPLICATE_DISTANCE_FEET &&
+          namesLookLikeDuplicate(name, candidate.pin.name),
+      )
+      .sort((a, b) => a.feet - b.feet)[0] ?? null
+  );
+}
+
 function StopMarkerVisual({
   hasIntel,
   reportCount,
@@ -1425,6 +1446,37 @@ export default function HomeScreen() {
       }
     } catch {}
 
+    const matchingStop = findMatchingExistingStop(name, pin.lat, pin.lng, candidatePins);
+
+    if (matchingStop) {
+      Alert.alert(
+        "Existing stop found",
+        `${matchingStop.pin.name}\n${matchingStop.pin.address ?? "No address"}\n\nOpen it and add your intel there?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Open Stop",
+            onPress: () => {
+              setNewPinOpen(false);
+              setTempSearchPin(null);
+              jumpToStop(matchingStop.pin);
+              router.push({
+                pathname: "/(tabs)/stop",
+                params: {
+                  id: matchingStop.pin.id,
+                  lat: String(matchingStop.pin.lat),
+                  lng: String(matchingStop.pin.lng),
+                  name: matchingStop.pin.name,
+                  address: matchingStop.pin.address ?? "",
+                },
+              });
+            },
+          },
+        ],
+      );
+      return;
+    }
+
     const nearest = candidatePins
       .map((existing) => ({
         pin: existing,
@@ -1623,12 +1675,7 @@ export default function HomeScreen() {
         }
       } catch {}
 
-      const nearest = candidatePins
-        .map((existing) => ({
-          pin: existing,
-          feet: feetBetween(lat, lng, existing.lat, existing.lng),
-        }))
-        .sort((a, b) => a.feet - b.feet)[0];
+      const matchingStop = findMatchingExistingStop(name, lat, lng, candidatePins);
 
       const verticalOffset = region.latitudeDelta * 0.2;
 
@@ -1643,25 +1690,9 @@ export default function HomeScreen() {
       setQuery("");
       setResults([]);
 
-      if (
-        nearest &&
-        nearest.feet <= DUPLICATE_DISTANCE_FEET &&
-        namesLookLikeDuplicate(name, nearest.pin.name)
-      ) {
-        Alert.alert(
-          "Existing stop found",
-          `${nearest.pin.name}\n${nearest.pin.address ?? "No address"}\n\nOpen it and add your intel there?`,
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Open Stop",
-              onPress: () => {
-                setTempSearchPin(null);
-                jumpToStop(nearest.pin);
-              },
-            },
-          ],
-        );
+      if (matchingStop) {
+        setTempSearchPin(null);
+        jumpToStop(matchingStop.pin);
         return;
       }
 
