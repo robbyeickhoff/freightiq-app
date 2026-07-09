@@ -417,6 +417,22 @@ export default function HomeScreen() {
 
   const [cachedStopCount, setCachedStopCount] = useState(0);
 
+  async function requireSignedIn() {
+    const { data } = await supabase.auth.getSession();
+    const userId = data.session?.user?.id ?? null;
+
+    if (userId) {
+      return userId;
+    }
+
+    Alert.alert("Sign in required", "You must be signed in to contribute to FreightIQ.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Sign In", onPress: () => router.push("/auth") },
+    ]);
+
+    return null;
+  }
+
   async function updateCachedStopCount() {
     try {
       const rawPins = await AsyncStorage.getItem(PINS_KEY);
@@ -1192,6 +1208,8 @@ export default function HomeScreen() {
     setSelectedStop(p);
 
     if (mergeMode && mergeSourceStopId) {
+      if (!(await requireSignedIn())) return;
+
       if (p.id === mergeSourceStopId) {
         Alert.alert("Wrong stop", "Tap a different stop to merge INTO.");
         return;
@@ -1330,7 +1348,9 @@ export default function HomeScreen() {
     selectStop(p);
   }
 
-  function startDropAtCenter() {
+  async function startDropAtCenter() {
+    if (!(await requireSignedIn())) return;
+
     if (tempSearchPin) {
       setNewPinName(tempSearchPin.name ?? "");
       setNewPinAddress(tempSearchPin.address ?? "");
@@ -1343,6 +1363,10 @@ export default function HomeScreen() {
   }
 
   async function createStopPin(pin: Pin) {
+    const userId = await requireSignedIn();
+
+    if (!userId) return;
+
     const mergedPins = mergePinsById(pins, [pin]);
     setPins(mergedPins);
 
@@ -1356,17 +1380,13 @@ export default function HomeScreen() {
     } catch {}
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
       const { error } = await supabase.from("mfi_stops").insert({
         id: pin.id,
         name: pin.name,
         lat: pin.lat,
         lng: pin.lng,
         address: pin.address ?? null,
-        user_id: user?.id ?? null,
+        user_id: userId,
       });
 
       if (error) {

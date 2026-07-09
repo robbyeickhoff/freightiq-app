@@ -390,6 +390,27 @@ export default function StopScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stopId, sessionUserId]);
 
+  async function requireSignedIn() {
+    if (sessionUserId) {
+      return sessionUserId;
+    }
+
+    const { data } = await supabase.auth.getSession();
+    const userId = data.session?.user?.id ?? null;
+
+    if (userId) {
+      setSessionUserId(userId);
+      return userId;
+    }
+
+    Alert.alert("Sign in required", "You must be signed in to contribute to FreightIQ.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Sign In", onPress: () => router.push("/auth") },
+    ]);
+
+    return null;
+  }
+
   async function loadEntranceAndPhoto() {
     try {
       const localRaw = await AsyncStorage.getItem(stopKey(stopId));
@@ -698,6 +719,7 @@ export default function StopScreen() {
 
   async function deleteMyReport() {
     if (!myReportId) return;
+    if (!(await requireSignedIn())) return;
 
     Alert.alert("Delete My Report", "Are you sure you want to delete your report?", [
       { text: "Cancel", style: "cancel" },
@@ -743,10 +765,9 @@ export default function StopScreen() {
   }
 
   async function saveMyReport() {
-    if (!sessionUserId) {
-      Alert.alert("Login required", "Tap Login on the map screen first.");
-      return;
-    }
+    const userId = await requireSignedIn();
+
+    if (!userId) return;
 
     try {
       setLoading(true);
@@ -755,7 +776,7 @@ export default function StopScreen() {
       const payload = {
         id: myReportId ?? undefined,
         stop_id: stopId,
-        user_id: sessionUserId,
+        user_id: userId,
         deliver_from_type: deliverFromType || null,
         deliver_from_details: deliverFromDetails || null,
         delivery_type: deliveryType || null,
@@ -813,10 +834,9 @@ export default function StopScreen() {
   }
 
   async function handleVote(reportId: string, voteValue: 1 | -1) {
-    if (!sessionUserId) {
-      Alert.alert("Login required", "Tap Login on the map screen first.");
-      return;
-    }
+    const userId = await requireSignedIn();
+
+    if (!userId) return;
 
     try {
       const current = voteStatsByReportId[reportId]?.myVote ?? 0;
@@ -826,7 +846,7 @@ export default function StopScreen() {
           .from("mfi_report_votes")
           .delete()
           .eq("report_id", reportId)
-          .eq("user_id", sessionUserId);
+          .eq("user_id", userId);
 
         if (error) {
           Alert.alert("Vote failed", error.message);
@@ -836,7 +856,7 @@ export default function StopScreen() {
         const { error } = await supabase.from("mfi_report_votes").upsert(
           {
             report_id: reportId,
-            user_id: sessionUserId,
+            user_id: userId,
             vote_value: voteValue,
             updated_at: new Date().toISOString(),
           },
@@ -855,7 +875,9 @@ export default function StopScreen() {
     }
   }
 
-  function openEntrancePicker() {
+  async function openEntrancePicker() {
+    if (!(await requireSignedIn())) return;
+
     setEntranceRegion({
       latitude: entranceLat ?? lat,
       longitude: entranceLng ?? lng,
@@ -866,6 +888,8 @@ export default function StopScreen() {
   }
 
   async function saveEntranceAtCurrentCenter() {
+    if (!(await requireSignedIn())) return;
+
     try {
       setSavingEntrance(true);
 
@@ -903,6 +927,8 @@ export default function StopScreen() {
   }
 
   async function useStopLocationAsEntrance() {
+    if (!(await requireSignedIn())) return;
+
     setEntranceRegion({
       latitude: lat,
       longitude: lng,
@@ -944,6 +970,8 @@ export default function StopScreen() {
   }
 
   async function clearEntrance() {
+    if (!(await requireSignedIn())) return;
+
     try {
       setSavingEntrance(true);
 
@@ -1034,10 +1062,7 @@ export default function StopScreen() {
   }
 
   async function pickAndUploadEntrancePhoto() {
-    if (!sessionUserId) {
-      Alert.alert("Login required", "Tap Login on the map screen first.");
-      return;
-    }
+    if (!(await requireSignedIn())) return;
 
     try {
       setUploadingPhoto(true);
@@ -1072,10 +1097,7 @@ export default function StopScreen() {
   }
 
   async function takeAndUploadEntrancePhoto() {
-    if (!sessionUserId) {
-      Alert.alert("Login required", "Tap Login on the map screen first.");
-      return;
-    }
+    if (!(await requireSignedIn())) return;
 
     try {
       setUploadingPhoto(true);
@@ -1109,8 +1131,9 @@ export default function StopScreen() {
     }
   }
 
-  function showPhotoSourceOptions() {
+  async function showPhotoSourceOptions() {
     if (uploadingPhoto) return;
+    if (!(await requireSignedIn())) return;
 
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
@@ -1140,6 +1163,8 @@ export default function StopScreen() {
   }
 
   async function removeEntrancePhoto() {
+    if (!(await requireSignedIn())) return;
+
     if (!entrancePhotoPath) {
       setEntrancePhotoUrl(null);
       setEntrancePhotoPath(null);
@@ -1176,7 +1201,11 @@ export default function StopScreen() {
   }
 
   async function deleteStopNow() {
-    const isOwner = !!sessionUserId && !!stopOwnerId && stopOwnerId === sessionUserId;
+    const userId = await requireSignedIn();
+
+    if (!userId) return;
+
+    const isOwner = !!stopOwnerId && stopOwnerId === userId;
     const isOrphan = !stopOwnerId;
 
     if (!canDeleteStop || (!isOwner && !isOrphan)) {
@@ -1225,7 +1254,7 @@ export default function StopScreen() {
       let stopDeleteQuery = supabase.from("mfi_stops").delete().eq("id", stopId);
 
       if (stopOwnerId) {
-        stopDeleteQuery = stopDeleteQuery.eq("user_id", sessionUserId);
+        stopDeleteQuery = stopDeleteQuery.eq("user_id", userId);
       }
 
       const { error: stopDeleteError, data: deletedStopRows } = await stopDeleteQuery.select("id");
@@ -1274,7 +1303,9 @@ export default function StopScreen() {
     }
   }
 
-  function confirmDeleteStop() {
+  async function confirmDeleteStop() {
+    if (!(await requireSignedIn())) return;
+
     Alert.alert(
       "Delete this stop?",
       "This will permanently delete the stop, its reports, its votes, and its delivery zone photo.",
@@ -1290,6 +1321,8 @@ export default function StopScreen() {
   }
 
   async function saveStopName() {
+    if (!(await requireSignedIn())) return;
+
     const trimmed = editedStopName.trim();
 
     if (!trimmed) {
@@ -1877,7 +1910,13 @@ export default function StopScreen() {
 
                 {showManageStop && (
                   <>
-                    <Pressable style={styles.editNameBtn} onPress={() => setEditNameOpen(true)}>
+                    <Pressable
+                      style={styles.editNameBtn}
+                      onPress={async () => {
+                        if (!(await requireSignedIn())) return;
+                        setEditNameOpen(true);
+                      }}
+                    >
                       <Text style={styles.editNameBtnText}>Edit Business Name</Text>
                     </Pressable>
 
@@ -1885,7 +1924,9 @@ export default function StopScreen() {
 
                     <Pressable
                       style={styles.secondaryBtn}
-                      onPress={() => {
+                      onPress={async () => {
+                        if (!(await requireSignedIn())) return;
+
                         Alert.alert(
                           "Start merge?",
                           "You are starting from the stop you want to get rid of. Next you will choose the stop you want to keep.",
