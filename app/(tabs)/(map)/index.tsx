@@ -88,6 +88,8 @@ type ReportStats = {
   deliveryType: "Dock" | "Forklift" | "Liftgate" | "Mixed" | null;
 };
 
+type DeliveryZoneInspectionSource = "preview" | "stop-intel";
+
 const PINS_KEY = "mfi:pins:v1";
 const VIEW_CACHE_KEY = "mfi:view-cache:v1";
 const DUPLICATE_DISTANCE_FEET = 250;
@@ -384,6 +386,8 @@ export default function HomeScreen() {
   const [nearbyStops, setNearbyStops] = useState<Pin[]>([]);
   const [previewVisible, setPreviewVisible] = useState(true);
   const [entranceHighlightOn, setEntranceHighlightOn] = useState(false);
+  const [deliveryZoneInspectionSource, setDeliveryZoneInspectionSource] =
+    useState<DeliveryZoneInspectionSource | null>(null);
   const [mapPhotoViewerOpen, setMapPhotoViewerOpen] = useState(false);
 
   function openNearbyStopChoice(p: Pin) {
@@ -630,8 +634,6 @@ export default function HomeScreen() {
     if (!targetPin) return;
 
     void (async () => {
-      await selectStop(targetPin);
-
       try {
         const raw = await AsyncStorage.getItem(stopKey(targetPin.id));
         const parsed = raw ? (JSON.parse(raw) as StopIntel) : null;
@@ -645,25 +647,10 @@ export default function HomeScreen() {
           : undefined;
 
         if (typeof entranceLat === "number" && typeof entranceLng === "number") {
-          setSelectedEntrance({ lat: entranceLat, lng: entranceLng });
-          setShowSelectedEntrance(true);
-
-          if (hidePreview) {
-            setPreviewVisible(false);
-          }
-
-          setEntranceHighlightOn(true);
-
-          mapRef.current?.fitToCoordinates(
-            [
-              { latitude: targetPin.lat, longitude: targetPin.lng },
-              { latitude: entranceLat, longitude: entranceLng },
-            ],
-            {
-              edgePadding: { top: 120, right: 60, bottom: 120, left: 60 },
-              animated: true,
-            },
-          );
+          enterDeliveryZoneInspection("stop-intel", targetPin, {
+            lat: entranceLat,
+            lng: entranceLng,
+          });
         } else {
           const next: Region = {
             latitude: targetPin.lat,
@@ -1117,6 +1104,7 @@ export default function HomeScreen() {
       setSelectedStop(null);
       setSelectedEntrance(null);
       setShowSelectedEntrance(false);
+      setDeliveryZoneInspectionSource(null);
       setPreviewVisible(false);
       return;
     }
@@ -1199,11 +1187,69 @@ export default function HomeScreen() {
     setSelectedEntrance(null);
     setShowSelectedEntrance(false);
     setSelectedStop(null);
+    setDeliveryZoneInspectionSource(null);
+  }
+
+  function enterDeliveryZoneInspection(
+    source: DeliveryZoneInspectionSource,
+    stop: Pin,
+    entrance: { lat: number; lng: number },
+  ) {
+    setDeliveryZoneInspectionSource(source);
+    setSelectedStopId(stop.id);
+    setSelectedStop(stop);
+    setSelectedEntrance(entrance);
+    setPreviewVisible(false);
+    setShowSelectedEntrance(true);
+    setEntranceHighlightOn(true);
+
+    mapRef.current?.fitToCoordinates(
+      [
+        { latitude: stop.lat, longitude: stop.lng },
+        { latitude: entrance.lat, longitude: entrance.lng },
+      ],
+      {
+        edgePadding: { top: 120, right: 60, bottom: 120, left: 60 },
+        animated: true,
+      },
+    );
+  }
+
+  function exitDeliveryZoneInspection() {
+    const source = deliveryZoneInspectionSource;
+    const stop = selectedStop;
+
+    setDeliveryZoneInspectionSource(null);
+    setShowSelectedEntrance(false);
+    setEntranceHighlightOn(false);
+
+    if (source === "preview") {
+      setPreviewVisible(true);
+      return;
+    }
+
+    if (source === "stop-intel") {
+      if (!stop) return;
+
+      router.push({
+        pathname: "/(tabs)/stop",
+        params: {
+          id: stop.id,
+          lat: String(stop.lat),
+          lng: String(stop.lng),
+          name: stop.name,
+          address: stop.address ?? "",
+          openedAt: String(Date.now()),
+        },
+      });
+    }
   }
 
   async function selectStop(p: Pin) {
     if (loading) return;
 
+    setDeliveryZoneInspectionSource(null);
+    setShowSelectedEntrance(false);
     setSelectedStopId(p.id);
     setSelectedStop(p);
 
@@ -2391,20 +2437,7 @@ export default function HomeScreen() {
                         onPress={() => {
                           if (!selectedStop || !selectedEntrance) return;
 
-                          setPreviewVisible(false);
-                          setShowSelectedEntrance(true);
-                          setEntranceHighlightOn(true);
-
-                          mapRef.current?.fitToCoordinates(
-                            [
-                              { latitude: selectedStop.lat, longitude: selectedStop.lng },
-                              { latitude: selectedEntrance.lat, longitude: selectedEntrance.lng },
-                            ],
-                            {
-                              edgePadding: { top: 120, right: 60, bottom: 120, left: 60 },
-                              animated: true,
-                            },
-                          );
+                          enterDeliveryZoneInspection("preview", selectedStop, selectedEntrance);
                         }}
                       >
                         <Text style={styles.previewSecondaryBtnText}>Show Delivery Zone</Text>
@@ -2440,6 +2473,8 @@ export default function HomeScreen() {
                   setSelectedStop(null);
                   setSelectedStopId(null);
                   setSelectedEntrance(null);
+                  setShowSelectedEntrance(false);
+                  setDeliveryZoneInspectionSource(null);
                   setTempSearchPin(null);
                 }}
               >
@@ -2448,6 +2483,13 @@ export default function HomeScreen() {
             </>
           )}
         </Animated.View>
+      ) : null}
+
+      {deliveryZoneInspectionSource ? (
+        <Pressable style={styles.deliveryZoneReturnPill} onPress={exitDeliveryZoneInspection}>
+          <Text style={styles.deliveryZoneReturnTitle}>← Back to Stop</Text>
+          <Text style={styles.deliveryZoneReturnSubtitle}>Viewing Delivery Zone</Text>
+        </Pressable>
       ) : null}
 
       {!showPreview ? (
@@ -2906,6 +2948,33 @@ const styles = StyleSheet.create({
     right: 12,
     alignItems: "flex-end",
     gap: 10,
+  },
+
+  deliveryZoneReturnPill: {
+    position: "absolute",
+    bottom: 28,
+    alignSelf: "center",
+    backgroundColor: "white",
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+
+  deliveryZoneReturnTitle: {
+    color: "#111",
+    fontWeight: "900",
+    fontSize: 14,
+  },
+
+  deliveryZoneReturnSubtitle: {
+    color: "#666",
+    fontSize: 12,
+    marginTop: 2,
   },
 
   fabPrimary: {
