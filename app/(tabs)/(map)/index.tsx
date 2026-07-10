@@ -369,6 +369,7 @@ export default function HomeScreen() {
   const [recentCollapsed, setRecentCollapsed] = useState(false);
 
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
+  const [pendingSearchStopId, setPendingSearchStopId] = useState<string | null>(null);
   const [mergeSourceStopId, setMergeSourceStopId] = useState<string | null>(null);
   const [mergeMode, setMergeMode] = useState(false);
   const [mergeTargetStopId, setMergeTargetStopId] = useState<string | null>(null);
@@ -404,6 +405,7 @@ export default function HomeScreen() {
   const [newPinAddress, setNewPinAddress] = useState("");
 
   const [query, setQuery] = useState("");
+  const [freightIqResults, setFreightIqResults] = useState<Pin[]>([]);
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [searching, setSearching] = useState(false);
 
@@ -618,6 +620,17 @@ export default function HomeScreen() {
     loadEntrancePhotoUrls();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMapReady, pins, params.refreshAt]);
+
+  useEffect(() => {
+    if (!pendingSearchStopId) return;
+
+    const pendingPin = pins.find((p) => p.id === pendingSearchStopId);
+    if (!pendingPin) return;
+
+    setPendingSearchStopId(null);
+    jumpToStop(pendingPin);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingSearchStopId, pins]);
 
   useEffect(() => {
     const focusStopId = String(params.focusStopId ?? "");
@@ -1394,6 +1407,23 @@ export default function HomeScreen() {
     selectStop(p);
   }
 
+  function selectFreightIqSearchResult(p: Pin) {
+    Keyboard.dismiss();
+    setQuery("");
+    setFreightIqResults([]);
+    setResults([]);
+    setTempSearchPin(null);
+
+    const existingPin = pins.find((pin) => pin.id === p.id);
+    if (existingPin) {
+      jumpToStop(existingPin);
+      return;
+    }
+
+    setPendingSearchStopId(p.id);
+    setPins((prev) => mergePinsById(prev, [p]));
+  }
+
   async function startDropAtCenter() {
     if (!(await requireSignedIn())) return;
 
@@ -1595,6 +1625,7 @@ export default function HomeScreen() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (q.length < 3) {
+      setFreightIqResults([]);
       setResults([]);
       setSearching(false);
       return;
@@ -1605,6 +1636,31 @@ export default function HomeScreen() {
 
       try {
         setSearching(true);
+
+        const { data: freightIqStops, error: freightIqError } = await supabase
+          .from("mfi_stops")
+          .select("id, name, lat, lng, address")
+          .ilike("name", `%${q}%`)
+          .limit(10);
+
+        if (requestId !== lastRequestId.current) return;
+
+        if (freightIqError) {
+          console.log("FreightIQ search failed", freightIqError.message);
+          setFreightIqResults([]);
+        } else {
+          setFreightIqResults(
+            sanitizePins(
+              (freightIqStops ?? []).map((row: any) => ({
+                id: String(row.id),
+                name: row.name ?? "Unknown",
+                lat: Number(row.lat),
+                lng: Number(row.lng),
+                address: row.address ?? undefined,
+              })),
+            ),
+          );
+        }
 
         if (!MAPBOX_TOKEN) {
           if (requestId !== lastRequestId.current) return;
@@ -1758,6 +1814,9 @@ export default function HomeScreen() {
 
       if (matchingStop) {
         setTempSearchPin(null);
+        if (!pins.some((p) => p.id === matchingStop.pin.id)) {
+          setPins((prev) => mergePinsById(prev, [matchingStop.pin]));
+        }
         jumpToStop(matchingStop.pin);
         return;
       }
@@ -1775,12 +1834,13 @@ export default function HomeScreen() {
   const resultLabel = useMemo(() => {
     if (!query.trim()) return "";
     if (query.trim().length < 3) return "Enter at least 3 characters";
+    const resultCount = freightIqResults.length + results.length;
     return searching
       ? "Searching…"
-      : results.length
-        ? `${results.length} result${results.length === 1 ? "" : "s"}`
+      : resultCount
+        ? `${resultCount} result${resultCount === 1 ? "" : "s"}`
         : "No results — try adding city or state";
-  }, [query, searching, results.length]);
+  }, [freightIqResults.length, query, searching, results.length]);
 
   const showPreview = !!selectedStopId && !!selectedStop && previewVisible;
 
@@ -2285,25 +2345,52 @@ export default function HomeScreen() {
           <View style={styles.resultsCard}>
             <Text style={styles.resultsLabel}>{resultLabel}</Text>
 
-            {results.map((r) => {
-              return (
-                <Pressable
-                  key={r.id}
-                  style={styles.resultRow}
-                  onPress={() => {
-                    Keyboard.dismiss();
-                    selectResult(r);
-                  }}
-                >
-                  <Text style={styles.resultName} numberOfLines={1}>
-                    {r.name}
-                  </Text>
-                  <Text style={styles.resultAddr} numberOfLines={2}>
-                    {r.fullAddress}
-                  </Text>
-                </Pressable>
-              );
-            })}
+            <ScrollView style={styles.resultsScroll} keyboardShouldPersistTaps="handled">
+              {freightIqResults.length > 0 ? (
+                <>
+                  <Text style={styles.resultSectionLabel}>FreightIQ Stops</Text>
+
+                  {freightIqResults.map((r) => (
+                    <Pressable
+                      key={`freightiq-${r.id}`}
+                      style={styles.resultRow}
+                      onPress={() => selectFreightIqSearchResult(r)}
+                    >
+                      <Text style={styles.resultName} numberOfLines={1}>
+                        {r.name}
+                      </Text>
+                      <Text style={styles.resultAddr} numberOfLines={2}>
+                        {r.address ?? "No address saved"}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </>
+              ) : null}
+
+              {results.length > 0 ? (
+                <Text style={styles.resultSectionLabel}>Nearby Places</Text>
+              ) : null}
+
+              {results.map((r) => {
+                return (
+                  <Pressable
+                    key={r.id}
+                    style={styles.resultRow}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      selectResult(r);
+                    }}
+                  >
+                    <Text style={styles.resultName} numberOfLines={1}>
+                      {r.name}
+                    </Text>
+                    <Text style={styles.resultAddr} numberOfLines={2}>
+                      {r.fullAddress}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </View>
         )}
       </View>
@@ -2931,6 +3018,20 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
+  },
+
+  resultsScroll: {
+    maxHeight: 340,
+  },
+
+  resultSectionLabel: {
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 6,
+    color: "#666",
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase",
   },
 
   resultRow: {
