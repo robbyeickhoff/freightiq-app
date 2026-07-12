@@ -34,12 +34,13 @@ Each release provides feedback about the product, the process, and the developme
 2. Review every code change and Git diff.
 3. Run TypeScript verification when appropriate.
 4. Verify functionality in Expo Go or Development Client.
-5. Verify on iPhone.
-6. Verify on Android when applicable.
-7. Confirm only intended files are staged and committed.
-8. Create the release build.
-9. Validate the production build before sharing with testers or submitting to the stores.
-10. Monitor tester feedback after release and address important issues before expanding distribution.
+5. Complete focused regression testing for every feature modified in the release.
+6. Verify on iPhone.
+7. Verify on Android when applicable.
+8. Confirm only intended files are staged and committed.
+9. Create the production builds.
+10. Verify the production builds on physical devices before distributing them to testers or submitting them to the stores.
+11. Monitor tester feedback after release and address important issues before expanding distribution.
 
 ## Release Checklist
 
@@ -52,6 +53,9 @@ Before every release, confirm:
 - Only intended files are committed.
 - iOS verification completed.
 - Android verification completed when applicable.
+- Regression testing completed for every feature modified in this release.
+- Production build verified before distribution.
+- Tester release notes prepared.
 - Release notes accurately describe the changes.
 - Rollback path is understood if needed.
 
