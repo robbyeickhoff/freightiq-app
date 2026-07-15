@@ -677,6 +677,39 @@ When documentation improves the long-term quality of FreightIQ, it is product wo
 
 ---
 
+## Rule 26
+
+**Use verified procedures for operational changes.**
+
+For changes involving authentication, credentials, security, deployment, CI/CD, infrastructure, platform configuration, or external services:
+
+1. Verify the official vendor documentation before proposing execution.
+2. Present one complete verified procedure before the user performs any changes.
+3. Execute the verified procedure without changing course.
+4. If new evidence invalidates the procedure, stop execution immediately.
+5. Re-verify the governing documentation and present one complete replacement procedure before continuing.
+
+Do not substitute reasoning, assumptions, or memory for documented operational procedures.
+
+Reasoning may explain a verified procedure, but it must never replace one.
+
+---
+
+## Rule 27
+
+**Repeated course corrections indicate workflow failure.**
+
+If the execution procedure changes more than once during a high-risk operational task:
+
+- Stop execution.
+- Re-verify the governing documentation.
+- Present one complete replacement procedure.
+- Wait for user approval before continuing.
+
+Do not continue iterating while the user is actively executing infrastructure or operational changes.
+
+---
+
 # LESSONS LEARNED
 
 - One feature at a time.
