@@ -4,6 +4,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { StyleProp, ViewStyle } from "react-native";
 import {
   ActionSheetIOS,
   Alert,
@@ -29,13 +30,14 @@ type ChipProps = {
   label: string;
   active?: boolean;
   onPress: () => void;
+  style?: StyleProp<ViewStyle>;
 };
 
-function Chip({ label, active, onPress }: ChipProps) {
+function Chip({ label, active, onPress, style }: ChipProps) {
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.chip, active ? styles.chipActive : styles.chipInactive]}
+      style={[styles.chip, style, active ? styles.chipActive : styles.chipInactive]}
     >
       <Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>
         {label}
@@ -146,6 +148,8 @@ function formatProgressivePhoneNumber(phone: string): string {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
+// Retained for the Additional Driver Intel controls planned for Build 2.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function formatContactPhoneInput(text: string): string {
   const match = text.match(/\(?\d(?:[\d().-]|\s(?=\d)){2,}/);
 
@@ -254,7 +258,6 @@ export default function StopScreen() {
 
   const [deliverFromDetails, setDeliverFromDetails] = useState("");
   const [deliveryType, setDeliveryType] = useState<"Dock" | "Forklift" | "Liftgate" | "">("");
-  const [showApproach, setShowApproach] = useState(false);
   const [showManageStop, setShowManageStop] = useState(false);
   const [approachHint, setApproachHint] = useState("");
   const [backInRequired, setBackInRequired] = useState<boolean | null>(null);
@@ -304,7 +307,6 @@ export default function StopScreen() {
   useEffect(() => {
     if (!openedAt) return;
 
-    setShowApproach(false);
     setShowManageStop(false);
 
     if (viewReports) {
@@ -527,7 +529,6 @@ export default function StopScreen() {
         setTruckFit(mine.truck_fit ?? "");
         setContact(mine.contact ?? "");
         setNotes(mine.notes ?? "");
-        setShowApproach(false);
       } else {
         setMyReportId(null);
         setDeliverFromType("");
@@ -538,7 +539,6 @@ export default function StopScreen() {
         setTruckFit("");
         setContact("");
         setNotes("");
-        setShowApproach(false);
       }
 
       await loadVotesForReports(hydrated);
@@ -674,45 +674,6 @@ export default function StopScreen() {
 
     return copy;
   }, [reports, voteStatsByReportId]);
-
-  const deliverFromChips: Array<Exclude<typeof deliverFromType, "">> = [
-    "Dock",
-    "Alley",
-    "Back door",
-    "Street/Curb",
-    "Parking lot",
-    "Other",
-  ];
-
-  const approachChips = [
-    "Any Direction",
-    "Approach from North",
-    "Approach from South",
-    "Approach from East",
-    "Approach from West",
-    "Wide turn needed",
-    "No turnaround",
-  ];
-
-  function appendApproach(text: string) {
-    setApproachHint((prev) => {
-      const parts = prev
-        .split(";")
-        .map((p) => p.trim())
-        .filter(Boolean);
-
-      const exists = parts.some((p) => p.toLowerCase() === text.toLowerCase());
-
-      if (exists) {
-        // REMOVE it
-        const next = parts.filter((p) => p.toLowerCase() !== text.toLowerCase());
-        return next.join("; ");
-      } else {
-        // ADD it
-        return [...parts, text].join("; ");
-      }
-    });
-  }
 
   const backInLabel =
     backInRequired === null ? "Back in: unknown" : backInRequired ? "Back in: YES" : "Back in: NO";
@@ -1428,25 +1389,39 @@ export default function StopScreen() {
             </View>
 
             <View style={styles.card}>
-              <Text style={styles.sectionLabel}>Deliver From</Text>
+              <Text style={styles.cardTitle}>Operational Essentials</Text>
+
+              <Text style={styles.sectionLabel}>Truck Fit</Text>
               <View style={styles.chipRow}>
-                {deliverFromChips.map((c) => (
-                  <Chip
-                    key={c}
-                    label={c}
-                    active={deliverFromType === c}
-                    onPress={() => setDeliverFromType(c)}
-                  />
-                ))}
+                <Chip label="53'" active={truckFit === "53'"} onPress={() => setTruckFit("53'")} />
+                <Chip label="48'" active={truckFit === "48'"} onPress={() => setTruckFit("48'")} />
+                <Chip label="40'" active={truckFit === "40'"} onPress={() => setTruckFit("40'")} />
+                <Chip label="28'" active={truckFit === "28'"} onPress={() => setTruckFit("28'")} />
               </View>
 
-              <TextInput
-                value={deliverFromDetails}
-                onChangeText={setDeliverFromDetails}
-                placeholder='Details (e.g. "alley behind building")'
-                style={styles.input}
-                multiline
-              />
+              <Text style={styles.sectionLabel}>Delivery Type</Text>
+              <View style={styles.deliveryTypeChipRow}>
+                <Chip
+                  label="🚚 Dock"
+                  active={deliveryType === "Dock"}
+                  onPress={() => setDeliveryType("Dock")}
+                  style={styles.deliveryTypeChip}
+                />
+                <Chip
+                  label="🚜 Forklift"
+                  active={deliveryType === "Forklift"}
+                  onPress={() => setDeliveryType("Forklift")}
+                  style={styles.deliveryTypeChip}
+                />
+                <Chip
+                  label="💪 Liftgate"
+                  active={deliveryType === "Liftgate"}
+                  onPress={() => setDeliveryType("Liftgate")}
+                  style={styles.deliveryTypeChip}
+                />
+              </View>
+
+              <Text style={styles.sectionLabel}>Back In</Text>
               <View style={styles.toggleRow}>
                 <Text style={styles.toggleLabel}>{backInLabel}</Text>
                 <View style={{ flexDirection: "row", gap: 10 }}>
@@ -1509,81 +1484,41 @@ export default function StopScreen() {
                 </View>
               </View>
 
-              <Text style={styles.sectionLabel}>Delivery Type</Text>
-              <View style={styles.chipRow}>
-                <Chip
-                  label="🚚 Dock"
-                  active={deliveryType === "Dock"}
-                  onPress={() => setDeliveryType("Dock")}
-                />
-                <Chip
-                  label="🚜 Forklift"
-                  active={deliveryType === "Forklift"}
-                  onPress={() => setDeliveryType("Forklift")}
-                />
-                <Chip
-                  label="💪 Liftgate"
-                  active={deliveryType === "Liftgate"}
-                  onPress={() => setDeliveryType("Liftgate")}
-                />
-              </View>
-
-              <Pressable onPress={() => setShowApproach((v) => !v)}>
-                <Text style={styles.sectionLabel}>
-                  {showApproach ? "▼ Best Approach" : "▶ Best Approach"}
-                </Text>
-              </Pressable>
-              {showApproach && (
-                <View style={styles.chipRow}>
-                  {approachChips.map((c) => (
-                    <Chip
-                      key={c}
-                      label={c}
-                      active={approachHint.toLowerCase().includes(c.toLowerCase())}
-                      onPress={() => appendApproach(c)}
-                    />
-                  ))}
+              <View style={styles.operationalZoneSummary}>
+                <View style={styles.operationalZoneHeader}>
+                  <Text style={styles.sectionLabel}>Delivery Zone</Text>
+                  <Text style={styles.operationalZoneStatus}>
+                    {typeof entranceLat === "number" && typeof entranceLng === "number"
+                      ? "Saved"
+                      : "Not Set"}
+                  </Text>
                 </View>
-              )}
 
-              <TextInput
-                value={approachHint}
-                onChangeText={setApproachHint}
-                placeholder='Approach details (e.g. "come from south")'
-                style={styles.input}
-                multiline
-              />
-
-              <Text style={styles.sectionLabel}>Truck Fit</Text>
-              <TextInput
-                value={truckFit}
-                onChangeText={setTruckFit}
-                placeholder="e.g. 53 tight; doubles no"
-                style={styles.input}
-              />
-
-              <Text style={styles.sectionLabel}>Contact / Check-in</Text>
-              <TextInput
-                value={contact}
-                onChangeText={(text) => setContact(formatContactPhoneInput(text))}
-                placeholder="e.g. call receiving / front desk"
-                style={styles.input}
-                multiline
-              />
-
-              <Text style={styles.sectionLabel}>Driver Notes</Text>
-
-              <Text style={styles.helperText}>
-                💡 Driver Tip: Share delivery guidance, not gate codes or security credentials.
-              </Text>
-
-              <TextInput
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="Construction, weather or temporary issues"
-                style={[styles.input, { minHeight: 120 }]}
-                multiline
-              />
+                {typeof entranceLat === "number" && typeof entranceLng === "number" ? (
+                  <Pressable
+                    style={styles.primaryWideBtn}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(tabs)/(map)",
+                        params: {
+                          focusStopId: stopId,
+                          showEntrance: "1",
+                          hidePreview: "1",
+                          entranceLat: String(entranceLat ?? ""),
+                          entranceLng: String(entranceLng ?? ""),
+                          revealAt: String(Date.now()),
+                        },
+                      })
+                    }
+                  >
+                    <Text style={styles.primaryWideBtnText}>View Delivery Zone</Text>
+                  </Pressable>
+                ) : (
+                  <Pressable style={styles.primaryWideBtn} onPress={openEntrancePicker}>
+                    <Text style={styles.primaryWideBtnText}>Set Delivery Zone</Text>
+                  </Pressable>
+                )}
+              </View>
 
               <Pressable style={styles.saveBtn} onPress={saveMyReport} disabled={loading}>
                 <Text style={styles.saveBtnText}>
@@ -1973,7 +1908,6 @@ export default function StopScreen() {
               <Pressable
                 style={[styles.btn, styles.btnGhost]}
                 onPress={() => {
-                  setShowApproach(false);
                   setShowManageStop(false);
                   setReportsExpanded(false);
                   router.replace({
@@ -2267,6 +2201,22 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 18, fontWeight: "900" },
   cardHelp: { color: "#666" },
 
+  operationalZoneSummary: {
+    borderTopWidth: 1,
+    borderTopColor: "#e6e6e6",
+    paddingTop: 10,
+    gap: 10,
+  },
+  operationalZoneHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  operationalZoneStatus: {
+    color: "#222",
+    fontWeight: "800",
+  },
+
   entranceStatus: {
     color: "#222",
     fontWeight: "700",
@@ -2343,10 +2293,12 @@ const styles = StyleSheet.create({
     ...(Platform.OS === "android" ? { textAlignVertical: "top" } : {}),
   },
 
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
+  deliveryTypeChipRow: { flexDirection: "row", flexWrap: "nowrap", gap: 4 },
+  deliveryTypeChip: { paddingLeft: 2, paddingRight: 6 },
   chip: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     borderRadius: 999,
     borderWidth: 1,
   },
