@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
+import { useIsFocused } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
@@ -179,6 +180,52 @@ function getPhoneDisplayParts(text: string) {
   };
 }
 
+function getDeliveryZonePreviewRegion(
+  stopLat: number,
+  stopLng: number,
+  deliveryZoneLat: number,
+  deliveryZoneLng: number,
+): Region {
+  return {
+    latitude: (stopLat + deliveryZoneLat) / 2,
+    longitude: (stopLng + deliveryZoneLng) / 2,
+    latitudeDelta: Math.max(Math.abs(stopLat - deliveryZoneLat) * 2.8, 0.0008),
+    longitudeDelta: Math.max(Math.abs(stopLng - deliveryZoneLng) * 2.8, 0.0012),
+  };
+}
+
+function fitDeliveryZonePreviewMap(
+  map: MapView | null,
+  stopLat: number,
+  stopLng: number,
+  deliveryZoneLat: number,
+  deliveryZoneLng: number,
+) {
+  if (!map) return;
+
+  const locationsAreNearlyIdentical =
+    Math.abs(stopLat - deliveryZoneLat) < 0.00008 && Math.abs(stopLng - deliveryZoneLng) < 0.00008;
+
+  if (locationsAreNearlyIdentical) {
+    map.animateToRegion(
+      getDeliveryZonePreviewRegion(stopLat, stopLng, deliveryZoneLat, deliveryZoneLng),
+      0,
+    );
+    return;
+  }
+
+  map.fitToCoordinates(
+    [
+      { latitude: stopLat, longitude: stopLng },
+      { latitude: deliveryZoneLat, longitude: deliveryZoneLng },
+    ],
+    {
+      edgePadding: { top: 30, right: 30, bottom: 30, left: 30 },
+      animated: false,
+    },
+  );
+}
+
 function base64ToArrayBuffer(base64: string) {
   const binaryString = global.atob(base64);
   const bytes = new Uint8Array(binaryString.length);
@@ -223,7 +270,9 @@ function guessContentType(ext: string) {
 
 export default function StopScreen() {
   const scrollViewRef = useRef<ScrollView | null>(null);
+  const deliveryZonePreviewMapRef = useRef<MapView | null>(null);
   const router = useRouter();
+  const isFocused = useIsFocused();
   const params = useLocalSearchParams();
 
   const stopId = String(params.id ?? "");
@@ -267,6 +316,8 @@ export default function StopScreen() {
 
   const [entranceLat, setEntranceLat] = useState<number | null>(null);
   const [entranceLng, setEntranceLng] = useState<number | null>(null);
+  const [previewStopLat, setPreviewStopLat] = useState(lat);
+  const [previewStopLng, setPreviewStopLng] = useState(lng);
   const [entrancePhotoUrl, setEntrancePhotoUrl] = useState<string | null>(null);
   const [entrancePhotoPath, setEntrancePhotoPath] = useState<string | null>(null);
 
@@ -297,6 +348,11 @@ export default function StopScreen() {
     setEditedStopName(name);
     setCurrentStopName(name);
   }, [name]);
+
+  useEffect(() => {
+    setPreviewStopLat(lat);
+    setPreviewStopLng(lng);
+  }, [lat, lng, stopId]);
 
   useEffect(() => {
     if (viewReports) {
@@ -432,9 +488,17 @@ export default function StopScreen() {
 
       const { data } = await supabase
         .from("mfi_stops")
-        .select("entrance_lat, entrance_lng, entrance_photo_url, entrance_photo_path")
+        .select("lat, lng, entrance_lat, entrance_lng, entrance_photo_url, entrance_photo_path")
         .eq("id", stopId)
         .maybeSingle();
+
+      const authoritativeStopLat = Number(data?.lat);
+      const authoritativeStopLng = Number(data?.lng);
+
+      if (Number.isFinite(authoritativeStopLat) && Number.isFinite(authoritativeStopLng)) {
+        setPreviewStopLat(authoritativeStopLat);
+        setPreviewStopLng(authoritativeStopLng);
+      }
 
       if (data && typeof data.entrance_lat === "number" && typeof data.entrance_lng === "number") {
         setEntranceLat(data.entrance_lat);
@@ -677,6 +741,12 @@ export default function StopScreen() {
 
   const backInLabel =
     backInRequired === null ? "Back in: unknown" : backInRequired ? "Back in: YES" : "Back in: NO";
+
+  const deliveryZonePreviewRegion = useMemo(() => {
+    if (typeof entranceLat !== "number" || typeof entranceLng !== "number") return null;
+
+    return getDeliveryZonePreviewRegion(previewStopLat, previewStopLng, entranceLat, entranceLng);
+  }, [entranceLat, entranceLng, previewStopLat, previewStopLng]);
 
   async function deleteMyReport() {
     if (!myReportId) return;
@@ -1494,25 +1564,85 @@ export default function StopScreen() {
                   </Text>
                 </View>
 
-                {typeof entranceLat === "number" && typeof entranceLng === "number" ? (
-                  <Pressable
-                    style={styles.primaryWideBtn}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/(tabs)/(map)",
-                        params: {
-                          focusStopId: stopId,
-                          showEntrance: "1",
-                          hidePreview: "1",
-                          entranceLat: String(entranceLat ?? ""),
-                          entranceLng: String(entranceLng ?? ""),
-                          revealAt: String(Date.now()),
-                        },
-                      })
-                    }
-                  >
-                    <Text style={styles.primaryWideBtnText}>View Delivery Zone</Text>
-                  </Pressable>
+                {deliveryZonePreviewRegion &&
+                typeof entranceLat === "number" &&
+                typeof entranceLng === "number" ? (
+                  <>
+                    <View style={styles.deliveryZonePreviewWrap}>
+                      {isFocused ? (
+                        <MapView
+                          key={`delivery-zone-preview-${previewStopLat}-${previewStopLng}-${entranceLat}-${entranceLng}`}
+                          ref={deliveryZonePreviewMapRef}
+                          pointerEvents="none"
+                          style={styles.deliveryZonePreviewMap}
+                          mapType="satellite"
+                          initialRegion={deliveryZonePreviewRegion}
+                          onLayout={() =>
+                            fitDeliveryZonePreviewMap(
+                              deliveryZonePreviewMapRef.current,
+                              previewStopLat,
+                              previewStopLng,
+                              entranceLat,
+                              entranceLng,
+                            )
+                          }
+                          onMapReady={() =>
+                            fitDeliveryZonePreviewMap(
+                              deliveryZonePreviewMapRef.current,
+                              previewStopLat,
+                              previewStopLng,
+                              entranceLat,
+                              entranceLng,
+                            )
+                          }
+                          scrollEnabled={false}
+                          zoomEnabled={false}
+                          rotateEnabled={false}
+                          pitchEnabled={false}
+                          toolbarEnabled={false}
+                          showsCompass={false}
+                          showsPointsOfInterest={false}
+                          showsScale={false}
+                          loadingEnabled
+                        >
+                          <Marker
+                            coordinate={{ latitude: previewStopLat, longitude: previewStopLng }}
+                          >
+                            <View style={styles.deliveryZonePreviewStopMarker}>
+                              <View style={styles.deliveryZonePreviewStopDot} />
+                            </View>
+                          </Marker>
+
+                          <Marker coordinate={{ latitude: entranceLat, longitude: entranceLng }}>
+                            <View style={styles.deliveryZonePreviewBullseyeOuter}>
+                              <View style={styles.deliveryZonePreviewBullseyeMiddle}>
+                                <View style={styles.deliveryZonePreviewBullseyeInner} />
+                              </View>
+                            </View>
+                          </Marker>
+                        </MapView>
+                      ) : null}
+                    </View>
+
+                    <Pressable
+                      style={styles.primaryWideBtn}
+                      onPress={() =>
+                        router.navigate({
+                          pathname: "/(tabs)/(map)",
+                          params: {
+                            focusStopId: stopId,
+                            showEntrance: "1",
+                            hidePreview: "1",
+                            entranceLat: String(entranceLat),
+                            entranceLng: String(entranceLng),
+                            revealAt: String(Date.now()),
+                          },
+                        })
+                      }
+                    >
+                      <Text style={styles.primaryWideBtnText}>View Full Map</Text>
+                    </Pressable>
+                  </>
                 ) : (
                   <Pressable style={styles.primaryWideBtn} onPress={openEntrancePicker}>
                     <Text style={styles.primaryWideBtnText}>Set Delivery Zone</Text>
@@ -1732,7 +1862,7 @@ export default function StopScreen() {
                     <Pressable
                       style={[styles.secondaryBtn, { flex: 1 }]}
                       onPress={() =>
-                        router.push({
+                        router.navigate({
                           pathname: "/(tabs)/(map)",
                           params: {
                             focusStopId: stopId,
@@ -2215,6 +2345,53 @@ const styles = StyleSheet.create({
   operationalZoneStatus: {
     color: "#222",
     fontWeight: "800",
+  },
+  deliveryZonePreviewWrap: {
+    height: 150,
+    borderRadius: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    backgroundColor: "#e5e7eb",
+  },
+  deliveryZonePreviewMap: {
+    flex: 1,
+  },
+  deliveryZonePreviewStopMarker: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deliveryZonePreviewStopDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "white",
+    backgroundColor: "green",
+  },
+  deliveryZonePreviewBullseyeOuter: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#2563eb",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deliveryZonePreviewBullseyeMiddle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "white",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deliveryZonePreviewBullseyeInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#2563eb",
   },
 
   entranceStatus: {

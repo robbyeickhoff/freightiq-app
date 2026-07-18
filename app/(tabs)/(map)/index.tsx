@@ -641,10 +641,10 @@ export default function HomeScreen() {
 
     const showEntranceKey = `${focusStopId}:${String(params.revealAt ?? "")}`;
     if (handledShowEntranceKeyRef.current === showEntranceKey) return;
-    handledShowEntranceKeyRef.current = showEntranceKey;
 
     const targetPin = pins.find((p) => p.id === focusStopId);
     if (!targetPin) return;
+    handledShowEntranceKeyRef.current = showEntranceKey;
 
     void (async () => {
       try {
@@ -1244,7 +1244,7 @@ export default function HomeScreen() {
     if (source === "stop-intel") {
       if (!stop) return;
 
-      router.push({
+      router.navigate({
         pathname: "/(tabs)/stop",
         params: {
           id: stop.id,
