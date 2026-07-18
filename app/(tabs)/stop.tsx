@@ -1394,6 +1394,13 @@ export default function StopScreen() {
                     >
                       <Text style={styles.primaryWideBtnText}>View Full Map</Text>
                     </Pressable>
+
+                    <Pressable
+                      style={[styles.secondaryBtn, styles.manageDeliveryZoneBtn]}
+                      onPress={openEntrancePicker}
+                    >
+                      <Text style={styles.secondaryBtnText}>Manage Delivery Zone</Text>
+                    </Pressable>
                   </>
                 ) : (
                   <Pressable style={styles.primaryWideBtn} onPress={openEntrancePicker}>
@@ -1604,70 +1611,6 @@ export default function StopScreen() {
               ) : null}
             </View>
 
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Delivery Zone</Text>
-              {typeof entranceLat === "number" && typeof entranceLng === "number" ? (
-                <>
-                  <Text style={styles.entranceStatus}>Saved ✓</Text>
-
-                  <View style={styles.entranceSmallRow}>
-                    <Pressable
-                      style={[styles.secondaryBtn, { flex: 1 }]}
-                      onPress={() =>
-                        router.navigate({
-                          pathname: "/(tabs)/(map)",
-                          params: {
-                            focusStopId: stopId,
-                            showEntrance: "1",
-                            hidePreview: "1",
-                            entranceLat: String(entranceLat ?? ""),
-                            entranceLng: String(entranceLng ?? ""),
-                            revealAt: String(Date.now()),
-                          },
-                        })
-                      }
-                    >
-                      <Text style={styles.secondaryBtnText}>Show on Map</Text>
-                    </Pressable>
-
-                    <Pressable
-                      style={[styles.secondaryBtn, { flex: 1 }]}
-                      onPress={openEntrancePicker}
-                    >
-                      <Text style={styles.secondaryBtnText}>Update</Text>
-                    </Pressable>
-
-                    <Pressable style={[styles.secondaryBtn, { flex: 1 }]} onPress={clearEntrance}>
-                      <Text style={styles.secondaryBtnText}>Clear</Text>
-                    </Pressable>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.cardHelp}>
-                    Set the exact delivery zone drivers should use.
-                  </Text>
-
-                  <Text style={styles.entranceStatus}>No delivery zone set yet</Text>
-
-                  <View style={styles.entranceActions}>
-                    <Pressable style={styles.primaryWideBtn} onPress={openEntrancePicker}>
-                      <Text style={styles.primaryWideBtnText}>Set Delivery Zone</Text>
-                    </Pressable>
-
-                    <View style={styles.entranceSmallRow}>
-                      <Pressable
-                        style={[styles.secondaryBtn, { flex: 1 }]}
-                        onPress={useStopLocationAsEntrance}
-                      >
-                        <Text style={styles.secondaryBtnText}>Use Stop Location</Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                </>
-              )}
-            </View>
-
             {canDeleteStop && (
               <View style={styles.card}>
                 <Pressable onPress={() => setShowManageStop((v) => !v)}>
@@ -1768,7 +1711,11 @@ export default function StopScreen() {
           >
             <View style={styles.pickerScreen}>
               <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>Set Delivery Zone</Text>
+                <Text style={styles.pickerTitle}>
+                  {typeof entranceLat === "number" && typeof entranceLng === "number"
+                    ? "Update Delivery Zone"
+                    : "Set Delivery Zone"}
+                </Text>
                 <Text style={styles.pickerHelp}>
                   Move the map so the delivery zone sits under the crosshair, then save.
                 </Text>
@@ -1785,15 +1732,23 @@ export default function StopScreen() {
                     coordinate={{ latitude: lat, longitude: lng }}
                     title={name}
                     description="Stop location"
-                    pinColor="red"
-                  />
+                  >
+                    <View style={styles.deliveryZonePreviewStopMarker}>
+                      <View style={styles.deliveryZonePreviewStopDot} />
+                    </View>
+                  </Marker>
                   {typeof entranceLat === "number" && typeof entranceLng === "number" ? (
                     <Marker
                       coordinate={{ latitude: entranceLat, longitude: entranceLng }}
                       title="Current delivery zone"
                       description="Saved delivery zone"
-                      pinColor="green"
-                    />
+                    >
+                      <View style={styles.deliveryZonePreviewBullseyeOuter}>
+                        <View style={styles.deliveryZonePreviewBullseyeMiddle}>
+                          <View style={styles.deliveryZonePreviewBullseyeInner} />
+                        </View>
+                      </View>
+                    </Marker>
                   ) : null}
                 </MapView>
 
@@ -2055,17 +2010,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#2563eb",
   },
 
-  entranceStatus: {
-    color: "#222",
-    fontWeight: "700",
-  },
-  entranceActions: {
-    gap: 10,
-  },
-  entranceSmallRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
   primaryWideBtn: {
     backgroundColor: "black",
     paddingVertical: 13,
@@ -2088,6 +2032,9 @@ const styles = StyleSheet.create({
   secondaryBtnText: {
     color: "black",
     fontWeight: "800",
+  },
+  manageDeliveryZoneBtn: {
+    paddingVertical: 10,
   },
 
   sectionLabel: { fontWeight: "800", marginTop: 4 },
