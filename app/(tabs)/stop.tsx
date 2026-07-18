@@ -144,8 +144,6 @@ function formatProgressivePhoneNumber(phone: string): string {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
-// Retained for the Additional Driver Intel controls planned for Build 2.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function formatContactPhoneInput(text: string): string {
   const match = text.match(/\(?\d(?:[\d().-]|\s(?=\d)){2,}/);
 
@@ -223,6 +221,7 @@ function fitDeliveryZonePreviewMap(
 
 export default function StopScreen() {
   const scrollViewRef = useRef<ScrollView | null>(null);
+  const additionalIntelScrollRef = useRef<ScrollView | null>(null);
   const deliveryZonePreviewMapRef = useRef<MapView | null>(null);
   const router = useRouter();
   const isFocused = useIsFocused();
@@ -260,6 +259,7 @@ export default function StopScreen() {
 
   const [deliverFromDetails, setDeliverFromDetails] = useState("");
   const [deliveryType, setDeliveryType] = useState<"Dock" | "Forklift" | "Liftgate" | "">("");
+  const [additionalIntelOpen, setAdditionalIntelOpen] = useState(false);
   const [showManageStop, setShowManageStop] = useState(false);
   const [approachHint, setApproachHint] = useState("");
   const [backInRequired, setBackInRequired] = useState<boolean | null>(null);
@@ -686,6 +686,52 @@ export default function StopScreen() {
     return copy;
   }, [reports, voteStatsByReportId]);
 
+  const deliverFromChips: {
+    value: Exclude<typeof deliverFromType, "">;
+    label: string;
+  }[] = [
+    { value: "Dock", label: "Dock" },
+    { value: "Alley", label: "Alley" },
+    { value: "Back door", label: "Back Door" },
+    { value: "Street/Curb", label: "Street/Curb" },
+    { value: "Parking lot", label: "Parking Lot" },
+    { value: "Other", label: "Other" },
+  ];
+
+  const approachChips = [
+    "Any Direction",
+    "Approach from North",
+    "Approach from South",
+    "Approach from East",
+    "Approach from West",
+    "Wide turn needed",
+    "No turnaround",
+  ];
+
+  function appendApproach(text: string) {
+    setApproachHint((previous) => {
+      const parts = previous
+        .split(";")
+        .map((part) => part.trim())
+        .filter(Boolean);
+      const alreadySelected = parts.some((part) => part.toLowerCase() === text.toLowerCase());
+
+      return alreadySelected
+        ? parts.filter((part) => part.toLowerCase() !== text.toLowerCase()).join("; ")
+        : [...parts, text].join("; ");
+    });
+  }
+
+  function keepAdditionalIntelInputVisible(nodeHandle: number) {
+    setTimeout(() => {
+      additionalIntelScrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(
+        nodeHandle,
+        96,
+        true,
+      );
+    }, 250);
+  }
+
   const backInLabel =
     backInRequired === null ? "Back in: unknown" : backInRequired ? "Back in: YES" : "Back in: NO";
 
@@ -800,6 +846,7 @@ export default function StopScreen() {
 
       await AsyncStorage.setItem(stopKey(stopId), JSON.stringify(localParsed));
 
+      setAdditionalIntelOpen(false);
       Alert.alert("Saved", myReportId ? "Report updated." : "Report posted.");
       await loadReports();
       router.replace({
@@ -1409,6 +1456,10 @@ export default function StopScreen() {
                 )}
               </View>
 
+              <Pressable style={styles.secondaryBtn} onPress={() => setAdditionalIntelOpen(true)}>
+                <Text style={styles.secondaryBtnText}>Additional Driver Intel</Text>
+              </Pressable>
+
               <Pressable style={styles.saveBtn} onPress={saveMyReport} disabled={loading}>
                 <Text style={styles.saveBtnText}>
                   {loading ? "Saving..." : myReportId ? "Update My Report" : "Post My Report"}
@@ -1705,6 +1756,117 @@ export default function StopScreen() {
           </ScrollView>
 
           <Modal
+            visible={additionalIntelOpen}
+            animationType="slide"
+            onRequestClose={() => setAdditionalIntelOpen(false)}
+          >
+            <SafeAreaView style={styles.additionalIntelScreen}>
+              <KeyboardAvoidingView
+                style={styles.additionalIntelScreen}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+              >
+                <ScrollView
+                  ref={additionalIntelScrollRef}
+                  contentContainerStyle={styles.additionalIntelContainer}
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode="on-drag"
+                >
+                  <View style={styles.additionalIntelHeader}>
+                    <Text style={styles.additionalIntelTitle}>Additional Driver Intel</Text>
+                    <Text style={styles.additionalIntelStopName}>{title}</Text>
+                    {address ? (
+                      <Text style={styles.additionalIntelAddress}>
+                        {address.replace(", Colorado ", ", CO ").replace(", United States", "")}
+                      </Text>
+                    ) : null}
+                  </View>
+
+                  <Pressable
+                    style={styles.secondaryBtn}
+                    onPress={() => setAdditionalIntelOpen(false)}
+                  >
+                    <Text style={styles.secondaryBtnText}>← Back to Essentials</Text>
+                  </Pressable>
+
+                  <View style={styles.card}>
+                    <Text style={styles.sectionLabel}>Deliver From</Text>
+                    <View style={styles.chipRow}>
+                      {deliverFromChips.map(({ value, label }) => (
+                        <Chip
+                          key={value}
+                          label={label}
+                          active={deliverFromType === value}
+                          onPress={() => setDeliverFromType(value)}
+                        />
+                      ))}
+                    </View>
+
+                    <TextInput
+                      value={deliverFromDetails}
+                      onChangeText={setDeliverFromDetails}
+                      onFocus={(event) => keepAdditionalIntelInputVisible(event.nativeEvent.target)}
+                      placeholder='Details (e.g. "alley behind building")'
+                      style={styles.input}
+                      multiline
+                    />
+
+                    <Text style={styles.sectionLabel}>Best Approach</Text>
+                    <View style={styles.chipRow}>
+                      {approachChips.map((approach) => (
+                        <Chip
+                          key={approach}
+                          label={approach}
+                          active={approachHint.toLowerCase().includes(approach.toLowerCase())}
+                          onPress={() => appendApproach(approach)}
+                        />
+                      ))}
+                    </View>
+
+                    <TextInput
+                      value={approachHint}
+                      onChangeText={setApproachHint}
+                      onFocus={(event) => keepAdditionalIntelInputVisible(event.nativeEvent.target)}
+                      placeholder='Approach details (e.g. "come from south")'
+                      style={styles.input}
+                      multiline
+                    />
+
+                    <Text style={styles.sectionLabel}>Contact / Check-In</Text>
+                    <TextInput
+                      value={contact}
+                      onChangeText={(text) => setContact(formatContactPhoneInput(text))}
+                      onFocus={(event) => keepAdditionalIntelInputVisible(event.nativeEvent.target)}
+                      placeholder="e.g. call receiving / front desk"
+                      style={styles.input}
+                      multiline
+                    />
+
+                    <Text style={styles.sectionLabel}>Driver Notes</Text>
+                    <Text style={styles.helperText}>
+                      💡 Driver Tip: Share delivery guidance, not gate codes or security
+                      credentials.
+                    </Text>
+                    <TextInput
+                      value={notes}
+                      onChangeText={setNotes}
+                      onFocus={(event) => keepAdditionalIntelInputVisible(event.nativeEvent.target)}
+                      placeholder="Construction, weather or temporary issues"
+                      style={[styles.input, styles.driverNotesInput]}
+                      multiline
+                    />
+
+                    <Pressable style={styles.saveBtn} onPress={saveMyReport} disabled={loading}>
+                      <Text style={styles.saveBtnText}>
+                        {loading ? "Saving..." : myReportId ? "Update My Report" : "Post My Report"}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </ScrollView>
+              </KeyboardAvoidingView>
+            </SafeAreaView>
+          </Modal>
+
+          <Modal
             visible={entrancePickerOpen}
             animationType="slide"
             onRequestClose={() => setEntrancePickerOpen(false)}
@@ -1946,6 +2108,32 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 18, fontWeight: "900" },
   cardHelp: { color: "#666" },
+
+  additionalIntelScreen: {
+    flex: 1,
+    backgroundColor: "white",
+  },
+  additionalIntelContainer: {
+    padding: 14,
+    gap: 12,
+  },
+  additionalIntelHeader: {
+    gap: 4,
+  },
+  additionalIntelTitle: {
+    fontSize: 28,
+    fontWeight: "900",
+  },
+  additionalIntelStopName: {
+    fontSize: 20,
+    fontWeight: "900",
+  },
+  additionalIntelAddress: {
+    color: "#666",
+  },
+  driverNotesInput: {
+    minHeight: 120,
+  },
 
   operationalZoneSummary: {
     borderTopWidth: 1,
