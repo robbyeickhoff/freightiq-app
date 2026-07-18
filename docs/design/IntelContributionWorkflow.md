@@ -6,7 +6,7 @@ This document explores potential designs for how drivers contribute Stop Intel.
 
 It is intentionally exploratory.
 
-Its purpose is to evaluate ideas through real-world testing before implementation decisions are made.
+Its purpose is to capture the evolving Intel contribution design and refine it through real-world testing.
 
 This document is not a specification and should evolve as product understanding improves.
 
@@ -30,16 +30,23 @@ The product should embrace incremental knowledge, allowing many drivers to impro
 
 ---
 
-### Quick Intel (Core Workflow)
+### Operational Essentials (Core Workflow)
 
-Explore a streamlined workflow centered around the four highest-value operational fields.
+The approved primary workflow centers on the four highest-value operational fields.
 
-Suggested order:
+Approved order:
 
 1. Truck Fit
-2. Delivery Zone
-3. Back In (Yes/No)
-4. Delivery Type
+2. Delivery Type
+3. Back In (Yes/No/Unknown)
+4. Delivery Zone
+
+Truck Fit uses standardized single-select options:
+
+- 53'
+- 48'
+- 40'
+- 28'
 
 Objective:
 
@@ -49,25 +56,31 @@ Objective:
 - No photos required.
 - Produce a genuinely useful stop with minimal effort.
 
+The Delivery Zone pin solves approximately 99% of the spatial guidance problem. The primary workflow should summarize it with a mini satellite preview and a simple Saved / Not Set state. Full Delivery Zone management belongs in a dedicated workflow.
+
 ---
 
-### Detailed Intel
+### Additional Driver Intel
 
-After Quick Intel is saved, allow drivers to optionally enrich the stop.
+After Operational Essentials are saved, allow drivers to optionally enrich the stop in a secondary screen.
 
-Potential fields:
+Approved starting fields:
 
+- Deliver From
 - Best Approach
 - Driver Notes
 - Contact / Check-In
-- Photos
 - Future enrichment fields
 
-Explore whether this should be:
+Deliver From is valuable but is not one of the four Operational Essentials because Delivery Type and Delivery Zone usually answer it implicitly.
 
-- Expandable sections on the same screen
-- A separate "Add More Intel" screen
-- Another progressive disclosure approach
+Delivery Zone photos are planned for retirement. The pin and satellite imagery provide substantially more value than asking working drivers to photograph familiar docks or parking areas.
+
+Driver Reports are expected to become the divider between three page responsibilities:
+
+1. Contribute
+2. Learn
+3. Manage
 
 ---
 
@@ -83,18 +96,18 @@ Explore whether this should be:
 
 ### Open Questions
 
-- Is the proposed field order the most natural during real-world testing?
-- Should Detailed Intel be expandable or a separate screen?
-- Should photos become optional enrichment rather than part of the primary workflow?
-- Which additional fields truly belong in Detailed Intel?
-- How should creating new Intel differ from updating existing Intel?
+- What is the final mini satellite preview behavior and implementation?
+- What is the final order and content of Additional Driver Intel?
+- What is the final dedicated Delivery Zone workflow?
+- How should the Contribute / Learn / Manage hierarchy be presented?
+- Should Back In and Delivery Zone swap order if continued field use supports that change?
 
 ---
 
 ### Status
 
-Product exploration only.
+Operational Essentials implementation and physical-device validation are underway.
 
-No implementation decisions have been made.
+The core hierarchy, Truck Fit options, secondary Additional Driver Intel direction, dedicated Delivery Zone direction, and planned Delivery Zone photo retirement are approved product decisions.
 
-Validate through continued real-world use before designing the final workflow.
+Continue validating each independently implemented change through real-world use before finalizing Intel V2.

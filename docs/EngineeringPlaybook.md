@@ -67,22 +67,27 @@ per iteration.
 
 ---
 
-## 4. AI Implementation (VS Code)
+## 4. Approved AI Implementation
 
-Use the VS Code Chat for low-risk mechanical work.
+Choose the implementation method only after the design, scope, and acceptance criteria are approved.
 
-Examples:
+### Direct Codex Edit
 
-- Copy a file
-- Rename a component
-- Replace text
-- Wire navigation
-- Reorder sections
-- Small styling changes
+Use Codex to implement the approved change directly when it can inspect, edit, and verify the repository safely.
 
-The AI implements.
+Before editing, Codex must state the exact approved scope and announce that it is beginning direct implementation.
 
-Humans decide.
+Repository access is a capability—not authorization to change code.
+
+### Tank Task
+
+Use Tank as an optional implementation assistant for focused mechanical work when delegation is useful.
+
+Codex prepares the complete task and reviews Tank's implementation before acceptance.
+
+The AI implements only what has been approved.
+
+Humans make product decisions.
 
 ---
 
@@ -222,50 +227,60 @@ nothing to commit, working tree clean
 
 # AI WORKFLOW
 
-## Desktop Chat (Architect)
+## Robby (Product Owner)
 
 Responsibilities:
 
 - Product decisions
-- UX
-- Architecture
-- Planning
-- Debugging
-- Reviewing screenshots
-- Reviewing diffs
-- Git workflow
-- Prioritization
+- Build Specification approval
+- Physical-device acceptance testing
+- Commit and sync by default
+- Approval of operational or high-risk changes
 
-The Desktop Chat decides **what** gets built.
-
----
-
-## VS Code Chat (Junior Developer)
+## Codex (Architect and Implementation Lead)
 
 Responsibilities:
 
-- Mechanical edits
-- Small code changes
-- Copying files
-- Renaming
-- Navigation wiring
-- Text replacement
+- UX and architecture guidance
+- Repository and source inspection
+- Implementation planning
+- Build Specifications
+- Direct implementation of approved changes
+- Tank task preparation when delegation is useful
+- Debugging strategy
+- Reviewing every changed file
+- Running appropriate validation
+- Reporting uncommitted state and remaining testing
 
-The VS Code Chat implements **only what has already been decided**.
+Codex may inspect the repository directly. Direct filesystem access does not authorize edits outside an approved scope.
+
+Before a direct edit, Codex must announce the exact approved change. After editing, Codex must report:
+
+- Files changed
+- What changed
+- Validation results
+- Remaining physical-device testing
+- Whether the work remains uncommitted
+
+## Tank (Optional Implementation Assistant)
+
+Tank may be used for small, well-defined mechanical tasks when delegation improves the workflow.
+
+Tank implements **only what has already been decided** and does not make product, UX, architecture, or debugging-strategy decisions.
 
 ---
 
-# JUNIOR DEVELOPER WORKFLOW (VS CODE AI)
+# TANK WORKFLOW (OPTIONAL IMPLEMENTATION ASSISTANT)
 
-The Junior Developer is used only for small, well-defined implementation tasks.
+Tank is used only for small, well-defined implementation tasks.
 
-Junior is not responsible for product decisions, architecture, refactoring, or debugging strategy.
+Tank is not responsible for product decisions, architecture, refactoring, or debugging strategy.
 
-Junior’s job is to perform safe, mechanical work while the Lead Developer (ChatGPT) reviews every change before it becomes part of FreightIQ.
+Tank's job is to perform safe, mechanical work while Codex reviews every change before it becomes part of FreightIQ.
 
 ---
 
-## WHEN TO USE JUNIOR
+## WHEN TO USE TANK
 
 Good tasks:
 
@@ -278,7 +293,7 @@ Good tasks:
 - Duplicate existing patterns.
 - Small UI adjustments.
 
-Avoid using Junior for:
+Avoid using Tank for:
 
 - Architecture decisions.
 - Refactoring.
@@ -292,9 +307,9 @@ When confidence drops, reduce the scope of the task.
 
 ---
 
-# STANDARD JUNIOR TASK STRUCTURE
+# STANDARD TANK TASK STRUCTURE
 
-Every Junior task should follow this format.
+Every Tank task should follow this format.
 
 ## 1. Task Name
 
@@ -308,7 +323,7 @@ Task 1 — Create the Using the Map Help page
 
 ## 2. Scope
 
-Specify exactly which files Junior may edit.
+Specify exactly which files Tank may edit.
 
 Examples:
 
@@ -364,7 +379,7 @@ Always include:
 
 Review your proposed changes before presenting the diff.
 
-This encourages Junior to inspect the work before handing it off.
+This encourages Tank to inspect the work before handing it off.
 
 ---
 
@@ -392,13 +407,13 @@ Always end with:
 
 > If the requested changes cannot be completed without violating these instructions, stop and explain why instead of making assumptions.
 
-This prevents Junior from inventing solutions or making unintended changes.
+This prevents Tank from inventing solutions or making unintended changes.
 
 ---
 
 # REVIEW PROCESS
 
-Every Junior proposal follows the FreightIQ Engineering Playbook.
+Every Tank proposal follows the FreightIQ Engineering Playbook.
 
 1. Review the proposed diff.
 2. Reject proposals that exceed the requested scope.
@@ -410,14 +425,14 @@ npx tsc --noEmit
 
 4. Verify in Expo Go or Development Client.
 5. Review Git diff.
-6. Stage only expected files.
+6. After user approval, stage only expected files.
 7. Verify staging.
-8. Commit.
-9. Push.
+8. Commit only after user approval.
+9. Push only after the commit is verified and the user approves syncing.
 
-Junior proposals are never accepted without verification.
+Tank proposals are never accepted without verification.
 
-Junior is an implementation assistant—not an autonomous developer.
+Tank is an implementation assistant—not an autonomous developer.
 
 ---
 
@@ -431,22 +446,40 @@ Codex does not replace human judgment.
 
 ## Standard Workflow
 
-1. Define a focused task with clear scope and guardrails.
-2. For bugs or regressions, investigate before implementing.
-3. Review the investigation before approving implementation.
-4. Have Codex implement the approved change.
-5. Review every changed file in the diff before accepting the work.
-6. Test the implementation in Expo Go, iPhone, and Android when appropriate.
-7. Stage only the intended files.
-8. Commit with a clear, descriptive commit message.
-9. Verify the commit using:
+1. Define the product objective.
+2. Inspect the existing implementation.
+3. Create and approve a Build Specification for meaningful changes.
+4. Choose Direct Codex Edit or Tank Task.
+5. Announce the exact approved scope before implementation.
+6. Implement one focused change.
+7. Review every changed file and run appropriate validation.
+8. Report the files changed, validation results, remaining testing, and uncommitted state.
+9. Test the implementation in Expo Go, iPhone, and Android when appropriate.
+10. Stage only the intended files after user approval.
+11. Commit with a clear, descriptive commit message after user approval.
+12. Verify the commit using:
 
 ```bash
 git log --oneline -1
 git status
 ```
 
-10. Push only after the commit has been verified.
+13. Push only after the commit has been verified and the user has approved syncing.
+
+## Authorization Boundaries
+
+- Repository access is not authorization to edit.
+- Meaningful implementation begins only after Build Specification approval.
+- Small corrections that are already approved may be implemented directly after Codex clearly announces the edit.
+- Codex does not commit, push, deploy, modify databases, change credentials, alter infrastructure, or perform destructive actions without the applicable explicit approval.
+- Robby retains physical-device acceptance testing and commit/sync ownership by default.
+- If instructions, repository state, or governing documents conflict, stop and report the conflict.
+
+## Investigation Cleanup
+
+Investigation tasks must leave no temporary instrumentation behind unless the instrumentation itself is explicitly approved as production code.
+
+If repeated implementation adjustments fail or confidence drops, stop changing values and return to inspection. Use evidence and runtime measurements when static inspection is no longer sufficient.
 
 ## Guiding Principles
 
@@ -635,9 +668,9 @@ Do not chase stale bundles.
 
 ## Rule 23
 
-**Every Junior task must have clearly defined scope and acceptance criteria.**
+**Every Tank task must have clearly defined scope and acceptance criteria.**
 
-Never ask Junior to "improve," "clean up," or "refactor" code.
+Never ask Tank to "improve," "clean up," or "refactor" code.
 
 Instead, specify:
 
@@ -646,7 +679,7 @@ Instead, specify:
 - The expected result.
 - What must not change.
 
-If the task cannot be described this precisely, it should remain an Architect task until the scope is reduced.
+If the task cannot be described this precisely, it should remain with Codex until the scope is reduced.
 
 ---
 
