@@ -751,9 +751,6 @@ export default function StopScreen() {
     }, 250);
   }
 
-  const backInLabel =
-    backInRequired === null ? "Back in: unknown" : backInRequired ? "Back in: YES" : "Back in: NO";
-
   const deliveryZonePreviewRegion = useMemo(() => {
     if (typeof entranceLat !== "number" || typeof entranceLng !== "number") return null;
 
@@ -1320,8 +1317,7 @@ export default function StopScreen() {
             canCancelContentTouches={true}
           >
             <View style={styles.header}>
-              <Text style={styles.title}>FreightIQ</Text>
-              <Text style={styles.subTitle}>{title}</Text>
+              <Text style={styles.title}>{title}</Text>
 
               {mergeMode ? (
                 <Text style={styles.cardHelp}>
@@ -1346,19 +1342,19 @@ export default function StopScreen() {
               <Text style={styles.sectionLabel}>Delivery Type</Text>
               <View style={styles.deliveryTypeChipRow}>
                 <Chip
-                  label="🚚 Dock"
+                  label="Dock"
                   active={deliveryType === "Dock"}
                   onPress={() => setDeliveryType("Dock")}
                   style={styles.deliveryTypeChip}
                 />
                 <Chip
-                  label="🚜 Forklift"
+                  label="Forklift"
                   active={deliveryType === "Forklift"}
                   onPress={() => setDeliveryType("Forklift")}
                   style={styles.deliveryTypeChip}
                 />
                 <Chip
-                  label="💪 Liftgate"
+                  label="Liftgate"
                   active={deliveryType === "Liftgate"}
                   onPress={() => setDeliveryType("Liftgate")}
                   style={styles.deliveryTypeChip}
@@ -1366,66 +1362,22 @@ export default function StopScreen() {
               </View>
 
               <Text style={styles.sectionLabel}>Back In</Text>
-              <View style={styles.toggleRow}>
-                <Text style={styles.toggleLabel}>{backInLabel}</Text>
-                <View style={{ flexDirection: "row", gap: 10 }}>
-                  <Pressable
-                    style={[
-                      styles.smallBtn,
-                      backInRequired === true ? styles.smallBtnActive : styles.smallBtnGhost,
-                    ]}
-                    onPress={() => setBackInRequired(true)}
-                  >
-                    <Text
-                      style={[
-                        styles.smallBtnText,
-                        backInRequired === true
-                          ? styles.smallBtnTextActive
-                          : styles.smallBtnTextGhost,
-                      ]}
-                    >
-                      YES
-                    </Text>
-                  </Pressable>
-
-                  <Pressable
-                    style={[
-                      styles.smallBtn,
-                      backInRequired === false ? styles.smallBtnActive : styles.smallBtnGhost,
-                    ]}
-                    onPress={() => setBackInRequired(false)}
-                  >
-                    <Text
-                      style={[
-                        styles.smallBtnText,
-                        backInRequired === false
-                          ? styles.smallBtnTextActive
-                          : styles.smallBtnTextGhost,
-                      ]}
-                    >
-                      NO
-                    </Text>
-                  </Pressable>
-
-                  <Pressable
-                    style={[
-                      styles.smallBtn,
-                      backInRequired === null ? styles.smallBtnActive : styles.smallBtnGhost,
-                    ]}
-                    onPress={() => setBackInRequired(null)}
-                  >
-                    <Text
-                      style={[
-                        styles.smallBtnText,
-                        backInRequired === null
-                          ? styles.smallBtnTextActive
-                          : styles.smallBtnTextGhost,
-                      ]}
-                    >
-                      ?
-                    </Text>
-                  </Pressable>
-                </View>
+              <View style={styles.chipRow}>
+                <Chip
+                  label="Yes"
+                  active={backInRequired === true}
+                  onPress={() => setBackInRequired(true)}
+                />
+                <Chip
+                  label="No"
+                  active={backInRequired === false}
+                  onPress={() => setBackInRequired(false)}
+                />
+                <Chip
+                  label="Unknown"
+                  active={backInRequired === null}
+                  onPress={() => setBackInRequired(null)}
+                />
               </View>
 
               <View style={styles.operationalZoneSummary}>
@@ -1498,31 +1450,45 @@ export default function StopScreen() {
                       ) : null}
                     </View>
 
-                    <Pressable
-                      style={styles.primaryWideBtn}
-                      onPress={() =>
-                        router.navigate({
-                          pathname: "/(tabs)/(map)",
-                          params: {
-                            focusStopId: stopId,
-                            showEntrance: "1",
-                            hidePreview: "1",
-                            entranceLat: String(entranceLat),
-                            entranceLng: String(entranceLng),
-                            revealAt: String(Date.now()),
-                          },
-                        })
-                      }
-                    >
-                      <Text style={styles.primaryWideBtnText}>View Full Map</Text>
-                    </Pressable>
+                    <View style={styles.deliveryZoneActionRow}>
+                      <Pressable
+                        style={[
+                          styles.secondaryBtn,
+                          styles.mainIntelSecondaryBtn,
+                          styles.deliveryZoneActionBtn,
+                        ]}
+                        onPress={() =>
+                          router.navigate({
+                            pathname: "/(tabs)/(map)",
+                            params: {
+                              focusStopId: stopId,
+                              showEntrance: "1",
+                              hidePreview: "1",
+                              entranceLat: String(entranceLat),
+                              entranceLng: String(entranceLng),
+                              revealAt: String(Date.now()),
+                            },
+                          })
+                        }
+                      >
+                        <Text style={styles.secondaryBtnText} numberOfLines={1}>
+                          View Full Map
+                        </Text>
+                      </Pressable>
 
-                    <Pressable
-                      style={[styles.secondaryBtn, styles.manageDeliveryZoneBtn]}
-                      onPress={openEntrancePicker}
-                    >
-                      <Text style={styles.secondaryBtnText}>Manage Delivery Zone</Text>
-                    </Pressable>
+                      <Pressable
+                        style={[
+                          styles.secondaryBtn,
+                          styles.mainIntelSecondaryBtn,
+                          styles.deliveryZoneActionBtn,
+                        ]}
+                        onPress={openEntrancePicker}
+                      >
+                        <Text style={styles.secondaryBtnText} numberOfLines={1}>
+                          Manage DZ
+                        </Text>
+                      </Pressable>
+                    </View>
                   </>
                 ) : (
                   <Pressable style={styles.primaryWideBtn} onPress={openEntrancePicker}>
@@ -1531,7 +1497,10 @@ export default function StopScreen() {
                 )}
               </View>
 
-              <Pressable style={styles.secondaryBtn} onPress={() => setAdditionalIntelOpen(true)}>
+              <Pressable
+                style={[styles.secondaryBtn, styles.mainIntelSecondaryBtn]}
+                onPress={() => setAdditionalIntelOpen(true)}
+              >
                 <Text style={styles.secondaryBtnText}>Additional Driver Intel</Text>
               </Pressable>
 
@@ -1543,11 +1512,15 @@ export default function StopScreen() {
 
               {myReportId ? (
                 <Pressable
-                  style={styles.secondaryBtn}
+                  style={[
+                    styles.secondaryBtn,
+                    styles.mainIntelSecondaryBtn,
+                    styles.destructiveOutlineBtn,
+                  ]}
                   onPress={deleteMyReport}
                   disabled={deletingReport}
                 >
-                  <Text style={styles.secondaryBtnText}>
+                  <Text style={[styles.secondaryBtnText, styles.destructiveOutlineBtnText]}>
                     {deletingReport ? "Deleting..." : "Delete My Report"}
                   </Text>
                 </Pressable>
@@ -1739,7 +1712,7 @@ export default function StopScreen() {
 
             {canDeleteStop && (
               <Pressable
-                style={styles.secondaryBtn}
+                style={[styles.secondaryBtn, styles.mainIntelSecondaryBtn]}
                 onPress={() => {
                   setManageStopView("menu");
                   setShowManageStop(true);
@@ -2186,7 +2159,6 @@ const styles = StyleSheet.create({
   container: { padding: 14, gap: 12, paddingBottom: 28 },
   header: { gap: 4, paddingBottom: 6 },
   title: { fontSize: 18, fontWeight: "900" },
-  subTitle: { fontSize: 16, fontWeight: "800" },
   coords: { color: "#666" },
 
   card: {
@@ -2312,8 +2284,22 @@ const styles = StyleSheet.create({
     color: "black",
     fontWeight: "800",
   },
-  manageDeliveryZoneBtn: {
-    paddingVertical: 10,
+  mainIntelSecondaryBtn: {
+    paddingVertical: 13,
+  },
+  deliveryZoneActionRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  deliveryZoneActionBtn: {
+    flex: 1,
+    minWidth: 0,
+  },
+  destructiveOutlineBtn: {
+    borderColor: "#dc2626",
+  },
+  destructiveOutlineBtnText: {
+    color: "#b91c1c",
   },
 
   sectionLabel: { fontWeight: "800", marginTop: 4 },
@@ -2342,26 +2328,6 @@ const styles = StyleSheet.create({
   chipText: { fontWeight: "800" },
   chipTextInactive: { color: "black" },
   chipTextActive: { color: "white" },
-
-  toggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  toggleLabel: { fontWeight: "900" },
-
-  smallBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  smallBtnGhost: { backgroundColor: "white", borderColor: "#ddd" },
-  smallBtnActive: { backgroundColor: "black", borderColor: "black" },
-  smallBtnText: { fontWeight: "900" },
-  smallBtnTextGhost: { color: "black" },
-  smallBtnTextActive: { color: "white" },
 
   saveBtn: {
     backgroundColor: "black",
