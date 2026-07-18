@@ -1,15 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as FileSystem from "expo-file-system/legacy";
-import * as ImageManipulator from "expo-image-manipulator";
-import * as ImagePicker from "expo-image-picker";
 import { useIsFocused } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import {
-  ActionSheetIOS,
   Alert,
-  Image,
   Keyboard,
   KeyboardAvoidingView,
   Linking,
@@ -226,48 +221,6 @@ function fitDeliveryZonePreviewMap(
   );
 }
 
-function base64ToArrayBuffer(base64: string) {
-  const binaryString = global.atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
-
-function guessExtension(fileName?: string | null, mimeType?: string | null): string {
-  const lower = (fileName ?? "").toLowerCase();
-
-  if (lower.endsWith(".png")) return "png";
-  if (lower.endsWith(".webp")) return "webp";
-  if (lower.endsWith(".heic")) return "heic";
-  if (lower.endsWith(".jpeg")) return "jpeg";
-  if (lower.endsWith(".jpg")) return "jpg";
-
-  const mime = (mimeType ?? "").toLowerCase();
-  if (mime.includes("png")) return "png";
-  if (mime.includes("webp")) return "webp";
-  if (mime.includes("heic")) return "heic";
-  if (mime.includes("jpeg")) return "jpg";
-
-  return "jpg";
-}
-
-function guessContentType(ext: string) {
-  switch (ext) {
-    case "png":
-      return "image/png";
-    case "webp":
-      return "image/webp";
-    case "heic":
-      return "image/heic";
-    case "jpeg":
-    case "jpg":
-    default:
-      return "image/jpeg";
-  }
-}
-
 export default function StopScreen() {
   const scrollViewRef = useRef<ScrollView | null>(null);
   const deliveryZonePreviewMapRef = useRef<MapView | null>(null);
@@ -318,7 +271,6 @@ export default function StopScreen() {
   const [entranceLng, setEntranceLng] = useState<number | null>(null);
   const [previewStopLat, setPreviewStopLat] = useState(lat);
   const [previewStopLng, setPreviewStopLng] = useState(lng);
-  const [entrancePhotoUrl, setEntrancePhotoUrl] = useState<string | null>(null);
   const [entrancePhotoPath, setEntrancePhotoPath] = useState<string | null>(null);
 
   const [entrancePickerOpen, setEntrancePickerOpen] = useState(false);
@@ -332,10 +284,7 @@ export default function StopScreen() {
 
   const [loading, setLoading] = useState(false);
   const [savingEntrance, setSavingEntrance] = useState(false);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [deletingPhoto, setDeletingPhoto] = useState(false);
   const [deletingStop, setDeletingStop] = useState(false);
-  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
   const [editNameOpen, setEditNameOpen] = useState(false);
   const [editedStopName, setEditedStopName] = useState(name);
   const [currentStopName, setCurrentStopName] = useState(name);
@@ -444,7 +393,7 @@ export default function StopScreen() {
   useEffect(() => {
     if (!stopId || !sessionUserId) return;
     loadReports();
-    loadEntranceAndPhoto();
+    loadEntrance();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stopId, sessionUserId]);
 
@@ -469,7 +418,7 @@ export default function StopScreen() {
     return null;
   }
 
-  async function loadEntranceAndPhoto() {
+  async function loadEntrance() {
     try {
       const localRaw = await AsyncStorage.getItem(stopKey(stopId));
       if (localRaw) {
@@ -488,7 +437,7 @@ export default function StopScreen() {
 
       const { data } = await supabase
         .from("mfi_stops")
-        .select("lat, lng, entrance_lat, entrance_lng, entrance_photo_url, entrance_photo_path")
+        .select("lat, lng, entrance_lat, entrance_lng, entrance_photo_path")
         .eq("id", stopId)
         .maybeSingle();
 
@@ -528,10 +477,8 @@ export default function StopScreen() {
         });
       }
 
-      setEntrancePhotoUrl(data?.entrance_photo_url ?? null);
       setEntrancePhotoPath(data?.entrance_photo_path ?? null);
     } catch {
-      setEntrancePhotoUrl(null);
       setEntrancePhotoPath(null);
     }
   }
@@ -1033,201 +980,6 @@ export default function StopScreen() {
       Alert.alert("Delivery zone cleared", "Delivery zone removed.");
     } finally {
       setSavingEntrance(false);
-    }
-  }
-
-  async function uploadEntrancePhotoFromUri(
-    uri: string,
-    fileName?: string | null,
-    mimeType?: string | null,
-  ) {
-    const ext = "jpg";
-    const contentType = "image/jpeg";
-    const path = `${stopId}/${Date.now()}.${ext}`;
-
-    const compressed = await ImageManipulator.manipulateAsync(uri, [{ resize: { width: 1280 } }], {
-      compress: 0.7,
-      format: ImageManipulator.SaveFormat.JPEG,
-    });
-
-    const base64 = await FileSystem.readAsStringAsync(compressed.uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-
-    const arrayBuffer = base64ToArrayBuffer(base64);
-
-    const { error: uploadError } = await supabase.storage
-      .from(ENTRANCE_BUCKET)
-      .upload(path, arrayBuffer, {
-        contentType,
-        upsert: false,
-      });
-
-    if (uploadError) {
-      throw new Error(uploadError.message);
-    }
-
-    const { data: publicUrlData } = supabase.storage.from(ENTRANCE_BUCKET).getPublicUrl(path);
-
-    const publicUrl = publicUrlData.publicUrl;
-
-    const { error: updateError } = await supabase
-      .from("mfi_stops")
-      .update({
-        entrance_photo_url: publicUrl,
-        entrance_photo_path: path,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", stopId);
-
-    if (updateError) {
-      throw new Error(updateError.message);
-    }
-
-    if (entrancePhotoPath) {
-      await supabase.storage.from(ENTRANCE_BUCKET).remove([entrancePhotoPath]);
-    }
-
-    setEntrancePhotoUrl(publicUrl);
-    setEntrancePhotoPath(path);
-  }
-
-  async function pickAndUploadEntrancePhoto() {
-    if (!(await requireSignedIn())) return;
-
-    try {
-      setUploadingPhoto(true);
-
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (!permission.granted) {
-        Alert.alert("Permission needed", "Allow photo library access first.");
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (result.canceled || !result.assets?.length) {
-        return;
-      }
-
-      const asset = result.assets[0];
-
-      await uploadEntrancePhotoFromUri(asset.uri, asset.fileName ?? null, asset.mimeType ?? null);
-
-      Alert.alert("Photo uploaded", "Delivery zone photo saved.");
-    } catch (error: any) {
-      Alert.alert("Upload failed", error?.message || "Something went wrong uploading the photo.");
-    } finally {
-      setUploadingPhoto(false);
-    }
-  }
-
-  async function takeAndUploadEntrancePhoto() {
-    if (!(await requireSignedIn())) return;
-
-    try {
-      setUploadingPhoto(true);
-
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-
-      if (!permission.granted) {
-        Alert.alert("Permission needed", "Allow camera access first.");
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (result.canceled || !result.assets?.length) {
-        return;
-      }
-
-      const asset = result.assets[0];
-
-      await uploadEntrancePhotoFromUri(asset.uri, asset.fileName ?? null, asset.mimeType ?? null);
-
-      Alert.alert("Photo uploaded", "Delivery zone saved.");
-    } catch (error: any) {
-      Alert.alert("Upload failed", error?.message || "Something went wrong uploading the photo.");
-    } finally {
-      setUploadingPhoto(false);
-    }
-  }
-
-  async function showPhotoSourceOptions() {
-    if (uploadingPhoto) return;
-    if (!(await requireSignedIn())) return;
-
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ["Cancel", "Take Photo", "Choose From Library"],
-          cancelButtonIndex: 0,
-        },
-        (buttonIndex) => {
-          if (buttonIndex === 1) {
-            void takeAndUploadEntrancePhoto();
-          } else if (buttonIndex === 2) {
-            void pickAndUploadEntrancePhoto();
-          }
-        },
-      );
-      return;
-    }
-
-    Alert.alert("Add Delivery Zone Photo", "Choose a photo source.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Take Photo", onPress: () => void takeAndUploadEntrancePhoto() },
-      {
-        text: "Choose From Library",
-        onPress: () => void pickAndUploadEntrancePhoto(),
-      },
-    ]);
-  }
-
-  async function removeEntrancePhoto() {
-    if (!(await requireSignedIn())) return;
-
-    if (!entrancePhotoPath) {
-      setEntrancePhotoUrl(null);
-      setEntrancePhotoPath(null);
-      return;
-    }
-
-    try {
-      setDeletingPhoto(true);
-
-      const { error: updateError } = await supabase
-        .from("mfi_stops")
-        .update({
-          entrance_photo_url: null,
-          entrance_photo_path: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", stopId);
-
-      if (updateError) {
-        Alert.alert("Remove failed", updateError.message);
-        return;
-      }
-
-      await supabase.storage.from(ENTRANCE_BUCKET).remove([entrancePhotoPath]);
-
-      setEntrancePhotoUrl(null);
-      setEntrancePhotoPath(null);
-      Alert.alert("Photo removed", "Entrance photo deleted.");
-    } catch {
-      Alert.alert("Remove failed", "Something went wrong removing the photo.");
-    } finally {
-      setDeletingPhoto(false);
     }
   }
 
@@ -1916,55 +1668,6 @@ export default function StopScreen() {
               )}
             </View>
 
-            <View style={styles.photoSection}>
-              <Text style={styles.sectionLabel}>Delivery Zone Photo</Text>
-              <Text style={styles.cardHelp}>
-                Show the delivery zone, dock, unloading area, or anything helpful for delivery.
-              </Text>
-
-              <Text style={styles.photoHint}>Tap photo to view full screen</Text>
-
-              {entrancePhotoUrl ? (
-                <Pressable onPress={() => setPhotoViewerOpen(true)}>
-                  <Image
-                    source={{ uri: entrancePhotoUrl }}
-                    style={styles.entrancePhoto}
-                    resizeMode="contain"
-                  />
-                </Pressable>
-              ) : (
-                <View style={styles.photoPlaceholder}>
-                  <Text style={styles.photoPlaceholderText}>No delivery zone photo yet</Text>
-                </View>
-              )}
-
-              <View style={styles.entranceSmallRow}>
-                <Pressable
-                  style={[styles.secondaryBtn, { flex: 1 }]}
-                  onPress={showPhotoSourceOptions}
-                  disabled={uploadingPhoto}
-                >
-                  <Text style={styles.secondaryBtnText}>
-                    {uploadingPhoto
-                      ? "Uploading..."
-                      : entrancePhotoUrl
-                        ? "Replace Photo"
-                        : "Add Photo"}
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  style={[styles.secondaryBtn, { flex: 1 }]}
-                  onPress={removeEntrancePhoto}
-                  disabled={deletingPhoto || !entrancePhotoUrl}
-                >
-                  <Text style={styles.secondaryBtnText}>
-                    {deletingPhoto ? "Removing..." : "Remove Photo"}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-
             {canDeleteStop && (
               <View style={styles.card}>
                 <Pressable onPress={() => setShowManageStop((v) => !v)}>
@@ -2151,48 +1854,6 @@ export default function StopScreen() {
                 </View>
               </View>
             </View>
-          </Modal>
-
-          <Modal
-            visible={photoViewerOpen}
-            transparent={true}
-            animationType="fade"
-            onRequestClose={() => setPhotoViewerOpen(false)}
-          >
-            <Pressable
-              style={{
-                flex: 1,
-                backgroundColor: "black",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-              onPress={() => setPhotoViewerOpen(false)}
-            >
-              {entrancePhotoUrl ? (
-                <View style={{ width: "100%", height: "100%" }} pointerEvents="box-none">
-                  <ScrollView
-                    style={{ width: "100%", height: "100%" }}
-                    contentContainerStyle={{
-                      flex: 1,
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                    maximumZoomScale={4}
-                    minimumZoomScale={1}
-                    pinchGestureEnabled={true}
-                    showsHorizontalScrollIndicator={false}
-                    showsVerticalScrollIndicator={false}
-                    bouncesZoom={true}
-                  >
-                    <Image
-                      source={{ uri: entrancePhotoUrl }}
-                      style={{ width: "100%", height: "100%" }}
-                      resizeMode="contain"
-                    />
-                  </ScrollView>
-                </View>
-              ) : null}
-            </Pressable>
           </Modal>
 
           <Modal
@@ -2427,35 +2088,6 @@ const styles = StyleSheet.create({
   secondaryBtnText: {
     color: "black",
     fontWeight: "800",
-  },
-
-  photoSection: {
-    gap: 10,
-    marginTop: 4,
-  },
-  entrancePhoto: {
-    width: "100%",
-    height: 220,
-    borderRadius: 14,
-    backgroundColor: "#eee",
-  },
-  photoPlaceholder: {
-    height: 150,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    backgroundColor: "#f8f8f8",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  photoPlaceholderText: {
-    color: "#666",
-    fontWeight: "700",
-  },
-  photoHint: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: -4,
   },
 
   sectionLabel: { fontWeight: "800", marginTop: 4 },
