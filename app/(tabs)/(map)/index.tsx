@@ -510,9 +510,36 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      let active = true;
+
       (async () => {
+        const savedPins = await loadSavedPinsFromStorage();
+        if (!active) return;
+
+        if (savedPins.length) {
+          const savedPinsById = new Map(savedPins.map((pin) => [pin.id, pin]));
+
+          setPins((previous) => mergePinsById(previous, savedPins));
+          setSelectedStop((previous) =>
+            previous ? (savedPinsById.get(previous.id) ?? previous) : previous,
+          );
+          setTempSearchPin((previous) =>
+            previous ? (savedPinsById.get(previous.id) ?? previous) : previous,
+          );
+          setRecent((previous) =>
+            previous.map((item) => {
+              const savedPin = savedPinsById.get(item.id);
+              return savedPin ? { ...item, ...savedPin } : item;
+            }),
+          );
+        }
+
         await updateCachedStopCount();
       })();
+
+      return () => {
+        active = false;
+      };
     }, []),
   );
 

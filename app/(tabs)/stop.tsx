@@ -285,18 +285,33 @@ export default function StopScreen() {
   const [loading, setLoading] = useState(false);
   const [savingEntrance, setSavingEntrance] = useState(false);
   const [deletingStop, setDeletingStop] = useState(false);
-  const [editNameOpen, setEditNameOpen] = useState(false);
+  const [manageStopView, setManageStopView] = useState<"menu" | "edit-name" | "edit-address">(
+    "menu",
+  );
   const [editedStopName, setEditedStopName] = useState(name);
   const [currentStopName, setCurrentStopName] = useState(name);
   const [savingName, setSavingName] = useState(false);
+  const [editedStopAddress, setEditedStopAddress] = useState(address);
+  const [currentStopAddress, setCurrentStopAddress] = useState(address);
+  const [savingAddress, setSavingAddress] = useState(false);
   const [reportsExpanded, setReportsExpanded] = useState(viewReports);
   const [reportsSectionY, setReportsSectionY] = useState(0);
   const editNameInputRef = useRef<TextInput | null>(null);
+  const editAddressInputRef = useRef<TextInput | null>(null);
   const title = useMemo(() => currentStopName, [currentStopName]);
+  const displayAddress = useMemo(
+    () => currentStopAddress.replace(", Colorado ", ", CO ").replace(", United States", ""),
+    [currentStopAddress],
+  );
   useEffect(() => {
     setEditedStopName(name);
     setCurrentStopName(name);
   }, [name]);
+
+  useEffect(() => {
+    setEditedStopAddress(address);
+    setCurrentStopAddress(address);
+  }, [address]);
 
   useEffect(() => {
     setPreviewStopLat(lat);
@@ -371,12 +386,16 @@ export default function StopScreen() {
   }, [stopId, sessionUserId]);
 
   useEffect(() => {
-    if (editNameOpen) {
-      setTimeout(() => {
-        editNameInputRef.current?.focus();
-      }, 100);
+    if (!showManageStop) return;
+
+    if (manageStopView === "edit-name") {
+      setTimeout(() => editNameInputRef.current?.focus(), 100);
     }
-  }, [editNameOpen]);
+
+    if (manageStopView === "edit-address") {
+      setTimeout(() => editAddressInputRef.current?.focus(), 100);
+    }
+  }, [manageStopView, showManageStop]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -1118,14 +1137,17 @@ export default function StopScreen() {
       Alert.alert("Stop deleted", "The stop and related intel were removed.", [
         {
           text: "OK",
-          onPress: () =>
+          onPress: () => {
+            setShowManageStop(false);
+            setManageStopView("menu");
             router.replace({
               pathname: "/(tabs)/(map)",
               params: {
                 deletedStopId: stopId,
                 refreshAt: String(Date.now()),
               },
-            }),
+            });
+          },
         },
       ]);
     } finally {
@@ -1138,7 +1160,7 @@ export default function StopScreen() {
 
     Alert.alert(
       "Delete this stop?",
-      "This will permanently delete the stop, its reports, its votes, and its delivery zone photo.",
+      "This will permanently delete the stop, its reports, its votes, and its Delivery Zone.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -1148,6 +1170,20 @@ export default function StopScreen() {
         },
       ],
     );
+  }
+
+  async function updateCachedStop(fields: Partial<Pick<Pin, "name" | "address">>) {
+    const rawPins = await AsyncStorage.getItem(PINS_KEY);
+    const parsedPins: Pin[] = rawPins ? JSON.parse(rawPins) : [];
+    const nextPins = parsedPins.map((pin) => (pin.id === stopId ? { ...pin, ...fields } : pin));
+    await AsyncStorage.setItem(PINS_KEY, JSON.stringify(nextPins));
+
+    const rawViewPins = await AsyncStorage.getItem(VIEW_CACHE_KEY);
+    const parsedViewPins: Pin[] = rawViewPins ? JSON.parse(rawViewPins) : [];
+    const nextViewPins = parsedViewPins.map((pin) =>
+      pin.id === stopId ? { ...pin, ...fields } : pin,
+    );
+    await AsyncStorage.setItem(VIEW_CACHE_KEY, JSON.stringify(nextViewPins));
   }
 
   async function saveStopName() {
@@ -1177,21 +1213,11 @@ export default function StopScreen() {
         return;
       }
 
-      const rawPins = await AsyncStorage.getItem(PINS_KEY);
-      const parsedPins: Pin[] = rawPins ? JSON.parse(rawPins) : [];
-      const nextPins = parsedPins.map((p) => (p.id === stopId ? { ...p, name: trimmed } : p));
-      await AsyncStorage.setItem(PINS_KEY, JSON.stringify(nextPins));
-
-      const rawViewPins = await AsyncStorage.getItem(VIEW_CACHE_KEY);
-      const parsedViewPins: Pin[] = rawViewPins ? JSON.parse(rawViewPins) : [];
-      const nextViewPins = parsedViewPins.map((p) =>
-        p.id === stopId ? { ...p, name: trimmed } : p,
-      );
-      await AsyncStorage.setItem(VIEW_CACHE_KEY, JSON.stringify(nextViewPins));
+      await updateCachedStop({ name: trimmed });
 
       setCurrentStopName(trimmed);
       setEditedStopName(trimmed);
-      setEditNameOpen(false);
+      setManageStopView("menu");
 
       Alert.alert("Saved", "Business name updated.");
     } catch {
@@ -1199,6 +1225,59 @@ export default function StopScreen() {
     } finally {
       setSavingName(false);
     }
+  }
+
+  async function saveStopAddress() {
+    if (!(await requireSignedIn())) return;
+
+    const trimmed = editedStopAddress.trim();
+
+    if (!trimmed) {
+      Alert.alert("Address required", "Please enter a stop address.");
+      return;
+    }
+
+    try {
+      setSavingAddress(true);
+      Keyboard.dismiss();
+
+      const { error } = await supabase
+        .from("mfi_stops")
+        .update({
+          address: trimmed,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", stopId);
+
+      if (error) {
+        Alert.alert("Save failed", error.message);
+        return;
+      }
+
+      await updateCachedStop({ address: trimmed });
+
+      setCurrentStopAddress(trimmed);
+      setEditedStopAddress(trimmed);
+      setManageStopView("menu");
+
+      Alert.alert("Saved", "Stop address updated.");
+    } catch {
+      Alert.alert("Save failed", "Something went wrong updating the stop address.");
+    } finally {
+      setSavingAddress(false);
+    }
+  }
+
+  function returnToManageStopMenu() {
+    Keyboard.dismiss();
+    setEditedStopName(currentStopName);
+    setEditedStopAddress(currentStopAddress);
+    setManageStopView("menu");
+  }
+
+  function closeManageStop() {
+    returnToManageStopMenu();
+    setShowManageStop(false);
   }
 
   function formatWhen(iso: string) {
@@ -1250,11 +1329,7 @@ export default function StopScreen() {
                 </Text>
               ) : null}
 
-              {address ? (
-                <Text style={styles.coords}>
-                  {address.replace(", Colorado ", ", CO ").replace(", United States", "")}
-                </Text>
-              ) : null}
+              {currentStopAddress ? <Text style={styles.coords}>{displayAddress}</Text> : null}
             </View>
 
             <View style={styles.card}>
@@ -1663,72 +1738,15 @@ export default function StopScreen() {
             </View>
 
             {canDeleteStop && (
-              <View style={styles.card}>
-                <Pressable onPress={() => setShowManageStop((v) => !v)}>
-                  <Text style={styles.cardTitle}>
-                    {showManageStop ? "▼ Manage Stop" : "▶ Manage Stop"}
-                  </Text>
-                </Pressable>
-
-                {showManageStop && (
-                  <>
-                    <Pressable
-                      style={styles.editNameBtn}
-                      onPress={async () => {
-                        if (!(await requireSignedIn())) return;
-                        setEditNameOpen(true);
-                      }}
-                    >
-                      <Text style={styles.editNameBtnText}>Edit Business Name</Text>
-                    </Pressable>
-
-                    <Text style={styles.cardHelp}>Merge or delete this stop.</Text>
-
-                    <Pressable
-                      style={styles.secondaryBtn}
-                      onPress={async () => {
-                        if (!(await requireSignedIn())) return;
-
-                        Alert.alert(
-                          "Start merge?",
-                          "You are starting from the stop you want to get rid of. Next you will choose the stop you want to keep.",
-                          [
-                            { text: "Cancel", style: "cancel" },
-                            {
-                              text: "Continue",
-                              onPress: () => {
-                                setMergeSourceStopId(stopId);
-                                setMergeMode(true);
-
-                                router.push({
-                                  pathname: "/(tabs)/(map)",
-                                  params: {
-                                    mergeMode: "1",
-                                    mergeSourceStopId: stopId,
-                                    hidePreview: "1",
-                                  },
-                                });
-                              },
-                            },
-                          ],
-                        );
-                      }}
-                    >
-                      <Text style={styles.secondaryBtnText}>Merge Duplicate Stop</Text>
-                    </Pressable>
-
-                    <Pressable
-                      style={styles.deleteBtn}
-                      onPress={confirmDeleteStop}
-                      disabled={deletingStop}
-                    >
-                      <Text style={styles.deleteBtnText}>
-                        {deletingStop ? "Deleting..." : "Delete This Stop"}
-                      </Text>
-                    </Pressable>
-                  </>
-                )}
-              </View>
+              <Pressable
+                style={styles.secondaryBtn}
+                onPress={() => {
+                  setManageStopView("menu");
+                  setShowManageStop(true);
+                }}
+              >
+                <Text style={styles.secondaryBtnText}>Manage Stop</Text>
+              </Pressable>
             )}
 
             <View style={styles.actions}>
@@ -1739,14 +1757,16 @@ export default function StopScreen() {
                   setReportsExpanded(false);
                   router.replace({
                     pathname: "/(tabs)/(map)",
-                    params:
-                      mergeMode && mergeSourceStopId
+                    params: {
+                      refreshAt: String(Date.now()),
+                      ...(mergeMode && mergeSourceStopId
                         ? {
                             mergeMode: "1",
                             mergeSourceStopId,
                             mergeStartedAt: String(Date.now()),
                           }
-                        : {},
+                        : {}),
+                    },
                   });
                 }}
               >
@@ -1774,10 +1794,8 @@ export default function StopScreen() {
                   <View style={styles.additionalIntelHeader}>
                     <Text style={styles.additionalIntelTitle}>Additional Driver Intel</Text>
                     <Text style={styles.additionalIntelStopName}>{title}</Text>
-                    {address ? (
-                      <Text style={styles.additionalIntelAddress}>
-                        {address.replace(", Colorado ", ", CO ").replace(", United States", "")}
-                      </Text>
+                    {currentStopAddress ? (
+                      <Text style={styles.additionalIntelAddress}>{displayAddress}</Text>
                     ) : null}
                   </View>
 
@@ -1866,6 +1884,192 @@ export default function StopScreen() {
             </SafeAreaView>
           </Modal>
 
+          <Modal visible={showManageStop} animationType="slide" onRequestClose={closeManageStop}>
+            <SafeAreaView style={styles.additionalIntelScreen}>
+              <KeyboardAvoidingView
+                style={styles.additionalIntelScreen}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+              >
+                <ScrollView
+                  contentContainerStyle={styles.additionalIntelContainer}
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode="on-drag"
+                >
+                  {manageStopView === "menu" ? (
+                    <>
+                      <View style={styles.additionalIntelHeader}>
+                        <Text style={styles.additionalIntelTitle}>Manage Stop</Text>
+                        <Text style={styles.additionalIntelStopName}>{title}</Text>
+                        {currentStopAddress ? (
+                          <Text style={styles.additionalIntelAddress}>{displayAddress}</Text>
+                        ) : null}
+                      </View>
+
+                      <Pressable style={styles.secondaryBtn} onPress={closeManageStop}>
+                        <Text style={styles.secondaryBtnText}>← Back to Intel</Text>
+                      </Pressable>
+
+                      <View style={styles.card}>
+                        <Pressable
+                          style={styles.secondaryBtn}
+                          onPress={async () => {
+                            if (!(await requireSignedIn())) return;
+                            setEditedStopName(currentStopName);
+                            setManageStopView("edit-name");
+                          }}
+                        >
+                          <Text style={styles.secondaryBtnText}>Edit Business Name</Text>
+                        </Pressable>
+
+                        <Pressable
+                          style={styles.secondaryBtn}
+                          onPress={async () => {
+                            if (!(await requireSignedIn())) return;
+                            setEditedStopAddress(currentStopAddress);
+                            setManageStopView("edit-address");
+                          }}
+                        >
+                          <Text style={styles.secondaryBtnText}>Edit Address</Text>
+                        </Pressable>
+
+                        <Pressable
+                          style={styles.secondaryBtn}
+                          onPress={async () => {
+                            if (!(await requireSignedIn())) return;
+
+                            Alert.alert(
+                              "Start merge?",
+                              "You are starting from the stop you want to get rid of. Next you will choose the stop you want to keep.",
+                              [
+                                { text: "Cancel", style: "cancel" },
+                                {
+                                  text: "Continue",
+                                  onPress: () => {
+                                    setMergeSourceStopId(stopId);
+                                    setMergeMode(true);
+                                    setShowManageStop(false);
+                                    setManageStopView("menu");
+
+                                    router.push({
+                                      pathname: "/(tabs)/(map)",
+                                      params: {
+                                        mergeMode: "1",
+                                        mergeSourceStopId: stopId,
+                                        hidePreview: "1",
+                                      },
+                                    });
+                                  },
+                                },
+                              ],
+                            );
+                          }}
+                        >
+                          <Text style={styles.secondaryBtnText}>Merge Duplicate Stop</Text>
+                        </Pressable>
+
+                        <Pressable
+                          style={styles.deleteBtn}
+                          onPress={confirmDeleteStop}
+                          disabled={deletingStop}
+                        >
+                          <Text style={styles.deleteBtnText}>
+                            {deletingStop ? "Deleting..." : "Delete This Stop"}
+                          </Text>
+                        </Pressable>
+                      </View>
+                    </>
+                  ) : manageStopView === "edit-name" ? (
+                    <>
+                      <View style={styles.additionalIntelHeader}>
+                        <Text style={styles.additionalIntelTitle}>Edit Business Name</Text>
+                        <Text style={styles.additionalIntelStopName}>{title}</Text>
+                        {currentStopAddress ? (
+                          <Text style={styles.additionalIntelAddress}>{displayAddress}</Text>
+                        ) : null}
+                      </View>
+
+                      <Pressable style={styles.secondaryBtn} onPress={returnToManageStopMenu}>
+                        <Text style={styles.secondaryBtnText}>← Back to Manage Stop</Text>
+                      </Pressable>
+
+                      <View style={styles.card}>
+                        <Text style={styles.sectionLabel}>Business Name</Text>
+                        <TextInput
+                          ref={editNameInputRef}
+                          value={editedStopName}
+                          onChangeText={setEditedStopName}
+                          placeholder="Enter business name"
+                          style={styles.input}
+                          autoCapitalize="words"
+                          returnKeyType="done"
+                        />
+
+                        <Pressable
+                          style={styles.saveBtn}
+                          onPress={saveStopName}
+                          disabled={savingName}
+                        >
+                          <Text style={styles.saveBtnText}>
+                            {savingName ? "Saving..." : "Save Name"}
+                          </Text>
+                        </Pressable>
+
+                        <Pressable style={styles.secondaryBtn} onPress={returnToManageStopMenu}>
+                          <Text style={styles.secondaryBtnText}>Cancel</Text>
+                        </Pressable>
+                      </View>
+                    </>
+                  ) : (
+                    <>
+                      <View style={styles.additionalIntelHeader}>
+                        <Text style={styles.additionalIntelTitle}>Edit Address</Text>
+                        <Text style={styles.additionalIntelStopName}>{title}</Text>
+                        {currentStopAddress ? (
+                          <Text style={styles.additionalIntelAddress}>{displayAddress}</Text>
+                        ) : null}
+                      </View>
+
+                      <Pressable style={styles.secondaryBtn} onPress={returnToManageStopMenu}>
+                        <Text style={styles.secondaryBtnText}>← Back to Manage Stop</Text>
+                      </Pressable>
+
+                      <View style={styles.card}>
+                        <Text style={styles.sectionLabel}>Address</Text>
+                        <TextInput
+                          ref={editAddressInputRef}
+                          value={editedStopAddress}
+                          onChangeText={setEditedStopAddress}
+                          placeholder="Enter stop address"
+                          style={styles.input}
+                          autoCapitalize="words"
+                          returnKeyType="done"
+                        />
+                        <Text style={styles.cardHelp}>
+                          This corrects the displayed address only. It does not move the stop or its
+                          Delivery Zone.
+                        </Text>
+
+                        <Pressable
+                          style={styles.saveBtn}
+                          onPress={saveStopAddress}
+                          disabled={savingAddress}
+                        >
+                          <Text style={styles.saveBtnText}>
+                            {savingAddress ? "Saving..." : "Save Address"}
+                          </Text>
+                        </Pressable>
+
+                        <Pressable style={styles.secondaryBtn} onPress={returnToManageStopMenu}>
+                          <Text style={styles.secondaryBtnText}>Cancel</Text>
+                        </Pressable>
+                      </View>
+                    </>
+                  )}
+                </ScrollView>
+              </KeyboardAvoidingView>
+            </SafeAreaView>
+          </Modal>
+
           <Modal
             visible={entrancePickerOpen}
             animationType="slide"
@@ -1892,7 +2096,7 @@ export default function StopScreen() {
                 >
                   <Marker
                     coordinate={{ latitude: lat, longitude: lng }}
-                    title={name}
+                    title={title}
                     description="Stop location"
                   >
                     <View style={styles.deliveryZonePreviewStopMarker}>
@@ -1972,47 +2176,6 @@ export default function StopScreen() {
               </View>
             </View>
           </Modal>
-
-          <Modal
-            visible={editNameOpen}
-            transparent
-            animationType="slide"
-            onRequestClose={() => setEditNameOpen(false)}
-          >
-            <View style={styles.modalBackdrop}>
-              <View style={styles.modalCard}>
-                <Text style={styles.modalTitle}>Edit Business Name</Text>
-
-                <TextInput
-                  ref={editNameInputRef}
-                  value={editedStopName}
-                  onChangeText={setEditedStopName}
-                  placeholder="Enter business name"
-                  style={styles.input}
-                  autoCapitalize="words"
-                  returnKeyType="done"
-                />
-
-                <View style={styles.modalActions}>
-                  <Pressable
-                    style={[styles.modalBtn, styles.modalCancelBtn]}
-                    onPress={() => {
-                      setEditedStopName(name);
-                      setEditNameOpen(false);
-                    }}
-                  >
-                    <Text style={styles.modalCancelBtnText}>Cancel</Text>
-                  </Pressable>
-
-                  <Pressable style={[styles.modalBtn, styles.modalSaveBtn]} onPress={saveStopName}>
-                    <Text style={styles.modalSaveBtnText}>
-                      {savingName ? "Saving..." : "Save Name"}
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          </Modal>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -2025,78 +2188,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: "900" },
   subTitle: { fontSize: 16, fontWeight: "800" },
   coords: { color: "#666" },
-
-  editNameBtn: {
-    marginTop: 10,
-    alignSelf: "flex-start",
-    backgroundColor: "#eef2ff",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#c7d2fe",
-  },
-
-  editNameBtnText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#3730a3",
-  },
-
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    justifyContent: "center",
-    padding: 20,
-  },
-
-  modalCard: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-  },
-
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-  },
-
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 10,
-  },
-
-  modalBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  modalCancelBtn: {
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-
-  modalCancelBtnText: {
-    color: "black",
-    fontWeight: "800",
-    fontSize: 16,
-  },
-
-  modalSaveBtn: {
-    backgroundColor: "black",
-  },
-
-  modalSaveBtnText: {
-    color: "white",
-    fontWeight: "800",
-    fontSize: 16,
-  },
 
   card: {
     borderWidth: 1,
