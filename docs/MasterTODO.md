@@ -18,7 +18,7 @@
 
 ---
 
-Last Updated: 2026-07-06
+Last Updated: 2026-07-19
 
 ---
 
@@ -149,26 +149,28 @@ Create a navigation experience that feels consistent throughout the application.
 
 #### Goals
 
-Continue refining how drivers contribute operational knowledge while minimizing effort.
+Validate the completed Intel V2 experience through real-world driver use before making further structural changes.
 
 #### Active Tasks
 
-- [ ] Design a Quick Intel workflow.
-- [ ] Validate the proposed field order through real-world testing.
-- [ ] Determine which fields belong in Quick Intel versus Detailed Intel.
-- [ ] Explore progressive disclosure for advanced Intel.
-- [ ] Evaluate photos as optional enrichment.
+- [ ] Continue real-world validation of Operational Essentials.
+- [ ] Validate whether Back In should remain before Delivery Zone.
+- [ ] Observe whether drivers naturally use Additional Driver Intel.
+- [ ] Validate Intel V2 on Android and additional screen sizes.
+- [ ] Update Help Center guidance to reflect Intel V2 before the next broader tester release.
 
 ### Map
 
 ##### Goals
 
-Continue improving map reliability and rendering performance.
+Continue improving map reliability, stop discovery, and rendering performance.
 
 ##### Active Tasks
 
-- [ ] Investigate delayed map pin rendering after loading.
-- [ ] Ensure pins render immediately without requiring user interaction.
+- [ ] Continue monitoring stop-marker loading and color accuracy.
+- [ ] Continue monitoring repeated Show/Hide Stops interactions for stability.
+- [ ] Continue monitoring repeated Preview Card interactions for stability.
+- [ ] Validate the polished Nearby Stops workflow with broader tester use.
 
 ---
 
@@ -358,7 +360,7 @@ Maintain a reliable, maintainable, and well-engineered codebase while continuing
 
 #### Development Workflow
 
-- [ ] Continue refining the Architect → Approved Implementation → Review workflow.
+- [ ] Continue refining the Product Owner → Approved Build Specification → Direct Codex Implementation → Review workflow.
 - [ ] Continue improving reusable component architecture.
 - [ ] Continue reducing duplicate implementations.
 - [ ] Continue improving project documentation.
@@ -462,26 +464,44 @@ Completed
 
 ---
 
-### Intel Page Redesign
+### Intel V2
 
 Completed
 
-- ✓ Delivery Type integration.
-- ✓ Driver Reports redesign.
-- ✓ Contact improvements.
-- ✓ Workflow simplification.
-- ✓ Collapsible section redesign.
+- ✓ Established Operational Essentials: Truck Fit, Delivery Type, Back In, and Delivery Zone.
+- ✓ Standardized Truck Fit and simplified contribution.
+- ✓ Added the Delivery Zone satellite preview, full-map view, and focused management workflow.
+- ✓ Retired Delivery Zone photos.
+- ✓ Created Additional Driver Intel.
+- ✓ Created Manage Stop with business-name and address editing.
+- ✓ Added clear report save states and keyboard-safe form behavior.
+- ✓ Aligned Driver Reports with the Intel hierarchy.
+- ✓ Completed physical-iPhone functional and polish validation.
 
 ---
 
-### Preview Card Redesign
+### Preview Card V2
 
 Completed
 
-- ✓ Separated Add/Edit Intel workflow.
-- ✓ Added View Reports workflow.
-- ✓ Improved Preview Card organization.
-- ✓ Simplified information hierarchy.
+- ✓ Mirrored the four Operational Essentials in a two-column summary.
+- ✓ Added truthful checking and loading states.
+- ✓ Simplified and reorganized Preview Card actions.
+- ✓ Added a polished close control.
+- ✓ Stabilized stop visibility and repeated Preview Card interactions.
+- ✓ Completed physical-iPhone functional and polish validation.
+
+---
+
+### Map Stop Discovery Polish
+
+Completed
+
+- ✓ Prevented unloaded stops from temporarily appearing as red no-intel stops.
+- ✓ Stabilized Show/Hide Stops visibility behavior.
+- ✓ Polished the Nearby Stops selection sheet.
+- ✓ Visually separated Cancel from selectable stop rows.
+- ✓ Verified repeated stop-selection workflows on a physical iPhone.
 
 ---
 
@@ -553,10 +573,11 @@ Completed
 
 Completed
 
-- ✓ Architect → Implementation → Review foundation validated.
-- ✓ Phased implementation workflow established.
-- ✓ Reusable component philosophy adopted.
-- ✓ Engineering Playbook expanded.
+- ✓ Adopted direct Codex repository inspection and implementation.
+- ✓ Preserved Build Specification approval gates.
+- ✓ Preserved diff review and physical-device testing.
+- ✓ Preserved user ownership of staging, commits, and syncing.
+- ✓ Added Route Boot to the repository Operating System.
 
 ---
 
