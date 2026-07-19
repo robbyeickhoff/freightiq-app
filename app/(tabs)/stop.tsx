@@ -1687,15 +1687,10 @@ export default function StopScreen() {
                           ) : null}
                         </View>
 
-                        {r.deliver_from_type ? (
+                        {r.truck_fit ? (
                           <Text style={styles.reportLine}>
-                            <Text style={styles.bold}>Delivery Location:</Text>{" "}
-                            {r.deliver_from_type}
+                            <Text style={styles.bold}>Truck Fit:</Text> {r.truck_fit}
                           </Text>
-                        ) : null}
-
-                        {r.deliver_from_details ? (
-                          <Text style={styles.reportLine}>{r.deliver_from_details}</Text>
                         ) : null}
 
                         {r.delivery_type ? (
@@ -1704,22 +1699,28 @@ export default function StopScreen() {
                           </Text>
                         ) : null}
 
+                        <Text style={styles.reportLine}>
+                          <Text style={styles.bold}>Back In:</Text>{" "}
+                          {r.back_in_required === true
+                            ? "Yes"
+                            : r.back_in_required === false
+                              ? "No"
+                              : "Unknown"}
+                        </Text>
+
+                        {r.deliver_from_type ? (
+                          <Text style={styles.reportLine}>
+                            <Text style={styles.bold}>Deliver From:</Text> {r.deliver_from_type}
+                          </Text>
+                        ) : null}
+
+                        {r.deliver_from_details ? (
+                          <Text style={styles.reportLine}>{r.deliver_from_details}</Text>
+                        ) : null}
+
                         {r.approach_hint ? (
                           <Text style={styles.reportLine}>
-                            <Text style={styles.bold}>Approach:</Text> {r.approach_hint}
-                          </Text>
-                        ) : null}
-
-                        {r.back_in_required !== null ? (
-                          <Text style={styles.reportLine}>
-                            <Text style={styles.bold}>Back in:</Text>{" "}
-                            {r.back_in_required ? "YES" : "NO"}
-                          </Text>
-                        ) : null}
-
-                        {r.truck_fit ? (
-                          <Text style={styles.reportLine}>
-                            <Text style={styles.bold}>Truck Fit:</Text> {r.truck_fit}
+                            <Text style={styles.bold}>Best Approach:</Text> {r.approach_hint}
                           </Text>
                         ) : null}
 
@@ -1730,14 +1731,15 @@ export default function StopScreen() {
                               if (!phoneParts) {
                                 return (
                                   <Text style={styles.reportLine}>
-                                    <Text style={styles.bold}>Contact:</Text> {r.contact}
+                                    <Text style={styles.bold}>Contact / Check-In:</Text> {r.contact}
                                   </Text>
                                 );
                               }
 
                               return (
                                 <Text style={styles.reportLine}>
-                                  <Text style={styles.bold}>Contact:</Text> {phoneParts.before}
+                                  <Text style={styles.bold}>Contact / Check-In:</Text>{" "}
+                                  {phoneParts.before}
                                   <Text
                                     style={{
                                       color: "#2563eb",
@@ -1758,7 +1760,7 @@ export default function StopScreen() {
 
                         {r.notes ? (
                           <Text style={styles.reportLine}>
-                            <Text style={styles.bold}>Notes:</Text> {r.notes}
+                            <Text style={styles.bold}>Driver Notes:</Text> {r.notes}
                           </Text>
                         ) : null}
 
