@@ -61,7 +61,7 @@ type ClusterProps = {
   stopId?: string;
   name?: string;
   address?: string;
-  hasIntel?: boolean;
+  hasIntel?: boolean | null;
   reportCount?: number;
   point_count?: number;
 };
@@ -86,6 +86,8 @@ type ReportStats = {
   count: number;
   latestUsername: string | null;
   deliveryType: "Dock" | "Forklift" | "Liftgate" | "Mixed" | null;
+  truckFit: "53'" | "48'" | "40'" | "28'" | "Mixed" | null;
+  backInRequired: boolean | null;
 };
 
 type DeliveryZoneInspectionSource = "preview" | "stop-intel";
@@ -302,16 +304,18 @@ function StopMarkerVisual({
   reportCount,
   score,
 }: {
-  hasIntel: boolean;
+  hasIntel: boolean | null;
   reportCount: number;
   score: number;
 }) {
-  let color = "red";
+  let color = "#9ca3af";
 
   if (score >= 2) {
     color = "#facc15";
-  } else if (hasIntel) {
+  } else if (hasIntel === true) {
     color = "green";
+  } else if (hasIntel === false) {
+    color = "red";
   }
 
   return (
@@ -324,6 +328,28 @@ function StopMarkerVisual({
       ) : null}
     </View>
   );
+}
+
+function resolveStopHasIntel(
+  stopId: string,
+  intelByStopId: Record<string, boolean>,
+  reportStatsByStopId: Record<string, ReportStats>,
+): boolean | null {
+  const hasLocalStatus = Object.prototype.hasOwnProperty.call(intelByStopId, stopId);
+  const hasReportStatus = Object.prototype.hasOwnProperty.call(reportStatsByStopId, stopId);
+
+  if (
+    (hasLocalStatus && intelByStopId[stopId]) ||
+    (hasReportStatus && reportStatsByStopId[stopId].count > 0)
+  ) {
+    return true;
+  }
+
+  if (hasLocalStatus && hasReportStatus) {
+    return false;
+  }
+
+  return null;
 }
 
 export default function HomeScreen() {
@@ -347,6 +373,9 @@ export default function HomeScreen() {
   const [mapLayout, setMapLayout] = useState({ width: 0, height: 0 });
   const [pins, setPins] = useState<Pin[]>([]);
   const [showingStops, setShowingStops] = useState(false);
+  const [stopLayerLoading, setStopLayerLoading] = useState(false);
+  const stopLayerLoadingRef = useRef(false);
+  const stopLayerRequestIdRef = useRef(0);
   const [loading, setLoading] = useState(false);
   const [tempSearchPin, setTempSearchPin] = useState<Pin | null>(null);
   const [didSetInitialLocation, setDidSetInitialLocation] = useState(false);
@@ -378,6 +407,10 @@ export default function HomeScreen() {
     lat: number;
     lng: number;
   } | null>(null);
+  const [selectedEntranceStatus, setSelectedEntranceStatus] = useState<
+    "idle" | "loading" | "resolved" | "error"
+  >("idle");
+  const selectedEntranceRequestIdRef = useRef(0);
 
   const [showSelectedEntrance, setShowSelectedEntrance] = useState(false);
   const handledShowEntranceKeyRef = useRef<string | null>(null);
@@ -398,6 +431,7 @@ export default function HomeScreen() {
     setSelectedStopId(p.id);
     setSelectedStop(p);
     setPreviewVisible(true);
+    void loadSelectedEntranceForStop(p);
   }
 
   const [newPinOpen, setNewPinOpen] = useState(false);
@@ -459,7 +493,7 @@ export default function HomeScreen() {
     });
     setSelectedStopId((prev) => (prev === deletedStopId ? null : prev));
     setSelectedStop((prev) => (prev?.id === deletedStopId ? null : prev));
-    setSelectedEntrance(null);
+    resetSelectedEntranceState();
     setPreviewVisible(false);
 
     setIntelByStopId((prev) => {
@@ -553,6 +587,7 @@ export default function HomeScreen() {
       setPreviewVisible(false);
       setSelectedStop(null);
       setSelectedStopId(null);
+      resetSelectedEntranceState();
     }
   }, [mergeModeParam, mergeSourceStopIdParam, mergeStartedAtParam, hidePreviewParam]);
 
@@ -732,7 +767,7 @@ export default function HomeScreen() {
 
       const { data: reports, error } = await supabase
         .from("mfi_reports")
-        .select("id, stop_id, user_id, updated_at, delivery_type")
+        .select("id, stop_id, user_id, updated_at, delivery_type, truck_fit, back_in_required")
         .in("stop_id", stopIds)
         .order("updated_at", { ascending: false });
 
@@ -754,6 +789,18 @@ export default function HomeScreen() {
         }
       > = {};
 
+      const truckFitCounts: Record<
+        string,
+        {
+          "53'": number;
+          "48'": number;
+          "40'": number;
+          "28'": number;
+        }
+      > = {};
+
+      const backInCounts: Record<string, { yes: number; no: number }> = {};
+
       const reportIds = rows.map((r: any) => r.id);
 
       const scoreMap: Record<string, { up: number; down: number }> = {};
@@ -765,6 +812,15 @@ export default function HomeScreen() {
           Forklift: 0,
           Liftgate: 0,
         };
+
+        truckFitCounts[id] = {
+          "53'": 0,
+          "48'": 0,
+          "40'": 0,
+          "28'": 0,
+        };
+
+        backInCounts[id] = { yes: 0, no: 0 };
       });
 
       if (reportIds.length) {
@@ -806,6 +862,22 @@ export default function HomeScreen() {
           const deliveryType = r.delivery_type as "Dock" | "Forklift" | "Liftgate";
           deliveryTypeCounts[r.stop_id][deliveryType] += 1;
         }
+
+        if (
+          r.truck_fit === "53'" ||
+          r.truck_fit === "48'" ||
+          r.truck_fit === "40'" ||
+          r.truck_fit === "28'"
+        ) {
+          const truckFit = r.truck_fit as "53'" | "48'" | "40'" | "28'";
+          truckFitCounts[r.stop_id][truckFit] += 1;
+        }
+
+        if (r.back_in_required === true) {
+          backInCounts[r.stop_id].yes += 1;
+        } else if (r.back_in_required === false) {
+          backInCounts[r.stop_id].no += 1;
+        }
       });
 
       const uniqueUserIds = [...new Set(Object.values(latestUserByStop))];
@@ -845,6 +917,33 @@ export default function HomeScreen() {
             if (winners.length > 1) return "Mixed";
 
             return winners[0].type as "Dock" | "Forklift" | "Liftgate";
+          })(),
+          truckFit: (() => {
+            const fits = truckFitCounts[id];
+
+            const values = [
+              { fit: "53'", count: fits["53'"] },
+              { fit: "48'", count: fits["48'"] },
+              { fit: "40'", count: fits["40'"] },
+              { fit: "28'", count: fits["28'"] },
+            ];
+
+            const maxCount = Math.max(...values.map((value) => value.count));
+
+            if (maxCount === 0) return null;
+
+            const winners = values.filter((value) => value.count === maxCount);
+
+            if (winners.length > 1) return "Mixed";
+
+            return winners[0].fit as "53'" | "48'" | "40'" | "28'";
+          })(),
+          backInRequired: (() => {
+            const countsForStop = backInCounts[id];
+
+            if (countsForStop.yes === countsForStop.no) return null;
+
+            return countsForStop.yes > countsForStop.no;
           })(),
         };
       });
@@ -974,7 +1073,7 @@ export default function HomeScreen() {
           stopId: p.id,
           name: p.name,
           address: p.address,
-          hasIntel: !!intelByStopId[p.id] || (reportStatsByStopId[p.id]?.count ?? 0) > 0,
+          hasIntel: resolveStopHasIntel(p.id, intelByStopId, reportStatsByStopId),
           reportCount: reportStatsByStopId[p.id]?.count ?? 0,
         },
         geometry: { type: "Point", coordinates: [p.lng, p.lat] },
@@ -1137,21 +1236,32 @@ export default function HomeScreen() {
   }
 
   async function refreshStopsInView() {
+    if (stopLayerLoadingRef.current) return;
+
     if (showingStops) {
-      setPins([]);
+      stopLayerRequestIdRef.current += 1;
       setShowingStops(false);
+      setClusterPoints([]);
       setSelectedStopId(null);
       setSelectedStop(null);
-      setSelectedEntrance(null);
+      resetSelectedEntranceState();
       setShowSelectedEntrance(false);
       setDeliveryZoneInspectionSource(null);
       setPreviewVisible(false);
       return;
     }
+
+    const requestId = stopLayerRequestIdRef.current + 1;
+    stopLayerRequestIdRef.current = requestId;
+    stopLayerLoadingRef.current = true;
+    setStopLayerLoading(true);
+
     try {
       const { data, error } = await supabase
         .from("mfi_stops")
         .select("id, name, lat, lng, address");
+
+      if (requestId !== stopLayerRequestIdRef.current) return;
 
       if (error) {
         console.log("Stops in view load failed", error.message);
@@ -1179,18 +1289,27 @@ export default function HomeScreen() {
           })),
       );
 
+      setClusterPoints([]);
       setPins(visiblePins);
       setShowingStops(true);
       setSelectedStopId(null);
       setSelectedStop(null);
+      resetSelectedEntranceState();
 
       Alert.alert(
         "Stops shown",
         `${visiblePins.length} stop${visiblePins.length === 1 ? "" : "s"} shown in this view.`,
       );
     } catch {
+      if (requestId !== stopLayerRequestIdRef.current) return;
+
       setShowingStops(false);
       Alert.alert("Refresh failed", "Could not load stops in view.");
+    } finally {
+      if (requestId === stopLayerRequestIdRef.current) {
+        stopLayerLoadingRef.current = false;
+        setStopLayerLoading(false);
+      }
     }
   }
 
@@ -1224,10 +1343,64 @@ export default function HomeScreen() {
 
   function clearSelection() {
     setSelectedStopId(null);
-    setSelectedEntrance(null);
+    resetSelectedEntranceState();
     setShowSelectedEntrance(false);
     setSelectedStop(null);
     setDeliveryZoneInspectionSource(null);
+  }
+
+  function resetSelectedEntranceState() {
+    selectedEntranceRequestIdRef.current += 1;
+    setSelectedEntrance(null);
+    setSelectedEntranceStatus("idle");
+  }
+
+  async function loadSelectedEntranceForStop(p: Pin, cachedRaw?: string | null) {
+    const requestId = selectedEntranceRequestIdRef.current + 1;
+    selectedEntranceRequestIdRef.current = requestId;
+    setSelectedEntrance(null);
+    setSelectedEntranceStatus("loading");
+
+    try {
+      const raw = cachedRaw === undefined ? await AsyncStorage.getItem(stopKey(p.id)) : cachedRaw;
+      const { data, error } = await supabase
+        .from("mfi_stops")
+        .select("entrance_lat, entrance_lng")
+        .eq("id", p.id)
+        .single();
+
+      if (requestId !== selectedEntranceRequestIdRef.current) return;
+
+      if (error) {
+        console.log("Delivery zone load failed", error.message);
+        setSelectedEntranceStatus("error");
+        return;
+      }
+
+      const nextEntrance =
+        typeof data?.entrance_lat === "number" && typeof data?.entrance_lng === "number"
+          ? { lat: data.entrance_lat, lng: data.entrance_lng }
+          : null;
+
+      if (!nextEntrance && raw) {
+        const localParsed: StopIntel = JSON.parse(raw);
+        delete localParsed.entranceLat;
+        delete localParsed.entranceLng;
+        localParsed.updatedAt = new Date().toISOString();
+        await AsyncStorage.setItem(stopKey(p.id), JSON.stringify(localParsed));
+      }
+
+      if (requestId === selectedEntranceRequestIdRef.current) {
+        setSelectedEntrance(nextEntrance);
+        setSelectedEntranceStatus("resolved");
+      }
+    } catch (error) {
+      if (requestId !== selectedEntranceRequestIdRef.current) return;
+
+      console.log("Delivery zone load failed", error);
+      setSelectedEntrance(null);
+      setSelectedEntranceStatus("error");
+    }
   }
 
   function enterDeliveryZoneInspection(
@@ -1235,10 +1408,12 @@ export default function HomeScreen() {
     stop: Pin,
     entrance: { lat: number; lng: number },
   ) {
+    selectedEntranceRequestIdRef.current += 1;
     setDeliveryZoneInspectionSource(source);
     setSelectedStopId(stop.id);
     setSelectedStop(stop);
     setSelectedEntrance(entrance);
+    setSelectedEntranceStatus("resolved");
     setPreviewVisible(false);
     setShowSelectedEntrance(true);
     setEntranceHighlightOn(true);
@@ -1330,6 +1505,7 @@ export default function HomeScreen() {
         setPins((prev) => prev.filter((stop) => stop.id !== mergeSourceStopId));
         setSelectedStop(null);
         setSelectedStopId(null);
+        resetSelectedEntranceState();
         setPreviewVisible(false);
 
         setMergeMode(false);
@@ -1343,6 +1519,8 @@ export default function HomeScreen() {
 
       return;
     }
+
+    resetSelectedEntranceState();
 
     // Detect nearby stops (potential duplicates)
     const nearby = pins.filter((other) => {
@@ -1369,35 +1547,7 @@ export default function HomeScreen() {
         parsed = JSON.parse(raw) as StopIntel;
       }
 
-      let eLat: number | undefined;
-      let eLng: number | undefined;
-
-      try {
-        const { data, error } = await supabase
-          .from("mfi_stops")
-          .select("entrance_lat, entrance_lng")
-          .eq("id", p.id)
-          .single();
-
-        if (!error) {
-          if (typeof data?.entrance_lat === "number" && typeof data?.entrance_lng === "number") {
-            eLat = data.entrance_lat;
-            eLng = data.entrance_lng;
-          } else if (raw) {
-            const localParsed: StopIntel = JSON.parse(raw);
-            delete localParsed.entranceLat;
-            delete localParsed.entranceLng;
-            localParsed.updatedAt = new Date().toISOString();
-            await AsyncStorage.setItem(stopKey(p.id), JSON.stringify(localParsed));
-          }
-        }
-      } catch {}
-
-      if (typeof eLat === "number" && typeof eLng === "number") {
-        setSelectedEntrance({ lat: eLat, lng: eLng });
-      } else {
-        setSelectedEntrance(null);
-      }
+      await loadSelectedEntranceForStop(p, raw);
 
       const up = typeof parsed?.votesUp === "number" ? parsed.votesUp : 0;
       const down = typeof parsed?.votesDown === "number" ? parsed.votesDown : 0;
@@ -1415,7 +1565,6 @@ export default function HomeScreen() {
       await loadCloudReportStats();
       await loadEntrancePhotoUrls();
     } catch {
-      setSelectedEntrance(null);
     } finally {
       setLoading(false);
     }
@@ -1851,7 +2000,7 @@ export default function HomeScreen() {
       setTempSearchPin(tempPin);
       setSelectedStop(tempPin);
       setSelectedStopId(tempPin.id);
-      setSelectedEntrance(null);
+      resetSelectedEntranceState();
       setPreviewVisible(true);
     } catch {
       Alert.alert("Search error", "Could not open that search result.");
@@ -1923,11 +2072,15 @@ export default function HomeScreen() {
         count: 0,
         latestUsername: null,
         deliveryType: null,
+        truckFit: null,
+        backInRequired: null,
       })
     : {
         count: 0,
         latestUsername: null,
         deliveryType: null,
+        truckFit: null,
+        backInRequired: null,
       };
 
   const selectedEntrancePhotoUrl = selectedStopId
@@ -1945,6 +2098,9 @@ export default function HomeScreen() {
   }, [entranceHighlightOn]);
 
   const showRawPins = false;
+  const showStopLayer = showingStops || mergeMode;
+  const showSelectedStopMarker =
+    !showStopLayer && !!selectedStop && selectedStop.id !== "temp-search-result";
   const PREVIEW_COLLAPSED_Y = 165;
 
   const previewTranslateY = useRef(new Animated.Value(0)).current;
@@ -2105,82 +2261,109 @@ export default function HomeScreen() {
             clearSelection();
           }}
         >
-          {showRawPins
-            ? sanitizePins(pins).map((p) => {
-                const hasIntel =
-                  !!intelByStopId[p.id] || (reportStatsByStopId[p.id]?.count ?? 0) > 0;
+          {showStopLayer
+            ? showRawPins
+              ? sanitizePins(pins).map((p) => {
+                  const hasIntel = resolveStopHasIntel(p.id, intelByStopId, reportStatsByStopId);
 
-                const reportCount = reportStatsByStopId[p.id]?.count ?? 0;
-                const latestUsername = reportStatsByStopId[p.id]?.latestUsername ?? null;
+                  const reportCount = reportStatsByStopId[p.id]?.count ?? 0;
+                  const latestUsername = reportStatsByStopId[p.id]?.latestUsername ?? null;
 
-                return (
-                  <Marker
-                    key={`raw-stop-${p.id}`}
-                    coordinate={{ latitude: p.lat, longitude: p.lng }}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      selectStop(p);
-                    }}
-                  >
-                    <StopMarkerVisual
-                      hasIntel={hasIntel}
-                      reportCount={reportCount}
-                      score={(scoreByStopId[p.id]?.up ?? 0) - (scoreByStopId[p.id]?.down ?? 0)}
-                    />
-                  </Marker>
-                );
-              })
-            : clusterPoints.map((f: any) => {
-                const isCluster = f.properties?.cluster;
-                const [lng, lat] = f.geometry.coordinates as [number, number];
-
-                if (isCluster) {
-                  const count = f.properties.point_count as number;
                   return (
                     <Marker
-                      key={`cluster-${f.id}`}
-                      coordinate={{ latitude: lat, longitude: lng }}
-                      onPress={() => onPressCluster(f)}
+                      key={`raw-stop-${p.id}`}
+                      coordinate={{ latitude: p.lat, longitude: p.lng }}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        selectStop(p);
+                      }}
                     >
-                      <View style={styles.clusterBubble}>
-                        <Text style={styles.clusterText}>{count}</Text>
-                      </View>
+                      <StopMarkerVisual
+                        hasIntel={hasIntel}
+                        reportCount={reportCount}
+                        score={(scoreByStopId[p.id]?.up ?? 0) - (scoreByStopId[p.id]?.down ?? 0)}
+                      />
                     </Marker>
                   );
+                })
+              : clusterPoints.map((f: any) => {
+                  const isCluster = f.properties?.cluster;
+                  const [lng, lat] = f.geometry.coordinates as [number, number];
+
+                  if (isCluster) {
+                    const count = f.properties.point_count as number;
+                    return (
+                      <Marker
+                        key={`cluster-${f.id}`}
+                        coordinate={{ latitude: lat, longitude: lng }}
+                        onPress={() => onPressCluster(f)}
+                      >
+                        <View style={styles.clusterBubble}>
+                          <Text style={styles.clusterText}>{count}</Text>
+                        </View>
+                      </Marker>
+                    );
+                  }
+
+                  const stopId = f.properties.stopId as string;
+                  const hasIntel =
+                    typeof f.properties.hasIntel === "boolean" ? f.properties.hasIntel : null;
+                  const reportCount = Number(f.properties.reportCount ?? 0);
+                  const latestUsername = reportStatsByStopId[stopId]?.latestUsername ?? null;
+
+                  return (
+                    <Marker
+                      key={`stop-${stopId}-${
+                        hasIntel === null ? "checking" : hasIntel ? "intel" : "no-intel"
+                      }-${reportCount}`}
+                      coordinate={{ latitude: lat, longitude: lng }}
+                      tracksViewChanges={true}
+                      onPress={() => {
+                        const p = pins.find((x) => x.id === stopId);
+                        if (p) {
+                          selectStop(p);
+                          addToRecent({
+                            id: p.id,
+                            name: p.name,
+                            address: p.address,
+                            lat: p.lat,
+                            lng: p.lng,
+                          });
+                        }
+                      }}
+                    >
+                      <StopMarkerVisual
+                        hasIntel={hasIntel}
+                        reportCount={reportCount}
+                        score={
+                          (scoreByStopId[stopId]?.up ?? 0) - (scoreByStopId[stopId]?.down ?? 0)
+                        }
+                      />
+                    </Marker>
+                  );
+                })
+            : null}
+
+          {showSelectedStopMarker && selectedStop ? (
+            <Marker
+              key={`selected-stop-${selectedStop.id}`}
+              coordinate={{ latitude: selectedStop.lat, longitude: selectedStop.lng }}
+              tracksViewChanges={true}
+              onPress={(e) => {
+                e.stopPropagation();
+                selectStop(selectedStop);
+              }}
+            >
+              <StopMarkerVisual
+                hasIntel={resolveStopHasIntel(selectedStop.id, intelByStopId, reportStatsByStopId)}
+                reportCount={reportStatsByStopId[selectedStop.id]?.count ?? 0}
+                score={
+                  (scoreByStopId[selectedStop.id]?.up ?? 0) -
+                  (scoreByStopId[selectedStop.id]?.down ?? 0)
                 }
-
-                const stopId = f.properties.stopId as string;
-                const hasIntel = !!f.properties.hasIntel;
-                const reportCount = Number(f.properties.reportCount ?? 0);
-                const latestUsername = reportStatsByStopId[stopId]?.latestUsername ?? null;
-
-                return (
-                  <Marker
-                    key={`stop-${stopId}-${hasIntel ? "intel" : "no-intel"}-${reportCount}`}
-                    coordinate={{ latitude: lat, longitude: lng }}
-                    tracksViewChanges={true}
-                    onPress={() => {
-                      const p = pins.find((x) => x.id === stopId);
-                      if (p) {
-                        selectStop(p);
-                        addToRecent({
-                          id: p.id,
-                          name: p.name,
-                          address: p.address,
-                          lat: p.lat,
-                          lng: p.lng,
-                        });
-                      }
-                    }}
-                  >
-                    <StopMarkerVisual
-                      hasIntel={hasIntel}
-                      reportCount={reportCount}
-                      score={(scoreByStopId[stopId]?.up ?? 0) - (scoreByStopId[stopId]?.down ?? 0)}
-                    />
-                  </Marker>
-                );
-              })}
+              />
+            </Marker>
+          ) : null}
 
           {tempSearchPin ? (
             <Marker
@@ -2194,6 +2377,7 @@ export default function HomeScreen() {
               onPress={() => {
                 setSelectedStop(tempSearchPin);
                 setSelectedStopId(tempSearchPin.id);
+                resetSelectedEntranceState();
                 setPreviewVisible(true);
               }}
             >
@@ -2451,21 +2635,69 @@ export default function HomeScreen() {
             </View>
           ) : (
             <>
-              <View style={styles.previewMetaBlock}>
-                <Text style={styles.previewMetaLine}>
-                  Delivery Zone: {selectedEntrance ? "Saved" : "None"}
-                </Text>
-
-                {selectedReportStats.deliveryType ? (
+              {selectedStop?.id === "temp-search-result" ? (
+                <View style={styles.previewMetaBlock}>
                   <Text style={styles.previewMetaLine}>
-                    Delivery Type: {selectedReportStats.deliveryType}
+                    Delivery Zone: {selectedEntrance ? "Saved" : "None"}
                   </Text>
-                ) : null}
 
-                <Text style={styles.previewMetaLine}>
-                  Driver Reports: {selectedReportStats.count}
-                </Text>
-              </View>
+                  {selectedReportStats.deliveryType ? (
+                    <Text style={styles.previewMetaLine}>
+                      Delivery Type: {selectedReportStats.deliveryType}
+                    </Text>
+                  ) : null}
+
+                  <Text style={styles.previewMetaLine}>
+                    Driver Reports: {selectedReportStats.count}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.previewOperationalSummary}>
+                  <Text style={styles.previewSectionTitle}>Operational Summary</Text>
+
+                  <View style={styles.previewOperationalRow}>
+                    <View style={styles.previewOperationalItem}>
+                      <Text style={styles.previewOperationalLabel}>Truck Fit</Text>
+                      <Text style={styles.previewOperationalValue}>
+                        {selectedReportStats.truckFit ?? "Unknown"}
+                      </Text>
+                    </View>
+
+                    <View style={styles.previewOperationalItem}>
+                      <Text style={styles.previewOperationalLabel}>Delivery Type</Text>
+                      <Text style={styles.previewOperationalValue}>
+                        {selectedReportStats.deliveryType ?? "Unknown"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.previewOperationalRow}>
+                    <View style={styles.previewOperationalItem}>
+                      <Text style={styles.previewOperationalLabel}>Back In</Text>
+                      <Text style={styles.previewOperationalValue}>
+                        {selectedReportStats.backInRequired === null
+                          ? "Unknown"
+                          : selectedReportStats.backInRequired
+                            ? "Yes"
+                            : "No"}
+                      </Text>
+                    </View>
+
+                    <View style={styles.previewOperationalItem}>
+                      <Text style={styles.previewOperationalLabel}>Delivery Zone</Text>
+                      <Text style={styles.previewOperationalValue}>
+                        {selectedEntranceStatus === "loading" || selectedEntranceStatus === "idle"
+                          ? "Checking…"
+                          : selectedEntranceStatus === "error"
+                            ? "Unavailable"
+                            : selectedEntrance
+                              ? "Saved"
+                              : "Not Set"}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
 
               {selectedStop?.id === "temp-search-result" ? (
                 <>
@@ -2499,28 +2731,34 @@ export default function HomeScreen() {
                 </>
               ) : (
                 <>
-                  <Pressable
-                    style={styles.previewPrimaryBtn}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/(tabs)/stop",
-                        params: {
-                          id: selectedStop?.id,
-                          lat: String(selectedStop?.lat),
-                          lng: String(selectedStop?.lng),
-                          name: selectedStop?.name,
-                          address: selectedStop?.address ?? "",
-                          openedAt: String(Date.now()),
-                        },
-                      })
-                    }
-                  >
-                    <Text style={styles.previewPrimaryBtnText}>Add/Edit Intel</Text>
-                  </Pressable>
-
-                  <View style={styles.previewSecondaryRow}>
+                  <View style={styles.previewSavedActionRow}>
                     <Pressable
-                      style={styles.previewSecondaryBtn}
+                      style={styles.previewSavedActionBtn}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(tabs)/stop",
+                          params: {
+                            id: selectedStop?.id,
+                            lat: String(selectedStop?.lat),
+                            lng: String(selectedStop?.lng),
+                            name: selectedStop?.name,
+                            address: selectedStop?.address ?? "",
+                            openedAt: String(Date.now()),
+                          },
+                        })
+                      }
+                    >
+                      <Text style={styles.previewSavedActionText}>Edit Intel</Text>
+                    </Pressable>
+
+                    <Pressable style={styles.previewSavedActionBtn} onPress={navToStop}>
+                      <Text style={styles.previewSavedActionText}>Navigate</Text>
+                    </Pressable>
+                  </View>
+
+                  <View style={styles.previewSavedActionRow}>
+                    <Pressable
+                      style={styles.previewSavedActionBtn}
                       onPress={() =>
                         router.push({
                           pathname: "/(tabs)/stop",
@@ -2536,43 +2774,49 @@ export default function HomeScreen() {
                         })
                       }
                     >
-                      <Text style={styles.previewSecondaryBtnText}>View Reports</Text>
+                      <Text style={styles.previewSavedActionText}>
+                        Reports ({selectedReportStats.count})
+                      </Text>
                     </Pressable>
 
-                    <Pressable style={styles.previewSecondaryBtn} onPress={navToStop}>
-                      <Text style={styles.previewSecondaryBtnText}>Nav Stop</Text>
-                    </Pressable>
-                  </View>
-
-                  <View style={styles.previewSecondaryRow}>
                     {selectedEntrance ? (
                       <Pressable
-                        style={styles.previewSecondaryBtn}
+                        style={styles.previewSavedActionBtn}
                         onPress={() => {
                           if (!selectedStop || !selectedEntrance) return;
 
                           enterDeliveryZoneInspection("preview", selectedStop, selectedEntrance);
                         }}
                       >
-                        <Text style={styles.previewSecondaryBtnText}>Show Delivery Zone</Text>
+                        <Text style={styles.previewSavedActionText}>Delivery Zone</Text>
                       </Pressable>
                     ) : (
                       <Pressable
-                        style={[styles.previewSecondaryBtn, styles.previewSecondaryBtnGhost]}
+                        style={[styles.previewSavedActionBtn, styles.previewSavedActionBtnMuted]}
                         onPress={() =>
-                          Alert.alert(
-                            "No delivery zone yet",
-                            "Open the stop and set a delivery zone pin.",
-                          )
+                          selectedEntranceStatus === "loading" || selectedEntranceStatus === "idle"
+                            ? Alert.alert(
+                                "Checking delivery zone",
+                                "FreightIQ is still loading this stop’s saved delivery zone.",
+                              )
+                            : selectedEntranceStatus === "error"
+                              ? Alert.alert(
+                                  "Delivery zone unavailable",
+                                  "FreightIQ could not load this stop’s delivery zone. Try opening the stop again.",
+                                )
+                              : Alert.alert(
+                                  "No delivery zone yet",
+                                  "Open the stop and set a delivery zone pin.",
+                                )
                         }
                       >
                         <Text
                           style={[
-                            styles.previewSecondaryBtnText,
-                            styles.previewSecondaryBtnTextGhost,
+                            styles.previewSavedActionText,
+                            styles.previewSavedActionTextMuted,
                           ]}
                         >
-                          Show Delivery Zone
+                          Delivery Zone
                         </Text>
                       </Pressable>
                     )}
@@ -2586,7 +2830,7 @@ export default function HomeScreen() {
                   setPreviewVisible(false);
                   setSelectedStop(null);
                   setSelectedStopId(null);
-                  setSelectedEntrance(null);
+                  resetSelectedEntranceState();
                   setShowSelectedEntrance(false);
                   setDeliveryZoneInspectionSource(null);
                   setTempSearchPin(null);
@@ -2609,8 +2853,10 @@ export default function HomeScreen() {
       {!showPreview ? (
         <View style={[styles.floatingActions, { bottom: 36 }]}>
           <View style={styles.mapToolsCard}>
-            <Pressable onPress={refreshStopsInView}>
-              <MapButton>{showingStops ? "Hide Stops" : "Show Stops"}</MapButton>
+            <Pressable onPress={refreshStopsInView} disabled={stopLayerLoading}>
+              <MapButton>
+                {stopLayerLoading ? "Loading…" : showingStops ? "Hide Stops" : "Show Stops"}
+              </MapButton>
             </Pressable>
           </View>
 
@@ -3286,6 +3532,38 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
+  previewOperationalSummary: {
+    gap: 10,
+  },
+
+  previewSectionTitle: {
+    color: "#6b7280",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
+  previewOperationalRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+
+  previewOperationalItem: {
+    flex: 1,
+    gap: 2,
+  },
+
+  previewOperationalLabel: {
+    color: "#6b7280",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  previewOperationalValue: {
+    color: "#111",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+
   previewPrimaryBtn: {
     backgroundColor: "black",
     borderRadius: 16,
@@ -3330,6 +3608,38 @@ const styles = StyleSheet.create({
 
   previewSecondaryBtnTextGhost: {
     color: "#111",
+  },
+
+  previewSavedActionRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  previewSavedActionBtn: {
+    flex: 1,
+    minHeight: 50,
+    borderRadius: 14,
+    backgroundColor: "#f3f4f6",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
+
+  previewSavedActionBtnMuted: {
+    backgroundColor: "#fafafa",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+
+  previewSavedActionText: {
+    color: "#111",
+    fontWeight: "700",
+    fontSize: 14,
+    textAlign: "center",
+  },
+
+  previewSavedActionTextMuted: {
+    color: "#9ca3af",
   },
 
   previewHideBtn: {
