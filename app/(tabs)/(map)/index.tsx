@@ -2127,6 +2127,16 @@ export default function HomeScreen() {
     }).start();
   }
 
+  function dismissPreviewCard() {
+    setPreviewVisible(false);
+    setSelectedStop(null);
+    setSelectedStopId(null);
+    resetSelectedEntranceState();
+    setShowSelectedEntrance(false);
+    setDeliveryZoneInspectionSource(null);
+    setTempSearchPin(null);
+  }
+
   useEffect(() => {
     if (!showPreview) {
       previewTranslateY.setValue(0);
@@ -2610,6 +2620,17 @@ export default function HomeScreen() {
         <Animated.View
           style={[styles.previewCard, { transform: [{ translateY: previewTranslateY }] }]}
         >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close stop preview"
+            hitSlop={8}
+            style={styles.previewCloseBtn}
+            onPress={dismissPreviewCard}
+          >
+            <View style={[styles.previewCloseLine, styles.previewCloseLineForward]} />
+            <View style={[styles.previewCloseLine, styles.previewCloseLineBackward]} />
+          </Pressable>
+
           <View style={styles.previewDragArea}>
             <View {...previewPanResponder.panHandlers} style={styles.previewDragGrabZone}>
               <View style={styles.previewHandle} />
@@ -2824,20 +2845,6 @@ export default function HomeScreen() {
                 </>
               )}
 
-              <Pressable
-                style={styles.previewHideBtn}
-                onPress={() => {
-                  setPreviewVisible(false);
-                  setSelectedStop(null);
-                  setSelectedStopId(null);
-                  resetSelectedEntranceState();
-                  setShowSelectedEntrance(false);
-                  setDeliveryZoneInspectionSource(null);
-                  setTempSearchPin(null);
-                }}
-              >
-                <Text style={styles.previewHideBtnText}>Hide</Text>
-              </Pressable>
             </>
           )}
         </Animated.View>
@@ -3510,6 +3517,35 @@ const styles = StyleSheet.create({
     gap: 4,
   },
 
+  previewCloseBtn: {
+    position: "absolute",
+    top: 14,
+    right: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#f3f4f6",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 2,
+  },
+
+  previewCloseLine: {
+    position: "absolute",
+    width: 13,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: "#6b7280",
+  },
+
+  previewCloseLineForward: {
+    transform: [{ rotate: "45deg" }],
+  },
+
+  previewCloseLineBackward: {
+    transform: [{ rotate: "-45deg" }],
+  },
+
   previewTitle: {
     fontSize: 18,
     fontWeight: "900",
@@ -3640,18 +3676,6 @@ const styles = StyleSheet.create({
 
   previewSavedActionTextMuted: {
     color: "#9ca3af",
-  },
-
-  previewHideBtn: {
-    alignSelf: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-
-  previewHideBtnText: {
-    color: "#6b7280",
-    fontWeight: "800",
-    fontSize: 14,
   },
 
   entranceMarkerLabelHighlighted: {
