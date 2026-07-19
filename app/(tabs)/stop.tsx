@@ -70,6 +70,30 @@ type ReportRow = {
   tractor_type?: string | null;
 };
 
+type ReportDraft = {
+  deliverFromType: string;
+  deliverFromDetails: string;
+  deliveryType: string;
+  approachHint: string;
+  backInRequired: boolean | null;
+  truckFit: string;
+  contact: string;
+  notes: string;
+};
+
+function createReportSnapshot(draft: ReportDraft): string {
+  return JSON.stringify([
+    draft.deliverFromType,
+    draft.deliverFromDetails,
+    draft.deliveryType,
+    draft.approachHint,
+    draft.backInRequired,
+    draft.truckFit,
+    draft.contact,
+    draft.notes,
+  ]);
+}
+
 type VoteRow = {
   id: string;
   report_id: string;
@@ -238,6 +262,7 @@ export default function StopScreen() {
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
 
   const [myReportId, setMyReportId] = useState<string | null>(null);
+  const [savedReportSnapshot, setSavedReportSnapshot] = useState<string | null>(null);
   const [stopOwnerId, setStopOwnerId] = useState<string | null>(null);
   const [deletingReport, setDeletingReport] = useState(false);
   const [canDeleteStop, setCanDeleteStop] = useState(false);
@@ -267,6 +292,29 @@ export default function StopScreen() {
   const [contact, setContact] = useState("");
   const [notes, setNotes] = useState("");
 
+  const currentReportSnapshot = useMemo(
+    () =>
+      createReportSnapshot({
+        deliverFromType,
+        deliverFromDetails,
+        deliveryType,
+        approachHint,
+        backInRequired,
+        truckFit,
+        contact,
+        notes,
+      }),
+    [
+      approachHint,
+      backInRequired,
+      contact,
+      deliverFromDetails,
+      deliverFromType,
+      deliveryType,
+      notes,
+      truckFit,
+    ],
+  );
   const [entranceLat, setEntranceLat] = useState<number | null>(null);
   const [entranceLng, setEntranceLng] = useState<number | null>(null);
   const [previewStopLat, setPreviewStopLat] = useState(lat);
@@ -296,6 +344,15 @@ export default function StopScreen() {
   const [savingAddress, setSavingAddress] = useState(false);
   const [reportsExpanded, setReportsExpanded] = useState(viewReports);
   const [reportsSectionY, setReportsSectionY] = useState(0);
+  const reportIsSaved = Boolean(myReportId && savedReportSnapshot === currentReportSnapshot);
+  const reportSaveLabel = loading
+    ? "Saving..."
+    : reportIsSaved
+      ? "✓ Saved"
+      : myReportId
+        ? "Update My Report"
+        : "Post My Report";
+  const reportSaveDisabled = loading || reportIsSaved;
   const editNameInputRef = useRef<TextInput | null>(null);
   const editAddressInputRef = useRef<TextInput | null>(null);
   const title = useMemo(() => currentStopName, [currentStopName]);
@@ -548,19 +605,33 @@ export default function StopScreen() {
 
       const mine = hydrated.find((r) => r.user_id === sessionUserId);
       if (mine) {
+        const loadedBackInRequired =
+          mine.back_in_required === true ? true : mine.back_in_required === false ? false : null;
+
         setMyReportId(mine.id);
         setDeliverFromType((mine.deliver_from_type as any) ?? "");
         setDeliverFromDetails(mine.deliver_from_details ?? "");
         setDeliveryType((mine.delivery_type as any) ?? "");
         setApproachHint(mine.approach_hint ?? "");
-        setBackInRequired(
-          mine.back_in_required === true ? true : mine.back_in_required === false ? false : null,
-        );
+        setBackInRequired(loadedBackInRequired);
         setTruckFit(mine.truck_fit ?? "");
         setContact(mine.contact ?? "");
         setNotes(mine.notes ?? "");
+        setSavedReportSnapshot(
+          createReportSnapshot({
+            deliverFromType: mine.deliver_from_type ?? "",
+            deliverFromDetails: mine.deliver_from_details ?? "",
+            deliveryType: mine.delivery_type ?? "",
+            approachHint: mine.approach_hint ?? "",
+            backInRequired: loadedBackInRequired,
+            truckFit: mine.truck_fit ?? "",
+            contact: mine.contact ?? "",
+            notes: mine.notes ?? "",
+          }),
+        );
       } else {
         setMyReportId(null);
+        setSavedReportSnapshot(null);
         setDeliverFromType("");
         setDeliverFromDetails("");
         setDeliveryType("");
@@ -782,6 +853,7 @@ export default function StopScreen() {
             }
 
             setMyReportId(null);
+            setSavedReportSnapshot(null);
             setDeliverFromType("");
             setDeliverFromDetails("");
             setApproachHint("");
@@ -862,6 +934,7 @@ export default function StopScreen() {
 
       await AsyncStorage.setItem(stopKey(stopId), JSON.stringify(localParsed));
 
+      setSavedReportSnapshot(currentReportSnapshot);
       setAdditionalIntelOpen(false);
       Alert.alert("Saved", myReportId ? "Report updated." : "Report posted.");
       await loadReports();
@@ -1504,9 +1577,15 @@ export default function StopScreen() {
                 <Text style={styles.secondaryBtnText}>Additional Driver Intel</Text>
               </Pressable>
 
-              <Pressable style={styles.saveBtn} onPress={saveMyReport} disabled={loading}>
-                <Text style={styles.saveBtnText}>
-                  {loading ? "Saving..." : myReportId ? "Update My Report" : "Post My Report"}
+              <Pressable
+                style={[styles.saveBtn, reportIsSaved ? styles.reportSavedBtn : null]}
+                onPress={saveMyReport}
+                disabled={reportSaveDisabled}
+              >
+                <Text
+                  style={[styles.saveBtnText, reportIsSaved ? styles.reportSavedBtnText : null]}
+                >
+                  {reportSaveLabel}
                 </Text>
               </Pressable>
 
@@ -1846,9 +1925,18 @@ export default function StopScreen() {
                       multiline
                     />
 
-                    <Pressable style={styles.saveBtn} onPress={saveMyReport} disabled={loading}>
-                      <Text style={styles.saveBtnText}>
-                        {loading ? "Saving..." : myReportId ? "Update My Report" : "Post My Report"}
+                    <Pressable
+                      style={[styles.saveBtn, reportIsSaved ? styles.reportSavedBtn : null]}
+                      onPress={saveMyReport}
+                      disabled={reportSaveDisabled}
+                    >
+                      <Text
+                        style={[
+                          styles.saveBtnText,
+                          reportIsSaved ? styles.reportSavedBtnText : null,
+                        ]}
+                      >
+                        {reportSaveLabel}
                       </Text>
                     </Pressable>
                   </View>
@@ -2337,6 +2425,12 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   saveBtnText: { color: "white", fontWeight: "900", fontSize: 16 },
+  reportSavedBtn: {
+    backgroundColor: "#f2f2f7",
+  },
+  reportSavedBtnText: {
+    color: "#6b7280",
+  },
 
   reportCard: {
     borderTopWidth: 1,
