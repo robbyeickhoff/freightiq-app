@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useIsFocused } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type PropsWithChildren, useEffect, useMemo, useRef, useState } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import {
   Alert,
@@ -18,7 +19,7 @@ import {
   View,
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { MapIcon } from "../../components/MapIcon";
 import { supabase } from "../../utils/supabase";
 
@@ -39,6 +40,14 @@ function Chip({ label, active, onPress, style }: ChipProps) {
         {label}
       </Text>
     </Pressable>
+  );
+}
+
+function ModalSafeAreaScreen({ children }: PropsWithChildren) {
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.additionalIntelScreen}>{children}</SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
@@ -1571,10 +1580,15 @@ export default function StopScreen() {
               </View>
 
               <Pressable
-                style={[styles.secondaryBtn, styles.mainIntelSecondaryBtn]}
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  styles.disclosureRow,
+                  pressed ? styles.disclosureRowPressed : null,
+                ]}
                 onPress={() => setAdditionalIntelOpen(true)}
               >
-                <Text style={styles.secondaryBtnText}>Additional Driver Intel</Text>
+                <Text style={styles.disclosureLabel}>Additional Driver Intel</Text>
+                <MaterialIcons name="chevron-right" size={26} color="#8e8e93" />
               </Pressable>
 
               <Pressable
@@ -1610,10 +1624,24 @@ export default function StopScreen() {
               style={styles.card}
               onLayout={(event) => setReportsSectionY(event.nativeEvent.layout.y)}
             >
-              <Pressable onPress={() => setReportsExpanded((v) => !v)}>
-                <Text style={styles.cardTitle}>
-                  {reportsExpanded ? "▼" : "▶"} Driver Reports ({sortedReports.length})
-                </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: reportsExpanded }}
+                style={({ pressed }) => [
+                  styles.disclosureHeader,
+                  pressed ? styles.disclosureRowPressed : null,
+                ]}
+                onPress={() => setReportsExpanded((v) => !v)}
+              >
+                <Text style={styles.disclosureLabel}>Driver Reports</Text>
+                <View style={styles.disclosureTrailing}>
+                  <Text style={styles.disclosureValue}>{sortedReports.length}</Text>
+                  <MaterialIcons
+                    name={reportsExpanded ? "expand-more" : "chevron-right"}
+                    size={26}
+                    color="#8e8e93"
+                  />
+                </View>
               </Pressable>
 
               {reportsExpanded ? (
@@ -1791,13 +1819,18 @@ export default function StopScreen() {
 
             {canDeleteStop && (
               <Pressable
-                style={[styles.secondaryBtn, styles.mainIntelSecondaryBtn]}
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  styles.disclosureRow,
+                  pressed ? styles.disclosureRowPressed : null,
+                ]}
                 onPress={() => {
                   setManageStopView("menu");
                   setShowManageStop(true);
                 }}
               >
-                <Text style={styles.secondaryBtnText}>Manage Stop</Text>
+                <Text style={styles.disclosureLabel}>Manage Stop</Text>
+                <MaterialIcons name="chevron-right" size={26} color="#8e8e93" />
               </Pressable>
             )}
 
@@ -1832,7 +1865,7 @@ export default function StopScreen() {
             animationType="slide"
             onRequestClose={() => setAdditionalIntelOpen(false)}
           >
-            <SafeAreaView style={styles.additionalIntelScreen}>
+            <ModalSafeAreaScreen>
               <KeyboardAvoidingView
                 style={styles.additionalIntelScreen}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -1942,11 +1975,11 @@ export default function StopScreen() {
                   </View>
                 </ScrollView>
               </KeyboardAvoidingView>
-            </SafeAreaView>
+            </ModalSafeAreaScreen>
           </Modal>
 
           <Modal visible={showManageStop} animationType="slide" onRequestClose={closeManageStop}>
-            <SafeAreaView style={styles.additionalIntelScreen}>
+            <ModalSafeAreaScreen>
               <KeyboardAvoidingView
                 style={styles.additionalIntelScreen}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -2128,7 +2161,7 @@ export default function StopScreen() {
                   )}
                 </ScrollView>
               </KeyboardAvoidingView>
-            </SafeAreaView>
+            </ModalSafeAreaScreen>
           </Modal>
 
           <Modal
@@ -2388,6 +2421,45 @@ const styles = StyleSheet.create({
   },
   destructiveOutlineBtnText: {
     color: "#b91c1c",
+  },
+  disclosureRow: {
+    minHeight: 52,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "white",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  disclosureHeader: {
+    minHeight: 32,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: 10,
+    paddingHorizontal: 2,
+    paddingVertical: 2,
+  },
+  disclosureRowPressed: {
+    backgroundColor: "#f2f2f7",
+  },
+  disclosureLabel: {
+    color: "black",
+    fontSize: 16,
+    fontWeight: "700",
+    flexShrink: 1,
+  },
+  disclosureTrailing: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  disclosureValue: {
+    color: "#8e8e93",
+    fontWeight: "600",
   },
 
   sectionLabel: { fontWeight: "800", marginTop: 4 },
