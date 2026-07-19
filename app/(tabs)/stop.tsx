@@ -356,12 +356,9 @@ export default function StopScreen() {
   const reportIsSaved = Boolean(myReportId && savedReportSnapshot === currentReportSnapshot);
   const reportSaveLabel = loading
     ? "Saving..."
-    : reportIsSaved
-      ? "✓ Saved"
-      : myReportId
-        ? "Update My Report"
-        : "Post My Report";
-  const reportSaveDisabled = loading || reportIsSaved;
+    : myReportId
+      ? "Update My Report"
+      : "Post My Report";
   const editNameInputRef = useRef<TextInput | null>(null);
   const editAddressInputRef = useRef<TextInput | null>(null);
   const title = useMemo(() => currentStopName, [currentStopName]);
@@ -1465,11 +1462,9 @@ export default function StopScreen() {
               <View style={styles.operationalZoneSummary}>
                 <View style={styles.operationalZoneHeader}>
                   <Text style={styles.sectionLabel}>Delivery Zone</Text>
-                  <Text style={styles.operationalZoneStatus}>
-                    {typeof entranceLat === "number" && typeof entranceLng === "number"
-                      ? "Saved"
-                      : "Not Set"}
-                  </Text>
+                  {typeof entranceLat !== "number" || typeof entranceLng !== "number" ? (
+                    <Text style={styles.operationalZoneStatus}>Not Set</Text>
+                  ) : null}
                 </View>
 
                 {deliveryZonePreviewRegion &&
@@ -1591,29 +1586,29 @@ export default function StopScreen() {
                 <MaterialIcons name="chevron-right" size={26} color="#8e8e93" />
               </Pressable>
 
-              <Pressable
-                style={[styles.saveBtn, reportIsSaved ? styles.reportSavedBtn : null]}
-                onPress={saveMyReport}
-                disabled={reportSaveDisabled}
-              >
-                <Text
-                  style={[styles.saveBtnText, reportIsSaved ? styles.reportSavedBtnText : null]}
-                >
-                  {reportSaveLabel}
-                </Text>
-              </Pressable>
+              {reportIsSaved ? (
+                <View accessible accessibilityLabel="Report saved" style={styles.reportSavedStatus}>
+                  <MaterialIcons name="check" size={20} color="#6b7280" />
+                  <Text style={styles.reportSavedStatusText}>Report saved</Text>
+                </View>
+              ) : (
+                <Pressable style={styles.saveBtn} onPress={saveMyReport} disabled={loading}>
+                  <Text style={styles.saveBtnText}>{reportSaveLabel}</Text>
+                </Pressable>
+              )}
 
               {myReportId ? (
                 <Pressable
-                  style={[
-                    styles.secondaryBtn,
-                    styles.mainIntelSecondaryBtn,
-                    styles.destructiveOutlineBtn,
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: deletingReport }}
+                  style={({ pressed }) => [
+                    styles.reportDeleteAction,
+                    pressed ? styles.reportDeleteActionPressed : null,
                   ]}
                   onPress={deleteMyReport}
                   disabled={deletingReport}
                 >
-                  <Text style={[styles.secondaryBtnText, styles.destructiveOutlineBtnText]}>
+                  <Text style={styles.reportDeleteActionText}>
                     {deletingReport ? "Deleting..." : "Delete My Report"}
                   </Text>
                 </Pressable>
@@ -1958,20 +1953,20 @@ export default function StopScreen() {
                       multiline
                     />
 
-                    <Pressable
-                      style={[styles.saveBtn, reportIsSaved ? styles.reportSavedBtn : null]}
-                      onPress={saveMyReport}
-                      disabled={reportSaveDisabled}
-                    >
-                      <Text
-                        style={[
-                          styles.saveBtnText,
-                          reportIsSaved ? styles.reportSavedBtnText : null,
-                        ]}
+                    {reportIsSaved ? (
+                      <View
+                        accessible
+                        accessibilityLabel="Report saved"
+                        style={styles.reportSavedStatus}
                       >
-                        {reportSaveLabel}
-                      </Text>
-                    </Pressable>
+                        <MaterialIcons name="check" size={20} color="#6b7280" />
+                        <Text style={styles.reportSavedStatusText}>Report saved</Text>
+                      </View>
+                    ) : (
+                      <Pressable style={styles.saveBtn} onPress={saveMyReport} disabled={loading}>
+                        <Text style={styles.saveBtnText}>{reportSaveLabel}</Text>
+                      </Pressable>
+                    )}
                   </View>
                 </ScrollView>
               </KeyboardAvoidingView>
@@ -2279,7 +2274,7 @@ export default function StopScreen() {
 const styles = StyleSheet.create({
   container: { padding: 14, gap: 12, paddingBottom: 28 },
   header: { gap: 4, paddingBottom: 6 },
-  title: { fontSize: 18, fontWeight: "900" },
+  title: { fontSize: 18, fontWeight: "800" },
   coords: { color: "#666" },
 
   card: {
@@ -2290,7 +2285,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     gap: 10,
   },
-  cardTitle: { fontSize: 18, fontWeight: "900" },
+  cardTitle: { fontSize: 18, fontWeight: "800" },
   cardHelp: { color: "#666" },
 
   additionalIntelScreen: {
@@ -2305,12 +2300,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   additionalIntelTitle: {
-    fontSize: 28,
-    fontWeight: "900",
+    fontSize: 24,
+    lineHeight: 29,
+    fontWeight: "800",
   },
   additionalIntelStopName: {
-    fontSize: 20,
-    fontWeight: "900",
+    fontSize: 18,
+    fontWeight: "700",
   },
   additionalIntelAddress: {
     color: "#666",
@@ -2390,7 +2386,7 @@ const styles = StyleSheet.create({
   },
   primaryWideBtnText: {
     color: "white",
-    fontWeight: "900",
+    fontWeight: "800",
     fontSize: 16,
   },
   secondaryBtn: {
@@ -2403,7 +2399,7 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: {
     color: "black",
-    fontWeight: "800",
+    fontWeight: "700",
   },
   mainIntelSecondaryBtn: {
     paddingVertical: 13,
@@ -2416,11 +2412,21 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-  destructiveOutlineBtn: {
-    borderColor: "#dc2626",
+  reportDeleteAction: {
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
-  destructiveOutlineBtnText: {
+  reportDeleteActionPressed: {
+    opacity: 0.55,
+  },
+  reportDeleteActionText: {
     color: "#b91c1c",
+    fontSize: 14,
+    fontWeight: "600",
   },
   disclosureRow: {
     minHeight: 52,
@@ -2462,7 +2468,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  sectionLabel: { fontWeight: "800", marginTop: 4 },
+  sectionLabel: { fontWeight: "700", marginTop: 4 },
 
   input: {
     borderWidth: 1,
@@ -2485,7 +2491,7 @@ const styles = StyleSheet.create({
   },
   chipInactive: { borderColor: "#ddd", backgroundColor: "white" },
   chipActive: { borderColor: "black", backgroundColor: "black" },
-  chipText: { fontWeight: "800" },
+  chipText: { fontWeight: "700" },
   chipTextInactive: { color: "black" },
   chipTextActive: { color: "white" },
 
@@ -2496,12 +2502,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 6,
   },
-  saveBtnText: { color: "white", fontWeight: "900", fontSize: 16 },
-  reportSavedBtn: {
-    backgroundColor: "#f2f2f7",
+  saveBtnText: { color: "white", fontWeight: "800", fontSize: 16 },
+  reportSavedStatus: {
+    minHeight: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 6,
   },
-  reportSavedBtnText: {
+  reportSavedStatusText: {
     color: "#6b7280",
+    fontSize: 14,
+    fontWeight: "600",
   },
 
   reportCard: {
