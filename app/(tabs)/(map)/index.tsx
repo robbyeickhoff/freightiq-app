@@ -2906,15 +2906,17 @@ export default function HomeScreen() {
         }}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, styles.nearbyStopsModalCard]}>
             <Text style={styles.modalTitle}>Nearby Stops</Text>
             <Text style={styles.modalHelp}>
               Multiple stops are very close together. Pick the one you want.
             </Text>
 
             <ScrollView
+              style={styles.nearbyStopsList}
               keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ gap: 10, paddingBottom: 10 }}
+              showsVerticalScrollIndicator
+              contentContainerStyle={styles.nearbyStopsListContent}
             >
               {nearbyStops.map((stop) => (
                 <Pressable
@@ -2933,13 +2935,13 @@ export default function HomeScreen() {
             </ScrollView>
 
             <Pressable
-              style={styles.previewSecondaryBtn}
+              style={styles.nearbyStopsCancelBtn}
               onPress={() => {
                 setNearbyStopsOpen(false);
                 setNearbyStops([]);
               }}
             >
-              <Text style={styles.previewSecondaryBtnText}>Cancel</Text>
+              <Text style={styles.nearbyStopsCancelText}>Cancel</Text>
             </Pressable>
           </View>
         </View>
@@ -3701,6 +3703,36 @@ const styles = StyleSheet.create({
     padding: 14,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
+  },
+
+  nearbyStopsModalCard: {
+    maxHeight: "72%",
+  },
+
+  nearbyStopsList: {
+    maxHeight: 220,
+    marginTop: 10,
+    marginBottom: 10,
+  },
+
+  nearbyStopsListContent: {
+    gap: 10,
+    paddingBottom: 10,
+  },
+
+  nearbyStopsCancelBtn: {
+    minHeight: 50,
+    borderTopWidth: 1,
+    borderTopColor: "#e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "white",
+  },
+
+  nearbyStopsCancelText: {
+    color: "#6b7280",
+    fontSize: 16,
+    fontWeight: "700",
   },
 
   mapToolsModalCard: {
