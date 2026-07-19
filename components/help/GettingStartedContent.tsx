@@ -83,22 +83,6 @@ export default function GettingStartedContent() {
           )}
 
           <Pressable
-            onPress={() => setExpandedSection(expandedSection === "photos" ? "" : "photos")}
-          >
-            <View style={styles.expandedHeader}>
-              <Text style={styles.stepTitle}>
-                {expandedSection === "photos" ? "▼" : "▶"} Review Photos
-              </Text>
-            </View>
-          </Pressable>
-
-          {expandedSection === "photos" && (
-            <View style={styles.contentPanel}>
-              <Text style={styles.step}>Know what to look for before you arrive.</Text>
-            </View>
-          )}
-
-          <Pressable
             onPress={() => setExpandedSection(expandedSection === "confidence" ? "" : "confidence")}
           >
             <View style={styles.expandedHeader}>

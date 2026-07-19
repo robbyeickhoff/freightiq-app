@@ -82,22 +82,6 @@ export default function UnderstandingStopIntelContent() {
         )}
 
         <Pressable
-          onPress={() => setExpandedSection(expandedSection === "confidence" ? "" : "confidence")}
-        >
-          <View style={styles.expandedHeader}>
-            <Text style={styles.stepTitle}>
-              {expandedSection === "confidence" ? "▼" : "▶"} Delivery Area Photo
-            </Text>
-          </View>
-        </Pressable>
-
-        {expandedSection === "confidence" && (
-          <View style={styles.contentPanel}>
-            <Text style={styles.step}>Confirm you're in the right place.</Text>
-          </View>
-        )}
-
-        <Pressable
           onPress={() => setExpandedSection(expandedSection === "reputation" ? "" : "reputation")}
         >
           <View style={styles.expandedHeader}>

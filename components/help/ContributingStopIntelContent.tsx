@@ -110,25 +110,6 @@ export default function ContributingStopIntelContent() {
             </Text>
           </View>
         )}
-
-        <Pressable
-          onPress={() => setExpandedSection(expandedSection === "reputation" ? "" : "reputation")}
-        >
-          <View style={styles.expandedHeader}>
-            <Text style={styles.stepTitle}>
-              {expandedSection === "reputation" ? "▼" : "▶"} Add Delivery Area Photos
-            </Text>
-          </View>
-        </Pressable>
-
-        {expandedSection === "reputation" && (
-          <View style={styles.contentPanel}>
-            <Text style={styles.step}>
-              Photos can help drivers quickly recognize the correct delivery area. Add one when it
-              provides useful context that might be difficult to describe with words.
-            </Text>
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
