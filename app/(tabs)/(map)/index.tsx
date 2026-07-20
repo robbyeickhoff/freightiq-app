@@ -454,6 +454,9 @@ export default function HomeScreen() {
     }),
   );
   const [clusterPoints, setClusterPoints] = useState<any[]>([]);
+  const [trackAndroidMarkerViewChanges, setTrackAndroidMarkerViewChanges] = useState(
+    Platform.OS === "android",
+  );
 
   const [cachedStopCount, setCachedStopCount] = useState(0);
 
@@ -1087,6 +1090,27 @@ export default function HomeScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pins, intelByStopId, reportStatsByStopId]);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+
+    setTrackAndroidMarkerViewChanges(true);
+
+    const timer = setTimeout(() => {
+      setTrackAndroidMarkerViewChanges(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [
+    clusterPoints,
+    intelByStopId,
+    reportStatsByStopId,
+    scoreByStopId,
+    selectedStopId,
+    tempSearchPin,
+    selectedEntrance,
+    showSelectedEntrance,
+  ]);
 
   function recomputeClusters(r: Region) {
     try {
@@ -2278,11 +2302,11 @@ export default function HomeScreen() {
 
                   const reportCount = reportStatsByStopId[p.id]?.count ?? 0;
                   const latestUsername = reportStatsByStopId[p.id]?.latestUsername ?? null;
-
                   return (
                     <Marker
                       key={`raw-stop-${p.id}`}
                       coordinate={{ latitude: p.lat, longitude: p.lng }}
+                      tracksViewChanges={Platform.OS !== "android" || trackAndroidMarkerViewChanges}
                       onPress={(e) => {
                         e.stopPropagation();
                         selectStop(p);
@@ -2306,6 +2330,9 @@ export default function HomeScreen() {
                       <Marker
                         key={`cluster-${f.id}`}
                         coordinate={{ latitude: lat, longitude: lng }}
+                        tracksViewChanges={
+                          Platform.OS !== "android" || trackAndroidMarkerViewChanges
+                        }
                         onPress={() => onPressCluster(f)}
                       >
                         <View style={styles.clusterBubble}>
@@ -2320,14 +2347,13 @@ export default function HomeScreen() {
                     typeof f.properties.hasIntel === "boolean" ? f.properties.hasIntel : null;
                   const reportCount = Number(f.properties.reportCount ?? 0);
                   const latestUsername = reportStatsByStopId[stopId]?.latestUsername ?? null;
-
                   return (
                     <Marker
                       key={`stop-${stopId}-${
                         hasIntel === null ? "checking" : hasIntel ? "intel" : "no-intel"
                       }-${reportCount}`}
                       coordinate={{ latitude: lat, longitude: lng }}
-                      tracksViewChanges={true}
+                      tracksViewChanges={Platform.OS !== "android" || trackAndroidMarkerViewChanges}
                       onPress={() => {
                         const p = pins.find((x) => x.id === stopId);
                         if (p) {
@@ -2358,7 +2384,7 @@ export default function HomeScreen() {
             <Marker
               key={`selected-stop-${selectedStop.id}`}
               coordinate={{ latitude: selectedStop.lat, longitude: selectedStop.lng }}
-              tracksViewChanges={true}
+              tracksViewChanges={Platform.OS !== "android" || trackAndroidMarkerViewChanges}
               onPress={(e) => {
                 e.stopPropagation();
                 selectStop(selectedStop);
@@ -2384,6 +2410,7 @@ export default function HomeScreen() {
               }}
               title={tempSearchPin.name}
               description={tempSearchPin.address ?? "Search result"}
+              tracksViewChanges={Platform.OS !== "android" || trackAndroidMarkerViewChanges}
               onPress={() => {
                 setSelectedStop(tempSearchPin);
                 setSelectedStopId(tempSearchPin.id);
@@ -2414,7 +2441,7 @@ export default function HomeScreen() {
                 latitude: selectedEntrance.lat,
                 longitude: selectedEntrance.lng,
               }}
-              tracksViewChanges={true}
+              tracksViewChanges={Platform.OS !== "android" || trackAndroidMarkerViewChanges}
             >
               <View style={styles.entranceMarkerWrap}>
                 <View style={styles.deliveryZoneBullseyeOuter}>

@@ -13,7 +13,6 @@
       "icon": "./assets/images/app-icon.png",
       "supportsTablet": true,
       "bundleIdentifier": "com.robbyeickhof.mfi",
-      "bundleDisplayName": "FreightIQ",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
