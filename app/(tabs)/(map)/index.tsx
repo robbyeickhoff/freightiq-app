@@ -402,7 +402,7 @@ export default function HomeScreen() {
   const [mergeSourceStopId, setMergeSourceStopId] = useState<string | null>(null);
   const [mergeMode, setMergeMode] = useState(false);
   const [mergeTargetStopId, setMergeTargetStopId] = useState<string | null>(null);
-  const [mapType, setMapType] = useState<"standard" | "satellite">("standard");
+  const [mapType, setMapType] = useState<"standard" | "hybrid">("standard");
   const [selectedEntrance, setSelectedEntrance] = useState<{
     lat: number;
     lng: number;
@@ -2909,7 +2909,7 @@ export default function HomeScreen() {
 
             <Pressable
               style={styles.mapControlIconButton}
-              onPress={() => setMapType((prev) => (prev === "standard" ? "satellite" : "standard"))}
+              onPress={() => setMapType((prev) => (prev === "standard" ? "hybrid" : "standard"))}
             >
               <MapIcon>{mapType === "standard" ? "🛰" : "🗺"}</MapIcon>
             </Pressable>
