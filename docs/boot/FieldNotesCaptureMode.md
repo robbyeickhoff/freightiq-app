@@ -2,13 +2,11 @@
 
 ## Purpose
 
-Capture ideas, observations, problems, lessons, questions, and possible improvements discovered during the workday before important context is forgotten.
+Capture ideas, observations, problems, lessons, questions, and possible improvements during the workday before important context is forgotten.
 
-Capture Mode is designed for fast, low-friction use while the user is working.
+Capture Mode preserves the thought. It does not analyze, solve, classify, route, or implement it.
 
-Its purpose is to preserve the thought—not analyze it, solve it, classify it, or decide where it belongs.
-
-Captured entries will be processed later through the separate **FreightIQ Field Notes — End-of-Day Review** workflow.
+Captured entries are reviewed later through **FreightIQ Field Notes — End-of-Day Review**.
 
 ---
 
@@ -16,15 +14,13 @@ Captured entries will be processed later through the separate **FreightIQ Field 
 
 **Capture now. Evaluate later.**
 
-The user should not need to interrupt the workday to fully explain, organize, research, or resolve an idea.
-
 A rough thought with useful context is enough.
 
 ---
 
 ## Starting Capture Mode
 
-Capture Mode begins when the user gives a clear instruction such as:
+Treat a request as Capture Mode when the user clearly asks to preserve an idea for later review, including wording such as:
 
 - “Capture a field note.”
 - “Add this to Field Notes.”
@@ -33,8 +29,6 @@ Capture Mode begins when the user gives a clear instruction such as:
 
 The wording does not need to match these examples exactly.
 
-When the user clearly intends to preserve an idea for later review, treat the request as a Capture Mode entry.
-
 ---
 
 ## Capture Process
@@ -42,210 +36,198 @@ When the user clearly intends to preserve an idea for later review, treat the re
 When Capture Mode begins:
 
 1. Listen to the complete thought.
-2. Preserve the user’s meaning and operational context.
-3. Ask no follow-up questions unless the entry would otherwise be unusable or misleading.
-4. Create a short working title.
-5. Format the entry using the Capture Entry Template.
-6. Append the entry to the running inbox.
-7. Confirm briefly whether the thought was successfully saved.
-8. Return to the prior conversation or activity.
+2. Preserve the user’s `Original Thought` verbatim.
+3. Ask no follow-up question unless the entry would otherwise be unusable or materially misleading.
+4. Create a short, neutral working title.
+5. Determine the capture timestamp.
+6. Record either a verified local timezone or UTC.
+7. Ensure the `Captured` timestamp, `Timezone`, and filename time describe the same capture moment.
+8. Set `Status` to `Unreviewed`.
+9. Set `Classification` to `Unassigned`.
+10. Set `Destination` to `Unassigned`.
+11. Generate the standard filename.
+12. Check for filename collisions.
+13. Create one new Markdown file under `docs/field-notes/entries/`.
+14. Avoid modifying existing Field Notes.
+15. Confirm success only after the repository write succeeds.
 
 Capture Mode should take as little time as reasonably possible.
 
 ---
 
-## What to Capture
+## Required Metadata
 
-Capture entries may include:
-
-- Product ideas
-- Feature improvements
-- Unexpected app behavior
-- Possible bugs
-- Tester feedback
-- Routing observations
-- Zone knowledge
-- Stop-specific knowledge
-- Workflow problems
-- Documentation concerns
-- Security or operational concerns
-- Questions requiring later research
-- Ideas that may or may not be useful
-- Corrections to something previously discussed
-- Context that may be difficult to remember after the workday
-
-Do not reject an entry merely because its value or destination is not yet clear.
-
-The End-of-Day Review process will determine whether it deserves further action.
-
----
-
-## Minimum Useful Entry
-
-Capture only the information currently available.
-
-A useful entry should contain, when known:
-
-- Date
-- Approximate time
-- Short working title
-- Raw thought or observation
-- What triggered it
-- Immediate context that may be forgotten
-- Capture status
-
-The user is not required to provide every field.
-
-Do not slow down capture by forcing missing information that can reasonably be discussed later.
-
----
-
-## Capture Entry Template
+Every captured Field Note must include:
 
 ```md
-## [Date] — [Approximate Time] — [Working Title]
+**Captured:** 2026-07-22T12:33:48Z
 
-**Raw thought:**
-
-**What triggered it:**
-
-**Context to preserve:**
+**Timezone:** UTC
 
 **Status:** Unreviewed
+
+**Classification:** Unassigned
+
+**Destination:** Unassigned
+```
+
+Use an ISO 8601 timestamp containing either `Z` for UTC or an explicit numeric offset such as `-06:00`.
+
+Use an IANA timezone when it is reliably known. Use `UTC` when the user’s local timezone is unknown or cannot be verified.
+
+Do not infer the user’s timezone from FreightIQ’s operating region.
+
+---
+
+## Filename Convention
+
+Use:
+
+```text
+YYYY-MM-DD-HHMM-short-title.md
+```
+
+The filename date and time must align with the recorded capture timestamp and timezone.
+
+Examples:
+
+```text
+Captured: 2026-07-22T12:33:48Z
+Timezone: UTC
+Filename: 2026-07-22-1233-first-field-notes-capture-test.md
+```
+
+```text
+Captured: 2026-07-22T06:33:48-06:00
+Timezone: America/Denver
+Filename: 2026-07-22-0633-example-note.md
+```
+
+Filename rules:
+
+- Use lowercase letters.
+- Replace spaces with hyphens.
+- Remove unsafe or unnecessary punctuation.
+- Keep the title short, neutral, and recognizable.
+- Do not rename the file merely because the title is refined during review.
+
+Before creating a file, verify whether the proposed repository path exists.
+
+If it exists, append the lowest available numeric suffix:
+
+```text
+example-note-2.md
+example-note-3.md
+```
+
+Never overwrite an existing Field Note because of a filename collision.
+
+---
+
+## Verbatim Preservation
+
+The text under `Original Thought` must remain verbatim.
+
+It must not be rewritten, corrected, polished, summarized, reordered, grammatically repaired, silently expanded, or changed to reflect later conclusions.
+
+Preserve wording, capitalization, punctuation, and line breaks as accurately as the available conversation permits.
+
+If the user later corrects or clarifies the thought, keep `Original Thought` unchanged and add a separate `User Clarification` section.
+
+---
+
+## Entry Template
+
+```md
+# [Working Title]
+
+**Captured:** [ISO 8601 timestamp]
+
+**Timezone:** [IANA timezone or UTC]
+
+**Status:** Unreviewed
+
+**Classification:** Unassigned
+
+**Destination:** Unassigned
+
+## Original Thought
+
+[User’s text preserved verbatim.]
+
+## What Triggered It
+
+[Available immediate trigger or “Not provided.”]
+
+## Context to Preserve
+
+[Available operational context or “Not provided.”]
+
+---
+
+## Review Outcome
+
+Not yet reviewed.
 ```
 
 ---
 
-## Save Captured Field Notes
+## Save Location
 
-After creating a Capture Mode entry, append it to:
+Save each captured Field Note as a new file under:
 
-`docs/field-notes/FieldNotesInbox.md`
+```text
+docs/field-notes/entries/
+```
 
-Each new entry must be added to the end of the file using the Capture Entry Template.
+Do not append new entries to `docs/field-notes/FieldNotesInbox.md`. That file is archived.
 
-Do not overwrite, replace, reorder, or delete existing entries.
+Each captured Field Note requires its own focused commit.
 
-A capture is complete only when the repository write action confirms that the new entry was successfully appended.
+Suggested commit message:
 
-If the file cannot be found, the repository is unavailable, or the write action fails:
+```text
+Capture Field Note: [short title]
+```
+
+---
+
+## Successful Confirmation
+
+After a successful repository write, respond briefly:
+
+```text
+Captured: [Working Title]
+Saved to: docs/field-notes/entries/[filename].md
+Status: Unreviewed
+```
+
+Do not claim the note was saved unless the repository write action returned a successful result.
+
+---
+
+## Failure Handling
+
+If the repository is unavailable, the path cannot be verified, or the write fails:
 
 1. State plainly that the note was not saved to the repository.
 2. Preserve the complete formatted entry in the conversation.
-3. Do not claim that the capture was completed or saved.
-4. Wait for the user to retry or provide direction.
-
-Successful confirmation format:
-
-> Captured: **[Working Title]**  
-> Saved to: **docs/field-notes/FieldNotesInbox.md**  
-> Status: **Unreviewed**
-
----
-
-## Assistant Capture Rules
-
-During Capture Mode, the assistant must:
-
-- Keep the interaction short.
-- Preserve the user’s original meaning.
-- Preserve important operational reasoning.
-- Distinguish the user’s observation from any assistant interpretation.
-- Use a neutral working title.
-- Record uncertainty rather than filling gaps with assumptions.
-- Avoid turning the entry into a polished requirement.
-- Avoid solving the issue unless the user explicitly leaves Capture Mode and asks to discuss it.
-- Avoid deciding which repository document should be changed.
-- Avoid turning every idea into a task.
-- Avoid creating documentation for documentation’s sake.
-- Avoid combining entries unless they are clearly the same thought.
-- Mark every new entry as **Unreviewed**.
-
----
-
-## Questions During Capture
-
-Follow-up questions should be rare.
-
-Ask a question only when:
-
-- The assistant cannot determine what the user wants preserved.
-- A transcription error may materially change the meaning.
-- A person, place, stop, feature, or document cannot be distinguished from another.
-- Missing context would make the entry misleading or unusable later.
-
-Ask no more than the minimum needed to preserve an accurate entry.
-
-Detailed questions belong in the End-of-Day Review workflow.
-
----
-
-## Running Inbox
-
-All captured entries belong to the permanent running inbox until they are processed through End-of-Day Review.
-
-The inbox may contain entries from multiple days.
-
-An entry must remain in the inbox until it is:
-
-- Solidified
-- Routed into an approved workflow
-- Deferred intentionally
-- Combined with another entry
-- Discarded
-
-The running inbox is not automatically a product backlog, task list, or documentation queue.
-
-It is a temporary holding area for thoughts that have not yet been evaluated.
-
----
-
-## Repository Access Truthfulness
-
-Never claim to have accessed, searched, opened, loaded, read, or modified the FreightIQ repository unless the applicable repository action successfully returned a usable result in the current turn.
-
-If the repository action fails, is unavailable, times out, returns an error, or produces no usable result, say so immediately and plainly.
-
-Do not:
-
-- Claim the repository is loading.
-- Claim another repository tool is being tried unless a real tool call is being made.
-- Imply repository access is working when no successful result was returned.
-- Infer repository contents from memory.
-- Claim an entry was saved when no successful write result was returned.
-
-Repository access is confirmed only by a successful repository action result containing the requested file path, file contents, or write confirmation.
-
-Intent to call the action, an attempted action, or a statement that the repository is being updated is not evidence of access.
-
----
-
-## Capture Confirmation
-
-After a successful save, respond with the brief confirmation defined in **Save Captured Field Notes**.
-
-Do not repeat the entire entry unless:
-
-- The user asks to review it.
-- The entry contains uncertainty that should be confirmed.
-- The captured meaning may differ from what the user intended.
+3. Do not claim the capture completed.
+4. Stop and wait for the user to retry or provide direction.
 
 ---
 
 ## Boundaries
 
-Capture Mode ends after the entry is recorded and its save result is reported.
+During Capture Mode, do not:
 
-Do not automatically begin the End-of-Day Review interview.
+- Analyze or solve the issue.
+- Classify the note.
+- Decide its destination.
+- Modify destination documents.
+- Create tasks.
+- Begin implementation.
+- Combine it with another note.
+- Turn it into polished requirements.
 
-Do not begin implementation.
-
-Do not update governing documentation.
-
-Do not create a task.
-
-Do not make a product decision.
-
-Do not classify the idea as valuable or unnecessary.
-
-Those decisions belong to the **FreightIQ Field Notes — End-of-Day Review** workflow.
+Those decisions belong to **FreightIQ Field Notes — End-of-Day Review**.
