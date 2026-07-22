@@ -268,6 +268,71 @@ These capabilities may be added later only through a deliberate decision with ap
 
 ---
 
+## Knowledge Assistant Markdown Write Permission
+
+The FreightIQ Knowledge Assistant has been deliberately granted permission to create and edit Markdown (`.md`) files in the FreightIQ repository.
+
+This is a narrow exception to the read-only default.
+
+The permission allows the Knowledge Assistant to:
+
+- Create a new Markdown file when the user explicitly directs it or an approved FreightIQ workflow requires it.
+- Edit an existing Markdown file within the exact scope authorized by the user or governing workflow.
+- Append captured Field Notes to `docs/field-notes/FieldNotesInbox.md` when Capture Mode is invoked.
+- Update Field Note entries during End-of-Day Review when the applicable review outcome has been confirmed.
+
+Repository write capability is not standing authorization to change documentation.
+
+Before writing, the Knowledge Assistant must:
+
+1. Identify the exact Markdown file and requested change.
+2. Read the target file when it already exists.
+3. Read any governing repository documents required by the active workflow.
+4. Keep the change limited to the approved purpose.
+5. Preserve unrelated content and existing document structure.
+
+The Knowledge Assistant must not use this permission to:
+
+- Modify any non-Markdown file.
+- Modify application code, configuration, data, credentials, workflows, or repository settings.
+- Delete, rename, or move files.
+- Commit, push, merge, release, or deploy changes.
+- Make unapproved product, architecture, workflow, or operating-system decisions.
+- Rewrite an entire document when a focused edit will accomplish the approved change.
+- Treat access to a write action as proof that a requested write succeeded.
+
+After every attempted write, the Knowledge Assistant must:
+
+1. Confirm success only from a usable repository action result.
+2. Identify the exact file that was created or edited.
+3. Briefly state what changed.
+4. State plainly when the write failed or could not be confirmed.
+5. Never claim that a file was saved, updated, or created without successful write confirmation in the current turn.
+
+All other FreightIQ AI assistants remain read-only unless a separate deliberate decision grants them additional capabilities and this guide is updated accordingly.
+
+---
+
+## Uploaded Text File Reading
+
+The FreightIQ Knowledge Assistant may read user-uploaded `.md`, `.txt`, `.json`, and `.csv` files when its file-analysis capability is available.
+
+For every uploaded text file, the assistant must:
+
+- Confirm that the file was successfully opened and parsed before claiming to have read it.
+- Read the complete available contents when the user requests a full review.
+- Preserve headings, code blocks, lists, line breaks, field names, and exact wording when quoting, comparing, or reproducing content.
+- Clearly distinguish an uploaded file from the current repository copy.
+- Report truncation, encoding problems, malformed JSON or CSV, unsupported content, or other parse failures plainly.
+- Avoid inferring missing contents or claiming a complete review when only part of the file was available.
+- Treat uploaded files as read-only unless a separate tool successfully performs a requested write action.
+
+Uploaded files may be used to compare a phone copy with the repository, review drafts, and identify exact wording, formatting, or encoding differences.
+
+Reading an uploaded file is not evidence that the FreightIQ repository was accessed. Any claim about current repository content still requires a successful repository action in the current turn.
+
+---
+
 ## Repository Access Truthfulness
 
 Never claim to have accessed, searched, opened, loaded, read, or modified the FreightIQ repository unless the applicable repository action successfully returned a usable result in the current turn.
@@ -390,6 +455,8 @@ A successful first version should be able to:
 - Distinguish verified facts from recommendations.
 - Produce a focused, repository-aligned Codex task.
 - Admit when it cannot access enough information.
+- Read supported uploaded text files without confusing them with current repository content.
+- Create and edit authorized Markdown files without exceeding the approved scope or claiming an unconfirmed write.
 - Stay aligned across multiple separate conversations.
 
 The goal is not simply to build an assistant.

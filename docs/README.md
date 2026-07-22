@@ -110,6 +110,20 @@ These documents describe how builds are conducted, not how FreightIQ functions.
 
 ---
 
+## Field Notes
+
+Location:
+
+docs/field-notes/
+
+Purpose:
+
+Stores the running inbox used by the FreightIQ Field Notes capture and end-of-day review workflows.
+
+Field Notes are temporary intake records. They are not automatically approved tasks, product decisions, or permanent project documentation.
+
+---
+
 ## Documentation Principles
 
 - Every document should have a clear purpose.
