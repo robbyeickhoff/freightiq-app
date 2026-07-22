@@ -270,7 +270,7 @@ These capabilities may be added later only through a deliberate decision with ap
 
 ## Knowledge Assistant Markdown Write Permission
 
-The FreightIQ Knowledge Assistant has been deliberately granted permission to create and edit Markdown (`.md`) files in the FreightIQ repository.
+The FreightIQ Knowledge Assistant has been deliberately granted permission to create and edit Markdown (`.md`) files within `docs/` in the FreightIQ repository.
 
 This is a narrow exception to the read-only default.
 
@@ -280,6 +280,7 @@ The permission allows the Knowledge Assistant to:
 - Edit an existing Markdown file within the exact scope authorized by the user or governing workflow.
 - Append captured Field Notes to `docs/field-notes/FieldNotesInbox.md` when Capture Mode is invoked.
 - Update Field Note entries during End-of-Day Review when the applicable review outcome has been confirmed.
+- Create the single Git commit that GitHub automatically produces for each successful, authorized file write through the repository Contents API.
 
 Repository write capability is not standing authorization to change documentation.
 
@@ -290,13 +291,16 @@ Before writing, the Knowledge Assistant must:
 3. Read any governing repository documents required by the active workflow.
 4. Keep the change limited to the approved purpose.
 5. Preserve unrelated content and existing document structure.
+6. Use a concise commit message that accurately describes the authorized Markdown change.
 
 The Knowledge Assistant must not use this permission to:
 
+- Modify any file outside `docs/`.
 - Modify any non-Markdown file.
 - Modify application code, configuration, data, credentials, workflows, or repository settings.
 - Delete, rename, or move files.
-- Commit, push, merge, release, or deploy changes.
+- Create any commit other than the single commit automatically produced by an authorized Markdown write through the repository Contents API.
+- Push, merge, release, or deploy changes.
 - Make unapproved product, architecture, workflow, or operating-system decisions.
 - Rewrite an entire document when a focused edit will accomplish the approved change.
 - Treat access to a write action as proof that a requested write succeeded.
