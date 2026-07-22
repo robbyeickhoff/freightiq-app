@@ -137,6 +137,14 @@ function cleanAddress(input: string) {
     .trim();
 }
 
+function formatAddressForDisplay(address: string) {
+  return address
+    .replace(/,\s*United States$/i, "")
+    .replace(/\s+United States$/i, "")
+    .replace(/\bColorado\b/g, "CO")
+    .trim();
+}
+
 function mergePinsById(existing: Pin[], incoming: Pin[]) {
   const map = new Map<string, Pin>();
 
@@ -2509,7 +2517,8 @@ export default function HomeScreen() {
                         {r.name}
                       </Text>
                       <Text style={styles.recentMeta} numberOfLines={1}>
-                        {r.address ?? "No address"} • {formatWhen(r.updatedAt)}
+                        {formatAddressForDisplay(r.address ?? "No address")} •{" "}
+                        {formatWhen(r.updatedAt)}
                         {r.hasEntrance ? " • Delivery Zone ✅" : ""}
                       </Text>
                     </View>
@@ -2608,7 +2617,7 @@ export default function HomeScreen() {
                         {r.name}
                       </Text>
                       <Text style={styles.resultAddr} numberOfLines={2}>
-                        {r.address ?? "No address saved"}
+                        {formatAddressForDisplay(r.address ?? "No address saved")}
                       </Text>
                     </Pressable>
                   ))}
@@ -2633,7 +2642,7 @@ export default function HomeScreen() {
                       {r.name}
                     </Text>
                     <Text style={styles.resultAddr} numberOfLines={2}>
-                      {r.fullAddress}
+                      {formatAddressForDisplay(r.fullAddress)}
                     </Text>
                   </Pressable>
                 );
@@ -2668,9 +2677,7 @@ export default function HomeScreen() {
                 {selectedStop?.name}
               </Text>
               <Text style={styles.previewAddress} numberOfLines={previewCollapsed ? 1 : 3}>
-                {(selectedStop?.address ?? "No address saved")
-                  .replace(", Colorado ", ", CO ")
-                  .replace(", United States", "")}
+                {formatAddressForDisplay(selectedStop?.address ?? "No address saved")}
               </Text>
             </View>
           </View>
@@ -2955,7 +2962,7 @@ export default function HomeScreen() {
                     {stop.name}
                   </Text>
                   <Text style={styles.previewAddress} numberOfLines={2}>
-                    {stop.address ?? "No address saved"}
+                    {formatAddressForDisplay(stop.address ?? "No address saved")}
                   </Text>
                 </Pressable>
               ))}
