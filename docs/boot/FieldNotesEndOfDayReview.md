@@ -8,7 +8,7 @@ This document governs the review process only.
 
 New ideas should first be captured through **FreightIQ Field Notes — Capture Mode**.
 
-The End-of-Day Review is intended to turn rough observations into clear outcomes without creating unnecessary tasks, documentation, or product work.
+The End-of-Day Review turns rough observations into clear outcomes without creating unnecessary tasks, documentation, or product work.
 
 ---
 
@@ -20,13 +20,13 @@ The goal is not to preserve every idea.
 
 The goal is to identify which ideas matter, understand why they matter, and determine what should happen next.
 
-Discarding a weak, duplicate, or unnecessary idea is a successful outcome.
+Discarding a weak, duplicate, resolved, or unnecessary idea is a successful outcome.
 
 ---
 
 ## Starting End-of-Day Review
 
-End-of-Day Review begins when the user gives a clear instruction such as:
+Begin this workflow when the user clearly asks to review captured Field Notes, including wording such as:
 
 - “Start End-of-Day Review.”
 - “Review today’s Field Notes.”
@@ -35,46 +35,50 @@ End-of-Day Review begins when the user gives a clear instruction such as:
 
 The wording does not need to match these examples exactly.
 
-When the user clearly intends to review captured Field Notes, begin this workflow.
-
 ---
 
 ## Load Captured Field Notes
 
-Before beginning the End-of-Day Review interview, read:
+Before beginning the review interview:
 
-`docs/field-notes/FieldNotesInbox.md`
+1. Inspect files under `docs/field-notes/entries/`.
+2. Identify entries whose metadata contains `Status: Unreviewed`.
+3. Count the available Unreviewed entries.
+4. Tell the user how many entries are ready for review.
+5. Begin with the oldest Unreviewed entry unless the user selects another.
+6. Process one entry at a time.
 
-Only entries marked **Unreviewed** should be included in the active review queue unless the user asks to revisit a different status.
+Do not use `docs/field-notes/FieldNotesInbox.md` as the active queue. That file is archived.
 
-After a successful read:
+Do not claim Field Notes were loaded, found, or reviewed unless the repository read action successfully returned usable file contents.
 
-1. Count the available unreviewed entries.
-2. Briefly tell the user how many entries are ready for review.
-3. Begin with the oldest unreviewed entry unless the user chooses another.
-4. Process one entry at a time.
+If the entries directory cannot be read, repository access fails, or no usable contents are returned:
 
-Do not claim that Field Notes were loaded, found, or reviewed unless the repository read action successfully returned the file contents.
-
-If the file cannot be found, the repository is unavailable, the read action fails, or no usable contents are returned:
-
-1. State plainly that `docs/field-notes/FieldNotesInbox.md` could not be read.
+1. State plainly that the Field Notes entries could not be read.
 2. Briefly state the returned error or limitation when available.
-3. Do not invent, reconstruct, or infer inbox entries from memory.
-4. Do not begin the End-of-Day Review interview.
-5. Wait for the user to retry or provide direction.
+3. Do not invent, reconstruct, or infer entries from memory.
+4. Do not begin the review interview.
+5. Stop and wait for the user to retry or provide direction.
 
 ---
 
 ## Review Preparation
 
-Before beginning the interview:
+Before reviewing an entry:
 
-1. Identify all entries marked **Unreviewed**.
-2. Present a brief count of the entries available.
-3. Begin with the oldest unreviewed entry unless the user selects another.
-4. Process one entry at a time.
-5. Do not begin implementation or documentation changes during the review unless the applicable FreightIQ workflow authorizes it.
+1. Read the complete Field Note.
+2. Preserve `Original Thought` verbatim.
+3. Separate confirmed facts from assumptions.
+4. Determine whether repository inspection is needed to verify duplication, destination, current implementation, or governing workflow.
+5. Inspect only the minimum relevant repository files.
+6. Present a concise recommended outcome.
+7. Obtain user approval when the outcome is not already explicit.
+
+Review updates only the selected Field Note.
+
+Do not modify unrelated Field Notes.
+
+Do not modify the destination document during End-of-Day Review.
 
 ---
 
@@ -83,37 +87,39 @@ Before beginning the interview:
 For each entry:
 
 1. Read the captured thought and preserved context.
-2. Ask the minimum questions needed to understand it.
-3. Separate confirmed facts from assumptions.
+2. Ask only the minimum questions needed to understand it.
+3. Separate confirmed facts from assumptions or unknowns.
 4. Determine whether the idea has meaningful value.
-5. Determine the correct classification.
-6. Determine the correct destination.
-7. Decide the next action.
-8. Assign a final review status.
-9. Update the entry with the reviewed outcome only when a repository write action is available and succeeds.
-10. Move to the next entry only after the current one is resolved or intentionally deferred.
+5. Assign one approved classification.
+6. Verify the destination when one is proposed.
+7. Decide the recommended next action.
+8. Assign one approved final status.
+9. Present the recommended review outcome.
+10. Obtain user approval when needed.
+11. Update only the reviewed Field Note.
+12. Preserve `Original Thought` verbatim.
+13. Confirm the repository write before claiming the review was saved.
+14. Move to the next entry only after the current one is resolved or intentionally deferred.
 
 ---
 
 ## Review Interview
 
-The interview should determine, when relevant:
+When relevant, determine:
 
-1. What actually happened or was noticed?
+1. What happened or was noticed?
 2. What idea, concern, or lesson came from it?
 3. Why does it matter?
-4. Is it a recurring issue, a one-time event, or still unknown?
+4. Is it recurring, one-time, or still unknown?
 5. What FreightIQ area does it affect?
-6. Is this new knowledge, a correction, a feature idea, a bug, or a workflow concern?
-7. Is the idea already covered by an existing decision, task, or document?
-8. Is there enough information to act on it?
+6. Is it new knowledge, a correction, feature idea, bug, or workflow concern?
+7. Is it already covered by existing work or documentation?
+8. Is there enough information to act?
 9. What outcome is needed?
 10. What is the correct destination?
 11. What should happen next?
 
 Do not mechanically ask every question.
-
-Ask only what is needed to clarify and resolve the entry.
 
 Keep the interview conversational and focused.
 
@@ -121,11 +127,11 @@ Keep the interview conversational and focused.
 
 ## Review Standard
 
-An entry should move forward only when it has enough value and clarity to justify further work.
+Move an entry forward only when it has enough value and clarity to justify further work.
 
 Consider:
 
-- Does this solve a real problem?
+- Does it solve a real problem?
 - Does it preserve important operational knowledge?
 - Does it correct something inaccurate?
 - Does it reduce future confusion or repeated work?
@@ -140,9 +146,9 @@ Do not create work merely because an idea was captured.
 
 ---
 
-## Possible Classifications
+## Approved Classifications
 
-An entry may be classified as:
+Use exactly one of the following after review:
 
 - Product idea
 - Feature improvement
@@ -161,202 +167,302 @@ An entry may be classified as:
 - Duplicate
 - Not useful
 
-Use the most accurate classification available.
+Before review, use `Unassigned`.
 
-Do not force certainty when the classification is still unclear.
+Do not invent synonyms or create new classification values during ordinary review.
+
+When none of the approved values fits:
+
+1. Keep the note `Solidified` or `Deferred`.
+2. Record why classification remains unresolved.
+3. Propose a controlled vocabulary change separately.
+4. Do not silently add a new classification.
 
 ---
 
-## Possible Destinations
+## Approved Statuses
 
-A reviewed entry may be routed to:
+Only the following final status values are permitted:
 
-- An existing repository document
-- A proposed new document
-- The Master TODO or applicable backlog
-- A build-planning workflow
-- A bug or investigation workflow
-- A routing knowledge document
-- A macro-zone document
-- A zone document
-- A stop-specific knowledge record
-- A workflow or operating-system document
-- A security review
-- A research list
-- A future discussion list
-- A deferred holding section
-- The discarded archive
+- Solidified
+- Ready for Workflow
+- Deferred
+- Combined
+- Discarded
 
-The destination must reflect the nature of the idea.
+`Unreviewed` is the capture status and remains the normal active queue until review is completed.
 
-Do not place everything into the Master TODO.
+### Solidified
 
-Do not create a new document when an existing document is the correct home.
+The note has been clarified and is worth preserving, but its destination or next workflow has not been verified.
 
-Do not invent a repository path or destination that has not been verified.
+A Solidified note:
+
+- Leaves the normal Unreviewed queue.
+- Is not automatically reconsidered during every End-of-Day Review.
+- Remains parked until the user explicitly selects it for further review or starts a dedicated Solidified-notes review.
+- Must state what remains unresolved.
+- Is not approved for implementation.
+
+A later review may change it to Ready for Workflow, Deferred, Combined, or Discarded.
+
+### Ready for Workflow
+
+The note has completed review and has:
+
+- A controlled classification.
+- A verified destination or named workflow.
+- A clear recommended next action.
+
+This status does not mean:
+
+- Implementation has begun.
+- The destination document has been changed.
+- A task has been created.
+- A product decision has been approved.
+
+A separate user instruction or authorized workflow is required.
+
+### Deferred
+
+The note may have value, but a responsible decision cannot yet be made.
+
+It must record:
+
+- What information, evidence, decision, or event is missing.
+- Why review cannot be completed.
+- What should trigger reconsideration, when known.
+
+A Deferred note is excluded from the normal Unreviewed queue. It is revisited only when the user selects it or its recorded trigger occurs.
+
+### Combined
+
+The note substantially duplicates or overlaps another Field Note, and its useful context has been incorporated into that destination Field Note.
+
+Requirements:
+
+- The destination must be another existing Field Note.
+- The destination must be recorded as a repository-relative path.
+- The destination file must be verified before approval.
+- The same path must appear under `Destination` and `Related Entry or Existing Work`.
+- Any unique context must be transferred only through an authorized Field Notes update.
+- The Combined note remains as an independent historical record.
+- The reason for combining must be recorded.
+
+### Discarded
+
+The note does not justify further work.
+
+Possible reasons include:
+
+- No meaningful value.
+- Already resolved.
+- Based on a misunderstanding.
+- Duplicate without unique context.
+- Too specific to a one-time event.
+- Outside FreightIQ’s current direction.
+- Cost or complexity exceeds likely benefit.
+- Documentation for documentation’s sake.
+
+The reason must be recorded.
+
+Discarded notes remain in the repository and are not deleted.
+
+---
+
+## Destination Rules
+
+At capture:
+
+```text
+Destination: Unassigned
+```
+
+After review, the destination must be one of:
+
+- A verified repository-relative path.
+- A named and documented workflow.
+- An approved backlog or holding destination.
+- A verified destination Field Note.
+- `Discarded archive`.
+
+Do not invent repository paths.
+
+For a Combined entry, the destination must be the repository-relative path of the destination Field Note, for example:
+
+```md
+**Destination:** docs/field-notes/entries/2026-07-22-1500-trailer-access-observation.md
+```
+
+Descriptions such as “the other routing note” are not sufficient.
 
 ---
 
 ## Repository Review
 
-Repository access is not required to clarify an idea.
+Repository access is not required to clarify every idea.
 
-Repository access may be required to:
+Repository inspection may be required to:
 
-- Determine whether the idea is already documented
-- Confirm the correct destination
-- Identify the governing workflow
-- Verify current implementation or project state
-- Update a repository document
-- Create or modify a task
-- Confirm that an action was completed
+- Determine whether the idea is already documented.
+- Confirm the correct destination.
+- Identify the governing workflow.
+- Verify current implementation or project state.
+- Verify a destination Field Note for a Combined outcome.
 
-When repository access is needed, inspect the applicable governing documents before recommending execution.
+When repository inspection is needed:
 
-If repository access is unavailable, continue clarifying the idea when possible, but mark the destination or next action as unconfirmed.
+1. Read the applicable governing documentation.
+2. Inspect only the minimum relevant files.
+3. Separate verified repository facts from inferences.
+4. Do not treat memory as a substitute for repository verification.
+5. Mark the destination as unverified when verification cannot be completed.
 
-Do not treat memory as a substitute for repository verification.
-
----
-
-## Repository Access Truthfulness
-
-Never claim to have accessed, searched, opened, loaded, read, or modified the FreightIQ repository unless the applicable repository action successfully returned a usable result in the current turn.
-
-If the repository action fails, is unavailable, times out, returns an error, or produces no usable result, say so immediately and plainly.
-
-Do not:
-
-- Claim the repository is loading.
-- Claim another repository tool is being tried unless a real tool call is being made.
-- Imply repository access is working when no successful result was returned.
-- Infer repository contents from memory.
-- Claim an entry was routed, saved, updated, or completed when no successful action result was returned.
-- Continue a repository-dependent workflow as though the required documents were reviewed.
-
-Repository access is confirmed only by a successful repository action result containing the requested file path, file contents, or write confirmation.
-
-Intent to call the action, an attempted action, or a statement that the repository is being updated is not evidence of access.
+Do not claim repository access unless a successful repository action returned usable content in the current turn.
 
 ---
 
-## Review Outcomes
+## Destination Authorization Boundary
 
-Each reviewed entry must receive one of the following outcomes.
+End-of-Day Review updates only the reviewed Field Note.
 
-### Solidified
+It must not automatically:
 
-The idea has been clarified and its meaning is understood.
+- Modify routing documentation.
+- Modify zone documentation.
+- Modify product or workflow documentation.
+- Add work to a backlog.
+- Create a Codex task.
+- Change application code.
+- Implement a feature.
+- Apply the note to its proposed destination.
 
-Use this status when the idea is valid but its destination or next workflow has not yet been fully confirmed.
+Repository documents may be inspected to verify a destination, but inspection does not authorize modification.
 
-### Ready for Workflow
+Changing a destination document requires:
 
-The idea has been clarified, assigned a verified destination, and is ready to enter the applicable FreightIQ workflow.
+1. A separate user instruction or authorized workflow.
+2. Inspection of applicable governing documentation.
+3. A separate repository write.
+4. A separate focused commit.
 
-This status does not mean implementation has begun or been approved.
-
-### Deferred
-
-The idea may have value, but more information, evidence, time, or discussion is required.
-
-Record what is missing before the idea can be reviewed again.
-
-### Combined
-
-The entry duplicates or overlaps another entry and has been merged into it.
-
-Record the related entry.
-
-### Discarded
-
-The entry does not justify further work.
-
-Reasons may include:
-
-- No meaningful value
-- Duplicate of existing work
-- Based on a misunderstanding
-- Too specific to a one-time situation
-- Already resolved
-- Outside FreightIQ’s current direction
-- Cost or complexity exceeds likely benefit
-- Documentation for documentation’s sake
-
-Discarding an entry should be direct and final unless new evidence appears later.
+`Ready for Workflow` means ready to enter another workflow. It does not authorize that workflow automatically.
 
 ---
 
 ## Reviewed Entry Template
 
 ```md
-## [Date] — [Final Title]
+# [Final or Retained Title]
 
-**Original thought:**
+**Captured:** [Original ISO 8601 capture timestamp]
 
-**What triggered it:**
+**Timezone:** [Original recorded timezone]
 
-**Context preserved:**
+**Status:** [Approved status]
 
-**Final summary:**
+**Classification:** [Approved classification]
 
-**Why it matters:**
+**Destination:** [Verified destination]
 
-**Confirmed facts:**
+## Original Thought
 
-**Assumptions or unknowns:**
+[Original text remains verbatim.]
 
-**Classification:**
+## What Triggered It
 
-**Destination:**
+[Original captured content.]
 
-**Recommended next action:**
+## Context to Preserve
+
+[Original captured content.]
+
+---
+
+## Review Outcome
+
+### Final Summary
+
+[Reviewed summary.]
+
+### Why It Matters
+
+[Reason the note matters or does not matter.]
+
+### Confirmed Facts
+
+[Confirmed facts.]
+
+### Assumptions or Unknowns
+
+[Unresolved assumptions or “None.”]
+
+### Recommended Next Action
+
+[Approved next action.]
+
+### Repository Review
 
 **Repository review required:** Yes / No
 
 **Repository destination verified:** Yes / No
 
-**Related entry or existing work:**
+### Related Entry or Existing Work
 
-**Status:** Solidified / Ready for Workflow / Deferred / Combined / Discarded
+[Repository-relative path, verified reference, or “None.”]
+
+### Review Decision
+
+[Reason for the approved status.]
 ```
 
 ---
 
-## Review Rules
+## Commit Policy
 
-During End-of-Day Review, the assistant must:
+Each reviewed Field Note requires its own focused commit.
 
-- Process one entry at a time.
-- Keep the interview focused.
-- Preserve the user’s operational reasoning.
-- Separate facts from assumptions.
-- Ask only the questions needed.
-- Avoid turning every observation into a task.
-- Avoid creating documentation for documentation’s sake.
-- Identify duplicates and related ideas.
-- Respect existing approved decisions.
-- Avoid reopening settled decisions without new evidence.
-- Avoid inventing repository destinations.
-- Avoid implementation during review unless the governing workflow allows it.
-- Mark uncertainty clearly.
-- Defer an entry rather than force a weak conclusion.
-- Discard ideas plainly when they do not justify further work.
-- Confirm the outcome before moving to the next entry when the decision may be ambiguous.
+Do not group multiple reviewed Field Notes into one commit.
+
+Suggested commit message:
+
+```text
+Review Field Note: [short title]
+```
+
+The current Markdown write action creates one commit per file update, which supports an independent audit trail for each note.
+
+---
+
+## Review Queues
+
+The default active queue contains only entries with:
+
+```text
+Status: Unreviewed
+```
+
+Other statuses are revisited only when explicitly selected:
+
+- Solidified: manual follow-up or dedicated Solidified review.
+- Deferred: manual follow-up or recorded trigger.
+- Ready for Workflow: separately authorized downstream workflow.
+- Combined: historical record unless correction is needed.
+- Discarded: historical record unless new evidence justifies reopening.
 
 ---
 
 ## Time-Limited Review
 
-The End-of-Day Review does not need to empty the inbox.
+The End-of-Day Review does not need to empty the queue.
 
-When the available review time is limited:
+When review time is limited:
 
-1. Process the highest-value or oldest entries first.
+1. Process the oldest Unreviewed entry first unless the user selects another.
 2. Complete one entry before starting another.
-3. Leave unfinished entries marked **Unreviewed**.
-4. Leave intentionally postponed entries marked **Deferred**.
-5. Do not rush an entry into a weak conclusion merely to finish the inbox.
+3. Leave unfinished entries as Unreviewed.
+4. Mark intentionally postponed entries Deferred only when the reason and revisit trigger are recorded.
+5. Do not rush an entry into a weak conclusion merely to finish the queue.
 
 The session is successful when useful decisions are made within the available time.
 
@@ -366,22 +472,30 @@ The session is successful when useful decisions are made within the available ti
 
 At the end of the review session, provide a brief summary containing:
 
-- Number of entries processed
-- Entries marked Solidified
-- Entries marked Ready for Workflow
-- Entries Deferred
-- Entries Combined
-- Entries Discarded
-- Entries still Unreviewed
-- Repository documents that still require inspection
-- Approved next steps
-- Any unresolved questions
+- Number of entries processed.
+- Entries marked Solidified.
+- Entries marked Ready for Workflow.
+- Entries marked Deferred.
+- Entries marked Combined.
+- Entries marked Discarded.
+- Entries still Unreviewed.
+- Repository documents that still require inspection.
+- Approved next steps.
+- Unresolved questions.
 
-Unreviewed entries remain in the running inbox.
+Do not claim a Field Note, task, destination update, implementation, commit, or repository change was completed unless the applicable repository action successfully confirmed it.
 
-Ready-for-Workflow entries must remain clearly separated from completed work.
+---
 
-Do not claim that an inbox status, task, document update, implementation, commit, or repository change was completed unless the applicable action successfully confirmed it.
+## Failure Handling
+
+If a Field Note cannot be updated:
+
+1. State plainly that the review outcome was not saved.
+2. Preserve the complete proposed reviewed entry in the conversation.
+3. Do not claim the review completed.
+4. Do not modify another entry as a workaround.
+5. Stop and wait for the user to retry or provide direction.
 
 ---
 
@@ -391,14 +505,13 @@ End-of-Day Review clarifies and routes ideas.
 
 It does not automatically:
 
-- Approve a product decision
-- Begin implementation
-- Create a build specification
-- Modify repository documents
-- Add tasks to a backlog
-- Reopen approved decisions
-- Change the FreightIQ Operating System
-- Commit or push repository changes
-- Mark work complete
+- Approve a product decision.
+- Begin implementation.
+- Create a build specification.
+- Modify destination documents.
+- Add tasks to a backlog.
+- Reopen approved decisions.
+- Change the FreightIQ Operating System.
+- Mark downstream work complete.
 
-After an entry is marked **Ready for Workflow**, begin the applicable FreightIQ workflow only when the user directs the assistant to proceed.
+After an entry is marked Ready for Workflow, begin the applicable FreightIQ workflow only when the user separately directs the assistant to proceed.
