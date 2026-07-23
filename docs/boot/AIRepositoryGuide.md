@@ -278,7 +278,7 @@ The permission allows the Knowledge Assistant to:
 
 - Create a new Markdown file when the user explicitly directs it or an approved FreightIQ workflow requires it.
 - Edit an existing Markdown file within the exact scope authorized by the user or governing workflow.
-- Append captured Field Notes to `docs/field-notes/FieldNotesInbox.md` when Capture Mode is invoked.
+- Create individual Field Note files under `docs/field-notes/entries/` when Capture Mode is invoked.
 - Update Field Note entries during End-of-Day Review when the applicable review outcome has been confirmed.
 - Create the single Git commit that GitHub automatically produces for each successful, authorized file write through the repository Contents API.
 
