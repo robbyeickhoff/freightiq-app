@@ -50,6 +50,7 @@ Grand Junction
 → Ridgway Proper
 → Log Hill
 → Placerville / Sawpit
+→ Wilson Mesa Ranch Zone
 → South Park, including Nimbus
 → Lawson Hill / Society
 → Mountain Village
@@ -176,6 +177,7 @@ The default inbound sequence is:
 ```text
 Log Hill
 → Placerville / Sawpit
+→ Wilson Mesa Ranch Zone
 → South Park
 → Lawson Hill / Society
 → Mountain Village
@@ -188,6 +190,14 @@ Log Hill
 Placerville and Sawpit form one operational approach zone.
 
 Stops with Placerville-area routing behavior should remain in this zone even when the mailing address is inconsistent.
+
+## Wilson Mesa Ranch Zone
+
+Wilson Mesa Ranch Zone follows Placerville / Sawpit and precedes South Park in the default inbound flow.
+
+Classify stops in this zone by their physical road position and routing behavior, not by a Placerville mailing address alone.
+
+Internal road membership and stop order belong in the Wilson Mesa Ranch Zone document.
 
 ## South Park
 
@@ -339,6 +349,7 @@ Grand Junction
 → Nucla / Naturita
 → Norwood
 → Placerville / Sawpit
+→ Wilson Mesa Ranch Zone
 → South Park
 → Telluride-area zones
 → Log Hill
@@ -355,6 +366,7 @@ Preferred:
 
 ```text
 Placerville / Sawpit
+→ Wilson Mesa Ranch Zone
 → South Park
 → Lawson Hill / Society
 → Mountain Village
@@ -366,6 +378,7 @@ Acceptable alternate:
 
 ```text
 Placerville / Sawpit
+→ Wilson Mesa Ranch Zone
 → South Park
 → Downtown Telluride
 → Airport / Aldasoro
