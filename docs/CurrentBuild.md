@@ -22,69 +22,64 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-Redesign the FreightIQ public website homepage and shared site-wide visual system so FreightIQ feels professional, trustworthy, polished, and consistent with the Sunrise System brand.
+Define and approve the next focused FreightIQ public-website iteration: a redesigned Real Example page that builds on the completed Sunrise System foundation and clearly demonstrates the difference between a business address and the actual delivery experience.
 
 ---
 
 ## Current Focus
 
-Implement the approved homepage, global header, accessible mobile navigation, and global footer while preserving every existing public route and both Supabase-backed forms.
+Operate in Product Mode.
 
-The controlling implementation document is:
+Inspect the existing Real Example page, clarify its responsibility relative to How It Works, and agree on its content, visual evidence, responsive behavior, accessibility requirements, validation, and explicit exclusions.
+
+The completed homepage and shared-site iteration is preserved by:
 
 [`docs/build-specs/FreightIQWebsiteRedesignBuildSpec.md`](build-specs/FreightIQWebsiteRedesignBuildSpec.md)
 
+That specification does not authorize redesigning the Real Example page. A new focused Build Specification must be approved before implementation begins.
+
 ---
 
-## Approved Scope
+## Established Foundation
 
-- Shared Sunrise System visual foundation
+- Sunrise System visual foundation
 - Global header and accessible mobile navigation
 - Global footer
-- Homepage redesign using the approved content hierarchy and copy
-- Responsive behavior and accessibility improvements
-- Directly related homepage metadata
-- Preservation of all existing public routes
-- Preservation of the Early Access and Contact form behavior
+- Approved homepage design and messaging
+- Existing public-route structure
+- Protected Early Access and Contact form behavior
 
 ---
 
-## Not Changing
+## Product Decisions Needed
 
-- Supporting-page content and layouts, except for minimal shared-component compatibility
-- Privacy Policy content
-- Delete Account workflow
-- Supabase configuration, schema, policies, credentials, or infrastructure
-- Form field names, payloads, validation, or submission destinations
-- Authentication, analytics, tracking, CMS, or live product-data integrations
-- Hosting, deployment, or environment configuration
-- The permanent status of “Confidence Delivered.” as an official tagline
+- The single delivery story the page should demonstrate
+- What visual material will explain the address, approach, delivery zone, and Operational Essentials
+- How much of the FreightIQ interface should be represented
+- The page’s final copy and section hierarchy
+- Desktop and mobile presentation
+- The primary action visitors should take after reviewing the example
+- The smallest useful implementation scope
 
 ---
 
 ## Next Safe Step
 
-Perform the pre-build verification defined in the approved Build Specification.
-
-Confirm the branch and working-tree state, current build health, route structure, shared components, protected form behavior, metadata, and approved source assets before announcing the exact implementation files and beginning any website edit.
+Inspect the current Real Example route and its available visual assets, then walk through the page decisions one at a time.
 
 ---
 
 ## Stop Conditions
 
-Stop before implementation if repository state, existing build health, protected form behavior, required configuration, source assets, or current architecture conflicts with the approved specification.
+Do not edit the Real Example page, create new production assets, change routes, or begin supporting-page implementation until a focused Build Specification is approved.
 
-Do not silently expand scope or repair unrelated conditions.
+Do not expand this product-definition phase into redesigning How It Works, forms, legal pages, Supabase, infrastructure, or deployment.
 
 ---
 
 ## Exit Criteria
 
-- The approved homepage and shared visual system are implemented.
-- The global header, mobile navigation, and footer work across applicable public routes.
-- All existing routes remain available.
-- The Early Access and Contact forms retain their existing behavior.
-- Responsive, keyboard, accessibility, and metadata requirements are verified.
-- Production build, available linting and type checks, browser review, and complete diff inspection pass or are reported honestly.
-- Every changed file and unresolved issue is reported.
-- All work remains uncommitted for approval.
+- The Real Example page has one clear responsibility.
+- Its delivery scenario, visual approach, copy, hierarchy, responsive behavior, accessibility requirements, validation, and exclusions are approved.
+- A focused Build Specification is recorded in the canonical repository.
+- `CurrentBuild.md` is updated from Product Mode to the approved implementation state before any website edit begins.
