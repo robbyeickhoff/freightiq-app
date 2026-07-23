@@ -22,76 +22,72 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-Redesign the FreightIQ How It Works page so it explains how drivers find, understand, use, and preserve practical stop knowledge.
+Determine and approve the next focused FreightIQ public-website redesign iteration after completing the homepage, Real Example, and How It Works pages.
 
 ---
 
 ## Current Focus
 
-Operate in Build Mode after pre-build verification.
+Operate in Product Mode.
 
-Implement one concise driver workflow on the existing `/demo` route without duplicating the homepage or Real Example page.
+Review the remaining public website routes against the established Sunrise System, clarify each page's responsibility, and select the smallest useful next redesign iteration.
 
-The controlling implementation document is:
-
-[`docs/build-specs/FreightIQHowItWorksPageBuildSpec.md`](build-specs/FreightIQHowItWorksPageBuildSpec.md)
-
-The completed website specifications remain the source of truth for the established foundation:
+The completed website specifications remain the source of truth for the established visual system, shared navigation, messaging boundaries, and protected functionality:
 
 - [`docs/build-specs/FreightIQWebsiteRedesignBuildSpec.md`](build-specs/FreightIQWebsiteRedesignBuildSpec.md)
 - [`docs/build-specs/FreightIQRealExamplePageBuildSpec.md`](build-specs/FreightIQRealExamplePageBuildSpec.md)
+- [`docs/build-specs/FreightIQHowItWorksPageBuildSpec.md`](build-specs/FreightIQHowItWorksPageBuildSpec.md)
+
+No repository implementation begins until the next focused Build Specification is approved.
 
 ---
 
 ## Approved Scope
 
-- Rebuild the existing `/demo` page as How It Works
-- Explain the four-stage driver workflow
-- Create one responsive workflow component
-- Use interface-inspired conceptual visuals with current product terminology
-- Add the approved page metadata
-- Remove `real-example-simple.jpg` after confirming the redesigned page eliminates its final reference
-- Reuse the existing shared header, footer, navigation, and Sunrise System
+- Review the remaining public website pages and their current responsibilities.
+- Identify the highest-value next redesign iteration.
+- Define its audience, messaging, page structure, visual treatment, responsive behavior, accessibility requirements, protected functionality, validation, and exclusions.
+- Reuse the established Sunrise System and shared navigation.
+- Preserve all existing routes and working Supabase-backed forms during product planning.
+- Create or update a focused Build Specification only after the page-level decisions are approved.
 
 ---
 
 ## Not Changing
 
-- `/demo` route
-- Homepage
-- Real Example or another supporting page
-- Shared header, footer, navigation, or global styles
-- Early Access or Contact forms
+- The approved homepage, Real Example, or How It Works page
+- Shared header, footer, navigation, or Sunrise System
+- Existing route paths
+- Early Access or Contact form behavior
 - Supabase, environment configuration, infrastructure, or deployment
-- Live product data or complete application interface
-- Analytics, tracking, community claims, testimonials, or unsupported product claims
+- Privacy Policy or Delete Account content without a separately approved review
+- Analytics, tracking, authentication, or unrelated application code
+- Any website files while the project remains in Product Mode
 
 ---
 
 ## Next Safe Step
 
-Perform the pre-build verification defined in the approved How It Works Build Specification.
+Review the remaining public routes in their current state, identify which page creates the largest gap in the finished website experience, and choose one focused next redesign objective.
 
-Confirm both repositories are clean and synced, verify the old-image reference, and confirm baseline linting, TypeScript, and production-build health before announcing the exact website files and beginning implementation.
+After that choice, define and approve its Build Specification before making any repository edits.
 
 ---
 
 ## Stop Conditions
 
-Stop before implementation if repository state, image references, existing build health, or current architecture conflicts with the approved specification.
-
-Stop if the work requires changes to shared components, global styles, routing, forms, Supabase, infrastructure, deployment, or another excluded area.
+- Stop if the remaining route structure conflicts with the canonical documentation or established website responsibilities.
+- Stop before any implementation until the next objective and Build Specification are approved.
+- Stop if proposed work would alter Supabase behavior, forms, legal content, infrastructure, deployment, or another protected area without separate approval.
+- Stop if repository state changes unexpectedly or contains unrelated work before the next build begins.
 
 ---
 
 ## Exit Criteria
 
-- The approved four-stage driver workflow is implemented.
-- The workflow visuals use current terminology without representing a fabricated complete app screen.
-- The page is clear and accessible on representative desktop and mobile layouts.
-- The approved copy, CTA, and metadata are present.
-- The obsolete example image is removed after reference verification.
-- All existing public routes remain available.
-- Linting, TypeScript, production build, code review, and complete diff inspection pass or are reported honestly.
-- Every changed file and unresolved issue is reported.
-- All website work remains uncommitted and unstaged for approval.
+- The remaining public routes have been reviewed.
+- One focused next website-redesign objective has been selected.
+- Its page responsibility, content, design, responsive behavior, protected functionality, exclusions, and validation requirements are approved.
+- A controlling Build Specification is recorded and reconciled with canonical documentation.
+- `CurrentBuild` is updated to the approved Build Mode objective.
+- No website implementation begins prematurely.
