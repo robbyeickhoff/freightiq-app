@@ -52,6 +52,33 @@ It should evolve throughout the build and be updated during every End Build Sess
 
 ---
 
+## Build Specifications
+
+Location:
+
+docs/build-specs/
+
+Purpose:
+
+Stores approved implementation specifications for meaningful build work.
+
+`CurrentBuild.md` remains the authoritative answer to:
+
+> "What are we building right now?"
+
+When the active build has a dedicated Build Specification, `CurrentBuild.md` should identify and link to it. The Build Specification then controls the detailed scope, approved decisions, acceptance criteria, exclusions, implementation sequence, and validation requirements for that build.
+
+Build Specifications must not compete with `CurrentBuild.md`, the Master TODO, or exploratory design documents:
+
+- `CurrentBuild.md` identifies the active objective.
+- Build Specifications define the approved implementation contract for that objective.
+- `MasterTODO.md` tracks confirmed work.
+- `docs/design/` contains exploratory product thinking rather than implementation approval.
+
+Material changes to an approved Build Specification require approval before implementation continues.
+
+---
+
 ## Architecture
 
 Location:
