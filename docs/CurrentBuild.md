@@ -22,76 +22,69 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-Redesign the FreightIQ Real Example page so it proves the product’s value through one concise, visual delivery story built on the completed Sunrise System foundation.
+Define and approve the next focused FreightIQ public-website iteration after completing the homepage, shared visual system, and Real Example page.
 
 ---
 
 ## Current Focus
 
-Operate in Build Mode after pre-build verification.
+Operate in Product Mode.
 
-Implement one fictional stop scenario that shows the difference between the public business address, correct truck approach, actual delivery zone, and scenario-specific Operational Essentials.
+Review the remaining supporting routes and select the next page that most improves the public product story.
 
-The controlling implementation document is:
+How It Works is the recommended next candidate because it is primary navigation and should explain the product workflow without duplicating the homepage or Real Example page. It is not approved for implementation until its responsibility, content, scope, and Build Specification are approved.
 
-[`docs/build-specs/FreightIQRealExamplePageBuildSpec.md`](build-specs/FreightIQRealExamplePageBuildSpec.md)
+The completed website iterations are preserved by:
 
-The completed homepage and shared-site specification remains the source of truth for the established website foundation:
+- [`docs/build-specs/FreightIQWebsiteRedesignBuildSpec.md`](build-specs/FreightIQWebsiteRedesignBuildSpec.md)
+- [`docs/build-specs/FreightIQRealExamplePageBuildSpec.md`](build-specs/FreightIQRealExamplePageBuildSpec.md)
 
-[`docs/build-specs/FreightIQWebsiteRedesignBuildSpec.md`](build-specs/FreightIQWebsiteRedesignBuildSpec.md)
-
----
-
-## Approved Scope
-
-- Rebuild the existing Real Example page
-- Create one responsive, accessible vector site-plan component
-- Use the approved fictional Canyon Peak Industrial Supply scenario
-- Show a 28-foot trailer, single rear dock, required backing, and north-side delivery zone
-- Add the approved page metadata
-- Preserve `real-example-simple.jpg` for the existing Demo page
-- Remove only the unreferenced `real-example-annotated.jpg`
-- Reuse the existing shared header, footer, navigation, and Sunrise System
+Those specifications remain the source of truth for the established website foundation but do not authorize another supporting-page redesign.
 
 ---
 
-## Not Changing
+## Established Foundation
 
-- Homepage
-- How It Works or another supporting page
-- Shared header, footer, navigation, or global styles
-- Early Access or Contact forms
-- Supabase, environment configuration, infrastructure, or deployment
-- Route structure
-- Live maps, product data, geolocation, or full application interface
-- Analytics, tracking, testimonials, or unsupported product claims
+- Sunrise System visual foundation
+- Global header and accessible mobile navigation
+- Global footer
+- Approved homepage design and messaging
+- Approved Real Example delivery story and vector site plan
+- Existing public-route structure
+- Protected Early Access and Contact form behavior
+
+---
+
+## Product Decisions Needed
+
+- Confirm the next supporting page
+- Define that page’s single responsibility
+- Clarify its relationship to the homepage and Real Example
+- Approve its content, copy, and section hierarchy
+- Decide what existing or new visual material it needs
+- Define responsive and accessibility requirements
+- Set the smallest useful implementation scope
+- Approve validation, exclusions, and change control
 
 ---
 
 ## Next Safe Step
 
-Perform the pre-build verification defined in the approved Real Example Build Specification.
-
-Confirm both repositories are clean and synced, verify the existing example-image references, and confirm existing route, lint, TypeScript, and production-build health before announcing the exact website files and beginning implementation.
+Inspect the existing How It Works route and its available assets, then confirm whether it should be the next focused page.
 
 ---
 
 ## Stop Conditions
 
-Stop before implementation if repository state, asset references, existing build health, or current architecture conflicts with the approved specification.
+Do not edit How It Works or another supporting page until the next objective is selected and a focused Build Specification is approved.
 
-Stop if the work requires changes to shared components, global styles, routes, forms, Supabase, infrastructure, deployment, or another excluded area.
+Do not reopen the approved homepage, Real Example page, shared visual system, forms, Supabase, infrastructure, or deployment during this product-definition phase.
 
 ---
 
 ## Exit Criteria
 
-- The approved fictional delivery story is implemented.
-- The site plan is clear and accessible on representative desktop and mobile layouts.
-- The approved copy, Operational Essentials, mapping comparison, CTA, and metadata are present.
-- `real-example-simple.jpg` remains available to the existing Demo page.
-- The unreferenced `real-example-annotated.jpg` is removed.
-- All existing public routes remain available.
-- Production build, linting, TypeScript, browser review, accessibility checks, and complete diff inspection pass or are reported honestly.
-- Every changed file and unresolved issue is reported.
-- All website work remains uncommitted for approval.
+- The next supporting page is explicitly selected.
+- Its responsibility, relationship to existing pages, content, visuals, responsive behavior, accessibility requirements, scope, validation, and exclusions are approved.
+- A focused Build Specification is recorded in the canonical repository.
+- `CurrentBuild.md` is updated from Product Mode to the approved implementation state before any website edit begins.
