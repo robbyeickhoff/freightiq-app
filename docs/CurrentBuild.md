@@ -49,7 +49,8 @@ The completed homepage and shared-site specification remains the source of truth
 - Use the approved fictional Canyon Peak Industrial Supply scenario
 - Show a 28-foot trailer, single rear dock, required backing, and north-side delivery zone
 - Add the approved page metadata
-- Remove the two obsolete Real Example images after confirming they have no remaining references
+- Preserve `real-example-simple.jpg` for the existing Demo page
+- Remove only the unreferenced `real-example-annotated.jpg`
 - Reuse the existing shared header, footer, navigation, and Sunrise System
 
 ---
@@ -71,7 +72,7 @@ The completed homepage and shared-site specification remains the source of truth
 
 Perform the pre-build verification defined in the approved Real Example Build Specification.
 
-Confirm both repositories are clean and synced, verify the obsolete-image references, and confirm existing route, lint, TypeScript, and production-build health before announcing the exact website files and beginning implementation.
+Confirm both repositories are clean and synced, verify the existing example-image references, and confirm existing route, lint, TypeScript, and production-build health before announcing the exact website files and beginning implementation.
 
 ---
 
@@ -88,7 +89,8 @@ Stop if the work requires changes to shared components, global styles, routes, f
 - The approved fictional delivery story is implemented.
 - The site plan is clear and accessible on representative desktop and mobile layouts.
 - The approved copy, Operational Essentials, mapping comparison, CTA, and metadata are present.
-- The obsolete example images are removed after reference verification.
+- `real-example-simple.jpg` remains available to the existing Demo page.
+- The unreferenced `real-example-annotated.jpg` is removed.
 - All existing public routes remain available.
 - Production build, linting, TypeScript, browser review, accessibility checks, and complete diff inspection pass or are reported honestly.
 - Every changed file and unresolved issue is reported.

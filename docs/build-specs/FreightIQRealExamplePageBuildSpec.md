@@ -307,10 +307,13 @@ Create:
 
 `freightiq-site/components/RealExampleDiagram.tsx`
 
-Remove after verifying no remaining references:
+Preserve because the existing Demo page still references it:
 
-- `freightiq-site/public/real-example-simple.jpg`
-- `freightiq-site/public/real-example-annotated.jpg`
+`freightiq-site/public/real-example-simple.jpg`
+
+Remove after verifying it has no remaining references:
+
+`freightiq-site/public/real-example-annotated.jpg`
 
 No homepage, shared-component, global-style, form, Supabase, routing, environment, infrastructure, or deployment files are approved for modification.
 
@@ -321,11 +324,11 @@ If the existing shared styles cannot support the approved page cleanly, stop and
 1. Record this specification in the canonical repository.
 2. Update `docs/CurrentBuild.md` to the approved Build state.
 3. Confirm both repositories are clean and synced.
-4. Confirm the two obsolete images have no other references.
+4. Confirm `real-example-simple.jpg` remains available to the existing Demo page and `real-example-annotated.jpg` has no remaining references.
 5. Confirm the existing Real Example route, linting, TypeScript, and production build are healthy.
 6. Create the scalable site-plan component.
 7. Rebuild only the Real Example page around the approved component and content.
-8. Remove the two obsolete images.
+8. Remove only the unreferenced `real-example-annotated.jpg`.
 9. Run the approved validation.
 10. Review every changed file and the complete diff.
 11. Present desktop and mobile previews with everything uncommitted.
@@ -336,7 +339,7 @@ Stop before implementation if:
 
 - Either repository contains unexpected uncommitted work.
 - The active branches are unexpected.
-- Either obsolete image is referenced outside the Real Example page.
+- `real-example-annotated.jpg` is referenced elsewhere or `real-example-simple.jpg` is no longer available to the existing Demo page.
 - The page requires changes to global styles or shared components.
 - The approved vector diagram cannot communicate the route clearly at mobile size.
 - Existing routes, linting, TypeScript, or production build fail before implementation.
