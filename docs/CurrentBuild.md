@@ -22,69 +22,76 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-Define and approve the next focused FreightIQ public-website iteration after completing the homepage, shared visual system, and Real Example page.
+Redesign the FreightIQ How It Works page so it explains how drivers find, understand, use, and preserve practical stop knowledge.
 
 ---
 
 ## Current Focus
 
-Operate in Product Mode.
+Operate in Build Mode after pre-build verification.
 
-Review the remaining supporting routes and select the next page that most improves the public product story.
+Implement one concise driver workflow on the existing `/demo` route without duplicating the homepage or Real Example page.
 
-How It Works is the recommended next candidate because it is primary navigation and should explain the product workflow without duplicating the homepage or Real Example page. It is not approved for implementation until its responsibility, content, scope, and Build Specification are approved.
+The controlling implementation document is:
 
-The completed website iterations are preserved by:
+[`docs/build-specs/FreightIQHowItWorksPageBuildSpec.md`](build-specs/FreightIQHowItWorksPageBuildSpec.md)
+
+The completed website specifications remain the source of truth for the established foundation:
 
 - [`docs/build-specs/FreightIQWebsiteRedesignBuildSpec.md`](build-specs/FreightIQWebsiteRedesignBuildSpec.md)
 - [`docs/build-specs/FreightIQRealExamplePageBuildSpec.md`](build-specs/FreightIQRealExamplePageBuildSpec.md)
 
-Those specifications remain the source of truth for the established website foundation but do not authorize another supporting-page redesign.
+---
+
+## Approved Scope
+
+- Rebuild the existing `/demo` page as How It Works
+- Explain the four-stage driver workflow
+- Create one responsive workflow component
+- Use interface-inspired conceptual visuals with current product terminology
+- Add the approved page metadata
+- Remove `real-example-simple.jpg` after confirming the redesigned page eliminates its final reference
+- Reuse the existing shared header, footer, navigation, and Sunrise System
 
 ---
 
-## Established Foundation
+## Not Changing
 
-- Sunrise System visual foundation
-- Global header and accessible mobile navigation
-- Global footer
-- Approved homepage design and messaging
-- Approved Real Example delivery story and vector site plan
-- Existing public-route structure
-- Protected Early Access and Contact form behavior
-
----
-
-## Product Decisions Needed
-
-- Confirm the next supporting page
-- Define that page’s single responsibility
-- Clarify its relationship to the homepage and Real Example
-- Approve its content, copy, and section hierarchy
-- Decide what existing or new visual material it needs
-- Define responsive and accessibility requirements
-- Set the smallest useful implementation scope
-- Approve validation, exclusions, and change control
+- `/demo` route
+- Homepage
+- Real Example or another supporting page
+- Shared header, footer, navigation, or global styles
+- Early Access or Contact forms
+- Supabase, environment configuration, infrastructure, or deployment
+- Live product data or complete application interface
+- Analytics, tracking, community claims, testimonials, or unsupported product claims
 
 ---
 
 ## Next Safe Step
 
-Inspect the existing How It Works route and its available assets, then confirm whether it should be the next focused page.
+Perform the pre-build verification defined in the approved How It Works Build Specification.
+
+Confirm both repositories are clean and synced, verify the old-image reference, and confirm baseline linting, TypeScript, and production-build health before announcing the exact website files and beginning implementation.
 
 ---
 
 ## Stop Conditions
 
-Do not edit How It Works or another supporting page until the next objective is selected and a focused Build Specification is approved.
+Stop before implementation if repository state, image references, existing build health, or current architecture conflicts with the approved specification.
 
-Do not reopen the approved homepage, Real Example page, shared visual system, forms, Supabase, infrastructure, or deployment during this product-definition phase.
+Stop if the work requires changes to shared components, global styles, routing, forms, Supabase, infrastructure, deployment, or another excluded area.
 
 ---
 
 ## Exit Criteria
 
-- The next supporting page is explicitly selected.
-- Its responsibility, relationship to existing pages, content, visuals, responsive behavior, accessibility requirements, scope, validation, and exclusions are approved.
-- A focused Build Specification is recorded in the canonical repository.
-- `CurrentBuild.md` is updated from Product Mode to the approved implementation state before any website edit begins.
+- The approved four-stage driver workflow is implemented.
+- The workflow visuals use current terminology without representing a fabricated complete app screen.
+- The page is clear and accessible on representative desktop and mobile layouts.
+- The approved copy, CTA, and metadata are present.
+- The obsolete example image is removed after reference verification.
+- All existing public routes remain available.
+- Linting, TypeScript, production build, code review, and complete diff inspection pass or are reported honestly.
+- Every changed file and unresolved issue is reported.
+- All website work remains uncommitted and unstaged for approval.
