@@ -42,6 +42,7 @@ When all major areas are active and no operational constraint requires a differe
 
 ```text
 Grand Junction
+→ Delta
 → Olathe
 → Montrose
 → Ridgway-address stops north of Highway 62
@@ -64,25 +65,27 @@ Remove inactive delivery zones while preserving the same overall direction of tr
 
 ---
 
-# Olathe and Montrose
+# Delta, Olathe and Montrose
 
 ## Southbound
 
-When both Olathe and Montrose are active:
+When Delta, Olathe and Montrose are active:
 
 ```text
 Grand Junction
+→ Delta
 → Olathe
 → Montrose
 ```
 
-Olathe is a pass-through zone on the southbound route. Do not drive through Olathe toward Montrose and return later unless an operational constraint requires it.
+Delta and Olathe are pass-through zones on the southbound route. Do not drive through Delta and Olathe toward Montrose and return later unless an operational constraint requires it.
 
 ## Northbound Return
 
 ```text
 Montrose
 → Olathe
+→ Delta
 → Grand Junction
 ```
 
