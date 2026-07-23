@@ -22,72 +22,78 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-Determine and approve the next focused FreightIQ public-website redesign iteration after completing the homepage, Real Example, and How It Works pages.
+Redesign the FreightIQ Early Access page so requesting access feels trustworthy, concise, and consistent with the Sunrise System while preserving the existing form and Supabase behavior.
 
 ---
 
 ## Current Focus
 
-Operate in Product Mode.
+Operate in Build Mode after pre-build verification.
 
-Review the remaining public website routes against the established Sunrise System, clarify each page's responsibility, and select the smallest useful next redesign iteration.
+Redesign only the existing `/early-access` route using the approved short, driver-first layout and protected form contract.
 
-The completed website specifications remain the source of truth for the established visual system, shared navigation, messaging boundaries, and protected functionality:
+The controlling implementation document is:
 
-- [`docs/build-specs/FreightIQWebsiteRedesignBuildSpec.md`](build-specs/FreightIQWebsiteRedesignBuildSpec.md)
-- [`docs/build-specs/FreightIQRealExamplePageBuildSpec.md`](build-specs/FreightIQRealExamplePageBuildSpec.md)
-- [`docs/build-specs/FreightIQHowItWorksPageBuildSpec.md`](build-specs/FreightIQHowItWorksPageBuildSpec.md)
+[`docs/build-specs/FreightIQEarlyAccessPageBuildSpec.md`](build-specs/FreightIQEarlyAccessPageBuildSpec.md)
 
-No repository implementation begins until the next focused Build Specification is approved.
+The completed homepage, Real Example, and How It Works specifications remain the source of truth for the established website foundation.
 
 ---
 
 ## Approved Scope
 
-- Review the remaining public website pages and their current responsibilities.
-- Identify the highest-value next redesign iteration.
-- Define its audience, messaging, page structure, visual treatment, responsive behavior, accessibility requirements, protected functionality, validation, and exclusions.
-- Reuse the established Sunrise System and shared navigation.
-- Preserve all existing routes and working Supabase-backed forms during product planning.
-- Create or update a focused Build Specification only after the page-level decisions are approved.
+- Rebuild the existing `/early-access` page within the Sunrise System.
+- Use the approved compact introduction, request form, process reassurance, and confirmation state.
+- Preserve all six existing fields and their required or optional status.
+- Preserve the existing Supabase insert, notification call, payloads, operation order, and success conditions.
+- Add the approved metadata.
+- Create one dedicated client form component.
+- Edit only `app/early-access/page.tsx` and create `components/EarlyAccessForm.tsx`.
+- Validate protected form parity without submitting fabricated live data.
 
 ---
 
 ## Not Changing
 
-- The approved homepage, Real Example, or How It Works page
-- Shared header, footer, navigation, or Sunrise System
-- Existing route paths
-- Early Access or Contact form behavior
-- Supabase, environment configuration, infrastructure, or deployment
-- Privacy Policy or Delete Account content without a separately approved review
-- Analytics, tracking, authentication, or unrelated application code
-- Any website files while the project remains in Product Mode
+- The `/early-access` route
+- Homepage, Real Example, How It Works, Contact, Privacy Policy, or Delete Account pages
+- Shared header, footer, navigation, or global styles
+- Existing form field names, stored meanings, platform values, or required states
+- Supabase tables, functions, policies, credentials, environment configuration, or infrastructure
+- Manual-review criteria or Early Access approval process
+- Authentication, CAPTCHA, analytics, tracking, or marketing automation
+- Deployment configuration
+- Any unrelated code
 
 ---
 
 ## Next Safe Step
 
-Review the remaining public routes in their current state, identify which page creates the largest gap in the finished website experience, and choose one focused next redesign objective.
+Commit and sync the approved Early Access Build Specification and reconciled `CurrentBuild`.
 
-After that choice, define and approve its Build Specification before making any repository edits.
+Then perform the specification's pre-build verification: confirm both repositories are clean and synchronized, confirm the required public Supabase configuration is available without exposing values, record the protected form baseline, and confirm linting, TypeScript, and production-build health before announcing implementation.
 
 ---
 
 ## Stop Conditions
 
-- Stop if the remaining route structure conflicts with the canonical documentation or established website responsibilities.
-- Stop before any implementation until the next objective and Build Specification are approved.
-- Stop if proposed work would alter Supabase behavior, forms, legal content, infrastructure, deployment, or another protected area without separate approval.
-- Stop if repository state changes unexpectedly or contains unrelated work before the next build begins.
+- Stop if either repository contains unexpected work or is not synchronized.
+- Stop if baseline linting, TypeScript, or production build fails.
+- Stop if required public Supabase configuration is unavailable.
+- Stop if the inspected form fields or submission behavior conflict with the approved specification.
+- Stop if implementation requires changing files outside the approved two-file scope.
+- Stop if preserving form behavior requires Supabase, environment, infrastructure, or deployment changes.
+- Stop if either approved file changes after pre-build verification.
 
 ---
 
 ## Exit Criteria
 
-- The remaining public routes have been reviewed.
-- One focused next website-redesign objective has been selected.
-- Its page responsibility, content, design, responsive behavior, protected functionality, exclusions, and validation requirements are approved.
-- A controlling Build Specification is recorded and reconciled with canonical documentation.
-- `CurrentBuild` is updated to the approved Build Mode objective.
-- No website implementation begins prematurely.
+- The approved Early Access layout, copy, form presentation, reassurance, confirmation state, and metadata are implemented.
+- All six existing fields and their required or optional states remain intact.
+- The Supabase insert, notification call, payloads, operation order, and success conditions remain unchanged.
+- The page is accessible and intentionally responsive on representative screen sizes.
+- Linting, TypeScript, production build, protected-form comparison, code review, and complete diff inspection pass or are reported honestly.
+- Only the two approved website files change.
+- No fabricated live request is submitted.
+- The work remains uncommitted and unstaged for manual review and approval.
