@@ -229,6 +229,8 @@ Strengthen the systems, infrastructure, and safeguards that quietly build user c
 
 ### Active Tasks
 
+- [ ] Add an in-app pathway for users to initiate deletion of their FreightIQ account and associated personal data.
+
 #### Security Audit
 
 - [ ] Review Supabase Row Level Security (RLS).
