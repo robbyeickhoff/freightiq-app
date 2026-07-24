@@ -22,84 +22,56 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-Complete focused production verification of the redesigned FreightIQ public website and close the website build with a trusted, documented release state.
+The FreightIQ public-website redesign is complete and production-verified.
+
+No implementation is currently active.
 
 ---
 
 ## Current Focus
 
-The approved website redesign is implemented, committed, pushed, and live through website commit:
+Return to Product Mode and preserve the trusted website release currently live through website commit:
 
 `d496c95 Redesign Privacy Policy page`
 
-The local and remote website `main` branches match.
-
-Vercel reports the production deployment as ready, and production route checks confirm the redesigned Contact, Delete Account, and Privacy Policy content is live.
-
-Complete the remaining focused regression check for the Contact and Early Access forms before closing the website build.
+The local and remote website `main` branches match and are clean.
 
 The approved homepage, Real Example, How It Works, Early Access, Contact, Delete Account, and Privacy Policy specifications remain the source of truth for the completed website foundation.
 
 ---
 
-## Approved Scope
+## Completed This Build
 
-- Verify typing and keyboard interaction in the production Contact form.
-- Verify Contact required-field validation without submitting incomplete data.
-- Complete one controlled Contact submission only after separate approval.
-- Verify typing and keyboard interaction in the production Early Access form.
-- Verify Early Access required-field validation without submitting incomplete data.
-- Complete one controlled Early Access submission only after separate approval.
-- Confirm expected success, notification, and stored-request behavior after approved submissions.
-- Record any production issue without silently expanding the release scope.
+- Redesigned and released the homepage, Real Example, How It Works, Early Access, Contact, Delete Account, and Privacy Policy pages.
+- Applied the shared FreightIQ Sunrise System across the public website.
+- Verified the production deployment, public routes, responsive layouts, navigation, typing, keyboard interaction, and required-field validation.
+- Completed approved controlled Contact and Early Access submissions.
+- Confirmed Early Access stored-request behavior.
+- Repaired the production Contact and Early Access notification functions after controlled testing exposed incompatible Edge Function configuration.
+- Confirmed both forms reached their expected success states.
+- Confirmed both notification emails were received at `hello@freightiqapp.com`.
 
 ---
 
-## Not Changing
+## Key Discovery
 
-- Homepage, Real Example, How It Works, Early Access, Contact, Delete Account, or Privacy Policy design
-- Shared header, footer, navigation, or global styles
-- Application behavior or permissions
-- Authentication or account-verification behavior
-- Supabase schema, data, functions, policies, credentials, or environment configuration
-- Mapbox, Apple Maps, Google Maps, Resend, Vercel, or other service-provider configuration
-- Early Access or Contact form behavior
-- In-app account deletion
-- Retention-process or account-deletion engineering
-- Dependencies
-- Deployment configuration
-- Any unrelated code
+The website uses Supabase's newer publishable browser key. Public Edge Functions invoked by that client must not rely on the platform's legacy JWT-verification setting, and their CORS configuration must remain compatible with the installed Supabase client.
+
+Production currently uses:
+
+- `notify-contact` version 2
+- `notify-early-access` version 6
+
+---
+
+## Production Test Data
+
+Two clearly labeled FreightIQ production-test records remain in `early_access_requests`.
 
 ---
 
 ## Next Safe Step
 
-Manually verify typing, keyboard interaction, and required-field validation on the live Contact and Early Access forms without submitting test data.
+Select the next FreightIQ objective in Product Mode before beginning another implementation cycle.
 
-Then request separate approval before making one controlled production submission through each form and confirm the expected notification and stored-request behavior.
-
----
-
-## Stop Conditions
-
-- Stop if the canonical repository contains unexpected work or is not synchronized.
-- Stop if the website tree or remote branch changes unexpectedly.
-- Stop if production no longer serves website commit `d496c95`.
-- Stop before submitting either form without separate approval.
-- Stop if a form test would require changing Supabase, Resend, environment configuration, infrastructure, or deployment.
-- Stop if production testing reveals behavior that conflicts with an approved Build Specification.
-- Stop if testing produces repeated submissions, duplicate notifications, unexpected records, or other side effects.
-
----
-
-## Exit Criteria
-
-- The redesigned website remains live through commit `d496c95`.
-- Local and remote website `main` branches remain synchronized and clean.
-- Contact typing, keyboard interaction, and required-field validation are verified.
-- Early Access typing, keyboard interaction, and required-field validation are verified.
-- Controlled Contact and Early Access submissions are completed only after separate approval.
-- Expected Contact notification behavior is confirmed.
-- Expected Early Access stored-request and notification behavior is confirmed.
-- Any production issue is reported honestly and handled through the appropriate workflow.
-- The missing in-app account-deletion pathway remains separately tracked product work.
+The missing in-app account-deletion pathway remains separately tracked product work.
