@@ -22,42 +22,42 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-Redesign and materially update the FreightIQ Privacy Policy page so it accurately explains the current application and website data practices in clear, trustworthy language.
+Complete focused production verification of the redesigned FreightIQ public website and close the website build with a trusted, documented release state.
 
 ---
 
 ## Current Focus
 
-Operate in Build Mode after the approved Privacy Policy Build Specification is recorded, reviewed, committed, and synchronized and pre-build verification passes.
+The approved website redesign is implemented, committed, pushed, and live through website commit:
 
-Redesign only the existing `/privacy` route using the approved policy copy, Sunrise System layout, accessible section navigation, and metadata.
+`d496c95 Redesign Privacy Policy page`
 
-The controlling implementation document is:
+The local and remote website `main` branches match.
 
-[`docs/build-specs/FreightIQPrivacyPolicyPageBuildSpec.md`](build-specs/FreightIQPrivacyPolicyPageBuildSpec.md)
+Vercel reports the production deployment as ready, and production route checks confirm the redesigned Contact, Delete Account, and Privacy Policy content is live.
 
-The completed homepage, Real Example, How It Works, Early Access, Contact, and Delete Account specifications remain the source of truth for the established website foundation.
+Complete the remaining focused regression check for the Contact and Early Access forms before closing the website build.
+
+The approved homepage, Real Example, How It Works, Early Access, Contact, Delete Account, and Privacy Policy specifications remain the source of truth for the completed website foundation.
 
 ---
 
 ## Approved Scope
 
-- Rebuild the existing `/privacy` page within the Sunrise System.
-- Replace the abbreviated policy with the approved complete policy copy.
-- Correct the retired photo-upload description while accurately disclosing legacy stored photos.
-- Explain verified account, profile, stop-intelligence, location, map-search, website-form, local-device, and technical data.
-- Explain verified uses, sharing, service providers, retention, deletion, security, choices, children's privacy, changes, and contact.
-- Add accessible in-page section navigation.
-- Add the approved metadata.
-- Keep the page a static Server Component.
-- Edit only `app/privacy/page.tsx`.
+- Verify typing and keyboard interaction in the production Contact form.
+- Verify Contact required-field validation without submitting incomplete data.
+- Complete one controlled Contact submission only after separate approval.
+- Verify typing and keyboard interaction in the production Early Access form.
+- Verify Early Access required-field validation without submitting incomplete data.
+- Complete one controlled Early Access submission only after separate approval.
+- Confirm expected success, notification, and stored-request behavior after approved submissions.
+- Record any production issue without silently expanding the release scope.
 
 ---
 
 ## Not Changing
 
-- The `/privacy` route
-- Homepage, Real Example, How It Works, Early Access, Contact, or Delete Account pages
+- Homepage, Real Example, How It Works, Early Access, Contact, Delete Account, or Privacy Policy design
 - Shared header, footer, navigation, or global styles
 - Application behavior or permissions
 - Authentication or account-verification behavior
@@ -74,34 +74,32 @@ The completed homepage, Real Example, How It Works, Early Access, Contact, and D
 
 ## Next Safe Step
 
-Review, approve, commit, and synchronize the Privacy Policy Build Specification and reconciled `CurrentBuild`.
+Manually verify typing, keyboard interaction, and required-field validation on the live Contact and Early Access forms without submitting test data.
 
-Then perform the specification's pre-build verification: confirm the canonical repository is clean and synchronized, confirm the website tree is clean and exactly two approved commits ahead of its remote, confirm those Contact and Delete Account commits remain unchanged, and confirm linting, TypeScript, and Webpack production-build health before announcing implementation.
+Then request separate approval before making one controlled production submission through each form and confirm the expected notification and stored-request behavior.
 
 ---
 
 ## Stop Conditions
 
 - Stop if the canonical repository contains unexpected work or is not synchronized.
-- Stop if the website tree contains unexpected work or its history differs from the approved two unpushed Contact and Delete Account commits.
-- Stop if either approved website commit changes.
-- Stop if baseline linting, TypeScript, or production build fails.
-- Stop if implementation requires changing a file outside `app/privacy/page.tsx`.
-- Stop if implementation requires application, permission, form, Supabase, service-provider, environment, dependency, infrastructure, or deployment changes.
-- Stop if verified product behavior conflicts with the approved policy copy.
-- Stop if the approved page changes after pre-build verification.
-- Stop if Webpack reproduces unusual process growth or Mac instability.
+- Stop if the website tree or remote branch changes unexpectedly.
+- Stop if production no longer serves website commit `d496c95`.
+- Stop before submitting either form without separate approval.
+- Stop if a form test would require changing Supabase, Resend, environment configuration, infrastructure, or deployment.
+- Stop if production testing reveals behavior that conflicts with an approved Build Specification.
+- Stop if testing produces repeated submissions, duplicate notifications, unexpected records, or other side effects.
 
 ---
 
 ## Exit Criteria
 
-- The approved Privacy Policy layout, complete policy copy, section navigation, links, dates, and metadata are implemented.
-- The current app's lack of new photo uploads and its legacy-photo handling are described accurately.
-- Verified data categories, uses, sharing, service providers, retention, deletion, security, choices, children's privacy, changes, and contact are included.
-- The page remains a static Server Component.
-- The page is accessible and intentionally responsive on representative screen sizes.
-- Linting, TypeScript, production build, code review, and complete diff inspection pass or are reported honestly.
-- Only `app/privacy/page.tsx` changes.
-- The approved unpushed Contact and Delete Account commits remain unchanged.
-- The work remains uncommitted and unstaged for manual review and approval.
+- The redesigned website remains live through commit `d496c95`.
+- Local and remote website `main` branches remain synchronized and clean.
+- Contact typing, keyboard interaction, and required-field validation are verified.
+- Early Access typing, keyboard interaction, and required-field validation are verified.
+- Controlled Contact and Early Access submissions are completed only after separate approval.
+- Expected Contact notification behavior is confirmed.
+- Expected Early Access stored-request and notification behavior is confirmed.
+- Any production issue is reported honestly and handled through the appropriate workflow.
+- The missing in-app account-deletion pathway remains separately tracked product work.
