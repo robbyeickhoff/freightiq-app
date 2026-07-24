@@ -4,11 +4,11 @@
 
 **Timezone:** UTC
 
-**Status:** Ready for Workflow
+**Status:** Reviewed
 
-**Classification:** Documentation correction
+**Classification:** Completed Documentation Correction
 
-**Destination:** docs/routing/MacroZones.md
+**Destination:** Archive
 
 ## Original Thought
 
@@ -22,7 +22,7 @@ The approved update to `docs/routing/MacroZones.md` could not be completed durin
 
 The field-confirmed southbound sequence is:
 
-`Grand Junction ‒ Delta → Olathe → Montrose`
+`Grand Junction → Delta → Olathe → Montrose`
 
 The corresponding northbound return is:
 
@@ -36,7 +36,7 @@ The intended destination document is `docs/routing/MacroZones.md`.
 
 ### Final Summary
 
-The current Macro Zones documentation omits Delta from the field-confirmed sequence between Grand Junction and Olathe. The southbound and northbound flows should be corrected in a separate documentation-update workflow.
+The required Macro Zones documentation correction was completed. Delta is now included in the field-confirmed southbound and northbound flows in `docs/routing/MacroZones.md`.
 
 ### Why It Matters
 
@@ -44,10 +44,10 @@ Preserving the complete sequence prevents inaccurate route-practice guidance and
 
 ### Confirmed Facts
 
-- The field-confirmed southbound sequence is `Grand Junction ‒ Delta → Olathe → Montrose`.
+- The field-confirmed southbound sequence is `Grand Junction → Delta → Olathe → Montrose`.
 - The corresponding northbound sequence is `Montrose → Olathe → Delta → Grand Junction`.
-- `docs/routing/MacroZones.md` currently omits Delta from both sequences.
-- The destination document exists and was verified during review.
+- `docs/routing/MacroZones.md` now includes Delta in both sequences.
+- No further action is required for this field note.
 
 ### Assumptions or Unknowns
 
@@ -55,11 +55,11 @@ None.
 
 ### Recommended Next Action
 
-Start a separate documentation-update workflow to add Delta to the southbound and northbound sequences in `docs/routing/MacroZones.md`.
+No further action.
 
 ### Repository Review
 
-**Repository review required:** Yes
+**Repository review required:** No
 
 **Repository destination verified:** Yes
 
@@ -69,4 +69,4 @@ Start a separate documentation-update workflow to add Delta to the southbound an
 
 ### Review Decision
 
-Ready for Workflow because the note is a verified documentation correction with a confirmed destination and a clear next action. This review does not modify the destination document.
+Reviewed and completed. Archive this note as the historical record of the documentation correction.
