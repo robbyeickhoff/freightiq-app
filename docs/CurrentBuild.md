@@ -22,48 +22,50 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-Redesign the FreightIQ Delete Account page so users can clearly request deletion of their FreightIQ account and associated personal data through a trustworthy external pathway.
+Redesign and materially update the FreightIQ Privacy Policy page so it accurately explains the current application and website data practices in clear, trustworthy language.
 
 ---
 
 ## Current Focus
 
-Operate in Build Mode after the approved Delete Account Build Specification is recorded, reviewed, committed, and synchronized and pre-build verification passes.
+Operate in Build Mode after the approved Privacy Policy Build Specification is recorded, reviewed, committed, and synchronized and pre-build verification passes.
 
-Redesign only the existing `/delete-account` route using the approved static layout, deletion instructions, and email action.
+Redesign only the existing `/privacy` route using the approved policy copy, Sunrise System layout, accessible section navigation, and metadata.
 
 The controlling implementation document is:
 
-[`docs/build-specs/FreightIQDeleteAccountPageBuildSpec.md`](build-specs/FreightIQDeleteAccountPageBuildSpec.md)
+[`docs/build-specs/FreightIQPrivacyPolicyPageBuildSpec.md`](build-specs/FreightIQPrivacyPolicyPageBuildSpec.md)
 
-The completed homepage, Real Example, How It Works, Early Access, and Contact specifications remain the source of truth for the established website foundation.
+The completed homepage, Real Example, How It Works, Early Access, Contact, and Delete Account specifications remain the source of truth for the established website foundation.
 
 ---
 
 ## Approved Scope
 
-- Rebuild the existing `/delete-account` page within the Sunrise System.
-- Use the approved compact introduction, numbered deletion steps, email action, deletion-scope explanation, and manual-process explanation.
-- Provide a prominent `mailto:` action to `hello@freightiqapp.com` with the subject `Delete My FreightIQ Account`.
-- Remove the unsupported 30-day processing promise.
-- Describe deletion as covering the account and associated personal data, subject only to legitimate retention obligations.
+- Rebuild the existing `/privacy` page within the Sunrise System.
+- Replace the abbreviated policy with the approved complete policy copy.
+- Correct the retired photo-upload description while accurately disclosing legacy stored photos.
+- Explain verified account, profile, stop-intelligence, location, map-search, website-form, local-device, and technical data.
+- Explain verified uses, sharing, service providers, retention, deletion, security, choices, children's privacy, changes, and contact.
+- Add accessible in-page section navigation.
 - Add the approved metadata.
 - Keep the page a static Server Component.
-- Edit only `app/delete-account/page.tsx`.
-- Record the missing in-app deletion pathway as separate required product work.
+- Edit only `app/privacy/page.tsx`.
 
 ---
 
 ## Not Changing
 
-- The `/delete-account` route
-- Homepage, Real Example, How It Works, Early Access, Contact, or Privacy Policy pages
+- The `/privacy` route
+- Homepage, Real Example, How It Works, Early Access, Contact, or Delete Account pages
 - Shared header, footer, navigation, or global styles
+- Application behavior or permissions
 - Authentication or account-verification behavior
-- Supabase schema, functions, policies, credentials, environment configuration, or infrastructure
+- Supabase schema, data, functions, policies, credentials, or environment configuration
+- Mapbox, Apple Maps, Google Maps, Resend, Vercel, or other service-provider configuration
+- Early Access or Contact form behavior
 - In-app account deletion
-- Automated website account deletion
-- Privacy Policy content
+- Retention-process or account-deletion engineering
 - Dependencies
 - Deployment configuration
 - Any unrelated code
@@ -72,20 +74,21 @@ The completed homepage, Real Example, How It Works, Early Access, and Contact sp
 
 ## Next Safe Step
 
-Review, approve, commit, and synchronize the Delete Account Build Specification and reconciled `CurrentBuild`.
+Review, approve, commit, and synchronize the Privacy Policy Build Specification and reconciled `CurrentBuild`.
 
-Then perform the specification's pre-build verification: confirm the canonical repository is clean and synchronized, confirm the website tree is clean and exactly one approved Contact commit ahead of its remote, and confirm linting, TypeScript, and Webpack production-build health before announcing implementation.
+Then perform the specification's pre-build verification: confirm the canonical repository is clean and synchronized, confirm the website tree is clean and exactly two approved commits ahead of its remote, confirm those Contact and Delete Account commits remain unchanged, and confirm linting, TypeScript, and Webpack production-build health before announcing implementation.
 
 ---
 
 ## Stop Conditions
 
 - Stop if the canonical repository contains unexpected work or is not synchronized.
-- Stop if the website tree contains unexpected work or its history differs from the approved single unpushed Contact commit.
-- Stop if the approved Contact commit changes.
+- Stop if the website tree contains unexpected work or its history differs from the approved two unpushed Contact and Delete Account commits.
+- Stop if either approved website commit changes.
 - Stop if baseline linting, TypeScript, or production build fails.
-- Stop if implementation requires changing a file outside `app/delete-account/page.tsx`.
-- Stop if implementation requires authentication, Supabase, account-deletion engineering, environment, dependency, infrastructure, or deployment changes.
+- Stop if implementation requires changing a file outside `app/privacy/page.tsx`.
+- Stop if implementation requires application, permission, form, Supabase, service-provider, environment, dependency, infrastructure, or deployment changes.
+- Stop if verified product behavior conflicts with the approved policy copy.
 - Stop if the approved page changes after pre-build verification.
 - Stop if Webpack reproduces unusual process growth or Mac instability.
 
@@ -93,12 +96,12 @@ Then perform the specification's pre-build verification: confirm the canonical r
 
 ## Exit Criteria
 
-- The approved Delete Account layout, copy, numbered steps, email action, supporting explanations, and metadata are implemented.
-- The email action uses the approved address and subject without sending automatically.
-- The unsupported 30-day promise is removed.
+- The approved Privacy Policy layout, complete policy copy, section navigation, links, dates, and metadata are implemented.
+- The current app's lack of new photo uploads and its legacy-photo handling are described accurately.
+- Verified data categories, uses, sharing, service providers, retention, deletion, security, choices, children's privacy, changes, and contact are included.
 - The page remains a static Server Component.
 - The page is accessible and intentionally responsive on representative screen sizes.
 - Linting, TypeScript, production build, code review, and complete diff inspection pass or are reported honestly.
-- Only `app/delete-account/page.tsx` changes.
-- The approved unpushed Contact commit remains unchanged.
+- Only `app/privacy/page.tsx` changes.
+- The approved unpushed Contact and Delete Account commits remain unchanged.
 - The work remains uncommitted and unstaged for manual review and approval.
