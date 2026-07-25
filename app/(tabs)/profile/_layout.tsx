@@ -3,8 +3,15 @@ import React from "react";
 
 export default function ProfileLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack
+      screenOptions={{
+        headerBackButtonDisplayMode: "minimal",
+        headerShown: false,
+      }}
+    >
       <Stack.Screen name="index" />
+      <Stack.Screen name="settings" options={{ headerShown: true, title: "Settings" }} />
+      <Stack.Screen name="appearance" options={{ headerShown: true, title: "Appearance" }} />
       <Stack.Screen name="help" options={{ headerShown: true, title: "Help Center" }} />
       <Stack.Screen
         name="getting-started"

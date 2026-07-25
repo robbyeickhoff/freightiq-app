@@ -1,19 +1,19 @@
 # FreightIQ Mobile Redesign — V2 Core Experience Build Specification
 
-> **Status: Planning-only review draft**
+> **Status: Approved for implementation**
 >
-> This document assembles the 22 product and design decisions approved in the “Dark Mode and App Design” conversation. It is not authorization to implement, edit the FreightIQ repository, change application behavior, or begin a build.
+> This document is the controlling implementation contract for the FreightIQ Mobile Redesign V2 core-experience slice.
 >
-> Before implementation, the canonical repository must be available and the governing FreightIQ documents, current code, active build state, and applicable workflows must be read again. Any conflict between this draft and the repository must be resolved through explicit approval before implementation begins.
+> Implementation must follow the approved scope, sequence, validation requirements, and change-control rules below. Any conflict between this specification, the current repository, or governing FreightIQ documents must be resolved through explicit approval before implementation continues.
 
 ## Document Control
 
-- **Draft title:** FreightIQ Mobile Redesign — V2 Core Experience Build Specification
-- **Draft purpose:** Consolidate the approved V2 core mobile redesign decisions for review
+- **Title:** FreightIQ Mobile Redesign — V2 Core Experience Build Specification
+- **Purpose:** Control implementation of the approved V2 core mobile redesign slice
 - **Approved repository path:** `docs/build-specs/FreightIQMobileRedesignBuildSpec.md`
-- **Repository status:** This planning draft has not been added to or used to modify the FreightIQ repository
-- **Implementation status:** Not started
-- **Approval status:** The individual design decisions, repository placement, and **Back In** terminology are approved; implementation is not authorized
+- **Repository status:** Canonical Build Specification
+- **Implementation status:** Active — app shell styling is the next increment
+- **Approval status:** Approved for implementation by the Product Owner
 
 ## Repository Alignment Notes
 
@@ -33,7 +33,7 @@ Two repository-alignment questions identified during drafting have been resolved
 1. The specification will follow `docs/README.md` and live at `docs/build-specs/FreightIQMobileRedesignBuildSpec.md`.
 2. The specification will use **Back In**, matching `docs/design/IntelContributionWorkflow.md`, rather than the earlier conversational label **Backing**.
 
-`docs/CurrentBuild.md` currently states that no implementation is active and that the next FreightIQ objective must be selected in Product Mode before another implementation cycle begins. This draft does not change that status.
+`docs/CurrentBuild.md` identifies this specification as the active FreightIQ build. Repository inspection and the centralized theme foundation are complete; implementation is proceeding through the approved sequence.
 
 ## 1. Objective
 
@@ -545,7 +545,7 @@ The first redesign slice is complete only when all of the following are true:
 - Repository access is capability, not authorization to edit.
 - Implementation, commits, pushes, deployments, database changes, credentials, infrastructure changes, and destructive actions require the applicable explicit approval.
 
-## 22. Repository Path and Next Review Gate
+## 22. Repository Path and Next Implementation Gate
 
 The approved repository location is:
 
@@ -553,4 +553,4 @@ The approved repository location is:
 
 This location follows the repository’s documented structure for meaningful Build Specifications.
 
-The next gate is whole-document review and selection of the mobile redesign as the active FreightIQ objective through the governing Product Mode workflow. Repository placement does not authorize implementation, change `docs/CurrentBuild.md`, or begin an implementation cycle.
+The Product Owner has approved this specification and selected the mobile redesign as the active FreightIQ objective. The next gate is inspection of the current implementation and reusable UI patterns before the first direct code edit.

@@ -1,6 +1,7 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ProfileForm from "../../../components/ProfileForm";
 import { supabase } from "../../../utils/supabase";
@@ -98,21 +99,23 @@ export default function ProfileScreen() {
     ]);
   }
 
-  async function logOut() {
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      Alert.alert("Logout failed", error.message);
-      return;
-    }
-
-    Alert.alert("Logged out", "You have been logged out.");
-    router.push("/auth");
-  }
-
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <Text style={styles.title}>Driver Profile</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>Driver Profile</Text>
+        <Pressable
+          accessibilityLabel="Open settings"
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={() => router.push("/(tabs)/profile/settings")}
+          style={({ pressed }) => [
+            styles.settingsButton,
+            pressed ? styles.settingsButtonPressed : null,
+          ]}
+        >
+          <MaterialIcons name="settings" size={25} color="black" />
+        </Pressable>
+      </View>
       <Text style={styles.body}>Keep your driver name and equipment information up to date.</Text>
 
       <ProfileForm
@@ -140,13 +143,6 @@ export default function ProfileScreen() {
         </Pressable>
       ) : null}
 
-      <Pressable style={styles.logoutButton} onPress={() => router.push("/(tabs)/profile/help")}>
-        <Text style={styles.logoutButtonText}>Help Center</Text>
-      </Pressable>
-
-      <Pressable style={styles.logoutButton} onPress={logOut}>
-        <Text style={styles.logoutButtonText}>Log Out</Text>
-      </Pressable>
     </SafeAreaView>
   );
 }
@@ -158,10 +154,28 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
 
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
   title: {
     fontSize: 24,
     fontWeight: "700",
-    marginBottom: 20,
+  },
+  settingsButton: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 12,
+    backgroundColor: "white",
+  },
+  settingsButtonPressed: {
+    opacity: 0.64,
   },
   body: {
     fontSize: 15,
@@ -169,7 +183,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 20,
   },
-
   button: {
     backgroundColor: "black",
     padding: 14,
@@ -187,20 +200,5 @@ const styles = StyleSheet.create({
   },
   buttonTextDisabled: {
     color: "#666",
-  },
-
-  logoutButton: {
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 14,
-    borderRadius: 10,
-    marginTop: 12,
-    alignItems: "center",
-  },
-
-  logoutButtonText: {
-    color: "black",
-    fontWeight: "700",
   },
 });

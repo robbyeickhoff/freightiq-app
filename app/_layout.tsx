@@ -5,7 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import "react-native-reanimated";
 
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { AppThemeProvider, useAppTheme } from "@/context/theme-context";
 
 const ONBOARDING_SEEN_KEY = "freightiq:onboarding-seen:v1";
 const PROFILE_SETUP_COMPLETE_KEY = "freightiq:profile-setup-complete:v1";
@@ -14,8 +14,8 @@ export const unstable_settings = {
   anchor: "(tabs)",
 };
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+function RootNavigator() {
+  const { colorScheme, isReady: isThemeReady } = useAppTheme();
   const [initialRouteName, setInitialRouteName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function RootLayout() {
     };
   }, []);
 
-  if (!initialRouteName) {
+  if (!initialRouteName || !isThemeReady) {
     return null;
   }
 
@@ -71,7 +71,15 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: "modal", title: "Modal" }} />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
     </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AppThemeProvider>
+      <RootNavigator />
+    </AppThemeProvider>
   );
 }

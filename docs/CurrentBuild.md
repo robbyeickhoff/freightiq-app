@@ -22,56 +22,58 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-The FreightIQ public-website redesign is complete and production-verified.
+Implement the approved FreightIQ Mobile Redesign V2 core-experience slice.
 
-No implementation is currently active.
+The controlling specification is:
+
+`docs/build-specs/FreightIQMobileRedesignBuildSpec.md`
 
 ---
 
 ## Current Focus
 
-Return to Product Mode and preserve the trusted website release currently live through website commit:
+Prepare the app shell, status bar, headers, and bottom tabs as the next focused increment.
 
-`d496c95 Redesign Privacy Policy page`
+The centralized theme and semantic-token foundation has been accepted on iPhone.
+The System, Light, and Dark preference behavior has been accepted on iPhone.
+The dedicated Settings placement and icon-only Profile-stack navigation have been accepted on iPhone.
 
-The local and remote website `main` branches match and are clean.
+The initial vertical slice covers:
 
-The approved homepage, Real Example, How It Works, Early Access, Contact, Delete Account, and Privacy Policy specifications remain the source of truth for the completed website foundation.
-
----
-
-## Completed This Build
-
-- Redesigned and released the homepage, Real Example, How It Works, Early Access, Contact, Delete Account, and Privacy Policy pages.
-- Applied the shared FreightIQ Sunrise System across the public website.
-- Verified the production deployment, public routes, responsive layouts, navigation, typing, keyboard interaction, and required-field validation.
-- Completed approved controlled Contact and Early Access submissions.
-- Confirmed Early Access stored-request behavior.
-- Repaired the production Contact and Early Access notification functions after controlled testing exposed incompatible Edge Function configuration.
-- Confirmed both forms reached their expected success states.
-- Confirmed both notification emails were received at `hello@freightiqapp.com`.
+- Theme architecture and System, Light, and Dark appearance modes
+- App shell and shared component styling
+- Map controls and overlays
+- Selected-stop preview card
+- Quick Intel entry
+- Stop Intel summary
 
 ---
 
-## Key Discovery
+## Not Changing
 
-The website uses Supabase's newer publishable browser key. Public Edge Functions invoked by that client must not rely on the platform's legacy JWT-verification setting, and their CORS configuration must remain compatible with the installed Supabase client.
-
-Production currently uses:
-
-- `notify-contact` version 2
-- `notify-early-access` version 6
+- Routing behavior
+- Database schema or persistence behavior
+- Authentication or permissions
+- Stop-selection and map logic
+- New Intel fields
+- Full Detailed Intel, Danger Zone, Profile, Help Center, onboarding, or authentication redesigns
+- App Store or Google Play submission
 
 ---
 
-## Production Test Data
+## Active Requirements
 
-Two clearly labeled FreightIQ production-test records remain in `early_access_requests`.
+- Follow the approved Build Specification and its implementation sequence.
+- Inspect existing code and reusable UI patterns before editing.
+- Make one focused, verifiable change at a time.
+- Preserve the established Operational Essentials hierarchy and **Back In** terminology.
+- Review every diff and run the relevant validation before requesting acceptance.
+- Keep physical iPhone and Pixel validation as required completion gates.
 
 ---
 
 ## Next Safe Step
 
-Select the next FreightIQ objective in Product Mode before beginning another implementation cycle.
+Inspect and restyle the app shell, status bar, shared headers, and bottom tabs without changing navigation behavior.
 
-The missing in-app account-deletion pathway remains separately tracked product work.
+Apply the semantic theme tokens to those shared surfaces and validate the increment on iPhone before moving to shared components or map controls.
