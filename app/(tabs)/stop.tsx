@@ -266,6 +266,7 @@ export default function StopScreen() {
   const name = String(params.name ?? "Unknown location");
   const address = String(params.address ?? "");
   const viewReports = String(params.viewReports ?? "") === "1";
+  const setDeliveryZone = String(params.setDeliveryZone ?? "") === "1";
   const openedAt = String(params.openedAt ?? "");
 
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
@@ -412,6 +413,16 @@ export default function StopScreen() {
       }, 0);
     }
   }, [openedAt, viewReports, reportsSectionY]);
+
+  useEffect(() => {
+    if (!openedAt || !setDeliveryZone) return;
+
+    void openEntrancePicker();
+    // `openedAt` identifies each explicit navigation request. The picker
+    // function is intentionally omitted so ordinary form state changes do not
+    // reopen the modal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openedAt, setDeliveryZone]);
 
   useEffect(() => {
     if (!stopId) return;

@@ -3,6 +3,7 @@ import Constants from "expo-constants";
 import * as Linking from "expo-linking";
 import * as Location from "expo-location";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -22,8 +23,11 @@ import {
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import Supercluster from "supercluster";
-import { MapButton } from "../../../components/MapButton";
-import { MapIcon } from "../../../components/MapIcon";
+import { AppButton } from "@/components/ui/app-button";
+import { AppCard } from "@/components/ui/app-card";
+import { AppIcon } from "@/components/ui/app-icon";
+import { Elevation } from "@/constants/theme";
+import { useAppTheme } from "@/context/theme-context";
 import { supabase } from "../../../utils/supabase";
 
 type Pin = {
@@ -362,6 +366,7 @@ function resolveStopHasIntel(
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { colors } = useAppTheme();
   const params = useLocalSearchParams();
   const mergeModeParam = String(params.mergeMode ?? "") === "1";
   const mergeSourceStopIdParam = String(params.mergeSourceStopId ?? "");
@@ -423,6 +428,7 @@ export default function HomeScreen() {
   const [showSelectedEntrance, setShowSelectedEntrance] = useState(false);
   const handledShowEntranceKeyRef = useRef<string | null>(null);
   const [selectedStop, setSelectedStop] = useState<Pin | null>(null);
+  const selectedStopRef = useRef<Pin | null>(null);
   const [nearbyStopsOpen, setNearbyStopsOpen] = useState(false);
   const [mapToolsOpen, setMapToolsOpen] = useState(false);
   const [nearbyStops, setNearbyStops] = useState<Pin[]>([]);
@@ -431,6 +437,10 @@ export default function HomeScreen() {
   const [deliveryZoneInspectionSource, setDeliveryZoneInspectionSource] =
     useState<DeliveryZoneInspectionSource | null>(null);
   const [mapPhotoViewerOpen, setMapPhotoViewerOpen] = useState(false);
+
+  useEffect(() => {
+    selectedStopRef.current = selectedStop;
+  }, [selectedStop]);
 
   function openNearbyStopChoice(p: Pin) {
     setNearbyStopsOpen(false);
@@ -580,6 +590,11 @@ export default function HomeScreen() {
         }
 
         await updateCachedStopCount();
+
+        const stopToRefresh = selectedStopRef.current;
+        if (active && stopToRefresh) {
+          await loadSelectedEntranceForStop(stopToRefresh);
+        }
       })();
 
       return () => {
@@ -2118,6 +2133,52 @@ export default function HomeScreen() {
   const selectedEntrancePhotoUrl = selectedStopId
     ? (entrancePhotoUrlByStopId[selectedStopId] ?? null)
     : null;
+  const selectedDeliveryZoneStatus =
+    selectedEntranceStatus === "loading" || selectedEntranceStatus === "idle"
+      ? "Checking…"
+      : selectedEntranceStatus === "error"
+        ? "Unavailable"
+        : selectedEntrance
+          ? "Saved"
+          : "Not set";
+  const selectedCoreIntel = [
+    {
+      complete: Boolean(selectedReportStats.truckFit),
+      icon: "truckFit" as const,
+      label: "Truck Fit",
+      value: selectedReportStats.truckFit ?? "Missing",
+    },
+    {
+      complete: Boolean(selectedEntrance),
+      icon: "deliveryZone" as const,
+      label: "Delivery Zone",
+      value: selectedDeliveryZoneStatus,
+    },
+    {
+      complete: Boolean(selectedReportStats.deliveryType),
+      icon: "deliveryType" as const,
+      label: "Delivery Type",
+      value: selectedReportStats.deliveryType ?? "Missing",
+    },
+    {
+      complete: selectedReportStats.backInRequired !== null,
+      icon: "backIn" as const,
+      label: "Back In",
+      value:
+        selectedReportStats.backInRequired === null
+          ? "Missing"
+          : selectedReportStats.backInRequired
+            ? "Yes"
+            : "No",
+    },
+  ];
+  const selectedCoreIntelCount = selectedCoreIntel.filter((item) => item.complete).length;
+  const selectedCoreIntelStatus =
+    selectedCoreIntelCount === 4
+      ? "Core intel complete"
+      : selectedCoreIntelCount === 3
+        ? "3 of 4 core intel"
+        : "Needs core intel";
 
   useEffect(() => {
     if (!entranceHighlightOn) return;
@@ -2237,6 +2298,8 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      <StatusBar animated style={mapType === "standard" ? "dark" : "light"} />
+
       {!isMapReady && (
         <View
           style={{
@@ -2477,27 +2540,48 @@ export default function HomeScreen() {
           value={query}
           onChangeText={setQuery}
           placeholder="Search business name or address…"
-          style={styles.searchInput}
+          placeholderTextColor={colors.disabled}
+          selectionColor={colors.accent}
+          style={[
+            styles.searchInput,
+            {
+              backgroundColor: colors.surfaceElevated,
+              borderColor: colors.border,
+              color: colors.textPrimary,
+            },
+            Elevation.floating,
+          ]}
           autoCapitalize="none"
           autoCorrect={false}
           clearButtonMode="while-editing"
+          accessibilityLabel="Search by business name or address"
         />
 
         {recent.length ? (
-          <View style={styles.recentCard}>
+          <AppCard contentStyle={styles.recentCard} elevation="floating">
             <View style={styles.recentHeader}>
-              <Pressable onPress={() => setRecentCollapsed((v) => !v)}>
-                <Text style={styles.recentTitle}>Recent Intel</Text>
+              <Pressable
+                accessibilityLabel={recentCollapsed ? "Show Recent Intel" : "Hide Recent Intel"}
+                accessibilityRole="button"
+                hitSlop={10}
+                onPress={() => setRecentCollapsed((v) => !v)}
+              >
+                <Text style={[styles.recentTitle, { color: colors.textPrimary }]}>Recent Intel</Text>
               </Pressable>
 
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                <Pressable onPress={() => setRecent([])}>
-                  <Text style={{ color: "#8b949e", fontSize: 13 }}>Clear</Text>
-                </Pressable>
+              <View style={styles.recentHeaderActions}>
+                <AppButton onPress={() => setRecent([])} size="compact" variant="tertiary">
+                  Clear
+                </AppButton>
 
-                <Pressable onPress={() => setRecentCollapsed((v) => !v)}>
-                  <Text style={styles.recentToggle}>{recentCollapsed ? "Show" : "Hide"}</Text>
-                </Pressable>
+                <AppButton
+                  accessibilityLabel={recentCollapsed ? "Show Recent Intel" : "Hide Recent Intel"}
+                  onPress={() => setRecentCollapsed((v) => !v)}
+                  size="compact"
+                  variant="tertiary"
+                >
+                  {recentCollapsed ? "Show" : "Hide"}
+                </AppButton>
               </View>
             </View>
 
@@ -2506,25 +2590,31 @@ export default function HomeScreen() {
                 {recent.map((r) => (
                   <Pressable
                     key={r.id}
-                    style={styles.recentRow}
+                    style={[styles.recentRow, { borderTopColor: colors.border }]}
                     onPress={() => {
                       const p = pins.find((x) => x.id === r.id);
                       if (p) jumpToStop(p);
                     }}
                   >
                     <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={styles.recentName} numberOfLines={1}>
+                      <Text
+                        style={[styles.recentName, { color: colors.textPrimary }]}
+                        numberOfLines={1}
+                      >
                         {r.name}
                       </Text>
-                      <Text style={styles.recentMeta} numberOfLines={1}>
+                      <Text
+                        style={[styles.recentMeta, { color: colors.textSecondary }]}
+                        numberOfLines={1}
+                      >
                         {formatAddressForDisplay(r.address ?? "No address")} •{" "}
                         {formatWhen(r.updatedAt)}
                         {r.hasEntrance ? " • Delivery Zone ✅" : ""}
                       </Text>
                     </View>
 
-                    <Pressable
-                      style={styles.recentOpenBtn}
+                    <AppButton
+                      accessibilityLabel={`Open ${r.name}`}
                       onPress={() => {
                         addToRecent({
                           id: r.id,
@@ -2545,14 +2635,15 @@ export default function HomeScreen() {
                           },
                         });
                       }}
+                      size="compact"
                     >
-                      <Text style={styles.recentOpenBtnText}>Open</Text>
-                    </Pressable>
+                      Open
+                    </AppButton>
                   </Pressable>
                 ))}
               </ScrollView>
             ) : null}
-          </View>
+          </AppCard>
         ) : null}
 
         {mergeMode && mergeSourceStopId ? (
@@ -2599,24 +2690,39 @@ export default function HomeScreen() {
         ) : null}
 
         {!!resultLabel && (
-          <View style={styles.resultsCard}>
-            <Text style={styles.resultsLabel}>{resultLabel}</Text>
+          <AppCard clipContent contentStyle={styles.resultsCard} elevation="floating">
+            <Text
+              style={[
+                styles.resultsLabel,
+                { borderBottomColor: colors.border, color: colors.textPrimary },
+              ]}
+            >
+              {resultLabel}
+            </Text>
 
             <ScrollView style={styles.resultsScroll} keyboardShouldPersistTaps="handled">
               {freightIqResults.length > 0 ? (
                 <>
-                  <Text style={styles.resultSectionLabel}>FreightIQ Stops</Text>
+                  <Text style={[styles.resultSectionLabel, { color: colors.textSecondary }]}>
+                    FreightIQ Stops
+                  </Text>
 
                   {freightIqResults.map((r) => (
                     <Pressable
                       key={`freightiq-${r.id}`}
-                      style={styles.resultRow}
+                      style={[styles.resultRow, { borderBottomColor: colors.border }]}
                       onPress={() => selectFreightIqSearchResult(r)}
                     >
-                      <Text style={styles.resultName} numberOfLines={1}>
+                      <Text
+                        style={[styles.resultName, { color: colors.textPrimary }]}
+                        numberOfLines={1}
+                      >
                         {r.name}
                       </Text>
-                      <Text style={styles.resultAddr} numberOfLines={2}>
+                      <Text
+                        style={[styles.resultAddr, { color: colors.textSecondary }]}
+                        numberOfLines={2}
+                      >
                         {formatAddressForDisplay(r.address ?? "No address saved")}
                       </Text>
                     </Pressable>
@@ -2625,58 +2731,80 @@ export default function HomeScreen() {
               ) : null}
 
               {results.length > 0 ? (
-                <Text style={styles.resultSectionLabel}>Nearby Places</Text>
+                <Text style={[styles.resultSectionLabel, { color: colors.textSecondary }]}>
+                  Nearby Places
+                </Text>
               ) : null}
 
               {results.map((r) => {
                 return (
                   <Pressable
                     key={r.id}
-                    style={styles.resultRow}
+                    style={[styles.resultRow, { borderBottomColor: colors.border }]}
                     onPress={() => {
                       Keyboard.dismiss();
                       selectResult(r);
                     }}
                   >
-                    <Text style={styles.resultName} numberOfLines={1}>
+                    <Text
+                      style={[styles.resultName, { color: colors.textPrimary }]}
+                      numberOfLines={1}
+                    >
                       {r.name}
                     </Text>
-                    <Text style={styles.resultAddr} numberOfLines={2}>
+                    <Text
+                      style={[styles.resultAddr, { color: colors.textSecondary }]}
+                      numberOfLines={2}
+                    >
                       {formatAddressForDisplay(r.fullAddress)}
                     </Text>
                   </Pressable>
                 );
               })}
             </ScrollView>
-          </View>
+          </AppCard>
         )}
       </View>
 
       {showPreview ? (
         <Animated.View
-          style={[styles.previewCard, { transform: [{ translateY: previewTranslateY }] }]}
+          style={[
+            styles.previewCard,
+            {
+              backgroundColor: colors.surfaceElevated,
+              borderColor: colors.border,
+              transform: [{ translateY: previewTranslateY }],
+            },
+            Elevation.sheet,
+          ]}
         >
-          <Pressable
-            accessibilityRole="button"
+          <AppButton
             accessibilityLabel="Close stop preview"
-            hitSlop={8}
+            hitSlop={6}
+            size="icon"
             style={styles.previewCloseBtn}
             onPress={dismissPreviewCard}
+            variant="secondary"
           >
-            <View style={[styles.previewCloseLine, styles.previewCloseLineForward]} />
-            <View style={[styles.previewCloseLine, styles.previewCloseLineBackward]} />
-          </Pressable>
+            <AppIcon name="close" color={colors.textSecondary} />
+          </AppButton>
 
           <View style={styles.previewDragArea}>
             <View {...previewPanResponder.panHandlers} style={styles.previewDragGrabZone}>
-              <View style={styles.previewHandle} />
+              <View style={[styles.previewHandle, { backgroundColor: colors.border }]} />
             </View>
 
             <View style={styles.previewHeader}>
-              <Text style={styles.previewTitle} numberOfLines={1}>
+              <Text
+                style={[styles.previewTitle, { color: colors.textPrimary }]}
+                numberOfLines={1}
+              >
                 {selectedStop?.name}
               </Text>
-              <Text style={styles.previewAddress} numberOfLines={previewCollapsed ? 1 : 3}>
+              <Text
+                style={[styles.previewAddress, { color: colors.textSecondary }]}
+                numberOfLines={previewCollapsed ? 1 : 2}
+              >
                 {formatAddressForDisplay(selectedStop?.address ?? "No address saved")}
               </Text>
             </View>
@@ -2685,110 +2813,131 @@ export default function HomeScreen() {
           {previewCollapsed ? (
             <View {...previewPanResponder.panHandlers} style={styles.previewCollapsedTapArea}>
               <Pressable onPress={expandPreviewCard}>
-                <Text style={styles.previewCollapsedHint}>Drag up or tap to expand</Text>
+                <Text
+                  style={[styles.previewCollapsedHint, { color: colors.textSecondary }]}
+                >
+                  Drag up or tap to expand
+                </Text>
               </Pressable>
             </View>
           ) : (
             <>
               {selectedStop?.id === "temp-search-result" ? (
                 <View style={styles.previewMetaBlock}>
-                  <Text style={styles.previewMetaLine}>
+                  <Text style={[styles.previewMetaLine, { color: colors.textSecondary }]}>
                     Delivery Zone: {selectedEntrance ? "Saved" : "None"}
                   </Text>
 
                   {selectedReportStats.deliveryType ? (
-                    <Text style={styles.previewMetaLine}>
+                    <Text style={[styles.previewMetaLine, { color: colors.textSecondary }]}>
                       Delivery Type: {selectedReportStats.deliveryType}
                     </Text>
                   ) : null}
 
-                  <Text style={styles.previewMetaLine}>
+                  <Text style={[styles.previewMetaLine, { color: colors.textSecondary }]}>
                     Driver Reports: {selectedReportStats.count}
                   </Text>
                 </View>
               ) : (
                 <View style={styles.previewOperationalSummary}>
-                  <Text style={styles.previewSectionTitle}>Operational Summary</Text>
-
-                  <View style={styles.previewOperationalRow}>
-                    <View style={styles.previewOperationalItem}>
-                      <Text style={styles.previewOperationalLabel}>Truck Fit</Text>
-                      <Text style={styles.previewOperationalValue}>
-                        {selectedReportStats.truckFit ?? "Unknown"}
+                  <View style={styles.previewCompletionRow}>
+                    <View style={styles.previewCompletionCopy}>
+                      <AppIcon
+                        color={
+                          selectedCoreIntelCount === 4
+                            ? colors.success
+                            : colors.textSecondary
+                        }
+                        name={selectedCoreIntelCount === 4 ? "check" : "incomplete"}
+                        size={18}
+                      />
+                      <Text style={[styles.previewCompletionText, { color: colors.textPrimary }]}>
+                        {selectedCoreIntelStatus}
                       </Text>
                     </View>
-
-                    <View style={styles.previewOperationalItem}>
-                      <Text style={styles.previewOperationalLabel}>Delivery Type</Text>
-                      <Text style={styles.previewOperationalValue}>
-                        {selectedReportStats.deliveryType ?? "Unknown"}
-                      </Text>
-                    </View>
+                    <Text style={[styles.previewCompletionCount, { color: colors.textSecondary }]}>
+                      {selectedCoreIntelCount} of 4
+                    </Text>
                   </View>
 
-                  <View style={styles.previewOperationalRow}>
-                    <View style={styles.previewOperationalItem}>
-                      <Text style={styles.previewOperationalLabel}>Back In</Text>
-                      <Text style={styles.previewOperationalValue}>
-                        {selectedReportStats.backInRequired === null
-                          ? "Unknown"
-                          : selectedReportStats.backInRequired
-                            ? "Yes"
-                            : "No"}
-                      </Text>
-                    </View>
-
-                    <View style={styles.previewOperationalItem}>
-                      <Text style={styles.previewOperationalLabel}>Delivery Zone</Text>
-                      <Text style={styles.previewOperationalValue}>
-                        {selectedEntranceStatus === "loading" || selectedEntranceStatus === "idle"
-                          ? "Checking…"
-                          : selectedEntranceStatus === "error"
-                            ? "Unavailable"
-                            : selectedEntrance
-                              ? "Saved"
-                              : "Not Set"}
-                      </Text>
-                    </View>
+                  <View style={styles.previewCoreGrid}>
+                    {selectedCoreIntel.map((item) => (
+                      <View key={item.label} style={styles.previewCoreItem}>
+                        <View
+                          style={[
+                            styles.previewCoreIcon,
+                            { backgroundColor: colors.accentMuted },
+                          ]}
+                        >
+                          <AppIcon
+                            color={item.complete ? colors.accentStrong : colors.textSecondary}
+                            name={item.icon}
+                            size={18}
+                          />
+                        </View>
+                        <View style={styles.previewCoreCopy}>
+                          <Text
+                            style={[
+                              styles.previewOperationalLabel,
+                              { color: colors.textSecondary },
+                            ]}
+                          >
+                            {item.label}
+                          </Text>
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              styles.previewOperationalValue,
+                              {
+                                color: item.complete
+                                  ? colors.textPrimary
+                                  : colors.textSecondary,
+                              },
+                            ]}
+                          >
+                            {item.value}
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
                   </View>
                 </View>
               )}
 
               {selectedStop?.id === "temp-search-result" ? (
                 <>
-                  <Pressable style={styles.previewPrimaryBtn} onPress={startDropAtCenter}>
-                    <Text style={styles.previewPrimaryBtnText}>Create Stop Here</Text>
-                  </Pressable>
+                  <AppButton fullWidth onPress={startDropAtCenter}>
+                    Create Stop Here
+                  </AppButton>
 
                   <View style={styles.previewSecondaryRow}>
-                    <Pressable style={styles.previewSecondaryBtn} onPress={navToStop}>
-                      <Text style={styles.previewSecondaryBtnText}>Nav Here</Text>
-                    </Pressable>
+                    <AppButton
+                      onPress={navToStop}
+                      size="compact"
+                      style={styles.previewSecondaryBtn}
+                      variant="secondary"
+                    >
+                      Navigate
+                    </AppButton>
 
-                    <Pressable
-                      style={[styles.previewSecondaryBtn, styles.previewSecondaryBtnGhost]}
+                    <AppButton
                       onPress={() => {
                         setNewPinName("");
                         setNewPinAddress(tempSearchPin?.address ?? "");
                         setNewPinOpen(true);
                       }}
+                      size="compact"
+                      style={styles.previewSecondaryBtn}
+                      variant="secondary"
                     >
-                      <Text
-                        style={[
-                          styles.previewSecondaryBtnText,
-                          styles.previewSecondaryBtnTextGhost,
-                        ]}
-                      >
-                        Edit Name
-                      </Text>
-                    </Pressable>
+                      Edit Name
+                    </AppButton>
                   </View>
                 </>
               ) : (
                 <>
                   <View style={styles.previewSavedActionRow}>
-                    <Pressable
-                      style={styles.previewSavedActionBtn}
+                    <AppButton
                       onPress={() =>
                         router.push({
                           pathname: "/(tabs)/stop",
@@ -2802,79 +2951,78 @@ export default function HomeScreen() {
                           },
                         })
                       }
+                      size="compact"
+                      style={styles.previewSavedActionBtn}
                     >
-                      <Text style={styles.previewSavedActionText}>Edit Intel</Text>
-                    </Pressable>
+                      Edit Intel
+                    </AppButton>
 
-                    <Pressable style={styles.previewSavedActionBtn} onPress={navToStop}>
-                      <Text style={styles.previewSavedActionText}>Navigate</Text>
-                    </Pressable>
+                    <AppButton
+                      onPress={navToStop}
+                      size="compact"
+                      style={styles.previewSavedActionBtn}
+                      variant="secondary"
+                    >
+                      Navigate
+                    </AppButton>
                   </View>
 
                   <View style={styles.previewSavedActionRow}>
-                    <Pressable
-                      style={styles.previewSavedActionBtn}
+                    <AppButton
                       onPress={() =>
                         router.push({
                           pathname: "/(tabs)/stop",
                           params: {
-                            id: selectedStop.id,
-                            lat: selectedStop.lat,
-                            lng: selectedStop.lng,
-                            name: selectedStop.name,
-                            address: selectedStop.address ?? "",
+                            id: selectedStop?.id,
+                            lat: String(selectedStop?.lat),
+                            lng: String(selectedStop?.lng),
+                            name: selectedStop?.name,
+                            address: selectedStop?.address ?? "",
                             viewReports: "1",
                             openedAt: String(Date.now()),
                           },
                         })
                       }
+                      size="compact"
+                      style={styles.previewSavedActionBtn}
+                      variant="secondary"
                     >
-                      <Text style={styles.previewSavedActionText}>
-                        Reports ({selectedReportStats.count})
-                      </Text>
-                    </Pressable>
+                      {`Reports (${selectedReportStats.count})`}
+                    </AppButton>
 
-                    {selectedEntrance ? (
-                      <Pressable
-                        style={styles.previewSavedActionBtn}
-                        onPress={() => {
-                          if (!selectedStop || !selectedEntrance) return;
-
+                    <AppButton
+                      loading={
+                        selectedEntranceStatus === "loading" ||
+                        selectedEntranceStatus === "idle"
+                      }
+                      onPress={() => {
+                        if (selectedEntrance && selectedStop) {
                           enterDeliveryZoneInspection("preview", selectedStop, selectedEntrance);
-                        }}
-                      >
-                        <Text style={styles.previewSavedActionText}>Delivery Zone</Text>
-                      </Pressable>
-                    ) : (
-                      <Pressable
-                        style={[styles.previewSavedActionBtn, styles.previewSavedActionBtnMuted]}
-                        onPress={() =>
-                          selectedEntranceStatus === "loading" || selectedEntranceStatus === "idle"
-                            ? Alert.alert(
-                                "Checking delivery zone",
-                                "FreightIQ is still loading this stop’s saved delivery zone.",
-                              )
-                            : selectedEntranceStatus === "error"
-                              ? Alert.alert(
-                                  "Delivery zone unavailable",
-                                  "FreightIQ could not load this stop’s delivery zone. Try opening the stop again.",
-                                )
-                              : Alert.alert(
-                                  "No delivery zone yet",
-                                  "Open the stop and set a delivery zone pin.",
-                                )
+                          return;
                         }
-                      >
-                        <Text
-                          style={[
-                            styles.previewSavedActionText,
-                            styles.previewSavedActionTextMuted,
-                          ]}
-                        >
-                          Delivery Zone
-                        </Text>
-                      </Pressable>
-                    )}
+
+                        router.push({
+                          pathname: "/(tabs)/stop",
+                          params: {
+                            id: selectedStop?.id,
+                            lat: String(selectedStop?.lat),
+                            lng: String(selectedStop?.lng),
+                            name: selectedStop?.name,
+                            address: selectedStop?.address ?? "",
+                            setDeliveryZone: "1",
+                            openedAt: String(Date.now()),
+                          },
+                        });
+                      }}
+                      size="compact"
+                      style={styles.previewSavedActionBtn}
+                      textStyle={
+                        selectedEntrance ? undefined : { color: colors.textSecondary }
+                      }
+                      variant="secondary"
+                    >
+                      {selectedEntrance ? "Show DZ" : "Set DZ"}
+                    </AppButton>
                   </View>
                 </>
               )}
@@ -2893,40 +3041,69 @@ export default function HomeScreen() {
 
       {!showPreview ? (
         <View style={[styles.floatingActions, { bottom: 36 }]}>
-          <View style={styles.mapToolsCard}>
-            <Pressable onPress={refreshStopsInView} disabled={stopLayerLoading}>
-              <MapButton>
-                {stopLayerLoading ? "Loading…" : showingStops ? "Hide Stops" : "Show Stops"}
-              </MapButton>
-            </Pressable>
-          </View>
+          <AppButton
+            accessibilityLabel={showingStops ? "Hide stops" : "Show stops"}
+            loading={stopLayerLoading}
+            onPress={refreshStopsInView}
+            size="compact"
+            style={[styles.stopLayerButton, Elevation.floating]}
+            variant="secondary"
+          >
+            {showingStops ? "Hide Stops" : "Show Stops"}
+          </AppButton>
 
-          <View style={styles.mapControlGroup}>
-            <Pressable style={styles.mapControlIconButton} onPress={centerOnMe}>
-              <MapIcon>◎</MapIcon>
-            </Pressable>
-
-            <View style={styles.mapControlDivider} />
-
-            <Pressable style={styles.mapControlIconButton} onPress={startDropAtCenter}>
-              <MapIcon>＋</MapIcon>
-            </Pressable>
-
-            <View style={styles.mapControlDivider} />
-
-            <Pressable
+          <AppCard clipContent elevation="floating">
+            <AppButton
+              accessibilityLabel="Center map on my location"
+              onPress={centerOnMe}
+              size="icon"
               style={styles.mapControlIconButton}
-              onPress={() => setMapType((prev) => (prev === "standard" ? "hybrid" : "standard"))}
+              variant="tertiary"
             >
-              <MapIcon>{mapType === "standard" ? "🛰" : "🗺"}</MapIcon>
-            </Pressable>
+              <AppIcon name="location" color={colors.textPrimary} />
+            </AppButton>
 
-            <View style={styles.mapControlDivider} />
+            <View style={[styles.mapControlDivider, { backgroundColor: colors.border }]} />
 
-            <Pressable style={styles.mapControlIconButton} onPress={() => setMapToolsOpen(true)}>
-              <MapIcon>⚙︎</MapIcon>
-            </Pressable>
-          </View>
+            <AppButton
+              accessibilityLabel="Create a stop at the map center"
+              onPress={startDropAtCenter}
+              size="icon"
+              style={styles.mapControlIconButton}
+              variant="tertiary"
+            >
+              <AppIcon name="add" color={colors.textPrimary} />
+            </AppButton>
+
+            <View style={[styles.mapControlDivider, { backgroundColor: colors.border }]} />
+
+            <AppButton
+              accessibilityLabel={
+                mapType === "standard" ? "Switch to satellite map" : "Switch to standard map"
+              }
+              onPress={() => setMapType((prev) => (prev === "standard" ? "hybrid" : "standard"))}
+              size="icon"
+              style={styles.mapControlIconButton}
+              variant="tertiary"
+            >
+              <AppIcon
+                name={mapType === "standard" ? "map" : "satellite"}
+                color={mapType === "hybrid" ? colors.accent : colors.textPrimary}
+              />
+            </AppButton>
+
+            <View style={[styles.mapControlDivider, { backgroundColor: colors.border }]} />
+
+            <AppButton
+              accessibilityLabel="Open map tools"
+              onPress={() => setMapToolsOpen(true)}
+              size="icon"
+              style={styles.mapControlIconButton}
+              variant="tertiary"
+            >
+              <AppIcon name="settings" color={colors.textPrimary} />
+            </AppButton>
+          </AppCard>
         </View>
       ) : null}
 
@@ -2955,10 +3132,10 @@ export default function HomeScreen() {
               {nearbyStops.map((stop) => (
                 <Pressable
                   key={stop.id}
-                  style={styles.previewSecondaryBtn}
+                  style={styles.nearbyStopChoice}
                   onPress={() => openNearbyStopChoice(stop)}
                 >
-                  <Text style={styles.previewSecondaryBtnText} numberOfLines={1}>
+                  <Text style={styles.nearbyStopChoiceText} numberOfLines={1}>
                     {stop.name}
                   </Text>
                   <Text style={styles.previewAddress} numberOfLines={2}>
@@ -3135,39 +3312,18 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
 
-  mapToolsCard: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 8,
-    gap: 6,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-
-  mapControlGroup: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#e6e6e6",
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 2,
+  stopLayerButton: {
+    minWidth: 112,
   },
 
   mapControlIconButton: {
     width: 48,
     height: 48,
-    alignItems: "center",
-    justifyContent: "center",
+    borderRadius: 0,
   },
 
   mapControlDivider: {
     height: 1,
-    backgroundColor: "#e6e6e6",
     marginHorizontal: 8,
   },
 
@@ -3265,30 +3421,16 @@ const styles = StyleSheet.create({
   searchWrap: { position: "absolute", top: 54, left: 12, right: 12, gap: 10 },
 
   searchInput: {
-    backgroundColor: "white",
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: "#e6e6e6",
     fontSize: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 2,
   },
 
   recentCard: {
-    backgroundColor: "white",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#e6e6e6",
     padding: 10,
     gap: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
   },
 
   recentHeader: {
@@ -3298,7 +3440,9 @@ const styles = StyleSheet.create({
   },
 
   recentTitle: { fontWeight: "900", fontSize: 16 },
-  recentToggle: { color: "#666", fontWeight: "800" },
+  recentHeaderActions: {
+    flexDirection: "row",
+  },
 
   recentRow: {
     flexDirection: "row",
@@ -3306,34 +3450,18 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: "#f1f1f1",
   },
 
   recentName: { fontWeight: "900" },
-  recentMeta: { color: "#666", fontSize: 12 },
-
-  recentOpenBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    backgroundColor: "black",
-  },
-
-  recentOpenBtnText: { color: "white", fontWeight: "900" },
+  recentMeta: { fontSize: 12 },
 
   resultsCard: {
-    backgroundColor: "white",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#e6e6e6",
-    overflow: "hidden",
   },
 
   resultsLabel: {
     padding: 10,
     fontWeight: "900",
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
   },
 
   resultsScroll: {
@@ -3344,7 +3472,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingTop: 10,
     paddingBottom: 6,
-    color: "#666",
     fontSize: 12,
     fontWeight: "900",
     textTransform: "uppercase",
@@ -3353,12 +3480,11 @@ const styles = StyleSheet.create({
   resultRow: {
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#f1f1f1",
     gap: 2,
   },
 
   resultName: { fontWeight: "900" },
-  resultAddr: { color: "#666" },
+  resultAddr: {},
 
   floatingActions: {
     position: "absolute",
@@ -3506,13 +3632,9 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 14,
     paddingHorizontal: 14,
-    borderRadius: 22,
-    backgroundColor: "white",
+    borderRadius: 16,
+    borderWidth: 1,
     gap: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 4,
   },
 
   previewDragArea: {
@@ -3535,7 +3657,6 @@ const styles = StyleSheet.create({
   },
 
   previewCollapsedHint: {
-    color: "#6b7280",
     fontWeight: "700",
     fontSize: 13,
   },
@@ -3545,7 +3666,6 @@ const styles = StyleSheet.create({
     width: 42,
     height: 5,
     borderRadius: 999,
-    backgroundColor: "#d4d4d8",
     marginBottom: 2,
   },
 
@@ -3555,43 +3675,21 @@ const styles = StyleSheet.create({
 
   previewCloseBtn: {
     position: "absolute",
-    top: 14,
-    right: 14,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#f3f4f6",
-    alignItems: "center",
-    justifyContent: "center",
+    top: 12,
+    right: 12,
     zIndex: 2,
-  },
-
-  previewCloseLine: {
-    position: "absolute",
-    width: 13,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: "#6b7280",
-  },
-
-  previewCloseLineForward: {
-    transform: [{ rotate: "45deg" }],
-  },
-
-  previewCloseLineBackward: {
-    transform: [{ rotate: "-45deg" }],
   },
 
   previewTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#111",
+    paddingRight: 48,
   },
 
   previewAddress: {
     fontSize: 14,
-    color: "#6b7280",
     lineHeight: 20,
+    paddingRight: 48,
   },
 
   previewMetaBlock: {
@@ -3600,7 +3698,6 @@ const styles = StyleSheet.create({
 
   previewMetaLine: {
     fontSize: 14,
-    color: "#4b5563",
     lineHeight: 20,
   },
 
@@ -3608,46 +3705,65 @@ const styles = StyleSheet.create({
     gap: 10,
   },
 
-  previewSectionTitle: {
-    color: "#6b7280",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-
-  previewOperationalRow: {
+  previewCoreGrid: {
     flexDirection: "row",
-    gap: 12,
+    flexWrap: "wrap",
+    rowGap: 10,
   },
 
-  previewOperationalItem: {
+  previewCoreItem: {
+    width: "50%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingRight: 8,
+  },
+
+  previewCoreIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  previewCoreCopy: {
     flex: 1,
-    gap: 2,
+    gap: 1,
   },
 
   previewOperationalLabel: {
-    color: "#6b7280",
     fontSize: 12,
     fontWeight: "600",
   },
 
   previewOperationalValue: {
-    color: "#111",
     fontSize: 16,
     fontWeight: "800",
   },
 
-  previewPrimaryBtn: {
-    backgroundColor: "black",
-    borderRadius: 16,
-    paddingVertical: 14,
+  previewCompletionRow: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    gap: 12,
   },
 
-  previewPrimaryBtnText: {
-    color: "white",
-    fontWeight: "900",
-    fontSize: 17,
+  previewCompletionCopy: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+  },
+
+  previewCompletionText: {
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  previewCompletionCount: {
+    fontSize: 12,
+    fontWeight: "700",
   },
 
   previewSecondaryRow: {
@@ -3657,29 +3773,6 @@ const styles = StyleSheet.create({
 
   previewSecondaryBtn: {
     flex: 1,
-    minHeight: 56,
-    borderRadius: 16,
-    backgroundColor: "#f3f4f6",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 10,
-  },
-
-  previewSecondaryBtnGhost: {
-    backgroundColor: "white",
-  },
-
-  previewSecondaryBtnText: {
-    color: "#111",
-    fontWeight: "800",
-    fontSize: 16,
-    textAlign: "center",
-  },
-
-  previewSecondaryBtnTextGhost: {
-    color: "#111",
   },
 
   previewSavedActionRow: {
@@ -3689,29 +3782,23 @@ const styles = StyleSheet.create({
 
   previewSavedActionBtn: {
     flex: 1,
-    minHeight: 50,
-    borderRadius: 14,
-    backgroundColor: "#f3f4f6",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 10,
   },
 
-  previewSavedActionBtnMuted: {
-    backgroundColor: "#fafafa",
+  nearbyStopChoice: {
+    minHeight: 56,
+    borderRadius: 16,
+    backgroundColor: "#f3f4f6",
     borderWidth: 1,
     borderColor: "#e5e7eb",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
 
-  previewSavedActionText: {
+  nearbyStopChoiceText: {
     color: "#111",
-    fontWeight: "700",
-    fontSize: 14,
-    textAlign: "center",
-  },
-
-  previewSavedActionTextMuted: {
-    color: "#9ca3af",
+    fontWeight: "800",
+    fontSize: 16,
   },
 
   entranceMarkerLabelHighlighted: {

@@ -12,7 +12,7 @@
 - **Purpose:** Control implementation of the approved V2 core mobile redesign slice
 - **Approved repository path:** `docs/build-specs/FreightIQMobileRedesignBuildSpec.md`
 - **Repository status:** Canonical Build Specification
-- **Implementation status:** Active — app shell styling is the next increment
+- **Implementation status:** Active — Quick Intel entry and flow
 - **Approval status:** Approved for implementation by the Product Owner
 
 ## Repository Alignment Notes

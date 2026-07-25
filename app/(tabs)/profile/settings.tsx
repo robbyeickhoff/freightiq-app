@@ -1,15 +1,16 @@
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Borders, Radius, Sizes, Spacing, Typography } from "@/constants/theme";
+import { Radius, Sizes, Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
+import { AppCard } from "@/components/ui/app-card";
+import { AppIcon, type AppIconName } from "@/components/ui/app-icon";
 import { supabase } from "@/utils/supabase";
 
 type SettingsRowProps = {
   accessibilityHint?: string;
-  icon: "help-outline" | "logout" | "palette";
+  icon: AppIconName;
   label: string;
   onPress: () => void;
   value?: string;
@@ -38,12 +39,12 @@ function SettingsRow({
       ]}
     >
       <View style={[styles.iconContainer, { backgroundColor: colors.accentMuted }]}>
-        <MaterialIcons name={icon} size={22} color={colors.accentStrong} />
+        <AppIcon name={icon} size={22} color={colors.accentStrong} />
       </View>
       <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>{label}</Text>
       {value ? <Text style={[styles.rowValue, { color: colors.textSecondary }]}>{value}</Text> : null}
       {showsChevron ? (
-        <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+        <AppIcon name="chevronRight" size={24} color={colors.textSecondary} />
       ) : null}
     </Pressable>
   );
@@ -81,52 +82,28 @@ export default function SettingsScreen() {
         </Text>
 
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Preferences</Text>
-        <View
-          style={[
-            styles.group,
-            {
-              backgroundColor: colors.surfaceElevated,
-              borderColor: colors.border,
-            },
-          ]}
-        >
+        <AppCard clipContent>
           <SettingsRow
             accessibilityHint="Opens appearance choices"
-            icon="palette"
+            icon="appearance"
             label="Appearance"
             onPress={() => router.push("/(tabs)/profile/appearance")}
             value={appearanceValue}
           />
-        </View>
+        </AppCard>
 
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Support</Text>
-        <View
-          style={[
-            styles.group,
-            {
-              backgroundColor: colors.surfaceElevated,
-              borderColor: colors.border,
-            },
-          ]}
-        >
+        <AppCard clipContent>
           <SettingsRow
             accessibilityHint="Opens the FreightIQ Help Center"
-            icon="help-outline"
+            icon="help"
             label="Help Center"
             onPress={() => router.push("/(tabs)/profile/help")}
           />
-        </View>
+        </AppCard>
 
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Account</Text>
-        <View
-          style={[
-            styles.group,
-            {
-              backgroundColor: colors.surfaceElevated,
-              borderColor: colors.border,
-            },
-          ]}
-        >
+        <AppCard clipContent>
           <SettingsRow
             accessibilityHint="Signs out of your FreightIQ account"
             icon="logout"
@@ -134,7 +111,7 @@ export default function SettingsScreen() {
             onPress={() => void logOut()}
             showsChevron={false}
           />
-        </View>
+        </AppCard>
       </ScrollView>
     </SafeAreaView>
   );
@@ -159,11 +136,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
     marginLeft: Spacing.xs,
     textTransform: "uppercase",
-  },
-  group: {
-    overflow: "hidden",
-    borderWidth: Borders.thin,
-    borderRadius: Radius.large,
   },
   row: {
     minHeight: 64,

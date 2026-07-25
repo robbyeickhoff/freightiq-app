@@ -32,11 +32,20 @@ The controlling specification is:
 
 ## Current Focus
 
-Prepare the app shell, status bar, headers, and bottom tabs as the next focused increment.
+Restyle map controls and overlays as the current build phase.
 
 The centralized theme and semantic-token foundation has been accepted on iPhone.
 The System, Light, and Dark preference behavior has been accepted on iPhone.
 The dedicated Settings placement and icon-only Profile-stack navigation have been accepted on iPhone.
+The shared app shell, status bar, headers, and bottom tabs have been accepted on iPhone.
+The Profile Settings entry remains intentionally transitional until the approved visual system reaches the full Profile screen.
+The shared `AppCard` foundation has been accepted on iPhone in Dark mode.
+The shared button, labeled-input, choice-chip, segmented-control, and semantic-icon foundations are implemented and statically validated.
+Those interaction controls receive physical visual validation when the approved map and Quick Intel workflows first consume them.
+The first map-control slice—the Show/Hide Stops action and right-side control rail—has passed iPhone visual validation in Light and Dark modes.
+Map-aware status-bar contrast is implemented for standard and satellite imagery.
+The search, Recent Intel, and search-results overlays have passed visual and functional iPhone validation.
+The selected-stop preview has passed visual and functional iPhone validation, including immediate Delivery Zone refresh when returning to the map.
 
 The initial vertical slice covers:
 
@@ -74,6 +83,13 @@ The initial vertical slice covers:
 
 ## Next Safe Step
 
-Inspect and restyle the app shell, status bar, shared headers, and bottom tabs without changing navigation behavior.
+Implement the missing-core-intel contribution entry point and Quick Intel flow:
 
-Apply the semantic theme tokens to those shared surfaces and validate the increment on iPhone before moving to shared components or map controls.
+- Show **Add missing core intel** only when one or more core items are incomplete.
+- Open Quick Intel directly from that action.
+- Prefill existing Truck Fit, Delivery Zone, Delivery Type, and Back In values.
+- Prioritize missing items and allow partial saving.
+- Return to the same selected stop and refresh the preview immediately after saving.
+- Preserve existing authentication, validation, report ownership, and persistence behavior.
+
+Validate the complete contribution loop on iPhone before proceeding to the Stop Intel summary.

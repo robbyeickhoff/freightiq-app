@@ -3,6 +3,9 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { Borders, Colors, Radius, Sizes, Spacing, Typography } from "@/constants/theme";
+
 import ProfileForm from "../../../components/ProfileForm";
 import { supabase } from "../../../utils/supabase";
 
@@ -101,21 +104,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.titleRow}>
-        <Text style={styles.title}>Driver Profile</Text>
-        <Pressable
-          accessibilityLabel="Open settings"
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={() => router.push("/(tabs)/profile/settings")}
-          style={({ pressed }) => [
-            styles.settingsButton,
-            pressed ? styles.settingsButtonPressed : null,
-          ]}
-        >
-          <MaterialIcons name="settings" size={25} color="black" />
-        </Pressable>
-      </View>
+      <Text style={styles.title}>Driver Profile</Text>
       <Text style={styles.body}>Keep your driver name and equipment information up to date.</Text>
 
       <ProfileForm
@@ -143,6 +132,35 @@ export default function ProfileScreen() {
         </Pressable>
       ) : null}
 
+      <View style={styles.appSection}>
+        <Text style={styles.sectionLabel}>App</Text>
+        <Pressable
+          accessibilityHint="Opens app preferences, support, and account controls"
+          accessibilityRole="button"
+          onPress={() => router.push("/(tabs)/profile/settings")}
+          style={({ pressed }) => [
+            styles.settingsRow,
+            pressed ? styles.settingsRowPressed : null,
+          ]}
+        >
+          <View style={styles.settingsIconContainer}>
+            <MaterialIcons
+              name="settings"
+              size={23}
+              color={Colors.light.accentStrong}
+            />
+          </View>
+          <View style={styles.settingsCopy}>
+            <Text style={styles.settingsRowLabel}>Settings</Text>
+            <Text style={styles.settingsRowSubtitle}>Appearance, support, and account</Text>
+          </View>
+          <MaterialIcons
+            name="chevron-right"
+            size={26}
+            color={Colors.light.textSecondary}
+          />
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 }
@@ -154,28 +172,10 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
 
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
   title: {
     fontSize: 24,
     fontWeight: "700",
-  },
-  settingsButton: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 12,
-    backgroundColor: "white",
-  },
-  settingsButtonPressed: {
-    opacity: 0.64,
+    marginBottom: 20,
   },
   body: {
     fontSize: 15,
@@ -200,5 +200,50 @@ const styles = StyleSheet.create({
   },
   buttonTextDisabled: {
     color: "#666",
+  },
+  appSection: {
+    marginTop: Spacing.lg,
+  },
+  sectionLabel: {
+    ...Typography.operationalLabel,
+    color: Colors.light.textSecondary,
+    marginBottom: Spacing.xs,
+    marginLeft: Spacing.xs,
+    textTransform: "uppercase",
+  },
+  settingsRow: {
+    minHeight: 76,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.light.surface,
+    borderWidth: Borders.thin,
+    borderColor: Colors.light.border,
+    borderRadius: Radius.large,
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.sm,
+  },
+  settingsRowPressed: {
+    opacity: 0.72,
+  },
+  settingsIconContainer: {
+    width: Sizes.minimumTouchTarget,
+    height: Sizes.minimumTouchTarget,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.light.accentMuted,
+    borderRadius: Radius.medium,
+  },
+  settingsCopy: {
+    flex: 1,
+  },
+  settingsRowLabel: {
+    ...Typography.body,
+    color: Colors.light.textPrimary,
+    fontWeight: "700",
+  },
+  settingsRowSubtitle: {
+    ...Typography.supporting,
+    color: Colors.light.textSecondary,
+    marginTop: Spacing.xxs,
   },
 });

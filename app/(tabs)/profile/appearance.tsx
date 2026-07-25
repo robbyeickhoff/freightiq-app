@@ -1,9 +1,10 @@
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Borders, Radius, Spacing, Typography } from "@/constants/theme";
+import { AppCard } from "@/components/ui/app-card";
+import { AppIcon } from "@/components/ui/app-icon";
+import { Borders, Spacing, Typography } from "@/constants/theme";
 import { type ThemeMode, useAppTheme } from "@/context/theme-context";
 
 const THEME_OPTIONS: {
@@ -61,15 +62,9 @@ export default function AppearanceScreen() {
           Choose the appearance that works best in your cab. Changes apply immediately.
         </Text>
 
-        <View
+        <AppCard
           accessibilityRole="radiogroup"
-          style={[
-            styles.optionGroup,
-            {
-              backgroundColor: colors.surfaceElevated,
-              borderColor: colors.border,
-            },
-          ]}
+          clipContent
         >
           {THEME_OPTIONS.map((option, index) => {
             const isSelected = themeMode === option.value;
@@ -102,12 +97,12 @@ export default function AppearanceScreen() {
                   </Text>
                 </View>
                 {isSelected ? (
-                  <MaterialIcons name="check" size={24} color={colors.accentStrong} />
+                  <AppIcon name="check" size={24} color={colors.accentStrong} />
                 ) : null}
               </Pressable>
             );
           })}
-        </View>
+        </AppCard>
       </ScrollView>
     </SafeAreaView>
   );
@@ -125,11 +120,6 @@ const styles = StyleSheet.create({
   intro: {
     ...Typography.body,
     marginBottom: Spacing.lg,
-  },
-  optionGroup: {
-    overflow: "hidden",
-    borderWidth: Borders.thin,
-    borderRadius: Radius.large,
   },
   option: {
     minHeight: 76,

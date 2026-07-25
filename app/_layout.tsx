@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "react-native-reanimated";
 
 import { AppThemeProvider, useAppTheme } from "@/context/theme-context";
@@ -15,8 +15,24 @@ export const unstable_settings = {
 };
 
 function RootNavigator() {
-  const { colorScheme, isReady: isThemeReady } = useAppTheme();
+  const { colorScheme, colors, isReady: isThemeReady } = useAppTheme();
   const [initialRouteName, setInitialRouteName] = useState<string | null>(null);
+  const navigationTheme = useMemo(() => {
+    const baseTheme = colorScheme === "dark" ? DarkTheme : DefaultTheme;
+
+    return {
+      ...baseTheme,
+      colors: {
+        ...baseTheme.colors,
+        primary: colors.accent,
+        background: colors.background,
+        card: colors.surface,
+        text: colors.textPrimary,
+        border: colors.border,
+        notification: colors.danger,
+      },
+    };
+  }, [colorScheme, colors]);
 
   useEffect(() => {
     let mounted = true;
@@ -57,8 +73,18 @@ function RootNavigator() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack initialRouteName={initialRouteName}>
+    <ThemeProvider value={navigationTheme}>
+      <Stack
+        initialRouteName={initialRouteName}
+        screenOptions={{
+          contentStyle: { backgroundColor: colors.background },
+          headerBackButtonDisplayMode: "minimal",
+          headerShadowVisible: true,
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.textPrimary,
+          headerTitleStyle: { fontWeight: "700" },
+        }}
+      >
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="setup-profile" options={{ headerShown: false }} />
         <Stack.Screen
@@ -71,7 +97,11 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: "modal", title: "Modal" }} />
       </Stack>
-      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+      <StatusBar
+        animated
+        backgroundColor={colors.surface}
+        style={colorScheme === "dark" ? "light" : "dark"}
+      />
     </ThemeProvider>
   );
 }
