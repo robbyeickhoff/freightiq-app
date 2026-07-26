@@ -33,7 +33,7 @@ Two repository-alignment questions identified during drafting have been resolved
 1. The specification will follow `docs/README.md` and live at `docs/build-specs/FreightIQMobileRedesignBuildSpec.md`.
 2. The specification will use **Back In**, matching `docs/design/IntelContributionWorkflow.md`, rather than the earlier conversational label **Backing**.
 
-`docs/CurrentBuild.md` identifies this specification as the active FreightIQ build. Repository inspection, the centralized theme foundation, map controls and overlays, selected-stop preview, Quick Intel flow, Stop Intel summary, and native Apple map appearance are complete and accepted on iPhone; implementation is proceeding to the accessibility and device-validation matrix.
+`docs/CurrentBuild.md` identifies this specification as the active FreightIQ build. Repository inspection, the centralized theme foundation, map controls and overlays, selected-stop preview, Quick Intel flow, Stop Intel summary, native Apple map appearance, and the complete iPhone accessibility matrix are accepted. The remaining completion gates are the physical-Pixel matrix and standalone-iPhone dynamic text-size validation.
 
 ## 1. Objective
 

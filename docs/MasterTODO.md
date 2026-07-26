@@ -18,7 +18,7 @@
 
 ---
 
-Last Updated: 2026-07-19
+Last Updated: 2026-07-26
 
 ---
 
@@ -99,8 +99,8 @@ Queued planning specification:
 
 ##### Active Tasks
 
-- [ ] Review the current authentication workflow.
-- [ ] Evaluate moving toward a more familiar account creation and sign-in experience.
+- [x] Review the current authentication workflow.
+- [x] Evaluate moving toward a more familiar account creation and sign-in experience.
 - [ ] Reduce friction during sign-up and sign-in.
 - [ ] Preserve security while improving usability.
 - [ ] Validate the updated authentication experience with new users.
