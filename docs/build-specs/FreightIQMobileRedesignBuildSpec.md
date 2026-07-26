@@ -476,6 +476,159 @@ Validate the complete core workflow on:
 
 Physical-device validation remains required. Simulator or automated validation alone is insufficient for final acceptance.
 
+### Pixel Smoke-Test Script
+
+Run this script on a physical Pixel against the latest synchronized `clean-main` checkpoint.
+
+Use an existing disposable test stop for contribution tests. Do not alter real customer Intel solely
+to complete the script.
+
+Record each step as **Pass** or **Fail**. If a step crashes, blocks an action, loses saved data,
+hides critical content, or makes a control inaccessible, capture a screenshot and stop that
+workflow until the regression is reviewed.
+
+#### 1. Launch and App Shell
+
+- Set the Pixel text and display sizes to their normal defaults.
+- Set the Pixel appearance to Light.
+- Launch the latest FreightIQ build.
+- Confirm the app opens without an error or warning overlay.
+- Confirm the status bar, Map and Profile tabs, search field, and map controls are fully visible.
+- Confirm the selected tab uses the copper/orange active state and the inactive tab remains neutral.
+
+Expected result: FreightIQ launches cleanly with no clipped controls, overlapping system areas, or
+unexpected navigation changes.
+
+#### 2. Theme Modes and Persistence
+
+- Open **Profile → Settings → Appearance**.
+- Select **Light** and inspect Settings, Help Center, Map, and a stop preview.
+- Select **Dark** and inspect the same screens.
+- Select **System**, change the Pixel system appearance, and return to FreightIQ.
+- Close and reopen FreightIQ.
+
+Expected result: All three theme modes apply correctly, System follows the Pixel appearance, and the
+selected preference persists without resetting navigation or app data.
+
+#### 3. Standard and Satellite Maps
+
+- In Light mode, inspect the Standard map.
+- Switch to Satellite and inspect the search field, Show/Hide Stops action, control rail, pins, and
+  bottom tabs.
+- Repeat in Dark mode.
+- Return to Standard view.
+
+Expected result: The map remains readable in every combination. App controls maintain strong
+contrast, Satellite imagery is not artificially recolored, and Standard view follows the active
+appearance where the platform supports it.
+
+#### 4. Map Controls and Stop Discovery
+
+- Tap Locate Me and confirm the map centers on the Pixel location.
+- Tap the plus control and confirm the create-stop preview opens at the orange crosshair; close it
+  without saving.
+- Tap Show Stops, pan or zoom the map, and repeat the action.
+- Open a numbered cluster and select an individual stop.
+- Tap Hide Stops.
+- Open map Settings and return without changing saved offline data.
+
+Expected result: Every control responds with one deliberate tap, controls do not overlap, repeated
+Show/Hide actions remain stable, clusters open correctly, and no stop is accidentally created.
+
+#### 5. Search, Recent Intel, and Preview Card
+
+- Search for an existing FreightIQ stop by business name or address.
+- Open a search result and confirm the correct business name and cleaned address.
+- Open and close Recent Intel.
+- Select one stop with complete Core Intel and one stop with missing Core Intel.
+- Scroll the preview card when necessary.
+
+Expected result: Search and Recent Intel remain usable, the selected stop is correct, the preview
+stays within safe areas, all four Core Intel items are readable, completion language is accurate,
+and all preview actions remain reachable.
+
+#### 6. Quick Intel and Partial Save
+
+- From a disposable stop with missing Core Intel, tap **Add missing core intel** or **Edit Intel**.
+- Confirm existing answers are prefilled and missing items appear first.
+- Add only one missing answer and save the partial contribution.
+- Return to the preview card.
+
+Expected result: Partial saving succeeds, the app returns to the same stop, the preview updates
+immediately, and no unrelated Intel is overwritten.
+
+#### 7. Delivery Zone Handoff
+
+- Open Quick Intel for the disposable test stop.
+- Tap **Set DZ**.
+- Place and save the Delivery Zone.
+- Return to Quick Intel and then to the preview card.
+- Tap **Show DZ**.
+
+Expected result: The saved Delivery Zone appears immediately in Quick Intel and the preview without
+reselecting the stop. Show DZ opens the correct truck-accessible point and returning preserves the
+same stop context.
+
+#### 8. Stop Intel and Additional Driver Intel
+
+- Open the full Stop Intel screen.
+- Confirm the Core Intel summary matches the preview card.
+- Open **Edit Core Intel**, then return without changing data.
+- Open **Add Additional Intel** or **Edit Additional Intel**.
+- Change one disposable test value and return to Stop Intel.
+- Confirm **Unsaved changes** appears.
+- Tap **Save Report Changes** and confirm **Your report is saved** appears.
+- Open Driver Reports, return, and verify **Back to Map**.
+
+Expected result: Core and Additional Intel remain clearly separated, unsaved and saved states are
+unambiguous without relying on color, the report persists, and all return paths work.
+
+#### 9. Profile, Settings, and Help Center
+
+- Open Profile and confirm the driver name and tractor type remain intact.
+- Open Settings and Appearance.
+- Open the Help Center.
+- Open each of the five guides and expand at least one section in each.
+- Return to Profile and then to Map.
+
+Expected result: Navigation headers and back controls remain consistent, Help Center copy is readable,
+accordions expand correctly, and no profile data changes.
+
+#### 10. Large Text
+
+- Increase Android font size to the largest accessibility setting.
+- Reload FreightIQ if Expo does not apply the change immediately.
+- Repeat the essential path: Map, search, preview card, Quick Intel, Stop Intel, Profile, Settings,
+  and Help Center.
+- Scroll every screen that does not fit vertically.
+
+Expected result: Critical text is not clipped, words do not become unreadable fragments, the preview
+remains obviously scrollable, every action stays reachable, and controls retain usable touch areas.
+
+#### 11. TalkBack
+
+- Enable TalkBack.
+- Navigate the Map and Profile tabs.
+- Focus the search field, Show/Hide Stops action, each map-control icon, preview close control,
+  Quick Intel close control, Settings back control, and Help Center rows.
+- Activate at least one non-destructive control with TalkBack.
+- Disable TalkBack after the test.
+
+Expected result: Icon-only controls have clear spoken names, focus order is understandable, selected
+states are announced, and no essential action is silent or unreachable.
+
+#### 12. Final Regression
+
+- Restore normal Pixel font and display sizes.
+- Restore the preferred System appearance.
+- Reload FreightIQ.
+- Repeat one search, one preview open and close, one Show/Hide Stops cycle, and one Profile round
+  trip.
+- Confirm no unexpected data was created or changed during testing.
+
+Expected result: The normal layout remains polished after accessibility testing, core navigation and
+map behavior remain stable, and the Pixel test session ends with no release-blocking regression.
+
 ## 19. Implementation Sequence
 
 Implementation must not begin until:

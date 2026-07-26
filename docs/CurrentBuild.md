@@ -97,6 +97,7 @@ The approved follow-on refresh also covers:
 
 Run the remaining approved Pixel and standalone-iPhone matrix across the complete V2 workflow:
 
+- Follow the numbered physical-Pixel smoke-test script in Section 18 of the controlling Mobile Redesign Build Specification.
 - Pixel Light, Dark, and System appearance modes
 - Pixel standard and satellite map views
 - Pixel large text
