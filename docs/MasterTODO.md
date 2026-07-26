@@ -94,6 +94,9 @@ Continue improving onboarding, tester communication, professional email infrastr
 
 Create a familiar, professional account creation and sign-in experience that minimizes hesitation and inspires confidence.
 
+Queued planning specification:
+[FreightIQ Authentication V2 — Email and Password Build Specification](build-specs/FreightIQAuthenticationV2BuildSpec.md)
+
 ##### Active Tasks
 
 - [ ] Review the current authentication workflow.
