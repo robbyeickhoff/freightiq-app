@@ -88,6 +88,8 @@ type ReportRow = {
   tractor_type?: string | null;
 };
 
+const STOP_DISCLOSURE_MAX_FONT_MULTIPLIER = 1.8;
+
 type ReportDraft = {
   deliverFromType: string;
   deliverFromDetails: string;
@@ -417,7 +419,7 @@ export default function StopScreen() {
   const reportSaveLabel = loading
     ? "Saving..."
     : myReportId
-      ? "Update My Report"
+      ? "Save Report Changes"
       : "Post My Report";
   const editNameInputRef = useRef<TextInput | null>(null);
   const editAddressInputRef = useRef<TextInput | null>(null);
@@ -1721,64 +1723,82 @@ export default function StopScreen() {
             </AppCard>
 
             <AppCard contentStyle={styles.v2SectionCard}>
-              <Text style={[styles.v2Eyebrow, { color: colors.textSecondary }]}>CONTRIBUTE</Text>
-              <Pressable
-                accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.v2DisclosureRow,
-                  usesAccessibilityLayout ? styles.accessibilityDisclosureRow : null,
-                  pressed ? styles.v2Pressed : null,
-                ]}
-                onPress={() => setAdditionalIntelOpen(true)}
+              <Text
+                maxFontSizeMultiplier={
+                  usesAccessibilityLayout ? STOP_DISCLOSURE_MAX_FONT_MULTIPLIER : undefined
+                }
+                style={[styles.v2Eyebrow, { color: colors.textSecondary }]}
               >
-                <View style={styles.v2DisclosureCopy}>
-                  <Text style={[styles.v2SectionTitle, { color: colors.textPrimary }]}>
-                    Additional Driver Intel
-                  </Text>
-                  <Text style={[styles.v2SectionSubtitle, { color: colors.textSecondary }]}>
-                    Delivery details, approach, contact, and notes
-                  </Text>
-                </View>
-                {!usesAccessibilityLayout ? (
-                  <AppIcon color={colors.textSecondary} name="chevronRight" />
-                ) : null}
-              </Pressable>
+                CONTRIBUTE
+              </Text>
+              <View style={styles.v2DisclosureCopy}>
+                <Text
+                  maxFontSizeMultiplier={
+                    usesAccessibilityLayout ? STOP_DISCLOSURE_MAX_FONT_MULTIPLIER : undefined
+                  }
+                  style={[styles.v2SectionTitle, { color: colors.textPrimary }]}
+                >
+                  Additional Driver Intel
+                </Text>
+                <Text
+                  maxFontSizeMultiplier={usesAccessibilityLayout ? 2 : undefined}
+                  style={[styles.v2SectionSubtitle, { color: colors.textSecondary }]}
+                >
+                  Delivery details, approach, contact, and notes
+                </Text>
+              </View>
+
+              <AppButton
+                fullWidth
+                maxFontSizeMultiplier={
+                  usesAccessibilityLayout ? STOP_DISCLOSURE_MAX_FONT_MULTIPLIER : undefined
+                }
+                onPress={() => setAdditionalIntelOpen(true)}
+                variant="secondary"
+              >
+                {myReportId || reportHasContent ? "Edit Additional Intel" : "Add Additional Intel"}
+              </AppButton>
 
               {reportIsSaved ? (
-                <View
-                  accessible
-                  accessibilityLabel="Report saved"
-                  style={[
-                    styles.v2SavedStatus,
-                    usesAccessibilityLayout && styles.accessibilitySavedStatus,
-                  ]}
-                >
+                <View accessible accessibilityLabel="Report saved" style={styles.v2SavedStatus}>
                   <AppIcon color={colors.success} name="check" size={18} />
-                  <Text style={[styles.v2SavedStatusText, { color: colors.textSecondary }]}>
+                  <Text
+                    maxFontSizeMultiplier={
+                      usesAccessibilityLayout ? STOP_DISCLOSURE_MAX_FONT_MULTIPLIER : undefined
+                    }
+                    style={[styles.v2SavedStatusText, { color: colors.textSecondary }]}
+                  >
                     Your report is saved
                   </Text>
                 </View>
               ) : myReportId || reportHasContent ? (
-                <AppButton
-                  fullWidth
-                  loading={loading}
-                  onPress={() => void saveMyReport()}
-                  variant="secondary"
-                >
-                  {reportSaveLabel}
-                </AppButton>
-              ) : null}
-
-              {myReportId ? (
-                <AppButton
-                  disabled={deletingReport}
-                  onPress={deleteMyReport}
-                  size="compact"
-                  variant="tertiary"
-                  textStyle={{ color: colors.danger }}
-                >
-                  {deletingReport ? "Deleting..." : "Delete my report"}
-                </AppButton>
+                <>
+                  <View
+                    accessible
+                    accessibilityLabel="Unsaved report changes"
+                    style={styles.v2SavedStatus}
+                  >
+                    <AppIcon color={colors.accentStrong} name="incomplete" size={18} />
+                    <Text
+                      maxFontSizeMultiplier={
+                        usesAccessibilityLayout ? STOP_DISCLOSURE_MAX_FONT_MULTIPLIER : undefined
+                      }
+                      style={[styles.v2SavedStatusText, { color: colors.accentStrong }]}
+                    >
+                      Unsaved changes
+                    </Text>
+                  </View>
+                  <AppButton
+                    fullWidth
+                    loading={loading}
+                    maxFontSizeMultiplier={
+                      usesAccessibilityLayout ? STOP_DISCLOSURE_MAX_FONT_MULTIPLIER : undefined
+                    }
+                    onPress={() => void saveMyReport()}
+                  >
+                    {reportSaveLabel}
+                  </AppButton>
+                </>
               ) : null}
             </AppCard>
 
@@ -1796,11 +1816,21 @@ export default function StopScreen() {
                 ]}
                 onPress={() => setReportsExpanded((v) => !v)}
               >
-                <Text style={[styles.disclosureLabel, { color: colors.textPrimary }]}>
+                <Text
+                  maxFontSizeMultiplier={
+                    usesAccessibilityLayout ? STOP_DISCLOSURE_MAX_FONT_MULTIPLIER : undefined
+                  }
+                  style={[styles.disclosureLabel, { color: colors.textPrimary }]}
+                >
                   Driver Reports
                 </Text>
                 <View style={styles.disclosureTrailing}>
-                  <Text style={[styles.disclosureValue, { color: colors.textSecondary }]}>
+                  <Text
+                    maxFontSizeMultiplier={
+                      usesAccessibilityLayout ? STOP_DISCLOSURE_MAX_FONT_MULTIPLIER : undefined
+                    }
+                    style={[styles.disclosureValue, { color: colors.textSecondary }]}
+                  >
                     {sortedReports.length}
                   </Text>
                   {reportsExpanded ? (
@@ -2015,37 +2045,41 @@ export default function StopScreen() {
                   })
                 )
               ) : null}
-            </AppCard>
 
-            {canDeleteStop && (
-              <Pressable
-                accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.disclosureRow,
-                  usesAccessibilityLayout ? styles.accessibilityDisclosureRow : null,
-                  {
-                    backgroundColor: colors.surfaceElevated,
-                    borderColor: colors.border,
-                  },
-                  pressed ? styles.disclosureRowPressed : null,
-                ]}
-                onPress={() => {
-                  setManageStopView("menu");
-                  setShowManageStop(true);
-                }}
-              >
-                <Text style={[styles.disclosureLabel, { color: colors.textPrimary }]}>
-                  Manage Stop
-                </Text>
-                {!usesAccessibilityLayout ? (
-                  <AppIcon color={colors.textSecondary} name="chevronRight" />
-                ) : null}
-              </Pressable>
-            )}
+              {canDeleteStop ? (
+                <>
+                  <View style={[styles.groupedDivider, { backgroundColor: colors.border }]} />
+                  <Pressable
+                    accessibilityRole="button"
+                    style={({ pressed }) => [
+                      styles.groupedDisclosureRow,
+                      pressed ? styles.disclosureRowPressed : null,
+                    ]}
+                    onPress={() => {
+                      setManageStopView("menu");
+                      setShowManageStop(true);
+                    }}
+                  >
+                    <Text
+                      maxFontSizeMultiplier={
+                        usesAccessibilityLayout ? STOP_DISCLOSURE_MAX_FONT_MULTIPLIER : undefined
+                      }
+                      style={[styles.disclosureLabel, { color: colors.textPrimary }]}
+                    >
+                      Manage Stop
+                    </Text>
+                    <AppIcon color={colors.textSecondary} name="chevronRight" />
+                  </Pressable>
+                </>
+              ) : null}
+            </AppCard>
 
             <View style={styles.actions}>
               <AppButton
                 fullWidth
+                maxFontSizeMultiplier={
+                  usesAccessibilityLayout ? STOP_DISCLOSURE_MAX_FONT_MULTIPLIER : undefined
+                }
                 variant="secondary"
                 onPress={() => {
                   setShowManageStop(false);
@@ -2068,6 +2102,21 @@ export default function StopScreen() {
                 Back to Map
               </AppButton>
             </View>
+
+            {myReportId ? (
+              <AppButton
+                disabled={deletingReport}
+                maxFontSizeMultiplier={
+                  usesAccessibilityLayout ? STOP_DISCLOSURE_MAX_FONT_MULTIPLIER : undefined
+                }
+                onPress={deleteMyReport}
+                size="compact"
+                textStyle={{ color: colors.danger }}
+                variant="tertiary"
+              >
+                {deletingReport ? "Deleting..." : "Delete My Report"}
+              </AppButton>
+            ) : null}
           </ScrollView>
 
           <Modal
@@ -2557,19 +2606,9 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-  v2DisclosureRow: {
-    minHeight: 52,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: Spacing.sm,
-  },
   v2DisclosureCopy: {
     flex: 1,
     gap: 2,
-  },
-  v2Pressed: {
-    opacity: 0.72,
   },
   v2SavedStatus: {
     minHeight: 44,
@@ -2590,19 +2629,20 @@ const styles = StyleSheet.create({
     flex: 0,
     width: "100%",
   },
-  accessibilityDisclosureRow: {
-    alignItems: "flex-start",
-    flexDirection: "column",
-    paddingVertical: Spacing.sm,
-  },
-  accessibilitySavedStatus: {
-    alignItems: "flex-start",
-    justifyContent: "flex-start",
-  },
   accessibilityDisclosureHeader: {
-    alignItems: "flex-start",
-    flexDirection: "column",
+    alignItems: "center",
+    flexDirection: "row",
     gap: Spacing.xs,
+  },
+  groupedDivider: {
+    height: StyleSheet.hairlineWidth,
+  },
+  groupedDisclosureRow: {
+    minHeight: 52,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: Spacing.sm,
   },
 
   card: {

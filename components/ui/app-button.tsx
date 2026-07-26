@@ -22,6 +22,7 @@ export type AppButtonProps = Omit<PressableProps, "children" | "disabled" | "sty
   disabled?: boolean;
   fullWidth?: boolean;
   loading?: boolean;
+  maxFontSizeMultiplier?: number;
   size?: AppButtonSize;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
@@ -34,6 +35,7 @@ export function AppButton({
   disabled = false,
   fullWidth = false,
   loading = false,
+  maxFontSizeMultiplier,
   onBlur,
   onFocus,
   size = "standard",
@@ -122,6 +124,7 @@ export function AppButton({
       {loading ? <ActivityIndicator color={activeColors.labelColor} size="small" /> : null}
       {isTextLabel ? (
         <Text
+          maxFontSizeMultiplier={maxFontSizeMultiplier}
           numberOfLines={usesAccessibilityLayout ? undefined : 1}
           style={[styles.label, { color: activeColors.labelColor }, textStyle]}
         >

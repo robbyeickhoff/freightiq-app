@@ -371,7 +371,7 @@ function resolveStopHasIntel(
 export default function HomeScreen() {
   const router = useRouter();
   const { colorScheme, colors } = useAppTheme();
-  const { fontScale } = useWindowDimensions();
+  const { fontScale, height: windowHeight } = useWindowDimensions();
   const safeAreaInsets = useSafeAreaInsets();
   const reduceMotionEnabled = useReducedMotion();
   const usesAccessibilityLayout = fontScale >= 1.5;
@@ -466,6 +466,14 @@ export default function HomeScreen() {
 
   const [query, setQuery] = useState("");
   const [searchInputHeight, setSearchInputHeight] = useState(48);
+  const accessibilityPreviewTop = Math.max(
+    Math.max(safeAreaInsets.top, Platform.OS === "ios" ? 59 : 24) + 8,
+    MAP_SEARCH_TOP + searchInputHeight + 8,
+  );
+  const accessibilityPreviewScrollMaxHeight = Math.max(
+    240,
+    windowHeight - accessibilityPreviewTop - 92 - 24,
+  );
   const [freightIqResults, setFreightIqResults] = useState<Pin[]>([]);
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -2802,12 +2810,8 @@ export default function HomeScreen() {
             {
               backgroundColor: colors.surfaceElevated,
               borderColor: colors.border,
-              top: usesAccessibilityLayout
-                ? Math.max(
-                    Math.max(safeAreaInsets.top, Platform.OS === "ios" ? 59 : 24) + 8,
-                    MAP_SEARCH_TOP + searchInputHeight + 8,
-                  )
-                : undefined,
+              bottom: usesAccessibilityLayout ? undefined : 92,
+              top: usesAccessibilityLayout ? accessibilityPreviewTop : undefined,
               transform: [{ translateY: previewTranslateY }],
             },
             Elevation.sheet,
@@ -2831,7 +2835,7 @@ export default function HomeScreen() {
             showsVerticalScrollIndicator={usesAccessibilityLayout && !previewCollapsed}
             style={[
               styles.previewScroll,
-              usesAccessibilityLayout && styles.previewAccessibilityScroll,
+              usesAccessibilityLayout ? { maxHeight: accessibilityPreviewScrollMaxHeight } : null,
             ]}
           >
             <View style={styles.previewDragArea}>
@@ -2936,6 +2940,7 @@ export default function HomeScreen() {
                           </View>
                           <View style={styles.previewCoreCopy}>
                             <Text
+                              maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
                               style={[
                                 styles.previewOperationalLabel,
                                 { color: colors.textSecondary },
@@ -2944,6 +2949,7 @@ export default function HomeScreen() {
                               {item.label}
                             </Text>
                             <Text
+                              maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
                               numberOfLines={usesAccessibilityLayout ? undefined : 1}
                               style={[
                                 styles.previewOperationalValue,
@@ -2992,19 +2998,12 @@ export default function HomeScreen() {
                       Create Stop Here
                     </AppButton>
 
-                    <View
-                      style={[
-                        styles.previewSecondaryRow,
-                        usesAccessibilityLayout && styles.previewAccessibilityStack,
-                      ]}
-                    >
+                    <View style={styles.previewSecondaryRow}>
                       <AppButton
                         onPress={navToStop}
+                        maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
                         size="compact"
-                        style={[
-                          styles.previewSecondaryBtn,
-                          usesAccessibilityLayout && styles.previewAccessibilityActionBtn,
-                        ]}
+                        style={styles.previewSecondaryBtn}
                         variant="secondary"
                       >
                         Navigate
@@ -3016,11 +3015,9 @@ export default function HomeScreen() {
                           setNewPinAddress(tempSearchPin?.address ?? "");
                           setNewPinOpen(true);
                         }}
+                        maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
                         size="compact"
-                        style={[
-                          styles.previewSecondaryBtn,
-                          usesAccessibilityLayout && styles.previewAccessibilityActionBtn,
-                        ]}
+                        style={styles.previewSecondaryBtn}
                         variant="secondary"
                       >
                         Edit Name
@@ -3029,12 +3026,7 @@ export default function HomeScreen() {
                   </>
                 ) : (
                   <>
-                    <View
-                      style={[
-                        styles.previewSavedActionRow,
-                        usesAccessibilityLayout && styles.previewAccessibilityStack,
-                      ]}
-                    >
+                    <View style={styles.previewSavedActionRow}>
                       <AppButton
                         onPress={() =>
                           router.push({
@@ -3049,34 +3041,25 @@ export default function HomeScreen() {
                             },
                           })
                         }
+                        maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
                         size="compact"
-                        style={[
-                          styles.previewSavedActionBtn,
-                          usesAccessibilityLayout && styles.previewAccessibilityActionBtn,
-                        ]}
+                        style={styles.previewSavedActionBtn}
                       >
                         Edit Intel
                       </AppButton>
 
                       <AppButton
                         onPress={navToStop}
+                        maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
                         size="compact"
-                        style={[
-                          styles.previewSavedActionBtn,
-                          usesAccessibilityLayout && styles.previewAccessibilityActionBtn,
-                        ]}
+                        style={styles.previewSavedActionBtn}
                         variant="secondary"
                       >
                         Navigate
                       </AppButton>
                     </View>
 
-                    <View
-                      style={[
-                        styles.previewSavedActionRow,
-                        usesAccessibilityLayout && styles.previewAccessibilityStack,
-                      ]}
-                    >
+                    <View style={styles.previewSavedActionRow}>
                       <AppButton
                         onPress={() =>
                           router.push({
@@ -3092,11 +3075,9 @@ export default function HomeScreen() {
                             },
                           })
                         }
+                        maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
                         size="compact"
-                        style={[
-                          styles.previewSavedActionBtn,
-                          usesAccessibilityLayout && styles.previewAccessibilityActionBtn,
-                        ]}
+                        style={styles.previewSavedActionBtn}
                         variant="secondary"
                       >
                         {`Reports (${selectedReportStats.count})`}
@@ -3106,6 +3087,7 @@ export default function HomeScreen() {
                         loading={
                           selectedEntranceStatus === "loading" || selectedEntranceStatus === "idle"
                         }
+                        maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
                         onPress={() => {
                           if (selectedEntrance && selectedStop) {
                             enterDeliveryZoneInspection("preview", selectedStop, selectedEntrance);
@@ -3126,10 +3108,7 @@ export default function HomeScreen() {
                           });
                         }}
                         size="compact"
-                        style={[
-                          styles.previewSavedActionBtn,
-                          usesAccessibilityLayout && styles.previewAccessibilityActionBtn,
-                        ]}
+                        style={styles.previewSavedActionBtn}
                         textStyle={selectedEntrance ? undefined : { color: colors.textSecondary }}
                         variant="secondary"
                       >
@@ -3161,6 +3140,7 @@ export default function HomeScreen() {
           <AppButton
             accessibilityLabel={showingStops ? "Hide stops" : "Show stops"}
             loading={stopLayerLoading}
+            maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
             onPress={refreshStopsInView}
             size="compact"
             style={[styles.stopLayerButton, Elevation.floating]}
@@ -3177,7 +3157,7 @@ export default function HomeScreen() {
               style={styles.mapControlIconButton}
               variant="tertiary"
             >
-              <AppIcon name="location" color={colors.textPrimary} />
+              <AppIcon name="location" color={colors.textPrimary} size={26} />
             </AppButton>
 
             <View style={[styles.mapControlDivider, { backgroundColor: colors.border }]} />
@@ -3189,7 +3169,7 @@ export default function HomeScreen() {
               style={styles.mapControlIconButton}
               variant="tertiary"
             >
-              <AppIcon name="add" color={colors.textPrimary} />
+              <AppIcon name="add" color={colors.textPrimary} size={26} />
             </AppButton>
 
             <View style={[styles.mapControlDivider, { backgroundColor: colors.border }]} />
@@ -3206,6 +3186,7 @@ export default function HomeScreen() {
               <AppIcon
                 name={mapType === "standard" ? "map" : "satellite"}
                 color={mapType === "hybrid" ? colors.accent : colors.textPrimary}
+                size={26}
               />
             </AppButton>
 
@@ -3218,7 +3199,7 @@ export default function HomeScreen() {
               style={styles.mapControlIconButton}
               variant="tertiary"
             >
-              <AppIcon name="settings" color={colors.textPrimary} />
+              <AppIcon name="settings" color={colors.textPrimary} size={26} />
             </AppButton>
           </AppCard>
         </View>
@@ -3435,8 +3416,8 @@ const styles = StyleSheet.create({
   },
 
   mapControlIconButton: {
-    width: 48,
-    height: 48,
+    width: 54,
+    height: 54,
     borderRadius: 0,
   },
 
@@ -3612,8 +3593,9 @@ const styles = StyleSheet.create({
   floatingActions: {
     position: "absolute",
     right: 12,
+    flexDirection: "row",
     alignItems: "flex-end",
-    gap: 10,
+    gap: 6,
   },
 
   deliveryZoneReturnPill: {
@@ -3751,7 +3733,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 12,
     right: 12,
-    bottom: 92,
     paddingTop: 10,
     paddingBottom: 14,
     paddingHorizontal: 14,
@@ -3761,9 +3742,6 @@ const styles = StyleSheet.create({
   },
   previewScroll: {
     flexShrink: 1,
-  },
-  previewAccessibilityScroll: {
-    flex: 1,
   },
   previewScrollContent: {
     gap: 12,
@@ -3921,11 +3899,7 @@ const styles = StyleSheet.create({
   },
   previewAccessibilityCoreItem: {
     alignItems: "flex-start",
-    width: "100%",
-  },
-  previewAccessibilityActionBtn: {
-    flex: 0,
-    width: "100%",
+    width: "50%",
   },
 
   nearbyStopChoice: {

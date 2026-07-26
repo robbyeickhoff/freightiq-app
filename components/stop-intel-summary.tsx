@@ -98,8 +98,14 @@ export function StopIntelSummary({
               />
             </View>
             <View style={styles.itemCopy}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>{item.label}</Text>
               <Text
+                maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
+                style={[styles.label, { color: colors.textSecondary }]}
+              >
+                {item.label}
+              </Text>
+              <Text
+                maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
                 style={[
                   styles.value,
                   { color: item.complete ? colors.textPrimary : colors.textSecondary },
@@ -112,8 +118,13 @@ export function StopIntelSummary({
         ))}
       </View>
 
-      <AppButton fullWidth onPress={onOpenQuickIntel}>
-        {completedCount === 4 ? "Edit core intel" : "Add missing core intel"}
+      <AppButton
+        fullWidth
+        maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
+        onPress={onOpenQuickIntel}
+        variant={completedCount === 4 ? "secondary" : "primary"}
+      >
+        {completedCount === 4 ? "Edit Core Intel" : "Add Missing Core Intel"}
       </AppButton>
     </AppCard>
   );
@@ -173,7 +184,7 @@ const styles = StyleSheet.create({
   },
   accessibilityItem: {
     alignItems: "flex-start",
-    width: "100%",
+    width: "50%",
   },
   icon: {
     width: 36,
