@@ -21,6 +21,10 @@ import {
 import MapView, { Marker, Region } from "react-native-maps";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { MapIcon } from "../../components/MapIcon";
+import {
+  QuickIntelSheet,
+  type QuickIntelSectionKey,
+} from "../../components/quick-intel-sheet";
 import { supabase } from "../../utils/supabase";
 
 type ChipProps = {
@@ -267,6 +271,7 @@ export default function StopScreen() {
   const address = String(params.address ?? "");
   const viewReports = String(params.viewReports ?? "") === "1";
   const setDeliveryZone = String(params.setDeliveryZone ?? "") === "1";
+  const quickIntelRequested = String(params.quickIntel ?? "") === "1";
   const openedAt = String(params.openedAt ?? "");
 
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
@@ -279,6 +284,7 @@ export default function StopScreen() {
   const [mergeSourceStopId, setMergeSourceStopId] = useState<string | null>(null);
   const [mergeMode, setMergeMode] = useState(false);
   const [reports, setReports] = useState<ReportRow[]>([]);
+  const [reportsLoaded, setReportsLoaded] = useState(false);
   const [voteStatsByReportId, setVoteStatsByReportId] = useState<Record<string, ReportVoteStats>>(
     {},
   );
@@ -330,8 +336,18 @@ export default function StopScreen() {
   const [previewStopLat, setPreviewStopLat] = useState(lat);
   const [previewStopLng, setPreviewStopLng] = useState(lng);
   const [entrancePhotoPath, setEntrancePhotoPath] = useState<string | null>(null);
+  const [entranceLoaded, setEntranceLoaded] = useState(false);
 
   const [entrancePickerOpen, setEntrancePickerOpen] = useState(false);
+  const [quickIntelOpen, setQuickIntelOpen] = useState(false);
+  const [quickIntelOrder, setQuickIntelOrder] = useState<QuickIntelSectionKey[]>([
+    "truckFit",
+    "deliveryZone",
+    "deliveryType",
+    "backIn",
+  ]);
+  const handledQuickIntelRequestRef = useRef<string | null>(null);
+  const returnToQuickIntelAfterEntranceRef = useRef(false);
   const [pickerMapType, setPickerMapType] = useState<"standard" | "satellite">("standard");
   const [entranceRegion, setEntranceRegion] = useState<Region>({
     latitude: lat || 39.7392,
@@ -425,6 +441,50 @@ export default function StopScreen() {
   }, [openedAt, setDeliveryZone]);
 
   useEffect(() => {
+    if (
+      !openedAt ||
+      !quickIntelRequested ||
+      !reportsLoaded ||
+      !entranceLoaded ||
+      handledQuickIntelRequestRef.current === openedAt
+    ) {
+      return;
+    }
+
+    handledQuickIntelRequestRef.current = openedAt;
+
+    const completion: Record<QuickIntelSectionKey, boolean> = {
+      truckFit: Boolean(truckFit),
+      deliveryZone: typeof entranceLat === "number" && typeof entranceLng === "number",
+      deliveryType: Boolean(deliveryType),
+      backIn: backInRequired !== null,
+    };
+    const approvedOrder: QuickIntelSectionKey[] = [
+      "truckFit",
+      "deliveryZone",
+      "deliveryType",
+      "backIn",
+    ];
+
+    setQuickIntelOrder(
+      [...approvedOrder].sort(
+        (first, second) => Number(completion[first]) - Number(completion[second]),
+      ),
+    );
+    setQuickIntelOpen(true);
+  }, [
+    backInRequired,
+    deliveryType,
+    entranceLat,
+    entranceLng,
+    entranceLoaded,
+    openedAt,
+    quickIntelRequested,
+    reportsLoaded,
+    truckFit,
+  ]);
+
+  useEffect(() => {
     if (!stopId) return;
 
     setStopOwnerId(null);
@@ -485,6 +545,9 @@ export default function StopScreen() {
 
   useEffect(() => {
     if (!stopId || !sessionUserId) return;
+
+    setReportsLoaded(false);
+    setEntranceLoaded(false);
     loadReports();
     loadEntrance();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -571,6 +634,7 @@ export default function StopScreen() {
       }
 
       setEntrancePhotoPath(data?.entrance_photo_path ?? null);
+      setEntranceLoaded(true);
     } catch {
       setEntrancePhotoPath(null);
     }
@@ -661,6 +725,7 @@ export default function StopScreen() {
 
       await loadVotesForReports(hydrated);
       await loadReputationForUsers(uniqueUserIds);
+      setReportsLoaded(true);
     } catch {
       Alert.alert("Load failed", "Something went wrong loading reports.");
     }
@@ -953,6 +1018,7 @@ export default function StopScreen() {
 
       setSavedReportSnapshot(currentReportSnapshot);
       setAdditionalIntelOpen(false);
+      setQuickIntelOpen(false);
       Alert.alert("Saved", myReportId ? "Report updated." : "Report posted.");
       await loadReports();
       router.replace({
@@ -962,6 +1028,31 @@ export default function StopScreen() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function saveQuickIntel() {
+    const hasReportCoreIntel =
+      Boolean(truckFit) || Boolean(deliveryType) || backInRequired !== null;
+
+    if (!myReportId && !hasReportCoreIntel) {
+      setQuickIntelOpen(false);
+      router.replace({
+        pathname: "/(tabs)/(map)",
+        params: { refreshAt: String(Date.now()) },
+      });
+      return;
+    }
+
+    await saveMyReport();
+  }
+
+  async function cancelQuickIntel() {
+    setQuickIntelOpen(false);
+    await loadReports();
+    router.replace({
+      pathname: "/(tabs)/(map)",
+      params: { refreshAt: String(Date.now()) },
+    });
   }
 
   async function handleVote(reportId: string, voteValue: 1 | -1) {
@@ -1007,7 +1098,7 @@ export default function StopScreen() {
   }
 
   async function openEntrancePicker() {
-    if (!(await requireSignedIn())) return;
+    if (!(await requireSignedIn())) return false;
 
     setEntranceRegion({
       latitude: entranceLat ?? lat,
@@ -1016,6 +1107,27 @@ export default function StopScreen() {
       longitudeDelta: 0.006,
     });
     setEntrancePickerOpen(true);
+    return true;
+  }
+
+  async function openEntrancePickerFromQuickIntel() {
+    setQuickIntelOpen(false);
+    returnToQuickIntelAfterEntranceRef.current = true;
+
+    const opened = await openEntrancePicker();
+    if (!opened) {
+      returnToQuickIntelAfterEntranceRef.current = false;
+      setQuickIntelOpen(true);
+    }
+  }
+
+  function closeEntrancePicker() {
+    setEntrancePickerOpen(false);
+
+    if (returnToQuickIntelAfterEntranceRef.current) {
+      returnToQuickIntelAfterEntranceRef.current = false;
+      setQuickIntelOpen(true);
+    }
   }
 
   async function saveEntranceAtCurrentCenter() {
@@ -1050,7 +1162,7 @@ export default function StopScreen() {
 
       setEntranceLat(nextLat);
       setEntranceLng(nextLng);
-      setEntrancePickerOpen(false);
+      closeEntrancePicker();
       Alert.alert("Delivery zone saved", "Delivery zone updated.");
     } finally {
       setSavingEntrance(false);
@@ -1093,7 +1205,7 @@ export default function StopScreen() {
 
       setEntranceLat(lat);
       setEntranceLng(lng);
-      setEntrancePickerOpen(false);
+      closeEntrancePicker();
       Alert.alert("Delivery zone saved", "Using stop location as delivery zone.");
     } finally {
       setSavingEntrance(false);
@@ -1129,7 +1241,7 @@ export default function StopScreen() {
 
       setEntranceLat(null);
       setEntranceLng(null);
-      setEntrancePickerOpen(false);
+      closeEntrancePicker();
       Alert.alert("Delivery zone cleared", "Delivery zone removed.");
     } finally {
       setSavingEntrance(false);
@@ -2172,10 +2284,30 @@ export default function StopScreen() {
             </ModalSafeAreaScreen>
           </Modal>
 
+          <QuickIntelSheet
+            address={displayAddress}
+            backInRequired={backInRequired}
+            deliveryType={deliveryType}
+            deliveryZoneSet={
+              typeof entranceLat === "number" && typeof entranceLng === "number"
+            }
+            initialOrder={quickIntelOrder}
+            onBackInChange={setBackInRequired}
+            onCancel={() => void cancelQuickIntel()}
+            onDeliveryTypeChange={setDeliveryType}
+            onManageDeliveryZone={() => void openEntrancePickerFromQuickIntel()}
+            onSave={() => void saveQuickIntel()}
+            onTruckFitChange={setTruckFit}
+            saving={loading}
+            stopName={title}
+            truckFit={truckFit}
+            visible={quickIntelOpen}
+          />
+
           <Modal
             visible={entrancePickerOpen}
             animationType="slide"
-            onRequestClose={() => setEntrancePickerOpen(false)}
+            onRequestClose={closeEntrancePicker}
           >
             <View style={styles.pickerScreen}>
               <View style={styles.pickerHeader}>
@@ -2238,7 +2370,7 @@ export default function StopScreen() {
                 <View style={styles.pickerRow}>
                   <Pressable
                     style={[styles.pickerBtn, styles.pickerBtnGhost]}
-                    onPress={() => setEntrancePickerOpen(false)}
+                    onPress={closeEntrancePicker}
                   >
                     <Text style={[styles.pickerBtnText, styles.pickerBtnTextGhost]}>Cancel</Text>
                   </Pressable>

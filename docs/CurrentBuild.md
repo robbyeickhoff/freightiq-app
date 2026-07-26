@@ -32,7 +32,7 @@ The controlling specification is:
 
 ## Current Focus
 
-Restyle map controls and overlays as the current build phase.
+Redesign the Stop Intel summary as the current build phase.
 
 The centralized theme and semantic-token foundation has been accepted on iPhone.
 The System, Light, and Dark preference behavior has been accepted on iPhone.
@@ -46,6 +46,7 @@ The first map-control slice—the Show/Hide Stops action and right-side control 
 Map-aware status-bar contrast is implemented for standard and satellite imagery.
 The search, Recent Intel, and search-results overlays have passed visual and functional iPhone validation.
 The selected-stop preview has passed visual and functional iPhone validation, including immediate Delivery Zone refresh when returning to the map.
+The missing-core-intel prompt and Quick Intel flow have passed visual and functional iPhone validation, including prefilled values, missing-first ordering, partial saves, Delivery Zone handoff, same-stop return, and immediate preview refresh.
 
 The initial vertical slice covers:
 
@@ -83,13 +84,11 @@ The initial vertical slice covers:
 
 ## Next Safe Step
 
-Implement the missing-core-intel contribution entry point and Quick Intel flow:
+Redesign the Stop Intel summary:
 
-- Show **Add missing core intel** only when one or more core items are incomplete.
-- Open Quick Intel directly from that action.
-- Prefill existing Truck Fit, Delivery Zone, Delivery Type, and Back In values.
-- Prioritize missing items and allow partial saving.
-- Return to the same selected stop and refresh the preview immediately after saving.
-- Preserve existing authentication, validation, report ownership, and persistence behavior.
+- Reuse the preview card’s four-item core-intel hierarchy, icons, statuses, counts, and completion language.
+- Keep Quick Intel as the primary contribution path for Truck Fit, Delivery Zone, Delivery Type, and Back In.
+- Keep Detailed Intel and Additional Intel visually separate from the core summary.
+- Preserve existing reports, voting, ownership, permissions, Delivery Zone actions, and Danger Zone behavior.
 
-Validate the complete contribution loop on iPhone before proceeding to the Stop Intel summary.
+Validate the Stop Intel summary on iPhone before proceeding to the full accessibility and device matrix.

@@ -2904,6 +2904,31 @@ export default function HomeScreen() {
                 </View>
               )}
 
+              {selectedStop?.id !== "temp-search-result" && selectedCoreIntelCount < 4 ? (
+                <AppButton
+                  fullWidth
+                  onPress={async () => {
+                    if (!(await requireSignedIn())) return;
+
+                    router.push({
+                      pathname: "/(tabs)/stop",
+                      params: {
+                        id: selectedStop?.id,
+                        lat: String(selectedStop?.lat),
+                        lng: String(selectedStop?.lng),
+                        name: selectedStop?.name,
+                        address: selectedStop?.address ?? "",
+                        quickIntel: "1",
+                        openedAt: String(Date.now()),
+                      },
+                    });
+                  }}
+                  variant="secondary"
+                >
+                  Add missing core intel
+                </AppButton>
+              ) : null}
+
               {selectedStop?.id === "temp-search-result" ? (
                 <>
                   <AppButton fullWidth onPress={startDropAtCenter}>
