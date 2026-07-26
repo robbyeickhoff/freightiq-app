@@ -1,12 +1,16 @@
 import { useState } from "react";
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { useHelpGuideStyles } from "@/components/help/use-help-guide-styles";
 
 export default function UnderstandingStopIntelContent() {
   const [expandedSection, setExpandedSection] = useState("");
+  const styles = useHelpGuideStyles();
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
+    <SafeAreaView edges={["bottom"]} style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.sectionTitle}>Know Before You Arrive</Text>
         <Text style={styles.helperText}>
           Learn how driver reports help you make better delivery decisions before you reach the
@@ -26,7 +30,7 @@ export default function UnderstandingStopIntelContent() {
 
           {expandedSection === "search" && (
             <View style={styles.contentPanel}>
-              <Text style={styles.step}>Learn from previous drivers' reports.</Text>
+              <Text style={styles.step}>Learn from previous drivers’ reports.</Text>
             </View>
           )}
         </View>
@@ -100,77 +104,3 @@ export default function UnderstandingStopIntelContent() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "white",
-    paddingHorizontal: 12,
-    paddingVertical: 20,
-  },
-
-  card: {
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 16,
-  },
-
-  step: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginHorizontal: 16,
-    marginBottom: 0,
-  },
-
-  stepTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginTop: 30,
-    marginBottom: 4,
-  },
-
-  helperText: {
-    fontSize: 14,
-    color: "#666",
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-
-  body: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-
-  expandedHeader: {
-    backgroundColor: "#f5f5f7",
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    marginBottom: 8,
-  },
-
-  contentPanel: {
-    backgroundColor: "#f5f5f7",
-    borderRadius: 16,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-  },
-
-  collapsedRow: {
-    backgroundColor: "#f5f5f7",
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    marginTop: 12,
-  },
-});

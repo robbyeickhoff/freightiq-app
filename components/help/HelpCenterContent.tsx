@@ -1,5 +1,11 @@
 import { router } from "expo-router";
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { AppCard } from "@/components/ui/app-card";
+import { AppIcon, type AppIconName } from "@/components/ui/app-icon";
+import { Radius, Sizes, Spacing, Typography } from "@/constants/theme";
+import { useAppTheme } from "@/context/theme-context";
 
 export type HelpCenterNavigationHandlers = {
   onPressGettingStarted: () => void;
@@ -21,41 +27,95 @@ const defaultNavigationHandlers: HelpCenterNavigationHandlers = {
   onPressUsingTheMap: () => router.push("/using-the-map"),
 };
 
-export default function HelpCenterContent({ navigationHandlers }: HelpCenterContentProps) {
-  const handlers = navigationHandlers ?? defaultNavigationHandlers;
+type GuideRowProps = {
+  accessibilityHint: string;
+  icon: AppIconName;
+  onPress: () => void;
+  subtitle: string;
+  title: string;
+};
+
+function GuideRow({ accessibilityHint, icon, onPress, subtitle, title }: GuideRowProps) {
+  const { colors } = useAppTheme();
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <Text style={styles.title}>Learn FreightIQ</Text>
-        <Text style={styles.helperText}>
+    <AppCard clipContent>
+      <Pressable
+        accessibilityHint={accessibilityHint}
+        accessibilityRole="button"
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.guideRow,
+          { backgroundColor: colors.surfaceElevated },
+          pressed ? { backgroundColor: colors.accentMuted } : null,
+        ]}
+      >
+        <View style={[styles.iconContainer, { backgroundColor: colors.accentMuted }]}>
+          <AppIcon name={icon} size={23} color={colors.accentStrong} />
+        </View>
+        <View style={styles.guideCopy}>
+          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{title}</Text>
+          <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
+        </View>
+        <AppIcon name="chevronRight" size={26} color={colors.textSecondary} />
+      </Pressable>
+    </AppCard>
+  );
+}
+
+export default function HelpCenterContent({ navigationHandlers }: HelpCenterContentProps) {
+  const handlers = navigationHandlers ?? defaultNavigationHandlers;
+  const { colors } = useAppTheme();
+
+  return (
+    <SafeAreaView
+      edges={["bottom"]}
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Learn FreightIQ</Text>
+        <Text style={[styles.helperText, { color: colors.textSecondary }]}>
           Practical guides to help you get the most out of FreightIQ in the field.
         </Text>
 
-        <Pressable style={styles.card} onPress={handlers.onPressGettingStarted}>
-          <Text style={styles.cardTitle}>🚛 Getting Started</Text>
-          <Text style={styles.cardSubtitle}>First-time users</Text>
-        </Pressable>
-
-        <Pressable style={styles.card} onPress={handlers.onPressFindingStops}>
-          <Text style={styles.cardTitle}>📍 Finding Stops</Text>
-          <Text style={styles.cardSubtitle}>Search and browse stops</Text>
-        </Pressable>
-
-        <Pressable style={styles.card} onPress={handlers.onPressUnderstandingStopIntel}>
-          <Text style={styles.cardTitle}>📋 Understanding Stop Intel</Text>
-          <Text style={styles.cardSubtitle}>Learn what each report means</Text>
-        </Pressable>
-
-        <Pressable style={styles.card} onPress={handlers.onPressContributingStopIntel}>
-          <Text style={styles.cardTitle}>✏️ Contributing Stop Intel</Text>
-          <Text style={styles.cardSubtitle}>Add and update information</Text>
-        </Pressable>
-
-        <Pressable style={styles.card} onPress={handlers.onPressUsingTheMap}>
-          <Text style={styles.cardTitle}>🗺️ Using the Map</Text>
-          <Text style={styles.cardSubtitle}>Learn how to use map tools and controls</Text>
-        </Pressable>
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Guides</Text>
+        <View style={styles.guideList}>
+          <GuideRow
+            accessibilityHint="Opens the Getting Started guide"
+            icon="gettingStarted"
+            onPress={handlers.onPressGettingStarted}
+            subtitle="First-time users"
+            title="Getting Started"
+          />
+          <GuideRow
+            accessibilityHint="Opens the Finding Stops guide"
+            icon="findingStops"
+            onPress={handlers.onPressFindingStops}
+            subtitle="Search and browse stops"
+            title="Finding Stops"
+          />
+          <GuideRow
+            accessibilityHint="Opens the Understanding Stop Intel guide"
+            icon="understandingIntel"
+            onPress={handlers.onPressUnderstandingStopIntel}
+            subtitle="Learn what each report means"
+            title="Understanding Stop Intel"
+          />
+          <GuideRow
+            accessibilityHint="Opens the Contributing Stop Intel guide"
+            icon="contributingIntel"
+            onPress={handlers.onPressContributingStopIntel}
+            subtitle="Add and update information"
+            title="Contributing Stop Intel"
+          />
+          <GuideRow
+            accessibilityHint="Opens the Using the Map guide"
+            icon="usingMap"
+            onPress={handlers.onPressUsingTheMap}
+            subtitle="Map tools and controls"
+            title="Using the Map"
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -64,51 +124,53 @@ export default function HelpCenterContent({ navigationHandlers }: HelpCenterCont
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
-    padding: 20,
   },
-
+  content: {
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+  },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginTop: 20,
+    ...Typography.screenTitle,
   },
   helperText: {
-    fontSize: 15,
-    color: "#666",
-    marginTop: 8,
-    marginBottom: 8,
-    lineHeight: 22,
+    ...Typography.body,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.lg,
   },
-  card: {
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 16,
-    marginTop: 12,
+  sectionLabel: {
+    ...Typography.operationalLabel,
+    marginBottom: Spacing.xs,
+    marginLeft: Spacing.xs,
+    textTransform: "uppercase",
   },
-
+  guideList: {
+    gap: Spacing.sm,
+  },
+  guideRow: {
+    minHeight: 76,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  iconContainer: {
+    width: Sizes.minimumTouchTarget,
+    height: Sizes.minimumTouchTarget,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: Radius.medium,
+  },
+  guideCopy: {
+    flex: 1,
+  },
   cardTitle: {
-    fontSize: 18,
+    ...Typography.body,
     fontWeight: "700",
   },
-
   cardSubtitle: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 4,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginTop: 30,
-    marginBottom: 12,
-  },
-
-  body: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 8,
+    ...Typography.supporting,
+    marginTop: Spacing.xxs,
   },
 });

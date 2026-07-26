@@ -1,4 +1,9 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+
+import { AppIcon } from "@/components/ui/app-icon";
+import { AppTextField } from "@/components/ui/app-text-field";
+import { Borders, Radius, Sizes, Spacing, Typography } from "@/constants/theme";
+import { useAppTheme } from "@/context/theme-context";
 
 type ProfileFormProps = {
   name: string;
@@ -15,24 +20,44 @@ export default function ProfileForm({
   onPressSelectTractorType,
   labelMarginTop = 24,
 }: ProfileFormProps) {
+  const { colors } = useAppTheme();
+
   return (
     <>
-      <Text style={[styles.label, { marginTop: labelMarginTop }]}>Driver Name</Text>
-      <TextInput
+      <AppTextField
+        containerStyle={{ marginTop: labelMarginTop }}
+        label="Driver Name"
         value={name}
         onChangeText={onChangeName}
         placeholder="Your name"
-        style={styles.input}
+        returnKeyType="done"
       />
 
-      <Text style={[styles.label, { marginTop: labelMarginTop }]}>Tractor Type</Text>
-      <View style={styles.selectorGroup}>
-        <Pressable style={styles.option} onPress={onPressSelectTractorType}>
+      <View style={[styles.selectorGroup, { marginTop: labelMarginTop }]}>
+        <Text style={[styles.label, { color: colors.textPrimary }]}>Tractor Type</Text>
+        <Pressable
+          accessibilityHint="Opens the tractor type choices"
+          accessibilityRole="button"
+          onPress={onPressSelectTractorType}
+          style={({ pressed }) => [
+            styles.option,
+            {
+              backgroundColor: colors.surfaceElevated,
+              borderColor: colors.border,
+            },
+            pressed ? { backgroundColor: colors.accentMuted } : null,
+          ]}
+        >
           <View style={styles.selectorRow}>
-            <Text style={tractorType ? styles.selectedTractorValue : styles.selectorPlaceholder}>
+            <Text
+              style={[
+                styles.selectorValue,
+                { color: tractorType ? colors.textPrimary : colors.textSecondary },
+              ]}
+            >
               {tractorType || "Select tractor type"}
             </Text>
-            <Text style={styles.chevron}>›</Text>
+            <AppIcon name="chevronRight" size={24} color={colors.textSecondary} />
           </View>
         </Pressable>
       </View>
@@ -42,28 +67,21 @@ export default function ProfileForm({
 
 const styles = StyleSheet.create({
   selectorGroup: {
-    marginTop: 8,
+    gap: Spacing.xs,
   },
 
   label: {
+    ...Typography.body,
     fontWeight: "600",
-    marginTop: 24,
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 6,
   },
 
   option: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 8,
+    minHeight: Sizes.input,
+    borderWidth: Borders.thin,
+    borderRadius: Radius.medium,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    justifyContent: "center",
   },
 
   selectorRow: {
@@ -73,17 +91,9 @@ const styles = StyleSheet.create({
     paddingRight: 4,
   },
 
-  selectorPlaceholder: {
-    color: "#555",
-  },
-
-  selectedTractorValue: {
-    color: "black",
+  selectorValue: {
+    flex: 1,
+    ...Typography.body,
     fontWeight: "500",
-  },
-
-  chevron: {
-    color: "#9ca3af",
-    fontSize: 24,
   },
 });

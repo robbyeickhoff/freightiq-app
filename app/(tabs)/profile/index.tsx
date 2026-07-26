@@ -1,10 +1,13 @@
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Borders, Colors, Radius, Sizes, Spacing, Typography } from "@/constants/theme";
+import { AppButton } from "@/components/ui/app-button";
+import { AppCard } from "@/components/ui/app-card";
+import { AppIcon } from "@/components/ui/app-icon";
+import { Radius, Sizes, Spacing, Typography } from "@/constants/theme";
+import { useAppTheme } from "@/context/theme-context";
 
 import ProfileForm from "../../../components/ProfileForm";
 import { supabase } from "../../../utils/supabase";
@@ -17,6 +20,7 @@ export default function ProfileScreen() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasExistingProfile, setHasExistingProfile] = useState(false);
   const router = useRouter();
+  const { colors } = useAppTheme();
   const params = useLocalSearchParams<{ tractorType?: string }>();
   const routeTractorType =
     typeof params.tractorType === "string" && params.tractorType ? params.tractorType : undefined;
@@ -103,64 +107,75 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <Text style={styles.title}>Driver Profile</Text>
-      <Text style={styles.body}>Keep your driver name and equipment information up to date.</Text>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["top"]}
+    >
+      <ScrollView
+        contentContainerStyle={styles.content}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Driver Profile</Text>
+        <Text style={[styles.body, { color: colors.textSecondary }]}>
+          Keep your driver name and equipment information up to date.
+        </Text>
 
-      <ProfileForm
-        name={name}
-        onChangeName={setName}
-        tractorType={tractorType}
-        onPressSelectTractorType={() =>
-          router.push({
-            pathname: "/tractor-type",
-            params: { tractorType, returnTo: "/(tabs)/profile" },
-          })
-        }
-        labelMarginTop={15}
-      />
-
-      {isInitialized ? (
-        <Pressable
-          style={[styles.button, !hasChanges && styles.buttonDisabled]}
-          onPress={saveProfile}
-          disabled={!hasChanges}
-        >
-          <Text style={[styles.buttonText, !hasChanges && styles.buttonTextDisabled]}>
-            {hasExistingProfile ? "Update Profile" : "Save Profile"}
-          </Text>
-        </Pressable>
-      ) : null}
-
-      <View style={styles.appSection}>
-        <Text style={styles.sectionLabel}>App</Text>
-        <Pressable
-          accessibilityHint="Opens app preferences, support, and account controls"
-          accessibilityRole="button"
-          onPress={() => router.push("/(tabs)/profile/settings")}
-          style={({ pressed }) => [
-            styles.settingsRow,
-            pressed ? styles.settingsRowPressed : null,
-          ]}
-        >
-          <View style={styles.settingsIconContainer}>
-            <MaterialIcons
-              name="settings"
-              size={23}
-              color={Colors.light.accentStrong}
-            />
-          </View>
-          <View style={styles.settingsCopy}>
-            <Text style={styles.settingsRowLabel}>Settings</Text>
-            <Text style={styles.settingsRowSubtitle}>Appearance, support, and account</Text>
-          </View>
-          <MaterialIcons
-            name="chevron-right"
-            size={26}
-            color={Colors.light.textSecondary}
+        <AppCard contentStyle={styles.formCard}>
+          <ProfileForm
+            name={name}
+            onChangeName={setName}
+            tractorType={tractorType}
+            onPressSelectTractorType={() =>
+              router.push({
+                pathname: "/tractor-type",
+                params: { tractorType, returnTo: "/(tabs)/profile" },
+              })
+            }
+            labelMarginTop={0}
           />
-        </Pressable>
-      </View>
+        </AppCard>
+
+        {isInitialized ? (
+          <AppButton
+            disabled={!hasChanges}
+            fullWidth
+            onPress={() => void saveProfile()}
+            style={styles.saveButton}
+          >
+            {hasExistingProfile ? "Update Profile" : "Save Profile"}
+          </AppButton>
+        ) : null}
+
+        <View style={styles.appSection}>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>App</Text>
+          <AppCard clipContent>
+            <Pressable
+              accessibilityHint="Opens app preferences, support, and account controls"
+              accessibilityRole="button"
+              onPress={() => router.push("/(tabs)/profile/settings")}
+              style={({ pressed }) => [
+                styles.settingsRow,
+                { backgroundColor: colors.surfaceElevated },
+                pressed ? { backgroundColor: colors.accentMuted } : null,
+              ]}
+            >
+              <View style={[styles.settingsIconContainer, { backgroundColor: colors.accentMuted }]}>
+                <AppIcon name="settings" size={23} color={colors.accentStrong} />
+              </View>
+              <View style={styles.settingsCopy}>
+                <Text style={[styles.settingsRowLabel, { color: colors.textPrimary }]}>
+                  Settings
+                </Text>
+                <Text style={[styles.settingsRowSubtitle, { color: colors.textSecondary }]}>
+                  Appearance, support, and account
+                </Text>
+              </View>
+              <AppIcon name="chevronRight" size={26} color={colors.textSecondary} />
+            </Pressable>
+          </AppCard>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -168,45 +183,31 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: "white",
   },
-
+  content: {
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+  },
   title: {
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 20,
+    ...Typography.screenTitle,
   },
   body: {
-    fontSize: 15,
-    color: "#666",
-    lineHeight: 22,
-    marginBottom: 20,
+    ...Typography.body,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.lg,
   },
-  button: {
-    backgroundColor: "black",
-    padding: 14,
-    borderRadius: 10,
-    marginTop: 25,
-    alignItems: "center",
+  formCard: {
+    padding: Spacing.md,
   },
-  buttonDisabled: {
-    backgroundColor: "#d9d9d9",
-  },
-
-  buttonText: {
-    color: "white",
-    fontWeight: "700",
-  },
-  buttonTextDisabled: {
-    color: "#666",
+  saveButton: {
+    marginTop: Spacing.md,
   },
   appSection: {
     marginTop: Spacing.lg,
   },
   sectionLabel: {
     ...Typography.operationalLabel,
-    color: Colors.light.textSecondary,
     marginBottom: Spacing.xs,
     marginLeft: Spacing.xs,
     textTransform: "uppercase",
@@ -215,22 +216,15 @@ const styles = StyleSheet.create({
     minHeight: 76,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.light.surface,
-    borderWidth: Borders.thin,
-    borderColor: Colors.light.border,
-    borderRadius: Radius.large,
     paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     gap: Spacing.sm,
-  },
-  settingsRowPressed: {
-    opacity: 0.72,
   },
   settingsIconContainer: {
     width: Sizes.minimumTouchTarget,
     height: Sizes.minimumTouchTarget,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.light.accentMuted,
     borderRadius: Radius.medium,
   },
   settingsCopy: {
@@ -238,12 +232,10 @@ const styles = StyleSheet.create({
   },
   settingsRowLabel: {
     ...Typography.body,
-    color: Colors.light.textPrimary,
     fontWeight: "700",
   },
   settingsRowSubtitle: {
     ...Typography.supporting,
-    color: Colors.light.textSecondary,
     marginTop: Spacing.xxs,
   },
 });

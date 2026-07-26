@@ -16,6 +16,8 @@ const ICONS = {
   deliveryType: { default: "inventory-2" },
   deliveryZone: { default: "place" },
   filter: { default: "filter-list" },
+  findingStops: { default: "location-searching" },
+  gettingStarted: { default: "local-shipping" },
   help: { default: "help-outline", active: "help" },
   incomplete: { default: "pending-actions" },
   location: { default: "location-searching", active: "my-location" },
@@ -26,6 +28,9 @@ const ICONS = {
   search: { default: "search" },
   settings: { default: "settings" },
   truckFit: { default: "local-shipping" },
+  understandingIntel: { default: "fact-check" },
+  usingMap: { default: "map" },
+  contributingIntel: { default: "edit-note" },
 } satisfies Record<
   string,
   {

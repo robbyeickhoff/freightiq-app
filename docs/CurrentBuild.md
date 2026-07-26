@@ -32,13 +32,13 @@ The controlling specification is:
 
 ## Current Focus
 
-Run accessibility and device validation for the completed V2 core-experience slice.
+Complete the remaining accessibility and Pixel validation for the approved V2 mobile redesign.
 
 The centralized theme and semantic-token foundation has been accepted on iPhone.
 The System, Light, and Dark preference behavior has been accepted on iPhone.
 The dedicated Settings placement and icon-only Profile-stack navigation have been accepted on iPhone.
 The shared app shell, status bar, headers, and bottom tabs have been accepted on iPhone.
-The Profile Settings entry remains intentionally transitional until the approved visual system reaches the full Profile screen.
+The Profile screen and full Help Center—including all five guide pages—have been refreshed through an explicitly approved scope expansion and accepted on iPhone in Light and Dark modes.
 The shared `AppCard` foundation has been accepted on iPhone in Dark mode.
 The shared button, labeled-input, choice-chip, segmented-control, and semantic-icon foundations are implemented and statically validated.
 Those interaction controls receive physical visual validation when the approved map and Quick Intel workflows first consume them.
@@ -49,6 +49,7 @@ The selected-stop preview has passed visual and functional iPhone validation, in
 The missing-core-intel prompt and Quick Intel flow have passed visual and functional iPhone validation, including prefilled values, missing-first ordering, partial saves, Delivery Zone handoff, same-stop return, and immediate preview refresh.
 The Stop Intel summary has passed visual and functional iPhone validation, including the Core Intel hierarchy, Delivery Zone actions, Additional Driver Intel separation, Driver Reports, Manage Stop, and the full-width Back to Map action.
 The standard Apple map now follows the resolved FreightIQ Light or Dark appearance through native MapKit styling and has passed iPhone visual validation.
+Reduced-motion handling, larger-text resilience, semantic control labels, and minimum touch-target corrections are implemented and statically validated across the redesigned workflow.
 
 The initial vertical slice covers:
 
@@ -59,6 +60,11 @@ The initial vertical slice covers:
 - Quick Intel entry
 - Stop Intel summary
 
+The approved follow-on refresh also covers:
+
+- Profile
+- Help Center home and guide pages
+
 ---
 
 ## Not Changing
@@ -68,7 +74,7 @@ The initial vertical slice covers:
 - Authentication or permissions
 - Stop-selection and map logic
 - New Intel fields
-- Full Detailed Intel, Danger Zone, Profile, Help Center, onboarding, or authentication redesigns
+- Full Detailed Intel, Danger Zone, onboarding, or authentication redesigns
 - App Store or Google Play submission
 
 ---
@@ -86,9 +92,9 @@ The initial vertical slice covers:
 
 ## Next Safe Step
 
-Run the approved accessibility and device matrix across the complete V2 core workflow:
+Run the remaining approved accessibility and device matrix across the complete V2 workflow:
 
-- iPhone and Pixel
+- Pixel
 - Light, Dark, and System appearance modes
 - Standard and satellite map views
 - Large text

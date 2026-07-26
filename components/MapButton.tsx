@@ -1,14 +1,23 @@
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+import { useAppTheme } from "@/context/theme-context";
+
 type MapButtonProps = {
   children: ReactNode;
 };
 
 export function MapButton({ children }: MapButtonProps) {
+  const { colors } = useAppTheme();
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>{children}</Text>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+      ]}
+    >
+      <Text style={[styles.text, { color: colors.textPrimary }]}>{children}</Text>
     </View>
   );
 }
@@ -16,7 +25,7 @@ export function MapButton({ children }: MapButtonProps) {
 const styles = StyleSheet.create({
   container: {
     minWidth: 100,
-    backgroundColor: "white",
+    borderWidth: 1,
     borderRadius: 14,
     paddingVertical: 8,
     paddingHorizontal: 10,
@@ -28,7 +37,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   text: {
-    color: "#111",
     fontWeight: "900",
     fontSize: 12,
     lineHeight: 14,
