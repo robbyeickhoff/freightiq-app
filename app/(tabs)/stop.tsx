@@ -21,10 +21,16 @@ import {
 import MapView, { Marker, Region } from "react-native-maps";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { MapIcon } from "../../components/MapIcon";
+import { StopIntelSummary } from "../../components/stop-intel-summary";
 import {
   QuickIntelSheet,
   type QuickIntelSectionKey,
 } from "../../components/quick-intel-sheet";
+import { AppButton } from "../../components/ui/app-button";
+import { AppCard } from "../../components/ui/app-card";
+import { AppIcon } from "../../components/ui/app-icon";
+import { Spacing, Typography } from "../../constants/theme";
+import { useAppTheme } from "../../context/theme-context";
 import { supabase } from "../../utils/supabase";
 
 type ChipProps = {
@@ -105,6 +111,30 @@ function createReportSnapshot(draft: ReportDraft): string {
     draft.contact,
     draft.notes,
   ]);
+}
+
+function getQuickIntelOrder(
+  truckFit: string,
+  deliveryZoneSet: boolean,
+  deliveryType: string,
+  backInRequired: boolean | null,
+): QuickIntelSectionKey[] {
+  const completion: Record<QuickIntelSectionKey, boolean> = {
+    truckFit: Boolean(truckFit),
+    deliveryZone: deliveryZoneSet,
+    deliveryType: Boolean(deliveryType),
+    backIn: backInRequired !== null,
+  };
+  const approvedOrder: QuickIntelSectionKey[] = [
+    "truckFit",
+    "deliveryZone",
+    "deliveryType",
+    "backIn",
+  ];
+
+  return [...approvedOrder].sort(
+    (first, second) => Number(completion[first]) - Number(completion[second]),
+  );
 }
 
 type VoteRow = {
@@ -262,6 +292,7 @@ export default function StopScreen() {
   const deliveryZonePreviewMapRef = useRef<MapView | null>(null);
   const router = useRouter();
   const isFocused = useIsFocused();
+  const { colors } = useAppTheme();
   const params = useLocalSearchParams();
 
   const stopId = String(params.id ?? "");
@@ -371,6 +402,16 @@ export default function StopScreen() {
   const [reportsExpanded, setReportsExpanded] = useState(viewReports);
   const [reportsSectionY, setReportsSectionY] = useState(0);
   const reportIsSaved = Boolean(myReportId && savedReportSnapshot === currentReportSnapshot);
+  const reportHasContent = Boolean(
+    deliverFromType ||
+      deliverFromDetails ||
+      deliveryType ||
+      approachHint ||
+      backInRequired !== null ||
+      truckFit ||
+      contact ||
+      notes,
+  );
   const reportSaveLabel = loading
     ? "Saving..."
     : myReportId
@@ -453,22 +494,12 @@ export default function StopScreen() {
 
     handledQuickIntelRequestRef.current = openedAt;
 
-    const completion: Record<QuickIntelSectionKey, boolean> = {
-      truckFit: Boolean(truckFit),
-      deliveryZone: typeof entranceLat === "number" && typeof entranceLng === "number",
-      deliveryType: Boolean(deliveryType),
-      backIn: backInRequired !== null,
-    };
-    const approvedOrder: QuickIntelSectionKey[] = [
-      "truckFit",
-      "deliveryZone",
-      "deliveryType",
-      "backIn",
-    ];
-
     setQuickIntelOrder(
-      [...approvedOrder].sort(
-        (first, second) => Number(completion[first]) - Number(completion[second]),
+      getQuickIntelOrder(
+        truckFit,
+        typeof entranceLat === "number" && typeof entranceLng === "number",
+        deliveryType,
+        backInRequired,
       ),
     );
     setQuickIntelOpen(true);
@@ -1046,6 +1077,20 @@ export default function StopScreen() {
     await saveMyReport();
   }
 
+  async function openQuickIntelFromSummary() {
+    if (!(await requireSignedIn())) return;
+
+    setQuickIntelOrder(
+      getQuickIntelOrder(
+        truckFit,
+        typeof entranceLat === "number" && typeof entranceLng === "number",
+        deliveryType,
+        backInRequired,
+      ),
+    );
+    setQuickIntelOpen(true);
+  }
+
   async function cancelQuickIntel() {
     setQuickIntelOpen(false);
     await loadReports();
@@ -1504,242 +1549,222 @@ export default function StopScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: "white" }}
+        style={{ flex: 1, backgroundColor: colors.background }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={{ flex: 1 }}>
           <ScrollView
             ref={scrollViewRef}
-            style={{ flex: 1, backgroundColor: "white" }}
+            style={{ flex: 1, backgroundColor: colors.background }}
             contentContainerStyle={styles.container}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             canCancelContentTouches={true}
           >
             <View style={styles.header}>
-              <Text style={styles.title}>{title}</Text>
+              <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
 
               {mergeMode ? (
-                <Text style={styles.cardHelp}>
+                <Text style={[styles.cardHelp, { color: colors.warning }]}>
                   Merge mode active: go back to the map and choose the stop to merge INTO.
                 </Text>
               ) : null}
 
-              {currentStopAddress ? <Text style={styles.coords}>{displayAddress}</Text> : null}
-            </View>
-
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Operational Essentials</Text>
-
-              <Text style={styles.sectionLabel}>Truck Fit</Text>
-              <View style={styles.chipRow}>
-                <Chip label="53'" active={truckFit === "53'"} onPress={() => setTruckFit("53'")} />
-                <Chip label="48'" active={truckFit === "48'"} onPress={() => setTruckFit("48'")} />
-                <Chip label="40'" active={truckFit === "40'"} onPress={() => setTruckFit("40'")} />
-                <Chip label="28'" active={truckFit === "28'"} onPress={() => setTruckFit("28'")} />
-              </View>
-
-              <Text style={styles.sectionLabel}>Delivery Type</Text>
-              <View style={styles.deliveryTypeChipRow}>
-                <Chip
-                  label="Dock"
-                  active={deliveryType === "Dock"}
-                  onPress={() => setDeliveryType("Dock")}
-                  style={styles.deliveryTypeChip}
-                />
-                <Chip
-                  label="Forklift"
-                  active={deliveryType === "Forklift"}
-                  onPress={() => setDeliveryType("Forklift")}
-                  style={styles.deliveryTypeChip}
-                />
-                <Chip
-                  label="Liftgate"
-                  active={deliveryType === "Liftgate"}
-                  onPress={() => setDeliveryType("Liftgate")}
-                  style={styles.deliveryTypeChip}
-                />
-              </View>
-
-              <Text style={styles.sectionLabel}>Back In</Text>
-              <View style={styles.chipRow}>
-                <Chip
-                  label="Yes"
-                  active={backInRequired === true}
-                  onPress={() => setBackInRequired(true)}
-                />
-                <Chip
-                  label="No"
-                  active={backInRequired === false}
-                  onPress={() => setBackInRequired(false)}
-                />
-                <Chip
-                  label="Unknown"
-                  active={backInRequired === null}
-                  onPress={() => setBackInRequired(null)}
-                />
-              </View>
-
-              <View style={styles.operationalZoneSummary}>
-                <View style={styles.operationalZoneHeader}>
-                  <Text style={styles.sectionLabel}>Delivery Zone</Text>
-                  {typeof entranceLat !== "number" || typeof entranceLng !== "number" ? (
-                    <Text style={styles.operationalZoneStatus}>Not Set</Text>
-                  ) : null}
-                </View>
-
-                {deliveryZonePreviewRegion &&
-                typeof entranceLat === "number" &&
-                typeof entranceLng === "number" ? (
-                  <>
-                    <View style={styles.deliveryZonePreviewWrap}>
-                      {isFocused ? (
-                        <MapView
-                          key={`delivery-zone-preview-${previewStopLat}-${previewStopLng}-${entranceLat}-${entranceLng}`}
-                          ref={deliveryZonePreviewMapRef}
-                          pointerEvents="none"
-                          style={styles.deliveryZonePreviewMap}
-                          mapType="satellite"
-                          initialRegion={deliveryZonePreviewRegion}
-                          onLayout={() =>
-                            fitDeliveryZonePreviewMap(
-                              deliveryZonePreviewMapRef.current,
-                              previewStopLat,
-                              previewStopLng,
-                              entranceLat,
-                              entranceLng,
-                            )
-                          }
-                          onMapReady={() =>
-                            fitDeliveryZonePreviewMap(
-                              deliveryZonePreviewMapRef.current,
-                              previewStopLat,
-                              previewStopLng,
-                              entranceLat,
-                              entranceLng,
-                            )
-                          }
-                          scrollEnabled={false}
-                          zoomEnabled={false}
-                          rotateEnabled={false}
-                          pitchEnabled={false}
-                          toolbarEnabled={false}
-                          showsCompass={false}
-                          showsPointsOfInterest={false}
-                          showsScale={false}
-                          loadingEnabled
-                        >
-                          <Marker
-                            coordinate={{ latitude: previewStopLat, longitude: previewStopLng }}
-                          >
-                            <View style={styles.deliveryZonePreviewStopMarker}>
-                              <View style={styles.deliveryZonePreviewStopDot} />
-                            </View>
-                          </Marker>
-
-                          <Marker coordinate={{ latitude: entranceLat, longitude: entranceLng }}>
-                            <View style={styles.deliveryZonePreviewBullseyeOuter}>
-                              <View style={styles.deliveryZonePreviewBullseyeMiddle}>
-                                <View style={styles.deliveryZonePreviewBullseyeInner} />
-                              </View>
-                            </View>
-                          </Marker>
-                        </MapView>
-                      ) : null}
-                    </View>
-
-                    <View style={styles.deliveryZoneActionRow}>
-                      <Pressable
-                        style={[
-                          styles.secondaryBtn,
-                          styles.mainIntelSecondaryBtn,
-                          styles.deliveryZoneActionBtn,
-                        ]}
-                        onPress={() =>
-                          router.navigate({
-                            pathname: "/(tabs)/(map)",
-                            params: {
-                              focusStopId: stopId,
-                              showEntrance: "1",
-                              hidePreview: "1",
-                              entranceLat: String(entranceLat),
-                              entranceLng: String(entranceLng),
-                              revealAt: String(Date.now()),
-                            },
-                          })
-                        }
-                      >
-                        <Text style={styles.secondaryBtnText} numberOfLines={1}>
-                          View Full Map
-                        </Text>
-                      </Pressable>
-
-                      <Pressable
-                        style={[
-                          styles.secondaryBtn,
-                          styles.mainIntelSecondaryBtn,
-                          styles.deliveryZoneActionBtn,
-                        ]}
-                        onPress={openEntrancePicker}
-                      >
-                        <Text style={styles.secondaryBtnText} numberOfLines={1}>
-                          Manage DZ
-                        </Text>
-                      </Pressable>
-                    </View>
-                  </>
-                ) : (
-                  <Pressable style={styles.primaryWideBtn} onPress={openEntrancePicker}>
-                    <Text style={styles.primaryWideBtnText}>Set Delivery Zone</Text>
-                  </Pressable>
-                )}
-              </View>
-
-              <Pressable
-                accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.disclosureRow,
-                  pressed ? styles.disclosureRowPressed : null,
-                ]}
-                onPress={() => setAdditionalIntelOpen(true)}
-              >
-                <Text style={styles.disclosureLabel}>Additional Driver Intel</Text>
-                <MaterialIcons name="chevron-right" size={26} color="#8e8e93" />
-              </Pressable>
-
-              {reportIsSaved ? (
-                <View accessible accessibilityLabel="Report saved" style={styles.reportSavedStatus}>
-                  <MaterialIcons name="check" size={20} color="#6b7280" />
-                  <Text style={styles.reportSavedStatusText}>Report saved</Text>
-                </View>
-              ) : (
-                <Pressable style={styles.saveBtn} onPress={saveMyReport} disabled={loading}>
-                  <Text style={styles.saveBtnText}>{reportSaveLabel}</Text>
-                </Pressable>
-              )}
-
-              {myReportId ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: deletingReport }}
-                  style={({ pressed }) => [
-                    styles.reportDeleteAction,
-                    pressed ? styles.reportDeleteActionPressed : null,
-                  ]}
-                  onPress={deleteMyReport}
-                  disabled={deletingReport}
-                >
-                  <Text style={styles.reportDeleteActionText}>
-                    {deletingReport ? "Deleting..." : "Delete My Report"}
-                  </Text>
-                </Pressable>
+              {currentStopAddress ? (
+                <Text style={[styles.coords, { color: colors.textSecondary }]}>
+                  {displayAddress}
+                </Text>
               ) : null}
             </View>
 
-            <View
-              style={styles.card}
+            <StopIntelSummary
+              backInRequired={backInRequired}
+              deliveryType={deliveryType}
+              deliveryZoneSet={
+                typeof entranceLat === "number" && typeof entranceLng === "number"
+              }
+              onOpenQuickIntel={() => void openQuickIntelFromSummary()}
+              truckFit={truckFit}
+            />
+
+            <AppCard contentStyle={styles.v2SectionCard}>
+              <View style={styles.v2SectionHeading}>
+                <View style={[styles.v2SectionIcon, { backgroundColor: colors.accentMuted }]}>
+                  <AppIcon color={colors.accentStrong} name="deliveryZone" size={20} />
+                </View>
+                <View style={styles.v2SectionHeadingCopy}>
+                  <Text style={[styles.v2SectionTitle, { color: colors.textPrimary }]}>
+                    Delivery Zone
+                  </Text>
+                  <Text style={[styles.v2SectionSubtitle, { color: colors.textSecondary }]}>
+                    {typeof entranceLat === "number" && typeof entranceLng === "number"
+                      ? "Saved truck-access point"
+                      : "No delivery point saved"}
+                  </Text>
+                </View>
+              </View>
+
+              {deliveryZonePreviewRegion &&
+              typeof entranceLat === "number" &&
+              typeof entranceLng === "number" ? (
+                <>
+                  <View
+                    style={[
+                      styles.deliveryZonePreviewWrap,
+                      { borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                  >
+                    {isFocused ? (
+                      <MapView
+                        key={`delivery-zone-preview-${previewStopLat}-${previewStopLng}-${entranceLat}-${entranceLng}`}
+                        ref={deliveryZonePreviewMapRef}
+                        pointerEvents="none"
+                        style={styles.deliveryZonePreviewMap}
+                        mapType="satellite"
+                        initialRegion={deliveryZonePreviewRegion}
+                        onLayout={() =>
+                          fitDeliveryZonePreviewMap(
+                            deliveryZonePreviewMapRef.current,
+                            previewStopLat,
+                            previewStopLng,
+                            entranceLat,
+                            entranceLng,
+                          )
+                        }
+                        onMapReady={() =>
+                          fitDeliveryZonePreviewMap(
+                            deliveryZonePreviewMapRef.current,
+                            previewStopLat,
+                            previewStopLng,
+                            entranceLat,
+                            entranceLng,
+                          )
+                        }
+                        scrollEnabled={false}
+                        zoomEnabled={false}
+                        rotateEnabled={false}
+                        pitchEnabled={false}
+                        toolbarEnabled={false}
+                        showsCompass={false}
+                        showsPointsOfInterest={false}
+                        showsScale={false}
+                        loadingEnabled
+                      >
+                        <Marker coordinate={{ latitude: previewStopLat, longitude: previewStopLng }}>
+                          <View style={styles.deliveryZonePreviewStopMarker}>
+                            <View style={styles.deliveryZonePreviewStopDot} />
+                          </View>
+                        </Marker>
+
+                        <Marker coordinate={{ latitude: entranceLat, longitude: entranceLng }}>
+                          <View style={styles.deliveryZonePreviewBullseyeOuter}>
+                            <View style={styles.deliveryZonePreviewBullseyeMiddle}>
+                              <View style={styles.deliveryZonePreviewBullseyeInner} />
+                            </View>
+                          </View>
+                        </Marker>
+                      </MapView>
+                    ) : null}
+                  </View>
+
+                  <View style={styles.v2ActionRow}>
+                    <AppButton
+                      onPress={() =>
+                        router.navigate({
+                          pathname: "/(tabs)/(map)",
+                          params: {
+                            focusStopId: stopId,
+                            showEntrance: "1",
+                            hidePreview: "1",
+                            entranceLat: String(entranceLat),
+                            entranceLng: String(entranceLng),
+                            revealAt: String(Date.now()),
+                          },
+                        })
+                      }
+                      size="compact"
+                      style={styles.v2ActionButton}
+                      variant="secondary"
+                    >
+                      View DZ
+                    </AppButton>
+                    <AppButton
+                      onPress={() => void openEntrancePicker()}
+                      size="compact"
+                      style={styles.v2ActionButton}
+                      variant="secondary"
+                    >
+                      Manage DZ
+                    </AppButton>
+                  </View>
+                </>
+              ) : (
+                <AppButton fullWidth onPress={() => void openEntrancePicker()}>
+                  Set Delivery Zone
+                </AppButton>
+              )}
+            </AppCard>
+
+            <AppCard contentStyle={styles.v2SectionCard}>
+              <Text style={[styles.v2Eyebrow, { color: colors.textSecondary }]}>CONTRIBUTE</Text>
+              <Pressable
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  styles.v2DisclosureRow,
+                  pressed ? styles.v2Pressed : null,
+                ]}
+                onPress={() => setAdditionalIntelOpen(true)}
+              >
+                <View style={styles.v2DisclosureCopy}>
+                  <Text style={[styles.v2SectionTitle, { color: colors.textPrimary }]}>
+                    Additional Driver Intel
+                  </Text>
+                  <Text style={[styles.v2SectionSubtitle, { color: colors.textSecondary }]}>
+                    Delivery details, approach, contact, and notes
+                  </Text>
+                </View>
+                <AppIcon color={colors.textSecondary} name="chevronRight" />
+              </Pressable>
+
+              {reportIsSaved ? (
+                <View
+                  accessible
+                  accessibilityLabel="Report saved"
+                  style={styles.v2SavedStatus}
+                >
+                  <AppIcon color={colors.success} name="check" size={18} />
+                  <Text style={[styles.v2SavedStatusText, { color: colors.textSecondary }]}>
+                    Your report is saved
+                  </Text>
+                </View>
+              ) : myReportId || reportHasContent ? (
+                <AppButton
+                  fullWidth
+                  loading={loading}
+                  onPress={() => void saveMyReport()}
+                  variant="secondary"
+                >
+                  {reportSaveLabel}
+                </AppButton>
+              ) : null}
+
+              {myReportId ? (
+                <AppButton
+                  disabled={deletingReport}
+                  onPress={deleteMyReport}
+                  size="compact"
+                  variant="tertiary"
+                  textStyle={{ color: colors.danger }}
+                >
+                  {deletingReport ? "Deleting..." : "Delete my report"}
+                </AppButton>
+              ) : null}
+            </AppCard>
+
+            <AppCard
+              contentStyle={styles.v2SectionCard}
               onLayout={(event) => setReportsSectionY(event.nativeEvent.layout.y)}
             >
               <Pressable
@@ -1751,20 +1776,24 @@ export default function StopScreen() {
                 ]}
                 onPress={() => setReportsExpanded((v) => !v)}
               >
-                <Text style={styles.disclosureLabel}>Driver Reports</Text>
+                <Text style={[styles.disclosureLabel, { color: colors.textPrimary }]}>
+                  Driver Reports
+                </Text>
                 <View style={styles.disclosureTrailing}>
-                  <Text style={styles.disclosureValue}>{sortedReports.length}</Text>
-                  <MaterialIcons
-                    name={reportsExpanded ? "expand-more" : "chevron-right"}
-                    size={26}
-                    color="#8e8e93"
-                  />
+                  <Text style={[styles.disclosureValue, { color: colors.textSecondary }]}>
+                    {sortedReports.length}
+                  </Text>
+                  {reportsExpanded ? (
+                    <MaterialIcons name="expand-more" size={26} color={colors.textSecondary} />
+                  ) : (
+                    <AppIcon color={colors.textSecondary} name="chevronRight" />
+                  )}
                 </View>
               </Pressable>
 
               {reportsExpanded ? (
                 sortedReports.length === 0 ? (
-                  <Text style={styles.emptyText}>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                     No reports yet. Be the first driver to add intel.
                   </Text>
                 ) : (
@@ -1785,44 +1814,55 @@ export default function StopScreen() {
                         key={r.id}
                         style={[
                           styles.reportCard,
-                          isFresh ? { borderColor: "#000", borderWidth: 1 } : { opacity: 0.85 },
+                          { borderTopColor: colors.border },
+                          isFresh ? { opacity: 1 } : { opacity: 0.82 },
                         ]}
                       >
                         <View style={styles.reportHeader}>
                           <View style={{ flex: 1, gap: 2 }}>
-                            <Text style={styles.reportUser}>{r.username ?? "Driver"}</Text>
+                            <Text style={[styles.reportUser, { color: colors.textPrimary }]}>
+                              {r.username ?? "Driver"}
+                            </Text>
 
                             {r.tractor_type ? (
-                              <Text style={{ color: "#666", marginTop: 2 }}>{r.tractor_type}</Text>
+                              <Text style={{ color: colors.textSecondary, marginTop: 2 }}>
+                                {r.tractor_type}
+                              </Text>
                             ) : null}
 
-                            <Text style={styles.reputationText}>Reputation {rep}</Text>
-                            <Text style={styles.reportMeta}>
+                            <Text
+                              style={[styles.reputationText, { color: colors.textSecondary }]}
+                            >
+                              Reputation {rep}
+                            </Text>
+                            <Text style={[styles.reportMeta, { color: colors.textSecondary }]}>
                               Updated {formatWhen(r.updated_at)}
                               {isFresh ? " • Recent" : ""}
                             </Text>
                           </View>
 
                           {index === 0 ? (
-                            <View style={styles.topBadge}>
-                              <Text style={styles.topBadgeText}>Top</Text>
+                            <View style={[styles.topBadge, { backgroundColor: colors.accentMuted }]}>
+                              <Text style={[styles.topBadgeText, { color: colors.accentStrong }]}>
+                                Top
+                              </Text>
                             </View>
                           ) : null}
                         </View>
 
                         {r.truck_fit ? (
-                          <Text style={styles.reportLine}>
+                          <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
                             <Text style={styles.bold}>Truck Fit:</Text> {r.truck_fit}
                           </Text>
                         ) : null}
 
                         {r.delivery_type ? (
-                          <Text style={styles.reportLine}>
+                          <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
                             <Text style={styles.bold}>Delivery Type:</Text> {r.delivery_type}
                           </Text>
                         ) : null}
 
-                        <Text style={styles.reportLine}>
+                        <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
                           <Text style={styles.bold}>Back In:</Text>{" "}
                           {r.back_in_required === true
                             ? "Yes"
@@ -1832,17 +1872,19 @@ export default function StopScreen() {
                         </Text>
 
                         {r.deliver_from_type ? (
-                          <Text style={styles.reportLine}>
+                          <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
                             <Text style={styles.bold}>Deliver From:</Text> {r.deliver_from_type}
                           </Text>
                         ) : null}
 
                         {r.deliver_from_details ? (
-                          <Text style={styles.reportLine}>{r.deliver_from_details}</Text>
+                          <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
+                            {r.deliver_from_details}
+                          </Text>
                         ) : null}
 
                         {r.approach_hint ? (
-                          <Text style={styles.reportLine}>
+                          <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
                             <Text style={styles.bold}>Best Approach:</Text> {r.approach_hint}
                           </Text>
                         ) : null}
@@ -1853,19 +1895,19 @@ export default function StopScreen() {
 
                               if (!phoneParts) {
                                 return (
-                                  <Text style={styles.reportLine}>
+                                  <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
                                     <Text style={styles.bold}>Contact / Check-In:</Text> {r.contact}
                                   </Text>
                                 );
                               }
 
                               return (
-                                <Text style={styles.reportLine}>
+                                <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
                                   <Text style={styles.bold}>Contact / Check-In:</Text>{" "}
                                   {phoneParts.before}
                                   <Text
                                     style={{
-                                      color: "#2563eb",
+                                      color: colors.accentStrong,
                                       fontWeight: "700",
                                       textDecorationLine: "underline",
                                     }}
@@ -1882,12 +1924,12 @@ export default function StopScreen() {
                           : null}
 
                         {r.notes ? (
-                          <Text style={styles.reportLine}>
+                          <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
                             <Text style={styles.bold}>Driver Notes:</Text> {r.notes}
                           </Text>
                         ) : null}
 
-                        <Text style={styles.reportVotes}>
+                        <Text style={[styles.reportVotes, { color: colors.textSecondary }]}>
                           Score {score} (↑{stats.up} ↓{stats.down})
                         </Text>
 
@@ -1895,16 +1937,27 @@ export default function StopScreen() {
                           <Pressable
                             style={[
                               styles.voteBtn,
-                              stats.myVote === 1 ? styles.voteBtnActive : styles.voteBtnGhost,
+                              stats.myVote === 1
+                                ? {
+                                    backgroundColor: colors.accentMuted,
+                                    borderColor: colors.accentStrong,
+                                  }
+                                : {
+                                    backgroundColor: colors.surface,
+                                    borderColor: colors.border,
+                                  },
                             ]}
                             onPress={() => handleVote(r.id, 1)}
                           >
                             <Text
                               style={[
                                 styles.voteBtnText,
-                                stats.myVote === 1
-                                  ? styles.voteBtnTextActive
-                                  : styles.voteBtnTextGhost,
+                                {
+                                  color:
+                                    stats.myVote === 1
+                                      ? colors.accentStrong
+                                      : colors.textPrimary,
+                                },
                               ]}
                             >
                               👍 Helpful
@@ -1914,16 +1967,27 @@ export default function StopScreen() {
                           <Pressable
                             style={[
                               styles.voteBtn,
-                              stats.myVote === -1 ? styles.voteBtnActive : styles.voteBtnGhost,
+                              stats.myVote === -1
+                                ? {
+                                    backgroundColor: colors.accentMuted,
+                                    borderColor: colors.accentStrong,
+                                  }
+                                : {
+                                    backgroundColor: colors.surface,
+                                    borderColor: colors.border,
+                                  },
                             ]}
                             onPress={() => handleVote(r.id, -1)}
                           >
                             <Text
                               style={[
                                 styles.voteBtnText,
-                                stats.myVote === -1
-                                  ? styles.voteBtnTextActive
-                                  : styles.voteBtnTextGhost,
+                                {
+                                  color:
+                                    stats.myVote === -1
+                                      ? colors.accentStrong
+                                      : colors.textPrimary,
+                                },
                               ]}
                             >
                               👎 Not Helpful
@@ -1935,13 +1999,17 @@ export default function StopScreen() {
                   })
                 )
               ) : null}
-            </View>
+            </AppCard>
 
             {canDeleteStop && (
               <Pressable
                 accessibilityRole="button"
                 style={({ pressed }) => [
                   styles.disclosureRow,
+                  {
+                    backgroundColor: colors.surfaceElevated,
+                    borderColor: colors.border,
+                  },
                   pressed ? styles.disclosureRowPressed : null,
                 ]}
                 onPress={() => {
@@ -1949,14 +2017,17 @@ export default function StopScreen() {
                   setShowManageStop(true);
                 }}
               >
-                <Text style={styles.disclosureLabel}>Manage Stop</Text>
-                <MaterialIcons name="chevron-right" size={26} color="#8e8e93" />
+                <Text style={[styles.disclosureLabel, { color: colors.textPrimary }]}>
+                  Manage Stop
+                </Text>
+                <AppIcon color={colors.textSecondary} name="chevronRight" />
               </Pressable>
             )}
 
             <View style={styles.actions}>
-              <Pressable
-                style={[styles.btn, styles.btnGhost]}
+              <AppButton
+                fullWidth
+                variant="secondary"
                 onPress={() => {
                   setShowManageStop(false);
                   setReportsExpanded(false);
@@ -1975,8 +2046,8 @@ export default function StopScreen() {
                   });
                 }}
               >
-                <Text style={[styles.btnText, styles.btnTextGhost]}>Back</Text>
-              </Pressable>
+                Back to Map
+              </AppButton>
             </View>
           </ScrollView>
 
@@ -2417,10 +2488,79 @@ export default function StopScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 14, gap: 12, paddingBottom: 28 },
-  header: { gap: 4, paddingBottom: 6 },
-  title: { fontSize: 18, fontWeight: "800" },
+  container: {
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xl,
+    gap: Spacing.sm,
+  },
+  header: { gap: 4, paddingBottom: Spacing.xs },
+  title: { ...Typography.screenTitle },
   coords: { color: "#666" },
+
+  v2SectionCard: {
+    padding: Spacing.md,
+    gap: Spacing.md,
+  },
+  v2SectionHeading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  v2SectionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  v2SectionHeadingCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  v2SectionTitle: {
+    ...Typography.sectionTitle,
+  },
+  v2SectionSubtitle: {
+    ...Typography.supporting,
+  },
+  v2Eyebrow: {
+    ...Typography.operationalLabel,
+    letterSpacing: 0.8,
+  },
+  v2ActionRow: {
+    flexDirection: "row",
+    gap: Spacing.xs,
+  },
+  v2ActionButton: {
+    flex: 1,
+    minWidth: 0,
+  },
+  v2DisclosureRow: {
+    minHeight: 52,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: Spacing.sm,
+  },
+  v2DisclosureCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  v2Pressed: {
+    opacity: 0.72,
+  },
+  v2SavedStatus: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
+  },
+  v2SavedStatusText: {
+    ...Typography.supporting,
+    fontWeight: "700",
+  },
 
   card: {
     borderWidth: 1,
@@ -2595,7 +2735,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   disclosureRowPressed: {
-    backgroundColor: "#f2f2f7",
+    opacity: 0.72,
   },
   disclosureLabel: {
     color: "black",
@@ -2742,7 +2882,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  actions: { flexDirection: "row", gap: 10 },
+  actions: {
+    alignSelf: "stretch",
+  },
   btn: {
     flex: 1,
     backgroundColor: "black",

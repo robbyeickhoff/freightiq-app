@@ -32,7 +32,7 @@ The controlling specification is:
 
 ## Current Focus
 
-Redesign the Stop Intel summary as the current build phase.
+Run accessibility and device validation for the completed V2 core-experience slice.
 
 The centralized theme and semantic-token foundation has been accepted on iPhone.
 The System, Light, and Dark preference behavior has been accepted on iPhone.
@@ -47,6 +47,8 @@ Map-aware status-bar contrast is implemented for standard and satellite imagery.
 The search, Recent Intel, and search-results overlays have passed visual and functional iPhone validation.
 The selected-stop preview has passed visual and functional iPhone validation, including immediate Delivery Zone refresh when returning to the map.
 The missing-core-intel prompt and Quick Intel flow have passed visual and functional iPhone validation, including prefilled values, missing-first ordering, partial saves, Delivery Zone handoff, same-stop return, and immediate preview refresh.
+The Stop Intel summary has passed visual and functional iPhone validation, including the Core Intel hierarchy, Delivery Zone actions, Additional Driver Intel separation, Driver Reports, Manage Stop, and the full-width Back to Map action.
+The standard Apple map now follows the resolved FreightIQ Light or Dark appearance through native MapKit styling and has passed iPhone visual validation.
 
 The initial vertical slice covers:
 
@@ -84,11 +86,14 @@ The initial vertical slice covers:
 
 ## Next Safe Step
 
-Redesign the Stop Intel summary:
+Run the approved accessibility and device matrix across the complete V2 core workflow:
 
-- Reuse the preview card’s four-item core-intel hierarchy, icons, statuses, counts, and completion language.
-- Keep Quick Intel as the primary contribution path for Truck Fit, Delivery Zone, Delivery Type, and Back In.
-- Keep Detailed Intel and Additional Intel visually separate from the core summary.
-- Preserve existing reports, voting, ownership, permissions, Delivery Zone actions, and Danger Zone behavior.
+- iPhone and Pixel
+- Light, Dark, and System appearance modes
+- Standard and satellite map views
+- Large text
+- Reduced motion
+- VoiceOver and TalkBack labels for icon-only controls
+- Touch-target, contrast, loading, disabled, selected, error, success, and saved states
 
-Validate the Stop Intel summary on iPhone before proceeding to the full accessibility and device matrix.
+Fix any regressions before treating the core-experience slice as complete.

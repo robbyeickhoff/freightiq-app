@@ -366,7 +366,7 @@ function resolveStopHasIntel(
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { colors } = useAppTheme();
+  const { colorScheme, colors } = useAppTheme();
   const params = useLocalSearchParams();
   const mergeModeParam = String(params.mergeMode ?? "") === "1";
   const mergeSourceStopIdParam = String(params.mergeSourceStopId ?? "");
@@ -2298,7 +2298,16 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar animated style={mapType === "standard" ? "dark" : "light"} />
+      <StatusBar
+        animated
+        style={
+          mapType === "standard"
+            ? colorScheme === "dark"
+              ? "light"
+              : "dark"
+            : "light"
+        }
+      />
 
       {!isMapReady && (
         <View
@@ -2330,6 +2339,7 @@ export default function HomeScreen() {
           }}
           initialRegion={mapInitialRegion}
           mapType={mapType}
+          userInterfaceStyle={colorScheme}
           onMapReady={() => setIsMapReady(true)}
           onPanDrag={() => setHasUserInteracted(true)}
           onRegionChangeComplete={(r) => {

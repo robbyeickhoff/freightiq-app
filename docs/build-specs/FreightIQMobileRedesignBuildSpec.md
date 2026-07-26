@@ -12,7 +12,7 @@
 - **Purpose:** Control implementation of the approved V2 core mobile redesign slice
 - **Approved repository path:** `docs/build-specs/FreightIQMobileRedesignBuildSpec.md`
 - **Repository status:** Canonical Build Specification
-- **Implementation status:** Active — Stop Intel summary
+- **Implementation status:** Active — Accessibility and device validation
 - **Approval status:** Approved for implementation by the Product Owner
 
 ## Repository Alignment Notes
@@ -33,7 +33,7 @@ Two repository-alignment questions identified during drafting have been resolved
 1. The specification will follow `docs/README.md` and live at `docs/build-specs/FreightIQMobileRedesignBuildSpec.md`.
 2. The specification will use **Back In**, matching `docs/design/IntelContributionWorkflow.md`, rather than the earlier conversational label **Backing**.
 
-`docs/CurrentBuild.md` identifies this specification as the active FreightIQ build. Repository inspection, the centralized theme foundation, map controls and overlays, selected-stop preview, and Quick Intel flow are complete and accepted on iPhone; implementation is proceeding to the Stop Intel summary.
+`docs/CurrentBuild.md` identifies this specification as the active FreightIQ build. Repository inspection, the centralized theme foundation, map controls and overlays, selected-stop preview, Quick Intel flow, Stop Intel summary, and native Apple map appearance are complete and accepted on iPhone; implementation is proceeding to the accessibility and device-validation matrix.
 
 ## 1. Objective
 
