@@ -28,6 +28,7 @@ import { AppCard } from "@/components/ui/app-card";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Elevation } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { supabase } from "../../../utils/supabase";
 
 type Pin = {
@@ -367,6 +368,7 @@ function resolveStopHasIntel(
 export default function HomeScreen() {
   const router = useRouter();
   const { colorScheme, colors } = useAppTheme();
+  const reduceMotionEnabled = useReducedMotion();
   const params = useLocalSearchParams();
   const mergeModeParam = String(params.mergeMode ?? "") === "1";
   const mergeSourceStopIdParam = String(params.mergeSourceStopId ?? "");
@@ -2202,6 +2204,12 @@ export default function HomeScreen() {
 
   function expandPreviewCard() {
     setPreviewCollapsed(false);
+    if (reduceMotionEnabled) {
+      previewTranslateY.stopAnimation();
+      previewTranslateY.setValue(0);
+      return;
+    }
+
     Animated.spring(previewTranslateY, {
       toValue: 0,
       useNativeDriver: true,
@@ -2212,6 +2220,12 @@ export default function HomeScreen() {
 
   function collapsePreviewCard() {
     setPreviewCollapsed(true);
+    if (reduceMotionEnabled) {
+      previewTranslateY.stopAnimation();
+      previewTranslateY.setValue(PREVIEW_COLLAPSED_Y);
+      return;
+    }
+
     Animated.spring(previewTranslateY, {
       toValue: PREVIEW_COLLAPSED_Y,
       useNativeDriver: true,
@@ -2599,6 +2613,7 @@ export default function HomeScreen() {
               <ScrollView style={{ maxHeight: 200 }} contentContainerStyle={{ gap: 8 }}>
                 {recent.map((r) => (
                   <Pressable
+                    accessibilityRole="button"
                     key={r.id}
                     style={[styles.recentRow, { borderTopColor: colors.border }]}
                     onPress={() => {
@@ -2822,7 +2837,12 @@ export default function HomeScreen() {
 
           {previewCollapsed ? (
             <View {...previewPanResponder.panHandlers} style={styles.previewCollapsedTapArea}>
-              <Pressable onPress={expandPreviewCard}>
+              <Pressable
+                accessibilityLabel="Expand stop preview"
+                accessibilityRole="button"
+                hitSlop={12}
+                onPress={expandPreviewCard}
+              >
                 <Text
                   style={[styles.previewCollapsedHint, { color: colors.textSecondary }]}
                 >
@@ -3068,7 +3088,12 @@ export default function HomeScreen() {
       ) : null}
 
       {deliveryZoneInspectionSource ? (
-        <Pressable style={styles.deliveryZoneReturnPill} onPress={exitDeliveryZoneInspection}>
+        <Pressable
+          accessibilityLabel="Return to stop"
+          accessibilityRole="button"
+          style={styles.deliveryZoneReturnPill}
+          onPress={exitDeliveryZoneInspection}
+        >
           <Text style={styles.deliveryZoneReturnTitle}>← Back to Stop</Text>
           <Text style={styles.deliveryZoneReturnSubtitle}>Viewing Delivery Zone</Text>
         </Pressable>
@@ -3145,7 +3170,7 @@ export default function HomeScreen() {
       <Modal
         visible={nearbyStopsOpen}
         transparent
-        animationType="slide"
+        animationType={reduceMotionEnabled ? "none" : "slide"}
         onRequestClose={() => {
           setNearbyStopsOpen(false);
           setNearbyStops([]);
@@ -3166,6 +3191,7 @@ export default function HomeScreen() {
             >
               {nearbyStops.map((stop) => (
                 <Pressable
+                  accessibilityRole="button"
                   key={stop.id}
                   style={styles.nearbyStopChoice}
                   onPress={() => openNearbyStopChoice(stop)}
@@ -3196,7 +3222,7 @@ export default function HomeScreen() {
       <Modal
         visible={mapToolsOpen}
         transparent
-        animationType="slide"
+        animationType={reduceMotionEnabled ? "none" : "slide"}
         onRequestClose={() => setMapToolsOpen(false)}
       >
         <View style={styles.modalBackdrop}>
@@ -3237,7 +3263,7 @@ export default function HomeScreen() {
       <Modal
         visible={newPinOpen}
         transparent
-        animationType="slide"
+        animationType={reduceMotionEnabled ? "none" : "slide"}
         onRequestClose={() => setNewPinOpen(false)}
       >
         <View style={styles.modalBackdrop}>
@@ -3303,7 +3329,7 @@ export default function HomeScreen() {
       <Modal
         visible={mapPhotoViewerOpen}
         transparent={true}
-        animationType="fade"
+        animationType={reduceMotionEnabled ? "none" : "fade"}
         onRequestClose={() => setMapPhotoViewerOpen(false)}
       >
         <Pressable
@@ -3933,6 +3959,8 @@ const styles = StyleSheet.create({
   modalRow: { flexDirection: "row", gap: 10, marginTop: 6 },
 
   modalBtn: {
+    flex: 1,
+    minHeight: 44,
     backgroundColor: "black",
     paddingVertical: 12,
     borderRadius: 14,

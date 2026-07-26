@@ -31,6 +31,7 @@ import { AppCard } from "../../components/ui/app-card";
 import { AppIcon } from "../../components/ui/app-icon";
 import { Spacing, Typography } from "../../constants/theme";
 import { useAppTheme } from "../../context/theme-context";
+import { useReducedMotion } from "../../hooks/use-reduced-motion";
 import { supabase } from "../../utils/supabase";
 
 type ChipProps = {
@@ -293,6 +294,7 @@ export default function StopScreen() {
   const router = useRouter();
   const isFocused = useIsFocused();
   const { colors } = useAppTheme();
+  const reduceMotionEnabled = useReducedMotion();
   const params = useLocalSearchParams();
 
   const stopId = String(params.id ?? "");
@@ -1696,7 +1698,7 @@ export default function StopScreen() {
                       style={styles.v2ActionButton}
                       variant="secondary"
                     >
-                      Manage DZ
+                      Edit DZ
                     </AppButton>
                   </View>
                 </>
@@ -2053,7 +2055,7 @@ export default function StopScreen() {
 
           <Modal
             visible={additionalIntelOpen}
-            animationType="slide"
+            animationType={reduceMotionEnabled ? "none" : "slide"}
             onRequestClose={() => setAdditionalIntelOpen(false)}
           >
             <ModalSafeAreaScreen>
@@ -2169,7 +2171,11 @@ export default function StopScreen() {
             </ModalSafeAreaScreen>
           </Modal>
 
-          <Modal visible={showManageStop} animationType="slide" onRequestClose={closeManageStop}>
+          <Modal
+            visible={showManageStop}
+            animationType={reduceMotionEnabled ? "none" : "slide"}
+            onRequestClose={closeManageStop}
+          >
             <ModalSafeAreaScreen>
               <KeyboardAvoidingView
                 style={styles.additionalIntelScreen}
@@ -2377,7 +2383,7 @@ export default function StopScreen() {
 
           <Modal
             visible={entrancePickerOpen}
-            animationType="slide"
+            animationType={reduceMotionEnabled ? "none" : "slide"}
             onRequestClose={closeEntrancePicker}
           >
             <View style={styles.pickerScreen}>
@@ -2675,6 +2681,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   secondaryBtn: {
+    minHeight: 44,
     backgroundColor: "white",
     borderWidth: 1,
     borderColor: "#ddd",
@@ -2769,10 +2776,12 @@ const styles = StyleSheet.create({
   deliveryTypeChipRow: { flexDirection: "row", flexWrap: "nowrap", gap: 4 },
   deliveryTypeChip: { paddingLeft: 2, paddingRight: 6 },
   chip: {
+    minHeight: 44,
     paddingVertical: 8,
     paddingHorizontal: 8,
     borderRadius: 999,
     borderWidth: 1,
+    justifyContent: "center",
   },
   chipInactive: { borderColor: "#ddd", backgroundColor: "white" },
   chipActive: { borderColor: "black", backgroundColor: "black" },
@@ -2835,6 +2844,7 @@ const styles = StyleSheet.create({
   },
   voteBtn: {
     flex: 1,
+    minHeight: 44,
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,

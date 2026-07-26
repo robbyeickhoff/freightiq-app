@@ -95,7 +95,6 @@ export function StopIntelSummary({
             <View style={styles.itemCopy}>
               <Text style={[styles.label, { color: colors.textSecondary }]}>{item.label}</Text>
               <Text
-                numberOfLines={1}
                 style={[
                   styles.value,
                   { color: item.complete ? colors.textPrimary : colors.textSecondary },

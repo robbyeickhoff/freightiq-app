@@ -7,6 +7,7 @@ import { AppChoiceChip } from "@/components/ui/app-choice-chip";
 import { AppIcon, type AppIconName } from "@/components/ui/app-icon";
 import { Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 export type QuickIntelSectionKey = "truckFit" | "deliveryZone" | "deliveryType" | "backIn";
 
@@ -59,6 +60,7 @@ export function QuickIntelSheet({
   visible,
 }: QuickIntelSheetProps) {
   const { colors } = useAppTheme();
+  const reduceMotionEnabled = useReducedMotion();
   const completionBySection: Record<QuickIntelSectionKey, boolean> = {
     truckFit: Boolean(truckFit),
     deliveryZone: deliveryZoneSet,
@@ -165,7 +167,7 @@ export function QuickIntelSheet({
 
   return (
     <Modal
-      animationType="slide"
+      animationType={reduceMotionEnabled ? "none" : "slide"}
       onRequestClose={onCancel}
       presentationStyle="fullScreen"
       visible={visible}
@@ -226,7 +228,7 @@ export function QuickIntelSheet({
             Cancel
           </AppButton>
           <AppButton loading={saving} onPress={onSave} style={styles.saveButton}>
-            Save Quick Intel
+            Save Intel
           </AppButton>
         </View>
       </SafeAreaView>
