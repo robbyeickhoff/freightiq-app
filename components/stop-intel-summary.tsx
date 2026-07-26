@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 
 import { AppButton } from "@/components/ui/app-button";
 import { AppCard } from "@/components/ui/app-card";
@@ -22,6 +22,8 @@ export function StopIntelSummary({
   truckFit,
 }: StopIntelSummaryProps) {
   const { colors } = useAppTheme();
+  const { fontScale } = useWindowDimensions();
+  const usesAccessibilityLayout = fontScale >= 1.5;
   const items: {
     complete: boolean;
     icon: AppIconName;
@@ -63,7 +65,7 @@ export function StopIntelSummary({
 
   return (
     <AppCard contentStyle={styles.card}>
-      <View style={styles.headingRow}>
+      <View style={[styles.headingRow, usesAccessibilityLayout && styles.accessibilityStack]}>
         <View style={styles.headingCopy}>
           <Text style={[styles.eyebrow, { color: colors.textSecondary }]}>CORE INTEL</Text>
           <Text style={[styles.heading, { color: colors.textPrimary }]}>Operational summary</Text>
@@ -84,7 +86,10 @@ export function StopIntelSummary({
 
       <View style={styles.grid}>
         {items.map((item) => (
-          <View key={item.label} style={styles.item}>
+          <View
+            key={item.label}
+            style={[styles.item, usesAccessibilityLayout && styles.accessibilityItem]}
+          >
             <View style={[styles.icon, { backgroundColor: colors.accentMuted }]}>
               <AppIcon
                 color={item.complete ? colors.accentStrong : colors.textSecondary}
@@ -161,6 +166,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.xs,
     paddingRight: Spacing.xs,
+  },
+  accessibilityStack: {
+    alignItems: "flex-start",
+    flexDirection: "column",
+  },
+  accessibilityItem: {
+    alignItems: "flex-start",
+    width: "100%",
   },
   icon: {
     width: 36,

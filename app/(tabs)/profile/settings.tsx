@@ -1,5 +1,13 @@
 import { useRouter } from "expo-router";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Radius, Sizes, Spacing, Typography } from "@/constants/theme";
@@ -26,6 +34,8 @@ function SettingsRow({
   value,
 }: SettingsRowProps) {
   const { colors } = useAppTheme();
+  const { fontScale } = useWindowDimensions();
+  const usesAccessibilityLayout = fontScale >= 1.5;
 
   return (
     <Pressable
@@ -34,6 +44,7 @@ function SettingsRow({
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
+        usesAccessibilityLayout ? styles.accessibilityRow : null,
         { backgroundColor: colors.surfaceElevated },
         pressed ? { backgroundColor: colors.accentMuted } : null,
       ]}
@@ -41,9 +52,21 @@ function SettingsRow({
       <View style={[styles.iconContainer, { backgroundColor: colors.accentMuted }]}>
         <AppIcon name={icon} size={22} color={colors.accentStrong} />
       </View>
-      <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>{label}</Text>
-      {value ? <Text style={[styles.rowValue, { color: colors.textSecondary }]}>{value}</Text> : null}
-      {showsChevron ? (
+      <View style={[styles.rowCopy, usesAccessibilityLayout ? styles.accessibilityRowCopy : null]}>
+        <Text
+          style={[
+            styles.rowLabel,
+            usesAccessibilityLayout && styles.accessibilityRowLabel,
+            { color: colors.textPrimary },
+          ]}
+        >
+          {label}
+        </Text>
+        {value ? (
+          <Text style={[styles.rowValue, { color: colors.textSecondary }]}>{value}</Text>
+        ) : null}
+      </View>
+      {showsChevron && !usesAccessibilityLayout ? (
         <AppIcon name="chevronRight" size={24} color={colors.textSecondary} />
       ) : null}
     </Pressable>
@@ -73,10 +96,7 @@ export default function SettingsScreen() {
       edges={["bottom"]}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <ScrollView
-        contentContainerStyle={styles.content}
-        contentInsetAdjustmentBehavior="automatic"
-      >
+      <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
         <Text style={[styles.intro, { color: colors.textSecondary }]}>
           Manage how FreightIQ looks, find support, and control your account.
         </Text>
@@ -144,12 +164,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     gap: Spacing.sm,
   },
+  accessibilityRow: {
+    alignItems: "flex-start",
+    flexDirection: "column",
+    paddingVertical: Spacing.md,
+  },
   iconContainer: {
     width: Sizes.minimumTouchTarget,
     height: Sizes.minimumTouchTarget,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: Radius.medium,
+  },
+  rowCopy: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  accessibilityRowCopy: {
+    alignSelf: "stretch",
+    flex: 0,
+    flexDirection: "column",
+    alignItems: "flex-start",
   },
   rowLabel: {
     flex: 1,
@@ -158,5 +196,9 @@ const styles = StyleSheet.create({
   },
   rowValue: {
     ...Typography.body,
+  },
+  accessibilityRowLabel: {
+    flex: 0,
+    width: "100%",
   },
 });

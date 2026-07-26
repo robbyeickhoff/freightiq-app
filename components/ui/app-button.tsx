@@ -4,6 +4,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   type PressableProps,
   type StyleProp,
   type TextStyle,
@@ -42,8 +43,10 @@ export function AppButton({
   ...props
 }: AppButtonProps) {
   const { colors } = useAppTheme();
+  const { fontScale } = useWindowDimensions();
   const [isFocused, setIsFocused] = useState(false);
   const interactionDisabled = disabled || loading;
+  const usesAccessibilityLayout = fontScale >= 1.5 && size !== "icon";
 
   const variantColors = {
     primary: {
@@ -110,6 +113,7 @@ export function AppButton({
           borderWidth: isFocused ? 2 : Borders.thin,
         },
         fullWidth ? styles.fullWidth : null,
+        usesAccessibilityLayout ? styles.accessibilityLayout : null,
         pressed ? styles.pressed : null,
         style,
       ]}
@@ -118,7 +122,7 @@ export function AppButton({
       {loading ? <ActivityIndicator color={activeColors.labelColor} size="small" /> : null}
       {isTextLabel ? (
         <Text
-          numberOfLines={1}
+          numberOfLines={usesAccessibilityLayout ? undefined : 1}
           style={[styles.label, { color: activeColors.labelColor }, textStyle]}
         >
           {children}
@@ -154,11 +158,16 @@ const styles = StyleSheet.create({
   fullWidth: {
     alignSelf: "stretch",
   },
+  accessibilityLayout: {
+    height: "auto",
+    paddingVertical: Spacing.sm,
+  },
   pressed: {
     opacity: 0.8,
   },
   label: {
     ...Typography.buttonLabel,
+    flexShrink: 1,
     textAlign: "center",
   },
 });

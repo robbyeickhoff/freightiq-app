@@ -50,6 +50,8 @@ The missing-core-intel prompt and Quick Intel flow have passed visual and functi
 The Stop Intel summary has passed visual and functional iPhone validation, including the Core Intel hierarchy, Delivery Zone actions, Additional Driver Intel separation, Driver Reports, Manage Stop, and the full-width Back to Map action.
 The standard Apple map now follows the resolved FreightIQ Light or Dark appearance through native MapKit styling and has passed iPhone visual validation.
 Reduced-motion handling, larger-text resilience, semantic control labels, and minimum touch-target corrections are implemented and statically validated across the redesigned workflow.
+Maximum iPhone accessibility text size has passed visual and functional validation across the selected-stop preview, Stop Intel summary, Quick Intel, Settings, and Help Center. The preview remains below the search and system status areas, exposes an obvious internal scroll region, and preserves every action. Normal-size regression testing has also passed on iPhone.
+Changing the iPhone text size while Expo is already running currently requires an Expo reload before the new scale appears. Dynamic text-size switching remains to be verified in a standalone iPhone build before final accessibility acceptance.
 
 The initial vertical slice covers:
 
@@ -95,9 +97,10 @@ The approved follow-on refresh also covers:
 Run the remaining approved accessibility and device matrix across the complete V2 workflow:
 
 - Pixel
+- Standalone iPhone dynamic text-size switching
 - Light, Dark, and System appearance modes
 - Standard and satellite map views
-- Large text
+- Pixel large text
 - Reduced motion
 - VoiceOver and TalkBack labels for icon-only controls
 - Touch-target, contrast, loading, disabled, selected, error, success, and saved states

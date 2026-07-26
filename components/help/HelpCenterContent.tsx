@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppCard } from "@/components/ui/app-card";
@@ -19,6 +19,8 @@ type HelpCenterContentProps = {
   navigationHandlers?: HelpCenterNavigationHandlers;
 };
 
+const HELP_TITLE_MAX_FONT_MULTIPLIER = 1.8;
+
 const defaultNavigationHandlers: HelpCenterNavigationHandlers = {
   onPressGettingStarted: () => router.push("/getting-started"),
   onPressFindingStops: () => router.push("/finding-stops"),
@@ -37,6 +39,8 @@ type GuideRowProps = {
 
 function GuideRow({ accessibilityHint, icon, onPress, subtitle, title }: GuideRowProps) {
   const { colors } = useAppTheme();
+  const { fontScale } = useWindowDimensions();
+  const usesAccessibilityLayout = fontScale >= 1.5;
 
   return (
     <AppCard clipContent>
@@ -46,6 +50,7 @@ function GuideRow({ accessibilityHint, icon, onPress, subtitle, title }: GuideRo
         onPress={onPress}
         style={({ pressed }) => [
           styles.guideRow,
+          usesAccessibilityLayout ? styles.accessibilityGuideRow : null,
           { backgroundColor: colors.surfaceElevated },
           pressed ? { backgroundColor: colors.accentMuted } : null,
         ]}
@@ -53,11 +58,18 @@ function GuideRow({ accessibilityHint, icon, onPress, subtitle, title }: GuideRo
         <View style={[styles.iconContainer, { backgroundColor: colors.accentMuted }]}>
           <AppIcon name={icon} size={23} color={colors.accentStrong} />
         </View>
-        <View style={styles.guideCopy}>
-          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{title}</Text>
+        <View style={[styles.guideCopy, usesAccessibilityLayout && styles.accessibilityGuideCopy]}>
+          <Text
+            maxFontSizeMultiplier={HELP_TITLE_MAX_FONT_MULTIPLIER}
+            style={[styles.cardTitle, { color: colors.textPrimary }]}
+          >
+            {title}
+          </Text>
           <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
         </View>
-        <AppIcon name="chevronRight" size={26} color={colors.textSecondary} />
+        {!usesAccessibilityLayout ? (
+          <AppIcon name="chevronRight" size={26} color={colors.textSecondary} />
+        ) : null}
       </Pressable>
     </AppCard>
   );
@@ -73,7 +85,12 @@ export default function HelpCenterContent({ navigationHandlers }: HelpCenterCont
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Learn FreightIQ</Text>
+        <Text
+          maxFontSizeMultiplier={HELP_TITLE_MAX_FONT_MULTIPLIER}
+          style={[styles.title, { color: colors.textPrimary }]}
+        >
+          Learn FreightIQ
+        </Text>
         <Text style={[styles.helperText, { color: colors.textSecondary }]}>
           Practical guides to help you get the most out of FreightIQ in the field.
         </Text>
@@ -155,6 +172,11 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     gap: Spacing.sm,
   },
+  accessibilityGuideRow: {
+    alignItems: "flex-start",
+    flexDirection: "column",
+    paddingVertical: Spacing.md,
+  },
   iconContainer: {
     width: Sizes.minimumTouchTarget,
     height: Sizes.minimumTouchTarget,
@@ -164,6 +186,10 @@ const styles = StyleSheet.create({
   },
   guideCopy: {
     flex: 1,
+  },
+  accessibilityGuideCopy: {
+    alignSelf: "stretch",
+    flex: 0,
   },
   cardTitle: {
     ...Typography.body,

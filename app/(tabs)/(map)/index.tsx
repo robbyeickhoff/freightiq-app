@@ -19,9 +19,11 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Supercluster from "supercluster";
 import { AppButton } from "@/components/ui/app-button";
 import { AppCard } from "@/components/ui/app-card";
@@ -100,6 +102,7 @@ type DeliveryZoneInspectionSource = "preview" | "stop-intel";
 const PINS_KEY = "mfi:pins:v1";
 const VIEW_CACHE_KEY = "mfi:view-cache:v1";
 const DUPLICATE_DISTANCE_FEET = 250;
+const MAP_SEARCH_TOP = 54;
 
 const MAPBOX_TOKEN = (Constants.expoConfig?.extra?.mapboxPublicToken as string | undefined) ?? "";
 
@@ -368,7 +371,10 @@ function resolveStopHasIntel(
 export default function HomeScreen() {
   const router = useRouter();
   const { colorScheme, colors } = useAppTheme();
+  const { fontScale } = useWindowDimensions();
+  const safeAreaInsets = useSafeAreaInsets();
   const reduceMotionEnabled = useReducedMotion();
+  const usesAccessibilityLayout = fontScale >= 1.5;
   const params = useLocalSearchParams();
   const mergeModeParam = String(params.mergeMode ?? "") === "1";
   const mergeSourceStopIdParam = String(params.mergeSourceStopId ?? "");
@@ -459,6 +465,7 @@ export default function HomeScreen() {
   const [newPinAddress, setNewPinAddress] = useState("");
 
   const [query, setQuery] = useState("");
+  const [searchInputHeight, setSearchInputHeight] = useState(48);
   const [freightIqResults, setFreightIqResults] = useState<Pin[]>([]);
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -2314,13 +2321,7 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <StatusBar
         animated
-        style={
-          mapType === "standard"
-            ? colorScheme === "dark"
-              ? "light"
-              : "dark"
-            : "light"
-        }
+        style={mapType === "standard" ? (colorScheme === "dark" ? "light" : "dark") : "light"}
       />
 
       {!isMapReady && (
@@ -2561,6 +2562,7 @@ export default function HomeScreen() {
         onResponderRelease={() => Keyboard.dismiss()}
       >
         <TextInput
+          onLayout={(event) => setSearchInputHeight(event.nativeEvent.layout.height)}
           value={query}
           onChangeText={setQuery}
           placeholder="Search business name or address…"
@@ -2590,7 +2592,9 @@ export default function HomeScreen() {
                 hitSlop={10}
                 onPress={() => setRecentCollapsed((v) => !v)}
               >
-                <Text style={[styles.recentTitle, { color: colors.textPrimary }]}>Recent Intel</Text>
+                <Text style={[styles.recentTitle, { color: colors.textPrimary }]}>
+                  Recent Intel
+                </Text>
               </Pressable>
 
               <View style={styles.recentHeaderActions}>
@@ -2798,6 +2802,12 @@ export default function HomeScreen() {
             {
               backgroundColor: colors.surfaceElevated,
               borderColor: colors.border,
+              top: usesAccessibilityLayout
+                ? Math.max(
+                    Math.max(safeAreaInsets.top, Platform.OS === "ios" ? 59 : 24) + 8,
+                    MAP_SEARCH_TOP + searchInputHeight + 8,
+                  )
+                : undefined,
               transform: [{ translateY: previewTranslateY }],
             },
             Elevation.sheet,
@@ -2814,276 +2824,323 @@ export default function HomeScreen() {
             <AppIcon name="close" color={colors.textSecondary} />
           </AppButton>
 
-          <View style={styles.previewDragArea}>
-            <View {...previewPanResponder.panHandlers} style={styles.previewDragGrabZone}>
-              <View style={[styles.previewHandle, { backgroundColor: colors.border }]} />
-            </View>
+          <ScrollView
+            bounces={usesAccessibilityLayout}
+            contentContainerStyle={styles.previewScrollContent}
+            scrollEnabled={usesAccessibilityLayout && !previewCollapsed}
+            showsVerticalScrollIndicator={usesAccessibilityLayout && !previewCollapsed}
+            style={[
+              styles.previewScroll,
+              usesAccessibilityLayout && styles.previewAccessibilityScroll,
+            ]}
+          >
+            <View style={styles.previewDragArea}>
+              <View {...previewPanResponder.panHandlers} style={styles.previewDragGrabZone}>
+                <View style={[styles.previewHandle, { backgroundColor: colors.border }]} />
+              </View>
 
-            <View style={styles.previewHeader}>
-              <Text
-                style={[styles.previewTitle, { color: colors.textPrimary }]}
-                numberOfLines={1}
-              >
-                {selectedStop?.name}
-              </Text>
-              <Text
-                style={[styles.previewAddress, { color: colors.textSecondary }]}
-                numberOfLines={previewCollapsed ? 1 : 2}
-              >
-                {formatAddressForDisplay(selectedStop?.address ?? "No address saved")}
-              </Text>
-            </View>
-          </View>
-
-          {previewCollapsed ? (
-            <View {...previewPanResponder.panHandlers} style={styles.previewCollapsedTapArea}>
-              <Pressable
-                accessibilityLabel="Expand stop preview"
-                accessibilityRole="button"
-                hitSlop={12}
-                onPress={expandPreviewCard}
-              >
+              <View style={styles.previewHeader}>
                 <Text
-                  style={[styles.previewCollapsedHint, { color: colors.textSecondary }]}
+                  style={[styles.previewTitle, { color: colors.textPrimary }]}
+                  numberOfLines={previewCollapsed ? 1 : usesAccessibilityLayout ? undefined : 1}
                 >
-                  Drag up or tap to expand
+                  {selectedStop?.name}
                 </Text>
-              </Pressable>
+                <Text
+                  style={[styles.previewAddress, { color: colors.textSecondary }]}
+                  numberOfLines={previewCollapsed ? 1 : usesAccessibilityLayout ? undefined : 2}
+                >
+                  {formatAddressForDisplay(selectedStop?.address ?? "No address saved")}
+                </Text>
+              </View>
             </View>
-          ) : (
-            <>
-              {selectedStop?.id === "temp-search-result" ? (
-                <View style={styles.previewMetaBlock}>
-                  <Text style={[styles.previewMetaLine, { color: colors.textSecondary }]}>
-                    Delivery Zone: {selectedEntrance ? "Saved" : "None"}
-                  </Text>
 
-                  {selectedReportStats.deliveryType ? (
+            {previewCollapsed ? (
+              <View {...previewPanResponder.panHandlers} style={styles.previewCollapsedTapArea}>
+                <Pressable
+                  accessibilityLabel="Expand stop preview"
+                  accessibilityRole="button"
+                  hitSlop={12}
+                  onPress={expandPreviewCard}
+                >
+                  <Text style={[styles.previewCollapsedHint, { color: colors.textSecondary }]}>
+                    Drag up or tap to expand
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                {selectedStop?.id === "temp-search-result" ? (
+                  <View style={styles.previewMetaBlock}>
                     <Text style={[styles.previewMetaLine, { color: colors.textSecondary }]}>
-                      Delivery Type: {selectedReportStats.deliveryType}
+                      Delivery Zone: {selectedEntrance ? "Saved" : "None"}
                     </Text>
-                  ) : null}
 
-                  <Text style={[styles.previewMetaLine, { color: colors.textSecondary }]}>
-                    Driver Reports: {selectedReportStats.count}
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.previewOperationalSummary}>
-                  <View style={styles.previewCompletionRow}>
-                    <View style={styles.previewCompletionCopy}>
-                      <AppIcon
-                        color={
-                          selectedCoreIntelCount === 4
-                            ? colors.success
-                            : colors.textSecondary
-                        }
-                        name={selectedCoreIntelCount === 4 ? "check" : "incomplete"}
-                        size={18}
-                      />
-                      <Text style={[styles.previewCompletionText, { color: colors.textPrimary }]}>
-                        {selectedCoreIntelStatus}
+                    {selectedReportStats.deliveryType ? (
+                      <Text style={[styles.previewMetaLine, { color: colors.textSecondary }]}>
+                        Delivery Type: {selectedReportStats.deliveryType}
+                      </Text>
+                    ) : null}
+
+                    <Text style={[styles.previewMetaLine, { color: colors.textSecondary }]}>
+                      Driver Reports: {selectedReportStats.count}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.previewOperationalSummary}>
+                    <View
+                      style={[
+                        styles.previewCompletionRow,
+                        usesAccessibilityLayout && styles.previewAccessibilityStack,
+                      ]}
+                    >
+                      <View style={styles.previewCompletionCopy}>
+                        <AppIcon
+                          color={
+                            selectedCoreIntelCount === 4 ? colors.success : colors.textSecondary
+                          }
+                          name={selectedCoreIntelCount === 4 ? "check" : "incomplete"}
+                          size={18}
+                        />
+                        <Text style={[styles.previewCompletionText, { color: colors.textPrimary }]}>
+                          {selectedCoreIntelStatus}
+                        </Text>
+                      </View>
+                      <Text
+                        style={[styles.previewCompletionCount, { color: colors.textSecondary }]}
+                      >
+                        {selectedCoreIntelCount} of 4
                       </Text>
                     </View>
-                    <Text style={[styles.previewCompletionCount, { color: colors.textSecondary }]}>
-                      {selectedCoreIntelCount} of 4
-                    </Text>
-                  </View>
 
-                  <View style={styles.previewCoreGrid}>
-                    {selectedCoreIntel.map((item) => (
-                      <View key={item.label} style={styles.previewCoreItem}>
+                    <View style={styles.previewCoreGrid}>
+                      {selectedCoreIntel.map((item) => (
                         <View
+                          key={item.label}
                           style={[
-                            styles.previewCoreIcon,
-                            { backgroundColor: colors.accentMuted },
+                            styles.previewCoreItem,
+                            usesAccessibilityLayout && styles.previewAccessibilityCoreItem,
                           ]}
                         >
-                          <AppIcon
-                            color={item.complete ? colors.accentStrong : colors.textSecondary}
-                            name={item.icon}
-                            size={18}
-                          />
-                        </View>
-                        <View style={styles.previewCoreCopy}>
-                          <Text
+                          <View
                             style={[
-                              styles.previewOperationalLabel,
-                              { color: colors.textSecondary },
+                              styles.previewCoreIcon,
+                              { backgroundColor: colors.accentMuted },
                             ]}
                           >
-                            {item.label}
-                          </Text>
-                          <Text
-                            numberOfLines={1}
-                            style={[
-                              styles.previewOperationalValue,
-                              {
-                                color: item.complete
-                                  ? colors.textPrimary
-                                  : colors.textSecondary,
-                              },
-                            ]}
-                          >
-                            {item.value}
-                          </Text>
+                            <AppIcon
+                              color={item.complete ? colors.accentStrong : colors.textSecondary}
+                              name={item.icon}
+                              size={18}
+                            />
+                          </View>
+                          <View style={styles.previewCoreCopy}>
+                            <Text
+                              style={[
+                                styles.previewOperationalLabel,
+                                { color: colors.textSecondary },
+                              ]}
+                            >
+                              {item.label}
+                            </Text>
+                            <Text
+                              numberOfLines={usesAccessibilityLayout ? undefined : 1}
+                              style={[
+                                styles.previewOperationalValue,
+                                {
+                                  color: item.complete ? colors.textPrimary : colors.textSecondary,
+                                },
+                              ]}
+                            >
+                              {item.value}
+                            </Text>
+                          </View>
                         </View>
-                      </View>
-                    ))}
+                      ))}
+                    </View>
                   </View>
-                </View>
-              )}
+                )}
 
-              {selectedStop?.id !== "temp-search-result" && selectedCoreIntelCount < 4 ? (
-                <AppButton
-                  fullWidth
-                  onPress={async () => {
-                    if (!(await requireSignedIn())) return;
+                {selectedStop?.id !== "temp-search-result" && selectedCoreIntelCount < 4 ? (
+                  <AppButton
+                    fullWidth
+                    onPress={async () => {
+                      if (!(await requireSignedIn())) return;
 
-                    router.push({
-                      pathname: "/(tabs)/stop",
-                      params: {
-                        id: selectedStop?.id,
-                        lat: String(selectedStop?.lat),
-                        lng: String(selectedStop?.lng),
-                        name: selectedStop?.name,
-                        address: selectedStop?.address ?? "",
-                        quickIntel: "1",
-                        openedAt: String(Date.now()),
-                      },
-                    });
-                  }}
-                  variant="secondary"
-                >
-                  Add missing core intel
-                </AppButton>
-              ) : null}
-
-              {selectedStop?.id === "temp-search-result" ? (
-                <>
-                  <AppButton fullWidth onPress={startDropAtCenter}>
-                    Create Stop Here
+                      router.push({
+                        pathname: "/(tabs)/stop",
+                        params: {
+                          id: selectedStop?.id,
+                          lat: String(selectedStop?.lat),
+                          lng: String(selectedStop?.lng),
+                          name: selectedStop?.name,
+                          address: selectedStop?.address ?? "",
+                          quickIntel: "1",
+                          openedAt: String(Date.now()),
+                        },
+                      });
+                    }}
+                    variant="secondary"
+                  >
+                    Add missing core intel
                   </AppButton>
+                ) : null}
 
-                  <View style={styles.previewSecondaryRow}>
-                    <AppButton
-                      onPress={navToStop}
-                      size="compact"
-                      style={styles.previewSecondaryBtn}
-                      variant="secondary"
-                    >
-                      Navigate
+                {selectedStop?.id === "temp-search-result" ? (
+                  <>
+                    <AppButton fullWidth onPress={startDropAtCenter}>
+                      Create Stop Here
                     </AppButton>
 
-                    <AppButton
-                      onPress={() => {
-                        setNewPinName("");
-                        setNewPinAddress(tempSearchPin?.address ?? "");
-                        setNewPinOpen(true);
-                      }}
-                      size="compact"
-                      style={styles.previewSecondaryBtn}
-                      variant="secondary"
+                    <View
+                      style={[
+                        styles.previewSecondaryRow,
+                        usesAccessibilityLayout && styles.previewAccessibilityStack,
+                      ]}
                     >
-                      Edit Name
-                    </AppButton>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <View style={styles.previewSavedActionRow}>
-                    <AppButton
-                      onPress={() =>
-                        router.push({
-                          pathname: "/(tabs)/stop",
-                          params: {
-                            id: selectedStop?.id,
-                            lat: String(selectedStop?.lat),
-                            lng: String(selectedStop?.lng),
-                            name: selectedStop?.name,
-                            address: selectedStop?.address ?? "",
-                            openedAt: String(Date.now()),
-                          },
-                        })
-                      }
-                      size="compact"
-                      style={styles.previewSavedActionBtn}
-                    >
-                      Edit Intel
-                    </AppButton>
+                      <AppButton
+                        onPress={navToStop}
+                        size="compact"
+                        style={[
+                          styles.previewSecondaryBtn,
+                          usesAccessibilityLayout && styles.previewAccessibilityActionBtn,
+                        ]}
+                        variant="secondary"
+                      >
+                        Navigate
+                      </AppButton>
 
-                    <AppButton
-                      onPress={navToStop}
-                      size="compact"
-                      style={styles.previewSavedActionBtn}
-                      variant="secondary"
+                      <AppButton
+                        onPress={() => {
+                          setNewPinName("");
+                          setNewPinAddress(tempSearchPin?.address ?? "");
+                          setNewPinOpen(true);
+                        }}
+                        size="compact"
+                        style={[
+                          styles.previewSecondaryBtn,
+                          usesAccessibilityLayout && styles.previewAccessibilityActionBtn,
+                        ]}
+                        variant="secondary"
+                      >
+                        Edit Name
+                      </AppButton>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View
+                      style={[
+                        styles.previewSavedActionRow,
+                        usesAccessibilityLayout && styles.previewAccessibilityStack,
+                      ]}
                     >
-                      Navigate
-                    </AppButton>
-                  </View>
-
-                  <View style={styles.previewSavedActionRow}>
-                    <AppButton
-                      onPress={() =>
-                        router.push({
-                          pathname: "/(tabs)/stop",
-                          params: {
-                            id: selectedStop?.id,
-                            lat: String(selectedStop?.lat),
-                            lng: String(selectedStop?.lng),
-                            name: selectedStop?.name,
-                            address: selectedStop?.address ?? "",
-                            viewReports: "1",
-                            openedAt: String(Date.now()),
-                          },
-                        })
-                      }
-                      size="compact"
-                      style={styles.previewSavedActionBtn}
-                      variant="secondary"
-                    >
-                      {`Reports (${selectedReportStats.count})`}
-                    </AppButton>
-
-                    <AppButton
-                      loading={
-                        selectedEntranceStatus === "loading" ||
-                        selectedEntranceStatus === "idle"
-                      }
-                      onPress={() => {
-                        if (selectedEntrance && selectedStop) {
-                          enterDeliveryZoneInspection("preview", selectedStop, selectedEntrance);
-                          return;
+                      <AppButton
+                        onPress={() =>
+                          router.push({
+                            pathname: "/(tabs)/stop",
+                            params: {
+                              id: selectedStop?.id,
+                              lat: String(selectedStop?.lat),
+                              lng: String(selectedStop?.lng),
+                              name: selectedStop?.name,
+                              address: selectedStop?.address ?? "",
+                              openedAt: String(Date.now()),
+                            },
+                          })
                         }
+                        size="compact"
+                        style={[
+                          styles.previewSavedActionBtn,
+                          usesAccessibilityLayout && styles.previewAccessibilityActionBtn,
+                        ]}
+                      >
+                        Edit Intel
+                      </AppButton>
 
-                        router.push({
-                          pathname: "/(tabs)/stop",
-                          params: {
-                            id: selectedStop?.id,
-                            lat: String(selectedStop?.lat),
-                            lng: String(selectedStop?.lng),
-                            name: selectedStop?.name,
-                            address: selectedStop?.address ?? "",
-                            setDeliveryZone: "1",
-                            openedAt: String(Date.now()),
-                          },
-                        });
-                      }}
-                      size="compact"
-                      style={styles.previewSavedActionBtn}
-                      textStyle={
-                        selectedEntrance ? undefined : { color: colors.textSecondary }
-                      }
-                      variant="secondary"
+                      <AppButton
+                        onPress={navToStop}
+                        size="compact"
+                        style={[
+                          styles.previewSavedActionBtn,
+                          usesAccessibilityLayout && styles.previewAccessibilityActionBtn,
+                        ]}
+                        variant="secondary"
+                      >
+                        Navigate
+                      </AppButton>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.previewSavedActionRow,
+                        usesAccessibilityLayout && styles.previewAccessibilityStack,
+                      ]}
                     >
-                      {selectedEntrance ? "Show DZ" : "Set DZ"}
-                    </AppButton>
-                  </View>
-                </>
-              )}
+                      <AppButton
+                        onPress={() =>
+                          router.push({
+                            pathname: "/(tabs)/stop",
+                            params: {
+                              id: selectedStop?.id,
+                              lat: String(selectedStop?.lat),
+                              lng: String(selectedStop?.lng),
+                              name: selectedStop?.name,
+                              address: selectedStop?.address ?? "",
+                              viewReports: "1",
+                              openedAt: String(Date.now()),
+                            },
+                          })
+                        }
+                        size="compact"
+                        style={[
+                          styles.previewSavedActionBtn,
+                          usesAccessibilityLayout && styles.previewAccessibilityActionBtn,
+                        ]}
+                        variant="secondary"
+                      >
+                        {`Reports (${selectedReportStats.count})`}
+                      </AppButton>
 
-            </>
-          )}
+                      <AppButton
+                        loading={
+                          selectedEntranceStatus === "loading" || selectedEntranceStatus === "idle"
+                        }
+                        onPress={() => {
+                          if (selectedEntrance && selectedStop) {
+                            enterDeliveryZoneInspection("preview", selectedStop, selectedEntrance);
+                            return;
+                          }
+
+                          router.push({
+                            pathname: "/(tabs)/stop",
+                            params: {
+                              id: selectedStop?.id,
+                              lat: String(selectedStop?.lat),
+                              lng: String(selectedStop?.lng),
+                              name: selectedStop?.name,
+                              address: selectedStop?.address ?? "",
+                              setDeliveryZone: "1",
+                              openedAt: String(Date.now()),
+                            },
+                          });
+                        }}
+                        size="compact"
+                        style={[
+                          styles.previewSavedActionBtn,
+                          usesAccessibilityLayout && styles.previewAccessibilityActionBtn,
+                        ]}
+                        textStyle={selectedEntrance ? undefined : { color: colors.textSecondary }}
+                        variant="secondary"
+                      >
+                        {selectedEntrance ? "Show DZ" : "Set DZ"}
+                      </AppButton>
+                    </View>
+                  </>
+                )}
+              </>
+            )}
+          </ScrollView>
         </Animated.View>
       ) : null}
 
@@ -3479,7 +3536,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#ff7a00",
   },
 
-  searchWrap: { position: "absolute", top: 54, left: 12, right: 12, gap: 10 },
+  searchWrap: {
+    position: "absolute",
+    top: MAP_SEARCH_TOP,
+    left: 12,
+    right: 12,
+    gap: 10,
+  },
 
   searchInput: {
     borderRadius: 14,
@@ -3516,8 +3579,7 @@ const styles = StyleSheet.create({
   recentName: { fontWeight: "900" },
   recentMeta: { fontSize: 12 },
 
-  resultsCard: {
-  },
+  resultsCard: {},
 
   resultsLabel: {
     padding: 10,
@@ -3697,6 +3759,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 12,
   },
+  previewScroll: {
+    flexShrink: 1,
+  },
+  previewAccessibilityScroll: {
+    flex: 1,
+  },
+  previewScrollContent: {
+    gap: 12,
+  },
 
   previewDragArea: {
     gap: 6,
@@ -3843,6 +3914,18 @@ const styles = StyleSheet.create({
 
   previewSavedActionBtn: {
     flex: 1,
+  },
+  previewAccessibilityStack: {
+    alignItems: "stretch",
+    flexDirection: "column",
+  },
+  previewAccessibilityCoreItem: {
+    alignItems: "flex-start",
+    width: "100%",
+  },
+  previewAccessibilityActionBtn: {
+    flex: 0,
+    width: "100%",
   },
 
   nearbyStopChoice: {

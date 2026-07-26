@@ -16,16 +16,14 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { MapIcon } from "../../components/MapIcon";
 import { StopIntelSummary } from "../../components/stop-intel-summary";
-import {
-  QuickIntelSheet,
-  type QuickIntelSectionKey,
-} from "../../components/quick-intel-sheet";
+import { QuickIntelSheet, type QuickIntelSectionKey } from "../../components/quick-intel-sheet";
 import { AppButton } from "../../components/ui/app-button";
 import { AppCard } from "../../components/ui/app-card";
 import { AppIcon } from "../../components/ui/app-icon";
@@ -294,7 +292,9 @@ export default function StopScreen() {
   const router = useRouter();
   const isFocused = useIsFocused();
   const { colors } = useAppTheme();
+  const { fontScale } = useWindowDimensions();
   const reduceMotionEnabled = useReducedMotion();
+  const usesAccessibilityLayout = fontScale >= 1.5;
   const params = useLocalSearchParams();
 
   const stopId = String(params.id ?? "");
@@ -406,13 +406,13 @@ export default function StopScreen() {
   const reportIsSaved = Boolean(myReportId && savedReportSnapshot === currentReportSnapshot);
   const reportHasContent = Boolean(
     deliverFromType ||
-      deliverFromDetails ||
-      deliveryType ||
-      approachHint ||
-      backInRequired !== null ||
-      truckFit ||
-      contact ||
-      notes,
+    deliverFromDetails ||
+    deliveryType ||
+    approachHint ||
+    backInRequired !== null ||
+    truckFit ||
+    contact ||
+    notes,
   );
   const reportSaveLabel = loading
     ? "Saving..."
@@ -1584,9 +1584,7 @@ export default function StopScreen() {
             <StopIntelSummary
               backInRequired={backInRequired}
               deliveryType={deliveryType}
-              deliveryZoneSet={
-                typeof entranceLat === "number" && typeof entranceLng === "number"
-              }
+              deliveryZoneSet={typeof entranceLat === "number" && typeof entranceLng === "number"}
               onOpenQuickIntel={() => void openQuickIntelFromSummary()}
               truckFit={truckFit}
             />
@@ -1654,7 +1652,9 @@ export default function StopScreen() {
                         showsScale={false}
                         loadingEnabled
                       >
-                        <Marker coordinate={{ latitude: previewStopLat, longitude: previewStopLng }}>
+                        <Marker
+                          coordinate={{ latitude: previewStopLat, longitude: previewStopLng }}
+                        >
                           <View style={styles.deliveryZonePreviewStopMarker}>
                             <View style={styles.deliveryZonePreviewStopDot} />
                           </View>
@@ -1671,7 +1671,12 @@ export default function StopScreen() {
                     ) : null}
                   </View>
 
-                  <View style={styles.v2ActionRow}>
+                  <View
+                    style={[
+                      styles.v2ActionRow,
+                      usesAccessibilityLayout && styles.accessibilityStack,
+                    ]}
+                  >
                     <AppButton
                       onPress={() =>
                         router.navigate({
@@ -1687,7 +1692,10 @@ export default function StopScreen() {
                         })
                       }
                       size="compact"
-                      style={styles.v2ActionButton}
+                      style={[
+                        styles.v2ActionButton,
+                        usesAccessibilityLayout && styles.accessibilityActionButton,
+                      ]}
                       variant="secondary"
                     >
                       View DZ
@@ -1695,7 +1703,10 @@ export default function StopScreen() {
                     <AppButton
                       onPress={() => void openEntrancePicker()}
                       size="compact"
-                      style={styles.v2ActionButton}
+                      style={[
+                        styles.v2ActionButton,
+                        usesAccessibilityLayout && styles.accessibilityActionButton,
+                      ]}
                       variant="secondary"
                     >
                       Edit DZ
@@ -1715,6 +1726,7 @@ export default function StopScreen() {
                 accessibilityRole="button"
                 style={({ pressed }) => [
                   styles.v2DisclosureRow,
+                  usesAccessibilityLayout ? styles.accessibilityDisclosureRow : null,
                   pressed ? styles.v2Pressed : null,
                 ]}
                 onPress={() => setAdditionalIntelOpen(true)}
@@ -1727,14 +1739,19 @@ export default function StopScreen() {
                     Delivery details, approach, contact, and notes
                   </Text>
                 </View>
-                <AppIcon color={colors.textSecondary} name="chevronRight" />
+                {!usesAccessibilityLayout ? (
+                  <AppIcon color={colors.textSecondary} name="chevronRight" />
+                ) : null}
               </Pressable>
 
               {reportIsSaved ? (
                 <View
                   accessible
                   accessibilityLabel="Report saved"
-                  style={styles.v2SavedStatus}
+                  style={[
+                    styles.v2SavedStatus,
+                    usesAccessibilityLayout && styles.accessibilitySavedStatus,
+                  ]}
                 >
                   <AppIcon color={colors.success} name="check" size={18} />
                   <Text style={[styles.v2SavedStatusText, { color: colors.textSecondary }]}>
@@ -1774,6 +1791,7 @@ export default function StopScreen() {
                 accessibilityState={{ expanded: reportsExpanded }}
                 style={({ pressed }) => [
                   styles.disclosureHeader,
+                  usesAccessibilityLayout ? styles.accessibilityDisclosureHeader : null,
                   pressed ? styles.disclosureRowPressed : null,
                 ]}
                 onPress={() => setReportsExpanded((v) => !v)}
@@ -1832,9 +1850,7 @@ export default function StopScreen() {
                               </Text>
                             ) : null}
 
-                            <Text
-                              style={[styles.reputationText, { color: colors.textSecondary }]}
-                            >
+                            <Text style={[styles.reputationText, { color: colors.textSecondary }]}>
                               Reputation {rep}
                             </Text>
                             <Text style={[styles.reportMeta, { color: colors.textSecondary }]}>
@@ -1844,7 +1860,9 @@ export default function StopScreen() {
                           </View>
 
                           {index === 0 ? (
-                            <View style={[styles.topBadge, { backgroundColor: colors.accentMuted }]}>
+                            <View
+                              style={[styles.topBadge, { backgroundColor: colors.accentMuted }]}
+                            >
                               <Text style={[styles.topBadgeText, { color: colors.accentStrong }]}>
                                 Top
                               </Text>
@@ -1956,9 +1974,7 @@ export default function StopScreen() {
                                 styles.voteBtnText,
                                 {
                                   color:
-                                    stats.myVote === 1
-                                      ? colors.accentStrong
-                                      : colors.textPrimary,
+                                    stats.myVote === 1 ? colors.accentStrong : colors.textPrimary,
                                 },
                               ]}
                             >
@@ -1986,9 +2002,7 @@ export default function StopScreen() {
                                 styles.voteBtnText,
                                 {
                                   color:
-                                    stats.myVote === -1
-                                      ? colors.accentStrong
-                                      : colors.textPrimary,
+                                    stats.myVote === -1 ? colors.accentStrong : colors.textPrimary,
                                 },
                               ]}
                             >
@@ -2008,6 +2022,7 @@ export default function StopScreen() {
                 accessibilityRole="button"
                 style={({ pressed }) => [
                   styles.disclosureRow,
+                  usesAccessibilityLayout ? styles.accessibilityDisclosureRow : null,
                   {
                     backgroundColor: colors.surfaceElevated,
                     borderColor: colors.border,
@@ -2022,7 +2037,9 @@ export default function StopScreen() {
                 <Text style={[styles.disclosureLabel, { color: colors.textPrimary }]}>
                   Manage Stop
                 </Text>
-                <AppIcon color={colors.textSecondary} name="chevronRight" />
+                {!usesAccessibilityLayout ? (
+                  <AppIcon color={colors.textSecondary} name="chevronRight" />
+                ) : null}
               </Pressable>
             )}
 
@@ -2365,9 +2382,7 @@ export default function StopScreen() {
             address={displayAddress}
             backInRequired={backInRequired}
             deliveryType={deliveryType}
-            deliveryZoneSet={
-              typeof entranceLat === "number" && typeof entranceLng === "number"
-            }
+            deliveryZoneSet={typeof entranceLat === "number" && typeof entranceLng === "number"}
             initialOrder={quickIntelOrder}
             onBackInChange={setBackInRequired}
             onCancel={() => void cancelQuickIntel()}
@@ -2566,6 +2581,28 @@ const styles = StyleSheet.create({
   v2SavedStatusText: {
     ...Typography.supporting,
     fontWeight: "700",
+  },
+  accessibilityStack: {
+    alignItems: "stretch",
+    flexDirection: "column",
+  },
+  accessibilityActionButton: {
+    flex: 0,
+    width: "100%",
+  },
+  accessibilityDisclosureRow: {
+    alignItems: "flex-start",
+    flexDirection: "column",
+    paddingVertical: Spacing.sm,
+  },
+  accessibilitySavedStatus: {
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+  },
+  accessibilityDisclosureHeader: {
+    alignItems: "flex-start",
+    flexDirection: "column",
+    gap: Spacing.xs,
   },
 
   card: {

@@ -1,4 +1,4 @@
-import { Modal, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppButton } from "@/components/ui/app-button";
@@ -60,7 +60,9 @@ export function QuickIntelSheet({
   visible,
 }: QuickIntelSheetProps) {
   const { colors } = useAppTheme();
+  const { fontScale } = useWindowDimensions();
   const reduceMotionEnabled = useReducedMotion();
+  const usesAccessibilityLayout = fontScale >= 1.5;
   const completionBySection: Record<QuickIntelSectionKey, boolean> = {
     truckFit: Boolean(truckFit),
     deliveryZone: deliveryZoneSet,
@@ -75,7 +77,7 @@ export function QuickIntelSheet({
     onChange: (value: string) => void,
   ) {
     return (
-      <View style={styles.choiceGrid}>
+      <View style={[styles.choiceGrid, usesAccessibilityLayout && styles.accessibilityChoiceGrid]}>
         {options.map((option) => (
           <AppChoiceChip
             key={option}
@@ -83,7 +85,7 @@ export function QuickIntelSheet({
             label={option}
             onPress={() => onChange(option)}
             selected={selectedValue === option}
-            style={styles.choice}
+            style={[styles.choice, usesAccessibilityLayout && styles.accessibilityChoice]}
           />
         ))}
       </View>
@@ -143,7 +145,9 @@ export function QuickIntelSheet({
         ) : null}
 
         {sectionKey === "deliveryZone" ? (
-          <View style={styles.deliveryZoneRow}>
+          <View
+            style={[styles.deliveryZoneRow, usesAccessibilityLayout && styles.accessibilityStack]}
+          >
             <View style={styles.deliveryZoneCopy}>
               <Text style={[styles.deliveryZoneValue, { color: colors.textPrimary }]}>
                 {deliveryZoneSet ? "Saved" : "Not set"}
@@ -173,16 +177,26 @@ export function QuickIntelSheet({
       visible={visible}
     >
       <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <View
+          style={[
+            styles.header,
+            usesAccessibilityLayout && styles.accessibilityHeader,
+            { borderBottomColor: colors.border },
+          ]}
+        >
           <View style={styles.headerCopy}>
             <Text style={[styles.title, { color: colors.textPrimary }]}>Quick Intel</Text>
-            <Text numberOfLines={1} style={[styles.stopName, { color: colors.textPrimary }]}>
-              {stopName}
-            </Text>
-            {address ? (
-              <Text numberOfLines={2} style={[styles.address, { color: colors.textSecondary }]}>
-                {address}
-              </Text>
+            {!usesAccessibilityLayout ? (
+              <>
+                <Text numberOfLines={1} style={[styles.stopName, { color: colors.textPrimary }]}>
+                  {stopName}
+                </Text>
+                {address ? (
+                  <Text numberOfLines={2} style={[styles.address, { color: colors.textSecondary }]}>
+                    {address}
+                  </Text>
+                ) : null}
+              </>
             ) : null}
           </View>
           <AppButton
@@ -195,11 +209,17 @@ export function QuickIntelSheet({
           </AppButton>
         </View>
 
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.progressRow}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          {usesAccessibilityLayout ? (
+            <View style={styles.accessibilityStopContext}>
+              <Text style={[styles.stopName, { color: colors.textPrimary }]}>{stopName}</Text>
+              {address ? (
+                <Text style={[styles.address, { color: colors.textSecondary }]}>{address}</Text>
+              ) : null}
+            </View>
+          ) : null}
+
+          <View style={[styles.progressRow, usesAccessibilityLayout && styles.accessibilityStack]}>
             <View style={styles.progressCopy}>
               <AppIcon
                 color={completedCount === 4 ? colors.success : colors.accentStrong}
@@ -221,13 +241,19 @@ export function QuickIntelSheet({
         <View
           style={[
             styles.footer,
+            usesAccessibilityLayout && styles.accessibilityFooter,
             { backgroundColor: colors.surface, borderTopColor: colors.border },
           ]}
         >
           <AppButton disabled={saving} onPress={onCancel} variant="secondary">
             Cancel
           </AppButton>
-          <AppButton loading={saving} onPress={onSave} style={styles.saveButton}>
+          <AppButton
+            fullWidth={usesAccessibilityLayout}
+            loading={saving}
+            onPress={onSave}
+            style={[styles.saveButton, usesAccessibilityLayout && styles.accessibilitySaveButton]}
+          >
             Save Intel
           </AppButton>
         </View>
@@ -253,6 +279,12 @@ const styles = StyleSheet.create({
   headerCopy: {
     flex: 1,
     gap: 2,
+  },
+  accessibilityHeader: {
+    minHeight: 0,
+  },
+  accessibilityStopContext: {
+    gap: Spacing.xxs,
   },
   title: {
     ...Typography.screenTitle,
@@ -323,6 +355,13 @@ const styles = StyleSheet.create({
     minWidth: "47%",
     flexGrow: 1,
   },
+  accessibilityChoiceGrid: {
+    flexDirection: "column",
+  },
+  accessibilityChoice: {
+    minWidth: 0,
+    width: "100%",
+  },
   helperText: {
     ...Typography.supporting,
   },
@@ -348,5 +387,16 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     flex: 1,
+  },
+  accessibilityStack: {
+    alignItems: "stretch",
+    flexDirection: "column",
+  },
+  accessibilityFooter: {
+    flexDirection: "column",
+  },
+  accessibilitySaveButton: {
+    flex: 0,
+    width: "100%",
   },
 });

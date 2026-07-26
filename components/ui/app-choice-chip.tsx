@@ -3,6 +3,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   type AccessibilityRole,
   type PressableProps,
   type StyleProp,
@@ -40,7 +41,9 @@ export function AppChoiceChip({
   ...props
 }: AppChoiceChipProps) {
   const { colors } = useAppTheme();
+  const { fontScale } = useWindowDimensions();
   const [isFocused, setIsFocused] = useState(false);
+  const usesAccessibilityLayout = fontScale >= 1.5;
   const backgroundColor = disabled
     ? colors.surface
     : selected
@@ -84,13 +87,17 @@ export function AppChoiceChip({
           borderColor,
           borderWidth: isFocused ? 2 : Borders.thin,
         },
+        usesAccessibilityLayout ? styles.accessibilityLayout : null,
         pressed ? styles.pressed : null,
         style,
       ]}
       {...props}
     >
       {leadingIcon}
-      <Text numberOfLines={1} style={[styles.label, { color: labelColor }, textStyle]}>
+      <Text
+        numberOfLines={usesAccessibilityLayout ? undefined : 1}
+        style={[styles.label, { color: labelColor }, textStyle]}
+      >
         {label}
       </Text>
     </Pressable>
@@ -109,6 +116,10 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.8,
+  },
+  accessibilityLayout: {
+    height: "auto",
+    paddingVertical: Spacing.sm,
   },
   label: {
     ...Typography.buttonLabel,
