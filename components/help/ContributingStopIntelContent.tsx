@@ -13,64 +13,48 @@ export default function ContributingStopIntelContent() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.sectionTitle}>Help the Next Driver</Text>
         <Text style={styles.helperText}>
-          Share what you learn to keep FreightIQ accurate, useful, and up to date.
+          Add the essentials first, then share any delivery details that will save the next driver
+          time or trouble.
         </Text>
 
         <View>
           <Pressable
-            onPress={() => setExpandedSection(expandedSection === "search" ? "" : "search")}
+            onPress={() => setExpandedSection(expandedSection === "quickIntel" ? "" : "quickIntel")}
           >
             <View style={styles.expandedHeader}>
               <Text style={styles.stepTitle}>
-                {expandedSection === "search" ? "▼" : "▶"} Why Contribute
+                {expandedSection === "quickIntel" ? "▼" : "▶"} Add Core Intel
               </Text>
             </View>
           </Pressable>
 
-          {expandedSection === "search" && (
+          {expandedSection === "quickIntel" && (
             <View style={styles.contentPanel}>
               <Text style={styles.step}>
-                Every report you add helps the next driver make a better delivery. Together, drivers
-                create the kind of real-world knowledge that maps and GPS can’t provide.
+                Tap Add Missing Core Intel or Edit Intel from the preview card. Quick Intel lets you
+                add Truck Fit, Delivery Type, Back In, and Delivery Zone without opening the full
+                report. Existing answers are already filled in.
               </Text>
             </View>
           )}
         </View>
 
         <Pressable
-          onPress={() => setExpandedSection(expandedSection === "preview" ? "" : "preview")}
+          onPress={() => setExpandedSection(expandedSection === "partial" ? "" : "partial")}
         >
           <View style={styles.expandedHeader}>
             <Text style={styles.stepTitle}>
-              {expandedSection === "preview" ? "▼" : "▶"} Create Accurate Stops
+              {expandedSection === "partial" ? "▼" : "▶"} Save What You Know
             </Text>
           </View>
         </Pressable>
 
-        {expandedSection === "preview" && (
+        {expandedSection === "partial" && (
           <View style={styles.contentPanel}>
             <Text style={styles.step}>
-              Create stops with the actual delivery location and use the correct business name.
-              Accurate stops make it easier for every driver to find the right place.
-            </Text>
-          </View>
-        )}
-
-        <Pressable
-          onPress={() => setExpandedSection(expandedSection === "reports" ? "" : "reports")}
-        >
-          <View style={styles.expandedHeader}>
-            <Text style={styles.stepTitle}>
-              {expandedSection === "reports" ? "▼" : "▶"} Set the Delivery Zone
-            </Text>
-          </View>
-        </Pressable>
-
-        {expandedSection === "reports" && (
-          <View style={styles.contentPanel}>
-            <Text style={styles.step}>
-              The Delivery Zone shows where your truck should actually go. Place it where drivers
-              should park, unload, or check in so the next delivery starts in the right place.
+              Partial saves are okay. Choose only the answers you know, then tap Save Quick Intel.
+              FreightIQ updates the completion status so another driver can add the missing pieces
+              later.
             </Text>
           </View>
         )}
@@ -82,7 +66,7 @@ export default function ContributingStopIntelContent() {
         >
           <View style={styles.expandedHeader}>
             <Text style={styles.stepTitle}>
-              {expandedSection === "deliveryZone" ? "▼" : "▶"} Write Helpful Driver Notes
+              {expandedSection === "deliveryZone" ? "▼" : "▶"} Set the Delivery Zone
             </Text>
           </View>
         </Pressable>
@@ -90,27 +74,47 @@ export default function ContributingStopIntelContent() {
         {expandedSection === "deliveryZone" && (
           <View style={styles.contentPanel}>
             <Text style={styles.step}>
-              Share information that will help the next driver. Include details about check-in
-              procedures, parking, unloading, or anything that could save time or prevent confusion.
+              Tap Set DZ and place the marker where a truck should actually park, unload, or check
+              in. Save the point, then return to Quick Intel or the preview card. Use Edit DZ later
+              if the delivery point needs to move.
             </Text>
           </View>
         )}
 
         <Pressable
-          onPress={() => setExpandedSection(expandedSection === "confidence" ? "" : "confidence")}
+          onPress={() => setExpandedSection(expandedSection === "additional" ? "" : "additional")}
         >
           <View style={styles.expandedHeader}>
             <Text style={styles.stepTitle}>
-              {expandedSection === "confidence" ? "▼" : "▶"} Keep Information Current
+              {expandedSection === "additional" ? "▼" : "▶"} Add Additional Driver Intel
             </Text>
           </View>
         </Pressable>
 
-        {expandedSection === "confidence" && (
+        {expandedSection === "additional" && (
           <View style={styles.contentPanel}>
             <Text style={styles.step}>
-              If something changes, update your report. Keeping information current helps drivers
-              trust the intel and avoid outdated instructions.
+              On the Stop Intel screen, tap Add Additional Intel or Edit Additional Intel. Add the
+              delivery side, best approach, contact or check-in process, and driver notes when those
+              details will help someone arrive prepared.
+            </Text>
+          </View>
+        )}
+
+        <Pressable onPress={() => setExpandedSection(expandedSection === "save" ? "" : "save")}>
+          <View style={styles.expandedHeader}>
+            <Text style={styles.stepTitle}>
+              {expandedSection === "save" ? "▼" : "▶"} Save and Update Your Report
+            </Text>
+          </View>
+        </Pressable>
+
+        {expandedSection === "save" && (
+          <View style={styles.contentPanel}>
+            <Text style={styles.step}>
+              FreightIQ displays Unsaved changes after you edit a saved report. Tap Save Report
+              Changes before leaving. Keep the report factual, current, and limited to information
+              another driver needs for the delivery.
             </Text>
           </View>
         )}

@@ -38,7 +38,7 @@ The centralized theme and semantic-token foundation has been accepted on iPhone.
 The System, Light, and Dark preference behavior has been accepted on iPhone.
 The dedicated Settings placement and icon-only Profile-stack navigation have been accepted on iPhone.
 The shared app shell, status bar, headers, and bottom tabs have been accepted on iPhone.
-The Profile screen and full Help Center—including all five guide pages—have been refreshed through an explicitly approved scope expansion and accepted on iPhone in Light and Dark modes.
+The Profile screen and full Help Center—including all five guide pages—have been refreshed through an explicitly approved scope expansion and accepted on iPhone in Light and Dark modes. The guide content now reflects Intel V2, Quick Intel, partial saves, Delivery Zones, report-saving states, and the current map controls.
 The shared `AppCard` foundation has been accepted on iPhone in Dark mode.
 The shared button, labeled-input, choice-chip, segmented-control, and semantic-icon foundations are implemented and statically validated.
 Those interaction controls receive physical visual validation when the approved map and Quick Intel workflows first consume them.

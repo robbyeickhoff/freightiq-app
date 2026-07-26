@@ -11,9 +11,10 @@ export default function FindingStopsContent() {
   return (
     <SafeAreaView edges={["bottom"]} style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.sectionTitle}>Find Customers Faster</Text>
+        <Text style={styles.sectionTitle}>Find the Right Stop</Text>
         <Text style={styles.helperText}>
-          Search, browse, and discover stops shared by other drivers before you arrive.
+          Search for a customer, browse FreightIQ stops on the map, or create a stop when one is
+          missing.
         </Text>
 
         <View>
@@ -22,82 +23,88 @@ export default function FindingStopsContent() {
           >
             <View style={styles.expandedHeader}>
               <Text style={styles.stepTitle}>
-                {expandedSection === "search" ? "▼" : "▶"} Search by Address
+                {expandedSection === "search" ? "▼" : "▶"} Search by Name or Address
               </Text>
             </View>
           </Pressable>
 
           {expandedSection === "search" && (
             <View style={styles.contentPanel}>
-              <Text style={styles.step}>Search by address or business name.</Text>
+              <Text style={styles.step}>
+                Enter the business name or delivery address in the search field. Choose the result
+                that matches your customer and confirm the name and address on the preview card.
+              </Text>
             </View>
           )}
         </View>
+
+        <Pressable onPress={() => setExpandedSection(expandedSection === "browse" ? "" : "browse")}>
+          <View style={styles.expandedHeader}>
+            <Text style={styles.stepTitle}>
+              {expandedSection === "browse" ? "▼" : "▶"} Browse Stops in View
+            </Text>
+          </View>
+        </Pressable>
+
+        {expandedSection === "browse" && (
+          <View style={styles.contentPanel}>
+            <Text style={styles.step}>
+              Move and zoom the map, then tap Show Stops. FreightIQ loads the stops visible in that
+              map area. Tap Hide Stops when you want a cleaner map.
+            </Text>
+          </View>
+        )}
+
+        <Pressable onPress={() => setExpandedSection(expandedSection === "pins" ? "" : "pins")}>
+          <View style={styles.expandedHeader}>
+            <Text style={styles.stepTitle}>
+              {expandedSection === "pins" ? "▼" : "▶"} Open Pins and Clusters
+            </Text>
+          </View>
+        </Pressable>
+
+        {expandedSection === "pins" && (
+          <View style={styles.contentPanel}>
+            <Text style={styles.step}>
+              A numbered cluster contains several nearby stops. Tap it or zoom in to separate the
+              pins. Tap an individual stop pin to open its preview card.
+            </Text>
+          </View>
+        )}
 
         <Pressable
           onPress={() => setExpandedSection(expandedSection === "preview" ? "" : "preview")}
         >
           <View style={styles.expandedHeader}>
             <Text style={styles.stepTitle}>
-              {expandedSection === "preview" ? "▼" : "▶"} Browse the Map
+              {expandedSection === "preview" ? "▼" : "▶"} Confirm the Stop
             </Text>
           </View>
         </Pressable>
 
         {expandedSection === "preview" && (
           <View style={styles.contentPanel}>
-            <Text style={styles.step}>Explore the map to discover nearby stops.</Text>
+            <Text style={styles.step}>
+              Review the business name, address, Core Intel status, and available actions. Tap
+              Reports to read driver reports or Navigate when you are ready to go.
+            </Text>
           </View>
         )}
 
-        <Pressable
-          onPress={() => setExpandedSection(expandedSection === "reports" ? "" : "reports")}
-        >
+        <Pressable onPress={() => setExpandedSection(expandedSection === "create" ? "" : "create")}>
           <View style={styles.expandedHeader}>
             <Text style={styles.stepTitle}>
-              {expandedSection === "reports" ? "▼" : "▶"} Show Stops in View
+              {expandedSection === "create" ? "▼" : "▶"} Create a Missing Stop
             </Text>
           </View>
         </Pressable>
 
-        {expandedSection === "reports" && (
-          <View style={styles.contentPanel}>
-            <Text style={styles.step}>Load nearby stops to see available driver intel.</Text>
-          </View>
-        )}
-
-        <Pressable
-          onPress={() =>
-            setExpandedSection(expandedSection === "deliveryZone" ? "" : "deliveryZone")
-          }
-        >
-          <View style={styles.expandedHeader}>
-            <Text style={styles.stepTitle}>
-              {expandedSection === "deliveryZone" ? "▼" : "▶"} Open the Preview Card
-            </Text>
-          </View>
-        </Pressable>
-
-        {expandedSection === "deliveryZone" && (
-          <View style={styles.contentPanel}>
-            <Text style={styles.step}>Tap any stop pin to review available intel.</Text>
-          </View>
-        )}
-
-        <Pressable
-          onPress={() => setExpandedSection(expandedSection === "confidence" ? "" : "confidence")}
-        >
-          <View style={styles.expandedHeader}>
-            <Text style={styles.stepTitle}>
-              {expandedSection === "confidence" ? "▼" : "▶"} Create a New Stop
-            </Text>
-          </View>
-        </Pressable>
-
-        {expandedSection === "confidence" && (
+        {expandedSection === "create" && (
           <View style={styles.contentPanel}>
             <Text style={styles.step}>
-              Can’t find the stop? Use “Create Stop Here” to help the next driver.
+              If the customer is not in FreightIQ, place the orange crosshair on the correct
+              location, tap the plus control, and confirm Create Stop Here. Use the real business
+              name and verify the address before saving.
             </Text>
           </View>
         )}

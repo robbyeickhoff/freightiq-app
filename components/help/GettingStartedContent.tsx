@@ -11,11 +11,32 @@ export default function GettingStartedContent() {
   return (
     <SafeAreaView edges={["bottom"]} style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.sectionTitle}>Before Your First Delivery</Text>
+        <Text style={styles.sectionTitle}>Your First Delivery</Text>
         <Text style={styles.body}>
-          Start with the essentials so you’re ready to use FreightIQ confidently on your first
-          delivery.
+          Use FreightIQ before you arrive to understand the stop, find the delivery point, and avoid
+          surprises.
         </Text>
+
+        <View>
+          <Pressable
+            onPress={() => setExpandedSection(expandedSection === "profile" ? "" : "profile")}
+          >
+            <View style={styles.expandedHeader}>
+              <Text style={styles.stepTitle}>
+                {expandedSection === "profile" ? "▼" : "▶"} Set Up Your Profile
+              </Text>
+            </View>
+          </Pressable>
+
+          {expandedSection === "profile" && (
+            <View style={styles.contentPanel}>
+              <Text style={styles.step}>
+                Add your driver name and tractor type on the Profile tab. FreightIQ uses your
+                equipment information to keep your contributions useful to other drivers.
+              </Text>
+            </View>
+          )}
+        </View>
 
         <View>
           <Pressable
@@ -23,48 +44,36 @@ export default function GettingStartedContent() {
           >
             <View style={styles.expandedHeader}>
               <Text style={styles.stepTitle}>
-                {expandedSection === "search" ? "▼" : "▶"} Search for a Stop
+                {expandedSection === "search" ? "▼" : "▶"} Find the Customer
               </Text>
             </View>
           </Pressable>
 
           {expandedSection === "search" && (
             <View style={styles.contentPanel}>
-              <Text style={styles.step}>Search for the delivery address or business name.</Text>
+              <Text style={styles.step}>
+                Search by business name or address. You can also move the map and tap Show Stops to
+                load FreightIQ stops in that area.
+              </Text>
             </View>
           )}
-        </View>
 
-        <View>
           <Pressable
             onPress={() => setExpandedSection(expandedSection === "preview" ? "" : "preview")}
           >
             <View style={styles.expandedHeader}>
               <Text style={styles.stepTitle}>
-                {expandedSection === "preview" ? "▼" : "▶"} Open the Preview Card
+                {expandedSection === "preview" ? "▼" : "▶"} Review Core Intel
               </Text>
             </View>
           </Pressable>
 
           {expandedSection === "preview" && (
             <View style={styles.contentPanel}>
-              <Text style={styles.step}>Tap the stop pin to view available stop intel.</Text>
-            </View>
-          )}
-
-          <Pressable
-            onPress={() => setExpandedSection(expandedSection === "reports" ? "" : "reports")}
-          >
-            <View style={styles.expandedHeader}>
-              <Text style={styles.stepTitle}>
-                {expandedSection === "reports" ? "▼" : "▶"} Review Driver Reports
+              <Text style={styles.step}>
+                Tap a stop to open its preview card. Check Truck Fit, Delivery Type, Back In, and
+                Delivery Zone before deciding whether the stop works for your truck.
               </Text>
-            </View>
-          </Pressable>
-
-          {expandedSection === "reports" && (
-            <View style={styles.contentPanel}>
-              <Text style={styles.step}>Learn how to make your delivery safer and easier.</Text>
             </View>
           )}
 
@@ -82,24 +91,28 @@ export default function GettingStartedContent() {
 
           {expandedSection === "deliveryZone" && (
             <View style={styles.contentPanel}>
-              <Text style={styles.step}>Know the best place to park and unload.</Text>
+              <Text style={styles.step}>
+                Tap Show DZ when a Delivery Zone is saved. It marks the truck-accessible place to
+                park, unload, or check in—not necessarily the customer’s street address.
+              </Text>
             </View>
           )}
 
           <Pressable
-            onPress={() => setExpandedSection(expandedSection === "confidence" ? "" : "confidence")}
+            onPress={() => setExpandedSection(expandedSection === "finish" ? "" : "finish")}
           >
             <View style={styles.expandedHeader}>
               <Text style={styles.stepTitle}>
-                {expandedSection === "confidence" ? "▼" : "▶"} Deliver with Confidence
+                {expandedSection === "finish" ? "▼" : "▶"} Navigate and Contribute
               </Text>
             </View>
           </Pressable>
 
-          {expandedSection === "confidence" && (
+          {expandedSection === "finish" && (
             <View style={styles.contentPanel}>
               <Text style={styles.step}>
-                Arrive prepared for a faster, safer, and easier delivery.
+                Tap Navigate when you are ready to go. After the delivery, use Edit Intel or Add
+                Missing Core Intel to share anything the next driver should know.
               </Text>
             </View>
           )}

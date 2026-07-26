@@ -157,7 +157,7 @@ Validate the completed Intel V2 experience through real-world driver use before 
 - [ ] Validate whether Back In should remain before Delivery Zone.
 - [ ] Observe whether drivers naturally use Additional Driver Intel.
 - [ ] Validate Intel V2 on Android and additional screen sizes.
-- [ ] Update Help Center guidance to reflect Intel V2 before the next broader tester release.
+- [x] Update Help Center guidance to reflect Intel V2 before the next broader tester release.
 
 ### Map
 

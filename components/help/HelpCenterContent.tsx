@@ -101,35 +101,35 @@ export default function HelpCenterContent({ navigationHandlers }: HelpCenterCont
             accessibilityHint="Opens the Getting Started guide"
             icon="gettingStarted"
             onPress={handlers.onPressGettingStarted}
-            subtitle="First-time users"
+            subtitle="Your first delivery"
             title="Getting Started"
           />
           <GuideRow
             accessibilityHint="Opens the Finding Stops guide"
             icon="findingStops"
             onPress={handlers.onPressFindingStops}
-            subtitle="Search and browse stops"
+            subtitle="Search, browse, and create stops"
             title="Finding Stops"
           />
           <GuideRow
             accessibilityHint="Opens the Understanding Stop Intel guide"
             icon="understandingIntel"
             onPress={handlers.onPressUnderstandingStopIntel}
-            subtitle="Learn what each report means"
+            subtitle="Core Intel, Delivery Zones, and reports"
             title="Understanding Stop Intel"
           />
           <GuideRow
             accessibilityHint="Opens the Contributing Stop Intel guide"
             icon="contributingIntel"
             onPress={handlers.onPressContributingStopIntel}
-            subtitle="Add and update information"
+            subtitle="Add and update driver intel"
             title="Contributing Stop Intel"
           />
           <GuideRow
             accessibilityHint="Opens the Using the Map guide"
             icon="usingMap"
             onPress={handlers.onPressUsingTheMap}
-            subtitle="Map tools and controls"
+            subtitle="Controls, views, and offline tools"
             title="Using the Map"
           />
         </View>

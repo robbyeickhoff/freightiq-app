@@ -13,9 +13,10 @@ export default function UsingTheMapContent() {
   return (
     <SafeAreaView edges={["bottom"]} style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.sectionTitle}>Explore with Confidence</Text>
+        <Text style={styles.sectionTitle}>Use the Map</Text>
         <Text style={styles.helperText}>
-          Learn the tools that make finding, saving, and navigating stops easier.
+          The map control rail keeps the most important location, creation, view, and offline tools
+          within easy reach.
         </Text>
 
         <View>
@@ -39,8 +40,8 @@ export default function UsingTheMapContent() {
                 </View>
 
                 <Text style={styles.stepText}>
-                  Tap Locate Me to center the map on your current location. The blue dot shows where
-                  you are.
+                  Tap Locate Me to center the map on your current location. The blue marker shows
+                  where you are, while the orange crosshair marks the map’s selected position.
                 </Text>
               </View>
             </View>
@@ -54,7 +55,7 @@ export default function UsingTheMapContent() {
         >
           <View style={styles.expandedHeader}>
             <Text style={styles.stepTitle}>
-              {expandedSection === "creatingStop" ? "▼" : "▶"} Creating a Stop
+              {expandedSection === "creatingStop" ? "▼" : "▶"} Create a Stop
             </Text>
           </View>
         </Pressable>
@@ -67,8 +68,8 @@ export default function UsingTheMapContent() {
               </View>
 
               <Text style={styles.stepText}>
-                New stops are created at the orange crosshair. Place the crosshair where you want
-                the stop, then tap <MapIcon>＋</MapIcon>
+                Move the orange crosshair to the customer’s location, then tap the plus control.
+                Review the proposed name and address before confirming Create Stop Here.
               </Text>
             </View>
           </View>
@@ -92,8 +93,9 @@ export default function UsingTheMapContent() {
               </View>
 
               <Text style={styles.stepText}>
-                Switch between Standard and Satellite views. Satellite view helps identify
-                buildings, loading docks, and Delivery Zones.
+                Switch between Standard and Satellite views. Standard follows FreightIQ’s Light or
+                Dark appearance. Satellite imagery helps identify buildings, loading areas, access
+                roads, and Delivery Zones.
               </Text>
             </View>
           </View>
@@ -122,7 +124,9 @@ export default function UsingTheMapContent() {
               <View style={styles.buttonWrapper}>
                 <MapButton>Hide Stops</MapButton>
               </View>
-              <Text style={styles.exampleText}>Removes the pins for a cleaner view.</Text>
+              <Text style={styles.exampleText}>
+                Removes FreightIQ stop pins for a cleaner map without deleting any stops.
+              </Text>
             </View>
           </View>
         )}
@@ -132,7 +136,7 @@ export default function UsingTheMapContent() {
         >
           <View style={styles.expandedHeader}>
             <Text style={styles.stepTitle}>
-              {expandedSection === "mapTools" ? "▼" : "▶"} Map Tools
+              {expandedSection === "mapTools" ? "▼" : "▶"} Offline Map Tools
             </Text>
           </View>
         </Pressable>
@@ -145,7 +149,9 @@ export default function UsingTheMapContent() {
               </View>
 
               <Text style={styles.stepText}>
-                Save stops for offline use or clear the saved cache.
+                Tap Settings to save stop data for offline use or clear the saved cache. Offline
+                data can help when service is weak, but refresh it when you are connected so you
+                have current stop information.
               </Text>
             </View>
           </View>
