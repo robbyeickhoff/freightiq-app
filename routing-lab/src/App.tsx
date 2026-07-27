@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 
+import ReasonPrompt from './components/ReasonPrompt'
 import { gr001BaselineProposal, gr001Fixture } from './data/gr-001'
 import type { GoldenRouteStop } from './data/gr-001'
 import { getRoutingLabConfig } from './lib/config'
@@ -12,6 +13,17 @@ type StopEvent = {
   actionOrder: number
   recordedAt: string
   status: StopOutcome
+}
+
+type PendingReason = {
+  description: string
+  kind: 'active' | 'planned'
+}
+
+type ReasonRecord = PendingReason & {
+  note: string
+  reasons: string[]
+  recordedAt: string
 }
 
 function formatRecordedTime(timestamp: string) {
@@ -30,15 +42,24 @@ function App() {
   const [proposalGenerated, setProposalGenerated] = useState(false)
   const [draftRouteStops, setDraftRouteStops] = useState<GoldenRouteStop[]>([])
   const [activeRouteStops, setActiveRouteStops] = useState<GoldenRouteStop[]>([])
+  const [remainingStopNames, setRemainingStopNames] = useState<string[]>([])
   const [routeStartedAt, setRouteStartedAt] = useState<string | null>(null)
   const [stopEvents, setStopEvents] = useState<Record<string, StopEvent>>({})
+  const [pendingReason, setPendingReason] = useState<PendingReason | null>(null)
+  const [selectedReasons, setSelectedReasons] = useState<string[]>([])
+  const [reasonNote, setReasonNote] = useState('')
+  const [reasonRecords, setReasonRecords] = useState<ReasonRecord[]>([])
   const [message, setMessage] = useState('')
   const config = getRoutingLabConfig()
   const routeStarted = routeStartedAt !== null
   const proposalAdjusted = draftRouteStops.some(
     (stop, index) => stop.name !== gr001BaselineProposal.stops[index]?.name,
   )
-  const remainingStops = activeRouteStops.filter((stop) => !stopEvents[stop.name])
+  const remainingStops = remainingStopNames
+    .map((stopName) =>
+      activeRouteStops.find((stop) => stop.name === stopName),
+    )
+    .filter((stop): stop is GoldenRouteStop => Boolean(stop))
   const resolvedStops = activeRouteStops
     .filter((stop) => stopEvents[stop.name])
     .sort(
@@ -122,6 +143,7 @@ function App() {
 
   function startRoute() {
     setActiveRouteStops([...draftRouteStops])
+    setRemainingStopNames(draftRouteStops.map((stop) => stop.name))
     setStopEvents({})
     setRouteStartedAt(new Date().toISOString())
   }
@@ -146,11 +168,57 @@ function App() {
       const reorderedStops = [...currentStops]
       const [movedStop] = reorderedStops.splice(currentIndex, 1)
       reorderedStops.splice(nextIndex, 0, movedStop)
+
+      const stillAdjusted = reorderedStops.some(
+        (stop, index) =>
+          stop.name !== gr001BaselineProposal.stops[index]?.name,
+      )
+
+      setPendingReason(
+        stillAdjusted
+          ? {
+              description:
+                'Your starting plan no longer matches the original AI proposal. Finish arranging it, then tell Routing Lab why you changed the order.',
+              kind: 'planned',
+            }
+          : null,
+      )
+
+      if (!stillAdjusted) {
+        setSelectedReasons([])
+        setReasonNote('')
+      }
+
       return reorderedStops
     })
   }
 
+  function moveRemainingStop(currentIndex: number, direction: -1 | 1) {
+    setRemainingStopNames((currentStopNames) => {
+      const nextIndex = currentIndex + direction
+
+      if (nextIndex < 0 || nextIndex >= currentStopNames.length) {
+        return currentStopNames
+      }
+
+      const reorderedStopNames = [...currentStopNames]
+      const [movedStopName] = reorderedStopNames.splice(currentIndex, 1)
+      reorderedStopNames.splice(nextIndex, 0, movedStopName)
+
+      setPendingReason({
+        description:
+          'You changed the order of the unfinished route. Finish arranging the stops, then tell Routing Lab why the active plan changed.',
+        kind: 'active',
+      })
+
+      return reorderedStopNames
+    })
+  }
+
   function recordStopOutcome(stopName: string, status: StopOutcome) {
+    const currentPosition = remainingStopNames.indexOf(stopName)
+    const expectedStopName = remainingStopNames[0]
+
     setStopEvents((currentEvents) => {
       if (currentEvents[stopName]) {
         return currentEvents
@@ -165,6 +233,44 @@ function App() {
         },
       }
     })
+
+    setRemainingStopNames((currentStopNames) =>
+      currentStopNames.filter((name) => name !== stopName),
+    )
+
+    if (status === 'complete' && currentPosition > 0) {
+      setPendingReason({
+        description: `${stopName} was completed while ${expectedStopName} was next in the active plan. Tell Routing Lab why the stop was completed out of order.`,
+        kind: 'active',
+      })
+    }
+  }
+
+  function toggleReason(reason: string) {
+    setSelectedReasons((currentReasons) =>
+      currentReasons.includes(reason)
+        ? currentReasons.filter((currentReason) => currentReason !== reason)
+        : [...currentReasons, reason],
+    )
+  }
+
+  function savePendingReason() {
+    if (!pendingReason || selectedReasons.length === 0) {
+      return
+    }
+
+    setReasonRecords((currentRecords) => [
+      ...currentRecords,
+      {
+        ...pendingReason,
+        note: reasonNote.trim(),
+        reasons: selectedReasons,
+        recordedAt: new Date().toISOString(),
+      },
+    ])
+    setPendingReason(null)
+    setSelectedReasons([])
+    setReasonNote('')
   }
 
   if (isCheckingSession) {
@@ -429,16 +535,30 @@ function App() {
           <button
             className="primary-button start-route-button"
             type="button"
-            disabled={routeStarted}
+            disabled={routeStarted || pendingReason?.kind === 'planned'}
             onClick={startRoute}
           >
             {routeStarted
               ? 'Route in progress'
+              : pendingReason?.kind === 'planned'
+                ? 'Save reason before starting'
               : proposalAdjusted
                 ? 'Start Driver-Adjusted Test Route'
                 : 'Start Baseline Test Route'}
           </button>
         </section>
+      ) : null}
+
+      {pendingReason?.kind === 'planned' ? (
+        <ReasonPrompt
+          description={pendingReason.description}
+          kind={pendingReason.kind}
+          note={reasonNote}
+          selectedReasons={selectedReasons}
+          onNoteChange={setReasonNote}
+          onReasonToggle={toggleReason}
+          onSave={savePendingReason}
+        />
       ) : null}
 
       {routeStarted ? (
@@ -469,9 +589,30 @@ function App() {
           </div>
 
           <p className="active-route-guidance">
-            Tap the result for the stop you actually service. Unfinished stops
-            stay in the locked proposal order.
+            Tap the result for the stop you actually service. You can adjust
+            the unfinished order while the locked starting plan stays preserved
+            for comparison.
           </p>
+
+          {reasonRecords.length > 0 ? (
+            <p className="reason-capture-status">
+              {reasonRecords.length}{' '}
+              {reasonRecords.length === 1 ? 'reason' : 'reasons'} saved for
+              end-of-day review.
+            </p>
+          ) : null}
+
+          {pendingReason?.kind === 'active' ? (
+            <ReasonPrompt
+              description={pendingReason.description}
+              kind={pendingReason.kind}
+              note={reasonNote}
+              selectedReasons={selectedReasons}
+              onNoteChange={setReasonNote}
+              onReasonToggle={toggleReason}
+              onSave={savePendingReason}
+            />
+          ) : null}
 
           {remainingStops.length > 0 ? (
             <>
@@ -481,7 +622,7 @@ function App() {
               </div>
 
               <ol className="active-stop-list">
-                {remainingStops.map((stop) => {
+                {remainingStops.map((stop, index) => {
                   const proposedPosition =
                     activeRouteStops.findIndex(
                       (activeStop) => activeStop.name === stop.name,
@@ -505,6 +646,7 @@ function App() {
                         <button
                           className="complete-button"
                           type="button"
+                          disabled={pendingReason?.kind === 'active'}
                           onClick={() =>
                             recordStopOutcome(stop.name, 'complete')
                           }
@@ -514,11 +656,31 @@ function App() {
                         <button
                           className="unable-button"
                           type="button"
+                          disabled={pendingReason?.kind === 'active'}
                           onClick={() =>
                             recordStopOutcome(stop.name, 'unable')
                           }
                         >
                           Unable
+                        </button>
+                      </div>
+                      <div
+                        className="active-reorder-controls"
+                        aria-label={`Reorder unfinished stop ${stop.name}`}
+                      >
+                        <button
+                          type="button"
+                          disabled={index === 0}
+                          onClick={() => moveRemainingStop(index, -1)}
+                        >
+                          Move up
+                        </button>
+                        <button
+                          type="button"
+                          disabled={index === remainingStops.length - 1}
+                          onClick={() => moveRemainingStop(index, 1)}
+                        >
+                          Move down
                         </button>
                       </div>
                     </li>
