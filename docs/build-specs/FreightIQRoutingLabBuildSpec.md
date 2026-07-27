@@ -137,7 +137,8 @@ Sign in
 → enter Test Route mode
 → load GR-001
 → generate proposed route
-→ review and start route
+→ review and optionally adjust the proposal
+→ start the driver-approved route
 → complete or mark stops unable
 → complete or move a stop out of order
 → capture the reason immediately
@@ -168,10 +169,14 @@ Sign in
 - Apply approved sandbox lessons.
 - Show reasoning and uncertainty honestly.
 - Preserve fixture-approved alternatives.
+- Allow the driver to reorder the proposal before starting the route.
+- Preserve the original AI proposal when the driver makes a planned correction.
+- Treat the revised order as the driver-approved starting plan.
 
 ### Active Route
 
-- Lock and preserve the proposed order when Start Route is selected.
+- Lock and preserve the driver-approved starting plan when Start Route is
+  selected.
 - Record route start time.
 - Support one-tap Complete and Unable actions.
 - Record actual completion order and timestamps.
@@ -181,6 +186,7 @@ Sign in
 
 ### Route Editing and Reason Capture
 
+- Detect a pre-start reorder as a planned correction.
 - Allow touch-friendly reordering of unfinished stops.
 - Detect an out-of-order completion.
 - Prompt for a reason immediately after a meaningful change.
@@ -195,6 +201,17 @@ Sign in
   - Other
 - Allow an optional short note.
 - Preserve the original proposal for comparison.
+
+Routing Lab keeps three distinct route records:
+
+```text
+Original AI proposal
+→ driver-approved starting plan
+→ actual completed route
+```
+
+A planned correction and an active-route deviation are different evidence.
+Either may prompt for a reason, but neither becomes a lesson automatically.
 
 ### End-of-Day Review
 
