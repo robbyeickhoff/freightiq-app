@@ -48,6 +48,7 @@ android.backup-before-prebuild/
 # Environment secrets
 .env
 .env.*
+!routing-lab/.env.example
 
 # Separate website repo
 freightiq-site/
