@@ -61,7 +61,9 @@ button {
 
 .auth-card,
 .fixture-card,
-.route-details {
+.route-details,
+.proposal-card,
+.proposal-launch {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 24px;
@@ -80,6 +82,28 @@ button {
 .route-details {
   margin-top: 16px;
   padding: 24px;
+}
+
+.proposal-launch,
+.proposal-card {
+  margin-top: 16px;
+  padding: 24px;
+}
+
+.proposal-launch {
+  display: grid;
+  gap: 20px;
+}
+
+.proposal-launch h2 {
+  margin-bottom: 10px;
+  font-size: 1.45rem;
+}
+
+.proposal-launch p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .brand-mark {
@@ -225,6 +249,7 @@ input:focus-visible {
 
 .stop-count,
 .verified-badge,
+.baseline-badge,
 .zone-badge {
   flex: 0 0 auto;
   border: 1px solid var(--border);
@@ -240,6 +265,15 @@ input:focus-visible {
   border-color: #24644d;
   color: #bfe8d8;
   background: rgba(19, 80, 59, 0.25);
+}
+
+.baseline-badge {
+  max-width: 44%;
+  border-color: #765d26;
+  color: #ffe3a8;
+  background: rgba(118, 93, 38, 0.2);
+  line-height: 1.25;
+  text-align: right;
 }
 
 .zone-badge {
@@ -259,6 +293,106 @@ input:focus-visible {
 .fixture-flow {
   margin-bottom: 24px;
   font-size: 0.91rem;
+}
+
+.proposal-explanation {
+  margin: 18px 0 22px;
+  border-left: 3px solid var(--accent);
+  padding-left: 14px;
+  color: #cbd7dd;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.proposal-summary {
+  display: grid;
+  grid-template-columns: 0.8fr 0.9fr 1.3fr;
+  gap: 1px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--border);
+}
+
+.proposal-summary div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 13px;
+  background: #0b161d;
+}
+
+.proposal-summary span,
+.insight-label {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.proposal-summary strong {
+  overflow: hidden;
+  color: #edf5f8;
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.proposal-insights {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 26px;
+}
+
+.insight-card,
+.review-flag {
+  border: 1px solid #233a46;
+  border-radius: 15px;
+  padding: 15px;
+  background: #0b161d;
+}
+
+.insight-card p {
+  margin-bottom: 0;
+  color: #d9e4e9;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.insight-card .insight-label,
+.review-flag .insight-label {
+  margin-bottom: 7px;
+  color: var(--accent-strong);
+}
+
+.insight-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+  color: #d9e4e9;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.review-flag {
+  border-color: #765d26;
+  background: rgba(118, 93, 38, 0.13);
+}
+
+.review-flag h3 {
+  margin: 0 0 9px;
+  color: #fff1cb;
+  font-size: 1rem;
+}
+
+.review-flag > p {
+  margin-bottom: 0;
+  color: #d8caa8;
+  font-size: 0.84rem;
+  line-height: 1.5;
 }
 
 .route-facts {
@@ -336,6 +470,15 @@ input:focus-visible {
   counter-increment: stop;
 }
 
+.proposal-list__learning-stop {
+  border-color: #8b6825 !important;
+  background: rgba(118, 93, 38, 0.17) !important;
+}
+
+.proposal-list__learning-stop .stop-index {
+  box-shadow: 0 0 0 4px rgba(243, 179, 61, 0.13);
+}
+
 .stop-index {
   display: grid;
   width: 28px;
@@ -380,6 +523,17 @@ input:focus-visible {
   text-align: center;
 }
 
+.next-step-note {
+  margin: 18px 2px 0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #bfe8d8;
+  background: rgba(19, 80, 59, 0.22);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
 @media (min-width: 640px) {
   .app-shell {
     padding-inline: 24px;
@@ -387,7 +541,9 @@ input:focus-visible {
 
   .auth-card,
   .fixture-card,
-  .route-details {
+  .route-details,
+  .proposal-card,
+  .proposal-launch {
     padding: 32px;
   }
 }

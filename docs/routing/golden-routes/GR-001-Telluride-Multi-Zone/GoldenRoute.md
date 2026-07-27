@@ -107,7 +107,11 @@ GJ
 
 ## Required Expectations
 
-A passing route must:
+The first controlled run replays the documented **AI Proposal Before Driver
+Correction**. It intentionally does not pass the Downtown Telluride ordering
+expectations because that known mistake is the learning event.
+
+After the expected sandbox lesson is approved, a passing learned rerun must:
 
 - Use only the 14 stops in this fixture.
 - Preserve the expected macro-zone order.

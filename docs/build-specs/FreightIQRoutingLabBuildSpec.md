@@ -223,7 +223,14 @@ An approved sandbox lesson influences only later Test Route proposals.
 
 ## GR-001 Required Outcomes
 
-A passing proposal must:
+The first controlled run replays the frozen
+`ai_proposed_before_driver_correction` sequence. That baseline intentionally
+preserves the historical Downtown Telluride mistake so the learning loop has a
+known correction to observe. It must be labeled as a baseline replay and must
+not be presented as the driver-correct route.
+
+After Robby approves the expected sandbox lesson, a passing learned rerun
+proposal must:
 
 - Use only the 14 fixture stops.
 - Preserve the documented macro-zone order.

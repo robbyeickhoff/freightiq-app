@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 
-import { gr001Fixture } from './data/gr-001'
+import { gr001BaselineProposal, gr001Fixture } from './data/gr-001'
 import { getRoutingLabConfig } from './lib/config'
 import { getSupabase } from './lib/supabase'
 
@@ -11,6 +11,7 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [linkRequested, setLinkRequested] = useState(false)
   const [fixtureLoaded, setFixtureLoaded] = useState(false)
+  const [proposalGenerated, setProposalGenerated] = useState(false)
   const [message, setMessage] = useState('')
   const config = getRoutingLabConfig()
 
@@ -193,6 +194,134 @@ function App() {
       </section>
 
       {fixtureLoaded ? (
+        <section
+          className="proposal-launch"
+          aria-labelledby="proposal-launch-title"
+        >
+          <div>
+            <p className="eyebrow">Controlled learning test</p>
+            <h2 id="proposal-launch-title">Replay the baseline proposal</h2>
+            <p>
+              Keep the verified driver order intact while replaying the frozen
+              AI proposal that existed before the Downtown correction.
+            </p>
+          </div>
+          <button
+            className="primary-button"
+            type="button"
+            disabled={proposalGenerated}
+            onClick={() => setProposalGenerated(true)}
+          >
+            {proposalGenerated
+              ? 'Baseline proposal generated'
+              : 'Generate proposed route'}
+          </button>
+        </section>
+      ) : null}
+
+      {proposalGenerated ? (
+        <section
+          className="proposal-card"
+          aria-labelledby="proposed-route-title"
+        >
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Baseline replay</p>
+              <h2 id="proposed-route-title">Proposed route</h2>
+            </div>
+            <span className="baseline-badge">
+              {gr001BaselineProposal.label}
+            </span>
+          </div>
+
+          <p className="proposal-explanation">
+            This is the preserved historical AI proposal—not the correct driver
+            route. Routing Lab will keep it unchanged so a later correction can
+            be measured honestly.
+          </p>
+
+          <div className="proposal-summary" aria-label="Proposal summary">
+            <div>
+              <span>Stops</span>
+              <strong>{gr001BaselineProposal.stops.length}</strong>
+            </div>
+            <div>
+              <span>Macro zones</span>
+              <strong>{gr001Fixture.expected_macro_zone_order.length}</strong>
+            </div>
+            <div>
+              <span>Return</span>
+              <strong>Grand Junction</strong>
+            </div>
+          </div>
+
+          <div className="proposal-insights">
+            <article className="insight-card">
+              <p className="insight-label">Macro flow</p>
+              <p>
+                {gr001Fixture.expected_macro_zone_order.join(' → ')}
+              </p>
+            </article>
+
+            <article className="insight-card">
+              <p className="insight-label">Accepted flexibility</p>
+              <ul>
+                {gr001Fixture.acceptable_variations.map((variation) => (
+                  <li key={variation.stops.join('-')}>
+                    {variation.stops.join(' / ')}: {variation.reason}
+                  </li>
+                ))}
+              </ul>
+            </article>
+
+            <article className="review-flag">
+              <div>
+                <p className="insight-label">Needs driver review</p>
+                <h3>{gr001Fixture.meaningful_ai_correction.area}</h3>
+              </div>
+              <p>
+                The frozen AI baseline ends with Brandon Quattrone. The
+                driver-validated order places that stop first in Downtown and
+                finishes with FCI Constructors.
+              </p>
+            </article>
+          </div>
+
+          <div className="stop-list-heading">
+            <h3>Baseline stop order</h3>
+            <span>Frozen for comparison</span>
+          </div>
+
+          <ol className="stop-list proposal-list">
+            {gr001BaselineProposal.stops.map((stop) => (
+              <li
+                key={`${stop.name}-${stop.address}`}
+                className={
+                  stop.name === 'Brandon Quattrone'
+                    ? 'proposal-list__learning-stop'
+                    : undefined
+                }
+              >
+                <div className="stop-index" aria-hidden="true" />
+                <div className="stop-copy">
+                  <strong>{stop.name}</strong>
+                  <span>
+                    {stop.address}, {stop.city}
+                  </span>
+                </div>
+                <span className="zone-badge">{stop.zone}</span>
+              </li>
+            ))}
+          </ol>
+
+          <p className="next-step-note">
+            Proposal ready for review. Starting and tracking the route is the
+            next Slice 1 build step.
+          </p>
+        </section>
+      ) : null}
+
+      {fixtureLoaded ? (
         <section className="route-details" aria-labelledby="route-details-title">
           <div className="section-heading">
             <div>
@@ -224,7 +353,7 @@ function App() {
           </dl>
 
           <div className="stop-list-heading">
-            <h3>Verified stops</h3>
+            <h3>Verified driver order</h3>
             <span>{gr001Fixture.stops.length} total</span>
           </div>
 
