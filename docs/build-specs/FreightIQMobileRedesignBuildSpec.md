@@ -87,6 +87,22 @@ The redesign is intended to improve presentation, hierarchy, consistency, access
 - App Store or Google Play submission
 - Unrelated refactoring, cleanup, or feature work
 
+### Approved Scope Expansion — V2 App Icon Integration
+
+The Product Owner approved a focused scope expansion before final iPhone and Pixel smoke testing:
+
+- Integrate the approved 1024 × 1024 V2 icon master for iOS and legacy Android launchers.
+- Use the exact FreightIQ charcoal `#0B0F14` as the Android adaptive-icon background.
+- Create a transparent Android adaptive foreground from the approved symbol without redesigning it.
+- Create a single-color Android monochrome layer for themed icons.
+- Validate the icon at 1024, 180, 120, 60, 40, and 29 pixels.
+- Preview the Android icon with circular, squircle, and themed-icon treatments.
+- Preserve the existing splash screen and web favicon.
+- Defer build-number changes, production builds, and App Store or Google Play submission until the remaining smoke tests pass.
+
+The iOS/store master must remain an exact copy of the approved PNG. Android-specific safe-area
+processing must occur only in the separate Android foreground and monochrome files.
+
 ## 3. Design Principles
 
 ### Overall Personality: Rugged Precision
@@ -683,6 +699,13 @@ The first redesign slice is complete only when all of the following are true:
 - Required physical-device testing is completed.
 - The applicable FreightIQ completion workflow is followed.
 - The user reviews and approves the result before implementation is treated as complete.
+- The approved V2 app icon is configured for iOS, legacy Android, Android adaptive launchers, and
+  Android themed icons.
+- The iOS/store master remains opaque, full bleed, 1024 × 1024, and unchanged from the approved
+  source.
+- The Android adaptive foreground remains inside the platform safe area and survives circular and
+  squircle masks without clipping.
+- The existing splash screen and web favicon remain unchanged.
 
 ## 21. Change Control
 

@@ -32,7 +32,8 @@ The controlling specification is:
 
 ## Current Focus
 
-Complete the remaining Pixel and standalone-iPhone validation for the approved V2 mobile redesign.
+Complete V2 app-icon integration, then run the remaining Pixel and standalone-iPhone validation for
+the approved V2 mobile redesign.
 
 The centralized theme and semantic-token foundation has been accepted on iPhone.
 The System, Light, and Dark preference behavior has been accepted on iPhone.
@@ -53,6 +54,12 @@ Reduced-motion handling, larger-text resilience, semantic control labels, and mi
 Maximum iPhone accessibility text size has passed visual and functional validation across the selected-stop preview, Stop Intel summary, Quick Intel, Settings, and Help Center. The preview remains below the search and system status areas, exposes an obvious internal scroll region, and preserves every action. Normal-size regression testing has also passed on iPhone.
 The remaining iPhone accessibility matrix has passed, including Reduce Motion, VoiceOver labels, grayscale and color-independent status communication, minimum touch targets, standard and satellite map readability, and saved and unsaved report states. The enlarged map-control rail and the bottom-aligned Show/Hide Stops action have also passed physical iPhone validation.
 Changing the iPhone text size while Expo is already running currently requires an Expo reload before the new scale appears. Dynamic text-size switching remains to be verified in a standalone iPhone build before final accessibility acceptance.
+The Product Owner approved a focused V2 app-icon scope expansion before final smoke testing. The
+approved iOS/store master, Android adaptive foreground, charcoal background, and Android monochrome
+themed-icon layer are integrated and statically validated. The Apple master matches the approved
+source exactly, required small-size and Android-mask previews pass, and the splash screen, favicon,
+build numbers, and store listings remain unchanged. Physical launcher validation remains part of
+the clean iPhone and Pixel build checks.
 
 The initial vertical slice covers:
 
@@ -79,6 +86,7 @@ The approved follow-on refresh also covers:
 - New Intel fields
 - Full Detailed Intel, Danger Zone, onboarding, or authentication redesigns
 - App Store or Google Play submission
+- Build-number or version changes before smoke-test acceptance
 
 ---
 
@@ -97,6 +105,8 @@ The approved follow-on refresh also covers:
 
 Run the remaining approved Pixel and standalone-iPhone matrix across the complete V2 workflow:
 
+- Confirm the V2 icon in an iPhone build.
+- Confirm the standard, adaptive, and themed V2 icons in an Android build.
 - Follow the numbered physical-Pixel smoke-test script in Section 18 of the controlling Mobile Redesign Build Specification.
 - Pixel Light, Dark, and System appearance modes
 - Pixel standard and satellite map views
