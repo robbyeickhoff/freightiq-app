@@ -1,6 +1,6 @@
 # Vehicle Positioning Through Turnarounds
 
-**Captured:** 2026-07-24
+**Captured:** 2026-07-28
 
 **Status:** Ready for Workflow
 
