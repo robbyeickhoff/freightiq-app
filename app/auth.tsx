@@ -1,22 +1,29 @@
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableWithoutFeedback,
-  View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { AppButton } from "@/components/ui/app-button";
+import { AppCard } from "@/components/ui/app-card";
+import { AppTextField } from "@/components/ui/app-text-field";
+import { Spacing, Typography } from "@/constants/theme";
+import { useAppTheme } from "@/context/theme-context";
+
 import { supabase } from "../utils/supabase";
 
 export default function AuthScreen() {
   const router = useRouter();
+  const { colors } = useAppTheme();
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -24,6 +31,10 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [showCodeStep, setShowCodeStep] = useState(false);
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
+
+  const revealFormActions = useCallback(() => {
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -39,6 +50,14 @@ export default function AuthScreen() {
       sub.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    const keyboardSubscription = Keyboard.addListener("keyboardDidShow", revealFormActions);
+
+    return () => {
+      keyboardSubscription.remove();
+    };
+  }, [revealFormActions]);
 
   async function sendCode() {
     if (!email.trim()) {
@@ -155,150 +174,121 @@ export default function AuthScreen() {
   }
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <KeyboardAvoidingView
-        style={styles.screen}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          {!showCodeStep && (
-            <View style={styles.card}>
-              <>
-                <Text style={styles.label}>WHY DO I NEED AN ACCOUNT?</Text>
-                <Text style={styles.title}>Don't lose what you've learned.</Text>
-                <Text style={styles.body}>
-                  Your account keeps your intel connected to you, so you can update it over time and
-                  help the next driver—including future you.
-                  {"\n\n"}
-                  Enter your email and we'll send you a one-time login code.
-                </Text>
-              </>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Email"
-                placeholderTextColor="#8b949e"
-                autoCapitalize="none"
-                keyboardType="email-address"
-                style={styles.input}
-                returnKeyType="done"
-              />
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={["top"]}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <KeyboardAvoidingView
+          style={styles.screen}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <ScrollView
+            ref={scrollViewRef}
+            contentContainerStyle={styles.container}
+            keyboardDismissMode="interactive"
+            keyboardShouldPersistTaps="handled"
+          >
+            <AppCard contentStyle={styles.card} surface="surface">
+              {!showCodeStep ? (
+                <>
+                  <Text style={[styles.label, { color: colors.accentStrong }]}>
+                    Driver sign in
+                  </Text>
+                  <Text style={[styles.title, { color: colors.textPrimary }]}>
+                    Don&apos;t lose what you&apos;ve learned.
+                  </Text>
+                  <Text style={[styles.body, { color: colors.textSecondary }]}>
+                    Your account keeps your intel connected to you, so you can update it over time
+                    and help the next driver—including future you.
+                    {"\n\n"}
+                    Enter your email and we&apos;ll send you a one-time login code.
+                  </Text>
 
-              <Pressable style={styles.button} onPress={sendCode} disabled={loading}>
-                <Text style={styles.buttonText}>{loading ? "Working..." : "Get Login Code"}</Text>
-              </Pressable>
-            </View>
-          )}
+                  <AppTextField
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    keyboardType="email-address"
+                    label="Email address"
+                    onChangeText={setEmail}
+                    placeholder="you@example.com"
+                    returnKeyType="done"
+                    textContentType="emailAddress"
+                    value={email}
+                  />
 
-          {showCodeStep && (
-            <>
-              <Text style={styles.title}>Almost there.</Text>
+                  <AppButton
+                    fullWidth
+                    loading={loading}
+                    onPress={() => void sendCode()}
+                    style={styles.button}
+                  >
+                    Get Login Code
+                  </AppButton>
+                </>
+              ) : (
+                <>
+                  <Text style={[styles.label, { color: colors.accentStrong }]}>
+                    Check your email
+                  </Text>
+                  <Text style={[styles.title, { color: colors.textPrimary }]}>Almost there.</Text>
+                  <Text style={[styles.body, { color: colors.textSecondary }]}>
+                    Enter the one-time login code we sent to {email.trim()}.
+                  </Text>
 
-              <Text style={styles.body}>Enter the login code we just sent you.</Text>
-              <TextInput
-                value={code}
-                onChangeText={setCode}
-                placeholder="Enter login code"
-                keyboardType="number-pad"
-                style={styles.input}
-                returnKeyType="done"
-              />
+                  <AppTextField
+                    autoComplete="one-time-code"
+                    keyboardType="number-pad"
+                    label="Login code"
+                    onChangeText={setCode}
+                    placeholder="Enter your code"
+                    returnKeyType="done"
+                    textContentType="oneTimeCode"
+                    value={code}
+                  />
 
-              <Pressable style={styles.button} onPress={verifyCode} disabled={loading}>
-                <Text style={styles.buttonText}>{loading ? "Working..." : "Verify Code"}</Text>
-              </Pressable>
-            </>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </TouchableWithoutFeedback>
+                  <AppButton
+                    fullWidth
+                    loading={loading}
+                    onPress={() => void verifyCode()}
+                    style={styles.button}
+                  >
+                    Verify Code
+                  </AppButton>
+                </>
+              )}
+            </AppCard>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#0b0f14",
   },
   container: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingHorizontal: 20,
-    backgroundColor: "#0b0f14",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xl,
   },
   card: {
-    backgroundColor: "#151b22",
-    borderRadius: 16,
-    padding: 24,
-    gap: 16,
+    padding: Spacing.lg,
+    gap: Spacing.md,
   },
   title: {
-    color: "#ffffff",
-    fontSize: 28,
-    fontWeight: "800",
-    lineHeight: 34,
-    marginBottom: 0,
+    ...Typography.screenTitle,
   },
   label: {
-    color: "#7aa2ff",
-    fontSize: 14,
+    ...Typography.operationalLabel,
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 0.8,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: "#2d3742",
-    borderRadius: 12,
-    padding: 12,
-    backgroundColor: "#0b0f14",
-    fontSize: 16,
-    color: "#e6edf3",
-    marginTop: 12,
-  },
   button: {
-    backgroundColor: "#3b82f6",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 12,
-  },
-  buttonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  statusCard: {
-    marginTop: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#e6e6e6",
-    borderRadius: 12,
-    backgroundColor: "white",
-    gap: 4,
-  },
-  statusText: {
-    fontWeight: "800",
-  },
-  statusHint: {
-    color: "#666",
-  },
-  backBtn: {
-    borderWidth: 1,
-    borderColor: "#2d3742",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  backBtnText: {
-    color: "#e6edf3",
-    fontSize: 16,
-    fontWeight: "600",
+    marginTop: Spacing.xs,
   },
   body: {
-    color: "#c9d1d9",
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 12,
+    ...Typography.body,
   },
 });

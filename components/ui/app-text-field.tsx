@@ -117,7 +117,8 @@ const styles = StyleSheet.create({
     borderRadius: Radius.medium,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    ...Typography.body,
+    fontSize: Typography.body.fontSize,
+    fontWeight: Typography.body.fontWeight,
   },
   multiline: {
     minHeight: 112,

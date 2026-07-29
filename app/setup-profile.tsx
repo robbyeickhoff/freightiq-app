@@ -1,8 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { AppButton } from "@/components/ui/app-button";
+import { Spacing, Typography } from "@/constants/theme";
+import { useAppTheme } from "@/context/theme-context";
+
 import ProfileForm from "../components/ProfileForm";
 import { supabase } from "../utils/supabase";
 
@@ -12,6 +17,7 @@ export default function SetupProfileScreen() {
   const [name, setName] = useState("");
   const [tractorType, setTractorType] = useState("");
   const router = useRouter();
+  const { colors } = useAppTheme();
   const params = useLocalSearchParams<{ tractorType?: string; name?: string }>();
 
   useEffect(() => {
@@ -91,29 +97,40 @@ export default function SetupProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <Text style={styles.eyebrow}>One last step</Text>
-      <Text style={styles.title}>Set up your driver profile</Text>
-      <Text style={styles.body}>
-        Your driver profile gives context to the intel you share so other drivers can make better
-        decisions.
-      </Text>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["top"]}
+    >
+      <ScrollView
+        contentContainerStyle={styles.content}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={[styles.eyebrow, { color: colors.accentStrong }]}>One last step</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>
+          Set up your driver profile
+        </Text>
+        <Text style={[styles.body, { color: colors.textSecondary }]}>
+          Your driver profile gives context to the intel you share so other drivers can make better
+          decisions.
+        </Text>
 
-      <ProfileForm
-        name={name}
-        onChangeName={setName}
-        tractorType={tractorType}
-        onPressSelectTractorType={() =>
-          router.push({
-            pathname: "/tractor-type",
-            params: { name, tractorType, returnTo: "/setup-profile" },
-          })
-        }
-      />
+        <ProfileForm
+          name={name}
+          onChangeName={setName}
+          tractorType={tractorType}
+          onPressSelectTractorType={() =>
+            router.push({
+              pathname: "/tractor-type",
+              params: { name, tractorType, returnTo: "/setup-profile" },
+            })
+          }
+        />
 
-      <Pressable style={styles.button} onPress={saveProfile}>
-        <Text style={styles.buttonText}>Continue</Text>
-      </Pressable>
+        <AppButton fullWidth onPress={() => void saveProfile()} style={styles.button}>
+          Continue
+        </AppButton>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -121,42 +138,33 @@ export default function SetupProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: "white",
+  },
+
+  content: {
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xxl,
   },
 
   eyebrow: {
-    fontSize: 14,
+    ...Typography.operationalLabel,
     fontWeight: "700",
-    color: "#3b82f6",
     textTransform: "uppercase",
     letterSpacing: 0.8,
-    marginBottom: 8,
+    marginBottom: Spacing.xs,
   },
 
   title: {
-    fontSize: 26,
-    fontWeight: "800",
-    marginBottom: 10,
+    ...Typography.screenTitle,
+    marginBottom: Spacing.sm,
   },
 
   body: {
-    fontSize: 16,
-    lineHeight: 23,
-    color: "#555",
-    marginBottom: 12,
+    ...Typography.body,
+    marginBottom: Spacing.sm,
   },
 
   button: {
-    backgroundColor: "black",
-    padding: 14,
-    borderRadius: 10,
-    marginTop: 25,
-    alignItems: "center",
-  },
-
-  buttonText: {
-    color: "white",
-    fontWeight: "700",
+    marginTop: Spacing.lg,
   },
 });
