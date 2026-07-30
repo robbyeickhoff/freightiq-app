@@ -174,6 +174,7 @@ Continue improving map reliability, stop discovery, and rendering performance.
 - [ ] Continue monitoring repeated Show/Hide Stops interactions for stability.
 - [ ] Continue monitoring repeated Preview Card interactions for stability.
 - [ ] Validate the polished Nearby Stops workflow with broader tester use.
+- [ ] Conduct a focused place-search provider review comparing Mapbox, Google Places, and platform-specific Apple/Google search before deciding whether to keep or remove Mapbox. Review result quality, storage rights, pricing, attribution, cross-platform consistency, and migration risk.
 
 ---
 
