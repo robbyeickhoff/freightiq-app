@@ -40,3 +40,8 @@ app-example
 
 # generated native folders
 /ios
+
+# Separate workspaces and local native backups that are not part of the mobile app
+/freightiq-site
+/routing-lab
+/android.backup-before-prebuild
