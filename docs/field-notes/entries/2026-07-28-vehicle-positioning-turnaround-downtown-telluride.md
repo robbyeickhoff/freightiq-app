@@ -4,7 +4,7 @@
 
 **Status:** Ready for Workflow
 
-**Classification:** Routing Lab Insight
+**Classification:** Routing lesson
 
 **Destination:** Routing Lab documentation and routing knowledge
 
@@ -49,3 +49,44 @@ Potential reusable rule:
 
 - Should Vehicle Positioning become a first-class lesson type in Routing Lab?
 - Are there additional repeatable examples beyond Downtown Telluride?
+
+---
+
+## Review Outcome
+
+### Final Summary
+
+Experienced drivers route for vehicle positioning, not only stop sequence. A required turnaround can be used intentionally to set up the truck's outbound direction for the next micro-zone or zone.
+
+### Why It Matters
+
+This is a durable Routing Lab lesson because it captures operational routing knowledge that is not visible from geography alone. It gives the lab a way to evaluate whether a route preserves vehicle flow and avoids unnecessary maneuvering.
+
+### Confirmed Facts
+
+- The note describes a Downtown Telluride example where a turnaround after Zone 1 South sets up the truck to continue through Overland, Kit, Fox, and west toward Airport / Aldasoro.
+- The note identifies vehicle positioning as a routing knowledge category distinct from geography or stop order.
+- The Routing Lab build spec already includes driver correction and reason-capture concepts that can receive this lesson.
+
+### Assumptions or Unknowns
+
+- It is not yet decided whether Vehicle Positioning should become a first-class lesson type in Routing Lab.
+- Additional examples beyond Downtown Telluride still need to be identified.
+
+### Recommended Next Action
+
+Incorporate vehicle positioning into Routing Lab documentation as a reusable routing lesson and candidate evaluation category.
+
+### Repository Review
+
+**Repository review required:** Yes
+
+**Repository destination verified:** Yes
+
+### Related Entry or Existing Work
+
+`docs/build-specs/FreightIQRoutingLabBuildSpec.md`
+
+### Review Decision
+
+Keep as Ready for Workflow and route into Routing Lab documentation. Classification normalized from `Routing Lab Insight` to the approved `Routing lesson` classification.
