@@ -14,13 +14,22 @@ The End-of-Day Review turns rough observations into clear outcomes without creat
 
 ## Core Principle
 
-**Clarify. Decide. Route.**
+**Clarify. Decide. Route. Queue only what needs follow-up.**
 
 The goal is not to preserve every idea.
 
 The goal is to identify which ideas matter, understand why they matter, and determine what should happen next.
 
+Every reviewed Field Note must end with exactly one review outcome:
+
+- `Discarded`
+- `Documented`
+- `Action Required`
+- `Parked`
+
 Discarding a weak, duplicate, resolved, or unnecessary idea is a successful outcome.
+
+Adding an item to the Field Notes Action Queue preserves follow-up work; it does not authorize implementation or destination-document changes.
 
 ---
 
@@ -74,7 +83,7 @@ Before reviewing an entry:
 6. Present a concise recommended outcome.
 7. Obtain user approval when the outcome is not already explicit.
 
-Review updates only the selected Field Note.
+Review updates only the selected Field Note and, when required by this workflow, `docs/field-notes/ActionQueue.md`.
 
 Do not modify unrelated Field Notes.
 
@@ -93,13 +102,15 @@ For each entry:
 5. Assign one approved classification.
 6. Verify the destination when one is proposed.
 7. Decide the recommended next action.
-8. Assign one approved final status.
-9. Present the recommended review outcome.
-10. Obtain user approval when needed.
-11. Update only the reviewed Field Note.
-12. Preserve `Original Thought` verbatim.
-13. Confirm the repository write before claiming the review was saved.
-14. Move to the next entry only after the current one is resolved or intentionally deferred.
+8. Assign one approved review outcome.
+9. If the outcome is `Action Required` or `Parked`, prepare the required Action Queue item.
+10. Present the recommended review outcome and any Action Queue item.
+11. Obtain user approval when needed.
+12. Update only the reviewed Field Note.
+13. If required, update `docs/field-notes/ActionQueue.md` with the approved queue item.
+14. Preserve `Original Thought` verbatim.
+15. Confirm the repository write before claiming the review or queue update was saved.
+16. Move to the next entry only after the current one is resolved or intentionally parked.
 
 ---
 
@@ -118,6 +129,7 @@ When relevant, determine:
 9. What outcome is needed?
 10. What is the correct destination?
 11. What should happen next?
+12. Should this be ready to work, waiting for a decision, parked, or completed but not verified?
 
 Do not mechanically ask every question.
 
@@ -173,81 +185,24 @@ Do not invent synonyms or create new classification values during ordinary revie
 
 When none of the approved values fits:
 
-1. Keep the note `Solidified` or `Deferred`.
+1. Use review outcome `Parked`.
 2. Record why classification remains unresolved.
-3. Propose a controlled vocabulary change separately.
-4. Do not silently add a new classification.
+3. Add the item to `docs/field-notes/ActionQueue.md` with status `Waiting for a decision` or `Parked`.
+4. Propose a controlled vocabulary change separately.
+5. Do not silently add a new classification.
 
 ---
 
-## Approved Statuses
+## Approved Review Outcomes
 
-Only the following final status values are permitted:
+Only the following final `Status` values are permitted for reviewed Field Notes:
 
-- Solidified
-- Ready for Workflow
-- Deferred
-- Combined
 - Discarded
+- Documented
+- Action Required
+- Parked
 
 `Unreviewed` is the capture status and remains the normal active queue until review is completed.
-
-### Solidified
-
-The note has been clarified and is worth preserving, but its destination or next workflow has not been verified.
-
-A Solidified note:
-
-- Leaves the normal Unreviewed queue.
-- Is not automatically reconsidered during every End-of-Day Review.
-- Remains parked until the user explicitly selects it for further review or starts a dedicated Solidified-notes review.
-- Must state what remains unresolved.
-- Is not approved for implementation.
-
-A later review may change it to Ready for Workflow, Deferred, Combined, or Discarded.
-
-### Ready for Workflow
-
-The note has completed review and has:
-
-- A controlled classification.
-- A verified destination or named workflow.
-- A clear recommended next action.
-
-This status does not mean:
-
-- Implementation has begun.
-- The destination document has been changed.
-- A task has been created.
-- A product decision has been approved.
-
-A separate user instruction or authorized workflow is required.
-
-### Deferred
-
-The note may have value, but a responsible decision cannot yet be made.
-
-It must record:
-
-- What information, evidence, decision, or event is missing.
-- Why review cannot be completed.
-- What should trigger reconsideration, when known.
-
-A Deferred note is excluded from the normal Unreviewed queue. It is revisited only when the user selects it or its recorded trigger occurs.
-
-### Combined
-
-The note substantially duplicates or overlaps another Field Note, and its useful context has been incorporated into that destination Field Note.
-
-Requirements:
-
-- The destination must be another existing Field Note.
-- The destination must be recorded as a repository-relative path.
-- The destination file must be verified before approval.
-- The same path must appear under `Destination` and `Related Entry or Existing Work`.
-- Any unique context must be transferred only through an authorized Field Notes update.
-- The Combined note remains as an independent historical record.
-- The reason for combining must be recorded.
 
 ### Discarded
 
@@ -268,6 +223,90 @@ The reason must be recorded.
 
 Discarded notes remain in the repository and are not deleted.
 
+Discarded notes are not added to `docs/field-notes/ActionQueue.md` unless a separate user instruction explicitly creates follow-up work.
+
+### Documented
+
+The note has been clarified and its useful knowledge has been preserved in the reviewed Field Note itself, an existing verified repository document, or another verified Field Note.
+
+A Documented note:
+
+- Leaves the normal Unreviewed queue.
+- Must state where the knowledge is documented.
+- Must identify whether repository destination verification was completed.
+- Is not approved for implementation.
+- Does not require Action Queue entry unless additional follow-up is explicitly needed.
+
+Documented means the review preserved the knowledge; it does not automatically modify a destination document during End-of-Day Review.
+
+### Action Required
+
+The note has completed review and needs follow-up work, a downstream workflow, verification, or a concrete next step after the user authorizes that work.
+
+An Action Required note must have:
+
+- A controlled classification.
+- A verified destination, named workflow, or clearly stated unverified destination.
+- A clear recommended next action.
+- A corresponding entry in `docs/field-notes/ActionQueue.md`.
+
+This status does not mean:
+
+- Implementation has begun.
+- The destination document has been changed.
+- A product decision has been approved.
+- The queued item is authorized to proceed without a separate instruction.
+
+### Parked
+
+The note may have value, but should not be actively worked yet because information, evidence, a decision, timing, or a triggering event is missing.
+
+It must record:
+
+- What information, evidence, decision, or event is missing.
+- Why review cannot move to active work.
+- What should trigger reconsideration, when known.
+- A corresponding entry in `docs/field-notes/ActionQueue.md`.
+
+A Parked note is excluded from the normal Unreviewed queue. It is revisited only when the user selects it, its recorded trigger occurs, or the Action Queue is reviewed.
+
+---
+
+## Action Queue Requirement
+
+`docs/field-notes/ActionQueue.md` is the single authoritative queue for actionable and parked items that originate from Field Notes.
+
+During End-of-Day Review, every reviewed note with outcome `Action Required` or `Parked` must be added to `docs/field-notes/ActionQueue.md`.
+
+Every Action Queue item must include:
+
+- Title
+- Source field note path
+- Category
+- Status
+- Next action
+- Priority
+- Date added
+
+Use the Field Note classification as `Category`.
+
+Use exactly one of these queue status values:
+
+- `Ready to work`
+- `Waiting for a decision`
+- `Parked`
+- `Completed but not verified`
+- `Verified complete`
+
+Default status guidance:
+
+- Use `Ready to work` when the next workflow is clear and only needs user authorization.
+- Use `Waiting for a decision` when a product, technical, operating-system, or user decision is required first.
+- Use `Parked` when the item is intentionally preserved for later and should not be active.
+- Use `Completed but not verified` only when the work appears complete but repository verification has not confirmed it.
+
+The queue entry preserves the follow-up item. It does not authorize implementation, destination-document edits, code changes, product decisions, or completion claims.
+
 ---
 
 ## Destination Rules
@@ -282,13 +321,13 @@ After review, the destination must be one of:
 
 - A verified repository-relative path.
 - A named and documented workflow.
-- An approved backlog or holding destination.
+- `docs/field-notes/ActionQueue.md` for Action Required or Parked items.
 - A verified destination Field Note.
 - `Discarded archive`.
 
 Do not invent repository paths.
 
-For a Combined entry, the destination must be the repository-relative path of the destination Field Note, for example:
+For an entry that is documented through another existing Field Note, the destination must be the repository-relative path of the destination Field Note, for example:
 
 ```md
 **Destination:** docs/field-notes/entries/2026-07-22-1500-trailer-access-observation.md
@@ -308,7 +347,8 @@ Repository inspection may be required to:
 - Confirm the correct destination.
 - Identify the governing workflow.
 - Verify current implementation or project state.
-- Verify a destination Field Note for a Combined outcome.
+- Verify a destination Field Note for a Documented outcome.
+- Verify `docs/field-notes/ActionQueue.md` before adding an Action Required or Parked item.
 
 When repository inspection is needed:
 
@@ -324,14 +364,13 @@ Do not claim repository access unless a successful repository action returned us
 
 ## Destination Authorization Boundary
 
-End-of-Day Review updates only the reviewed Field Note.
+End-of-Day Review updates only the reviewed Field Note and, when the review outcome requires it, `docs/field-notes/ActionQueue.md`.
 
 It must not automatically:
 
 - Modify routing documentation.
 - Modify zone documentation.
 - Modify product or workflow documentation.
-- Add work to a backlog.
 - Create a Codex task.
 - Change application code.
 - Implement a feature.
@@ -346,7 +385,7 @@ Changing a destination document requires:
 3. A separate repository write.
 4. A separate focused commit.
 
-`Ready for Workflow` means ready to enter another workflow. It does not authorize that workflow automatically.
+`Action Required` means ready to enter another workflow or receive a next decision. It does not authorize that workflow automatically.
 
 ---
 
@@ -359,11 +398,11 @@ Changing a destination document requires:
 
 **Timezone:** [Original recorded timezone]
 
-**Status:** [Approved status]
+**Status:** [Discarded / Documented / Action Required / Parked]
 
 **Classification:** [Approved classification]
 
-**Destination:** [Verified destination]
+**Destination:** [Verified destination, docs/field-notes/ActionQueue.md, or Discarded archive]
 
 ## Original Thought
 
@@ -411,6 +450,14 @@ Changing a destination document requires:
 
 [Repository-relative path, verified reference, or “None.”]
 
+### Action Queue
+
+**Action Queue required:** Yes / No
+
+**Action Queue item:** [Queue title or “None.”]
+
+**Action Queue status:** [Ready to work / Waiting for a decision / Parked / Completed but not verified / Verified complete / None]
+
 ### Review Decision
 
 [Reason for the approved status.]
@@ -424,13 +471,16 @@ Each reviewed Field Note requires its own focused commit.
 
 Do not group multiple reviewed Field Notes into one commit.
 
-Suggested commit message:
+When a reviewed Field Note requires an Action Queue update, the Field Note update and Action Queue update may be separate focused commits because the current Markdown write action writes one file per commit.
+
+Suggested commit messages:
 
 ```text
 Review Field Note: [short title]
+Update Field Notes Action Queue
 ```
 
-The current Markdown write action creates one commit per file update, which supports an independent audit trail for each note.
+The current Markdown write action creates one commit per file update, which supports an independent audit trail for each note and queue change.
 
 ---
 
@@ -442,13 +492,14 @@ The default active queue contains only entries with:
 Status: Unreviewed
 ```
 
-Other statuses are revisited only when explicitly selected:
+Reviewed entries are revisited according to their outcome:
 
-- Solidified: manual follow-up or dedicated Solidified review.
-- Deferred: manual follow-up or recorded trigger.
-- Ready for Workflow: separately authorized downstream workflow.
-- Combined: historical record unless correction is needed.
 - Discarded: historical record unless new evidence justifies reopening.
+- Documented: historical record unless correction is needed.
+- Action Required: tracked through `docs/field-notes/ActionQueue.md`.
+- Parked: tracked through `docs/field-notes/ActionQueue.md` and revisited only when selected, triggered, or reviewed from the queue.
+
+When asked to show actionable or deferred Field Notes, read `docs/field-notes/ActionQueue.md` and group open items by queue status.
 
 ---
 
@@ -461,8 +512,9 @@ When review time is limited:
 1. Process the oldest Unreviewed entry first unless the user selects another.
 2. Complete one entry before starting another.
 3. Leave unfinished entries as Unreviewed.
-4. Mark intentionally postponed entries Deferred only when the reason and revisit trigger are recorded.
-5. Do not rush an entry into a weak conclusion merely to finish the queue.
+4. Mark intentionally postponed entries Parked only when the reason and revisit trigger are recorded.
+5. Add each Parked item to `docs/field-notes/ActionQueue.md`.
+6. Do not rush an entry into a weak conclusion merely to finish the queue.
 
 The session is successful when useful decisions are made within the available time.
 
@@ -473,17 +525,17 @@ The session is successful when useful decisions are made within the available ti
 At the end of the review session, provide a brief summary containing:
 
 - Number of entries processed.
-- Entries marked Solidified.
-- Entries marked Ready for Workflow.
-- Entries marked Deferred.
-- Entries marked Combined.
 - Entries marked Discarded.
+- Entries marked Documented.
+- Entries marked Action Required.
+- Entries marked Parked.
+- Action Queue items added.
 - Entries still Unreviewed.
 - Repository documents that still require inspection.
 - Approved next steps.
 - Unresolved questions.
 
-Do not claim a Field Note, task, destination update, implementation, commit, or repository change was completed unless the applicable repository action successfully confirmed it.
+Do not claim a Field Note, task, destination update, implementation, commit, Action Queue item, or repository change was completed unless the applicable repository action successfully confirmed it.
 
 ---
 
@@ -495,6 +547,14 @@ If a Field Note cannot be updated:
 2. Preserve the complete proposed reviewed entry in the conversation.
 3. Do not claim the review completed.
 4. Do not modify another entry as a workaround.
+5. Stop and wait for the user to retry or provide direction.
+
+If a required Action Queue update cannot be saved:
+
+1. State plainly that the Action Queue item was not saved.
+2. Identify `docs/field-notes/ActionQueue.md` as the file that was not updated.
+3. Preserve the complete intended queue item in the conversation.
+4. Do not claim the Field Note follow-up item is queued.
 5. Stop and wait for the user to retry or provide direction.
 
 ---
@@ -509,9 +569,10 @@ It does not automatically:
 - Begin implementation.
 - Create a build specification.
 - Modify destination documents.
-- Add tasks to a backlog.
 - Reopen approved decisions.
 - Change the FreightIQ Operating System.
 - Mark downstream work complete.
 
-After an entry is marked Ready for Workflow, begin the applicable FreightIQ workflow only when the user separately directs the assistant to proceed.
+After an entry is marked Action Required, begin the applicable FreightIQ workflow only when the user separately directs the assistant to proceed.
+
+After an entry is marked Parked, bring it forward only when the user selects it, a recorded trigger occurs, or the Field Notes Action Queue is reviewed.
