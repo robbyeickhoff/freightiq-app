@@ -1431,7 +1431,7 @@ export default function HomeScreen() {
         .from("mfi_stops")
         .select("entrance_lat, entrance_lng")
         .eq("id", p.id)
-        .single();
+        .maybeSingle();
 
       if (requestId !== selectedEntranceRequestIdRef.current) return;
 
@@ -2086,7 +2086,7 @@ export default function HomeScreen() {
 
   function navToStop() {
     if (!selectedStop) return;
-    Linking.openURL(mapsUrl(selectedStop.lat, selectedStop.lng, `${selectedStop.name} (Stop)`));
+    Linking.openURL(mapsUrl(selectedStop.lat, selectedStop.lng, selectedStop.name));
   }
 
   function onPressCluster(clusterFeature: any) {
@@ -3136,7 +3136,13 @@ export default function HomeScreen() {
       ) : null}
 
       {!showPreview ? (
-        <View style={[styles.floatingActions, { bottom: 36 }]}>
+        <View
+          style={[
+            styles.floatingActions,
+            deliveryZoneInspectionSource ? styles.floatingActionsInspection : null,
+            { bottom: 36 },
+          ]}
+        >
           <AppButton
             accessibilityLabel={showingStops ? "Hide stops" : "Show stops"}
             loading={stopLayerLoading}
@@ -3596,6 +3602,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 6,
+  },
+
+  floatingActionsInspection: {
+    flexDirection: "column",
+    alignItems: "flex-end",
   },
 
   deliveryZoneReturnPill: {

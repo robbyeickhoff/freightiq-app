@@ -675,7 +675,7 @@ export default function StopScreen() {
     }
   }
 
-  async function loadReports() {
+  async function loadReports(ownerUserId = sessionUserId) {
     try {
       setReports([]);
 
@@ -719,7 +719,7 @@ export default function StopScreen() {
 
       setReports(hydrated);
 
-      const mine = hydrated.find((r) => r.user_id === sessionUserId);
+      const mine = hydrated.find((r) => r.user_id === ownerUserId);
       if (mine) {
         const loadedBackInRequired =
           mine.back_in_required === true ? true : mine.back_in_required === false ? false : null;
@@ -1028,12 +1028,18 @@ export default function StopScreen() {
         return;
       }
 
-      const { error } = await supabase.from("mfi_reports").upsert(payload);
+      const { data: savedReport, error } = await supabase
+        .from("mfi_reports")
+        .upsert(payload)
+        .select("id")
+        .single();
 
       if (error) {
         Alert.alert("Save failed", error.message);
         return;
       }
+
+      setMyReportId(savedReport.id);
 
       const localRaw = await AsyncStorage.getItem(stopKey(stopId));
       const localParsed: StopIntel = localRaw ? JSON.parse(localRaw) : {};
@@ -1055,7 +1061,7 @@ export default function StopScreen() {
       setAdditionalIntelOpen(false);
       setQuickIntelOpen(false);
       Alert.alert("Saved", myReportId ? "Report updated." : "Report posted.");
-      await loadReports();
+      await loadReports(userId);
       router.replace({
         pathname: "/(tabs)/(map)",
         params: { refreshAt: String(Date.now()) },
