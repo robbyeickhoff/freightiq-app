@@ -96,6 +96,34 @@ Do not claim an item exists, has a status, or is completed unless it appears in 
 
 ---
 
+## Home Handoff Command
+
+Use this command from a local FreightIQ session on the Mac:
+
+```text
+Open FreightIQ Action Queue.
+```
+
+This command completes the handoff from cloud-based Field Notes work to the canonical local repository.
+
+When invoked, the assistant must:
+
+1. Confirm that the canonical local repository is accessible.
+2. Refresh `origin` before evaluating synchronization.
+3. Confirm the active branch is `clean-main` and inspect the working tree and ahead-or-behind state.
+4. If the working tree is clean, the local branch has no unique commits, and it is only behind `origin/clean-main`, explain the state plainly and obtain Robby's approval before performing a fast-forward-only pull.
+5. After an approved pull, verify that the working tree remains clean and local `clean-main` matches `origin/clean-main`.
+6. If the working tree is not clean, the local branch is ahead, or the histories have diverged, stop and report the exact state instead of reconciling automatically.
+7. Read the synchronized Action Queue and group open items according to the Retrieval Instruction above.
+8. Highlight the highest-priority open choices.
+9. Ask Robby which item he wants to address, or allow him to close the handoff without selecting work.
+
+The command does not authorize implementation, destination-document edits, product decisions, or changes to queue status. Selecting an item begins its applicable FreightIQ workflow only after Robby separately authorizes that work.
+
+If the command is invoked from a cloud session that cannot access the Mac checkout, state that the home handoff cannot be completed from that session and direct Robby to run the command from a local FreightIQ session.
+
+---
+
 ## Queue
 
 | Title | Source field note path | Category | Status | Next action | Priority | Date added |
