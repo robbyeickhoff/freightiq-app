@@ -39,6 +39,7 @@ yarn-error.*
 app-example
 
 # generated native folders
+/android
 /ios
 
 # Separate workspaces and local native backups that are not part of the mobile app
