@@ -520,6 +520,22 @@ The session is successful when useful decisions are made within the available ti
 
 ---
 
+## Repository Synchronization Handoff
+
+After the final authorized Field Notes write and before presenting the Session Close summary:
+
+1. Distinguish confirmed GitHub writes from the synchronization state of the local Mac checkout.
+2. Determine whether the current session has direct access to the canonical local repository.
+3. If the session is cloud-based or cannot access the Mac checkout, state that the GitHub writes were confirmed when applicable and that Mac synchronization was not verified.
+4. If the session is local, refresh `origin` before evaluating synchronization and inspect the branch, working tree, and ahead-or-behind state.
+5. When the local working tree is clean, `clean-main` has no unique commits, and it is only behind `origin/clean-main`, obtain Robby's approval before performing a fast-forward-only pull.
+6. After an approved pull, verify that the working tree remains clean and local `clean-main` matches `origin/clean-main`.
+7. If the working tree is not clean, the local branch is ahead, or the histories have diverged, stop and report the exact state instead of reconciling automatically.
+
+This handoff does not require a cloud-based assistant to synchronize the Mac. It requires the assistant to report the boundary accurately and leave one clear local next step.
+
+---
+
 ## Session Close
 
 At the end of the review session, provide a brief summary containing:
@@ -531,6 +547,8 @@ At the end of the review session, provide a brief summary containing:
 - Entries marked Parked.
 - Action Queue items added.
 - Entries still Unreviewed.
+- Confirmed GitHub write status.
+- Local Mac synchronization status: verified current, synchronization required, or not verified from this session.
 - Repository documents that still require inspection.
 - Approved next steps.
 - Unresolved questions.
