@@ -100,3 +100,4 @@ Do not claim an item exists, has a status, or is completed unless it appears in 
 
 | Title | Source field note path | Category | Status | Next action | Priority | Date added |
 | --- | --- | --- | --- | --- | --- | --- |
+| Add weekend zone documents to the repository | `docs/field-notes/entries/2026-07-28-add-weekend-zone-docs-to-repo.md` | Documentation addition | Waiting for a decision | Upload or paste the final approved weekend zone drafts, then run a focused documentation workflow to update `docs/routing/MountainVillage.md` and create `docs/routing/DowntownTelluride.md` and `docs/routing/AirportAldasoro.md`, followed by repository re-read verification. | Medium | 2026-07-30 |
