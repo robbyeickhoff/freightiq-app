@@ -75,6 +75,35 @@ When the repository can be checked directly, it must be checked.
 
 ---
 
+## Repository Synchronization Verification
+
+GitHub repository access and a local Mac checkout are separate repository states.
+
+A successful GitHub read or write confirms only the GitHub state returned by that action. It does not confirm that the local Mac has downloaded the same commits.
+
+Before reporting that the local FreightIQ repository is current, synchronized, ahead, or behind, a local assistant must:
+
+1. Refresh the remote-tracking state from `origin` before evaluating synchronization.
+2. Confirm the active branch is `clean-main`.
+3. Inspect the working tree for uncommitted changes.
+4. Compare local `HEAD` with `origin/clean-main` for ahead, behind, or divergent commits.
+5. Base the reported synchronization status only on the refreshed comparison.
+
+Do not report the local repository as synchronized from status information collected before the refresh.
+
+When the working tree is clean, the local branch has no unique commits, and it is behind `origin/clean-main`, the safe reconciliation is a fast-forward-only pull. Obtain Robby's approval before running it. Afterward, verify that the working tree remains clean and the local and remote commit counts match.
+
+If the working tree is not clean, the local branch is ahead, or the histories have diverged, stop and report the exact state instead of pulling or combining work automatically.
+
+When an assistant is operating in a cloud environment without access to the Mac checkout, it must:
+
+- Report confirmed GitHub writes accurately.
+- State that the Mac synchronization status was not verified.
+- Never describe the Mac as current merely because GitHub accepted the writes.
+- Provide a local synchronization handoff when the user wants the Mac reconciled.
+
+---
+
 ## Drift Prevention
 
 The assistant must actively prevent drift from the FreightIQ repository.
