@@ -29,7 +29,7 @@ import Supercluster from "supercluster";
 import { AppButton } from "@/components/ui/app-button";
 import { AppCard } from "@/components/ui/app-card";
 import { AppIcon } from "@/components/ui/app-icon";
-import { Elevation } from "@/constants/theme";
+import { Elevation, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { supabase } from "../../../utils/supabase";
@@ -3242,6 +3242,9 @@ export default function HomeScreen() {
 
                     <View style={styles.previewSavedActionRow}>
                       <AppButton
+                        accessibilityLabel={`Driver Reports, ${selectedReportStats.count} ${
+                          selectedReportStats.count === 1 ? "report" : "reports"
+                        }`}
                         onPress={() =>
                           router.push({
                             pathname: "/(tabs)/stop",
@@ -3262,7 +3265,31 @@ export default function HomeScreen() {
                         style={styles.previewSavedActionBtn}
                         variant="secondary"
                       >
-                        {`Reports (${selectedReportStats.count})`}
+                        <View style={styles.previewReportButtonContent}>
+                          <Text
+                            maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
+                            numberOfLines={2}
+                            style={[styles.previewReportButtonLabel, { color: colors.textPrimary }]}
+                          >
+                            Driver Reports
+                          </Text>
+                          <View
+                            style={[
+                              styles.previewReportCountBadge,
+                              { backgroundColor: colors.accentMuted },
+                            ]}
+                          >
+                            <Text
+                              maxFontSizeMultiplier={1.2}
+                              style={[
+                                styles.previewReportCountText,
+                                { color: colors.accentStrong },
+                              ]}
+                            >
+                              {selectedReportStats.count}
+                            </Text>
+                          </View>
+                        </View>
                       </AppButton>
 
                       <AppButton
@@ -4086,6 +4113,31 @@ const styles = StyleSheet.create({
 
   previewSavedActionBtn: {
     flex: 1,
+  },
+  previewReportButtonContent: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexShrink: 1,
+    gap: 8,
+    justifyContent: "center",
+  },
+  previewReportButtonLabel: {
+    ...Typography.buttonLabel,
+    flexShrink: 1,
+    textAlign: "center",
+  },
+  previewReportCountBadge: {
+    alignItems: "center",
+    borderRadius: 999,
+    justifyContent: "center",
+    minHeight: 32,
+    minWidth: 32,
+    paddingHorizontal: 8,
+  },
+  previewReportCountText: {
+    fontSize: 16,
+    fontWeight: "800",
+    lineHeight: 20,
   },
   previewAccessibilityStack: {
     alignItems: "stretch",

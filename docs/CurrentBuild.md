@@ -22,22 +22,41 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-Fix the approved Stop Preview Card return reliability issue.
+Rename the saved-stop Preview Card action from Reports to Driver Reports.
 
-The controlling specification is:
-
-`docs/build-specs/FreightIQStopPreviewReturnBuildSpec.md`
+The Product Owner approved this single-label UI correction on 2026-08-01. It is a small direct
+correction under the Engineering Playbook and does not require a separate Build Specification.
 
 Search Relevance is committed, pushed, and accepted in Expo testing. Its EAS standalone-build gate
 is intentionally parked until the Product Owner is ready to build the weekend's approved work.
+The Stop Preview Return fix is also committed, pushed, and accepted on iPhone and Pixel.
 
 ---
 
 ## Current Focus
 
-Complete physical-device acceptance of the implemented same-stop return contract between the Stop
-Preview Card, Stop Intel, Quick Intel, and the map. Reports naming and Preview Card hierarchy remain
-separate future work.
+Present the saved-stop Preview Card action as `Driver Reports` with its report count in a clear
+32-point badge, then verify fit and readability on iPhone and Pixel. Preview Card button order and
+behavior remain unchanged.
+
+The iPhone presentation is visually accepted at the Product Owner's everyday enlarged text setting
+used for clear viewing while the phone is mounted in the truck. Driver Reports wraps cleanly, the
+larger count badge is legible and balanced, and the bottom-row buttons retain equal height.
+
+The first Pixel review exposed narrow-screen truncation: Android displayed `Driver…` because the
+custom label was limited to one line below the accessibility-layout threshold. The label now allows
+up to two lines on all screen sizes so compact phones can show `Driver Reports` in full while the DZ
+button continues matching the row height.
+
+The compact Pixel retest is visually accepted. The full Driver Reports label displays without an
+ellipsis, the count badge remains clear, and the paired DZ button retains matching height.
+
+On both iPhone and Pixel, repeated Driver Reports entry and return works without issue. The approved
+label, count badge, responsive wrapping, and navigation behavior are physically accepted.
+
+Final local iOS and Android Expo exports compile successfully. Focused lint has zero errors and
+`git diff --check` passes. No EAS build, Supabase, deployment, or release action was performed.
+The Product Owner approved one focused Driver Reports button commit and push on 2026-08-01.
 
 The focused local implementation is complete:
 
@@ -259,8 +278,8 @@ an acceptable Search Relevance rollback.
 
 ## Not Changing
 
-- Preview Card content or action hierarchy
-- Report naming
+- Preview Card action hierarchy or order
+- Report terminology outside this approved button label
 - Unrelated routing behavior
 - New Intel fields
 - Stop-pin design
@@ -274,10 +293,9 @@ an acceptable Search Relevance rollback.
 
 ## Active Requirements
 
-- Follow the approved Stop Preview Return Build Specification and acceptance sequence.
-- Restore only the saved stop that originated the Preview Card navigation.
-- Consume return intent once so later map visits do not reopen stale selections.
-- Preserve direct Stop Intel entry, deletion, merge, and Delivery Zone inspection outcomes.
+- Change only the approved Driver Reports button presentation.
+- Preserve its count, navigation behavior, position, row-height consistency, and accessibility
+  behavior.
 - Reverify official vendor documentation before operational changes.
 - Obtain separate explicit approval for Supabase, provider, data-cleanup, production, commit, push,
   build, deployment, and release actions.
@@ -289,5 +307,6 @@ an acceptable Search Relevance rollback.
 
 ## Next Safe Step
 
-Request separate approval for one focused Stop Preview Return commit. Do not rename Reports,
-reorder Preview Card buttons, modify Supabase, push, or start any build or release action.
+Complete the approved focused commit and push. After repository sync, evaluate Preview Card button
+hierarchy as a separate workstream without changing it until approved. Do not modify Supabase or
+start any build or release action.
