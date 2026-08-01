@@ -1,6 +1,6 @@
 # FreightIQ Mobile Redesign — V2 Core Experience Build Specification
 
-> **Status: Approved for implementation**
+> **Status: Accepted — Implementation complete**
 >
 > This document is the controlling implementation contract for the FreightIQ Mobile Redesign V2 core-experience slice.
 >
@@ -12,8 +12,8 @@
 - **Purpose:** Control implementation of the approved V2 core mobile redesign slice
 - **Approved repository path:** `docs/build-specs/FreightIQMobileRedesignBuildSpec.md`
 - **Repository status:** Canonical Build Specification
-- **Implementation status:** Active — Accessibility and device validation
-- **Approval status:** Approved for implementation by the Product Owner
+- **Implementation status:** Accepted as complete by the Product Owner on 2026-08-01
+- **Approval status:** Approved and accepted by the Product Owner
 
 ## Repository Alignment Notes
 
@@ -33,7 +33,9 @@ Two repository-alignment questions identified during drafting have been resolved
 1. The specification will follow `docs/README.md` and live at `docs/build-specs/FreightIQMobileRedesignBuildSpec.md`.
 2. The specification will use **Back In**, matching `docs/design/IntelContributionWorkflow.md`, rather than the earlier conversational label **Backing**.
 
-`docs/CurrentBuild.md` identifies this specification as the active FreightIQ build. Repository inspection, the centralized theme foundation, map controls and overlays, selected-stop preview, Quick Intel flow, Stop Intel summary, native Apple map appearance, and the complete iPhone accessibility matrix are accepted. The remaining completion gates are the physical-Pixel matrix and standalone-iPhone dynamic text-size validation.
+The Product Owner accepted Mobile Redesign V2 as complete on 2026-08-01 and promoted Search
+Relevance to the active FreightIQ build. The Product Owner's acceptance closes the previously
+remaining physical-Pixel and standalone-iPhone dynamic text-size completion gates for this build.
 
 ## 1. Objective
 

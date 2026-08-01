@@ -103,6 +103,8 @@ Queued planning specification:
 - [x] Evaluate moving toward a more familiar account creation and sign-in experience.
 - [ ] Reduce friction during sign-up and sign-in.
 - [ ] Preserve security while improving usability.
+- [ ] Gracefully clear an invalid persisted refresh token and return the driver to signed-out state
+  instead of surfacing a startup error.
 - [ ] Validate the updated authentication experience with new users.
 
 #### Profile Screen Polish
@@ -174,6 +176,7 @@ Continue improving map reliability, stop discovery, and rendering performance.
 - [ ] Continue monitoring repeated Show/Hide Stops interactions for stability.
 - [ ] Continue monitoring repeated Preview Card interactions for stability.
 - [ ] Validate the polished Nearby Stops workflow with broader tester use.
+- [ ] Implement the approved location-aware Search Relevance Build Specification now active through `docs/CurrentBuild.md`.
 - [ ] Conduct a focused place-search provider review comparing Mapbox, Google Places, and platform-specific Apple/Google search before deciding whether to keep or remove Mapbox. Review result quality, storage rights, pricing, attribution, cross-platform consistency, and migration risk.
 
 ---

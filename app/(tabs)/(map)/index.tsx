@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
+import * as Crypto from "expo-crypto";
 import * as Linking from "expo-linking";
 import * as Location from "expo-location";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -46,6 +47,30 @@ type PlaceResult = {
   mapboxId: string;
   name: string;
   fullAddress: string;
+  sessionToken: string;
+  distanceMeters?: number;
+};
+
+type FreightIqSearchRow = {
+  id: string;
+  name: string;
+  address: string | null;
+  lat: number;
+  lng: number;
+  distance_meters: number;
+  match_tier: number;
+  text_score: number;
+  relevance_score: number;
+};
+
+type NearbyStopMatchRow = {
+  id: string;
+  name: string;
+  address: string | null;
+  lat: number;
+  lng: number;
+  distance_meters: number;
+  match_score: number;
 };
 
 type StopIntel = {
@@ -103,6 +128,10 @@ const PINS_KEY = "mfi:pins:v1";
 const VIEW_CACHE_KEY = "mfi:view-cache:v1";
 const DUPLICATE_DISTANCE_FEET = 250;
 const MAP_SEARCH_TOP = 54;
+const MAPBOX_SESSION_MAX_AGE_MS = 175_000;
+const MAPBOX_SESSION_MAX_SUGGESTS = 49;
+const MIN_SEARCH_RADIUS_METERS = 25_000;
+const MAX_SEARCH_RADIUS_METERS = 250_000;
 
 const MAPBOX_TOKEN = (Constants.expoConfig?.extra?.mapboxPublicToken as string | undefined) ?? "";
 
@@ -151,6 +180,49 @@ function formatAddressForDisplay(address: string) {
     .replace(/\s+United States$/i, "")
     .replace(/\bColorado\b/g, "CO")
     .trim();
+}
+
+function normalizePlaceSearchText(value: string) {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function placeSearchMatchTier(result: PlaceResult, query: string) {
+  const normalizedQuery = normalizePlaceSearchText(query);
+  const normalizedName = normalizePlaceSearchText(result.name);
+  const normalizedAddress = normalizePlaceSearchText(result.fullAddress);
+
+  if (!normalizedQuery) return 0;
+  if (normalizedName === normalizedQuery) return 4;
+  if (normalizedName.startsWith(normalizedQuery)) return 3;
+  if (normalizedName.includes(normalizedQuery)) return 2;
+  if (normalizedAddress.includes(normalizedQuery)) return 1;
+  return 0;
+}
+
+function orderPlaceResults(results: PlaceResult[], query: string) {
+  return results
+    .map((result, originalIndex) => ({
+      result,
+      originalIndex,
+      matchTier: placeSearchMatchTier(result, query),
+    }))
+    .sort((left, right) => {
+      if (left.matchTier !== right.matchTier) {
+        return right.matchTier - left.matchTier;
+      }
+
+      if (
+        left.matchTier > 0 &&
+        left.result.distanceMeters !== undefined &&
+        right.result.distanceMeters !== undefined &&
+        left.result.distanceMeters !== right.result.distanceMeters
+      ) {
+        return left.result.distanceMeters - right.result.distanceMeters;
+      }
+
+      return left.originalIndex - right.originalIndex;
+    })
+    .map(({ result }) => result);
 }
 
 function mergePinsById(existing: Pin[], incoming: Pin[]) {
@@ -228,20 +300,20 @@ function bboxFromRegion(region: Region): [number, number, number, number] {
   return [west, south, east, north];
 }
 
-function bboxStringFromRegion(region: Region) {
-  const [west, south, east, north] = bboxFromRegion(region);
-  return `${west},${south},${east},${north}`;
-}
+function searchRadiusMetersFromRegion(region: Region) {
+  const latitudeRadiusMeters = (Math.abs(region.latitudeDelta) * 111_320) / 2;
+  const longitudeMetersPerDegree =
+    111_320 * Math.max(Math.cos((region.latitude * Math.PI) / 180), 0.1);
+  const longitudeRadiusMeters = (Math.abs(region.longitudeDelta) * longitudeMetersPerDegree) / 2;
+  const visibleCornerRadiusMeters = Math.hypot(
+    latitudeRadiusMeters,
+    longitudeRadiusMeters,
+  );
 
-function searchBboxStringFromRegion(region: Region) {
-  const expanded: Region = {
-    ...region,
-    latitudeDelta: Math.max(region.latitudeDelta * 6, 2.5),
-    longitudeDelta: Math.max(region.longitudeDelta * 6, 2.5),
-  };
-
-  const [west, south, east, north] = bboxFromRegion(expanded);
-  return `${west},${south},${east},${north}`;
+  return Math.min(
+    Math.max(visibleCornerRadiusMeters, MIN_SEARCH_RADIUS_METERS),
+    MAX_SEARCH_RADIUS_METERS,
+  );
 }
 
 function pointInRegion(lat: number, lng: number, region: Region) {
@@ -481,6 +553,32 @@ export default function HomeScreen() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clusterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastRequestId = useRef(0);
+  const mapboxSessionTokenRef = useRef<string | null>(null);
+  const mapboxSessionStartedAtRef = useRef(0);
+  const mapboxSessionSuggestCountRef = useRef(0);
+
+  const endMapboxSearchSession = useCallback(() => {
+    mapboxSessionTokenRef.current = null;
+    mapboxSessionStartedAtRef.current = 0;
+    mapboxSessionSuggestCountRef.current = 0;
+  }, []);
+
+  const getMapboxSearchSessionToken = useCallback(() => {
+    const now = Date.now();
+    const sessionExpired =
+      now - mapboxSessionStartedAtRef.current >= MAPBOX_SESSION_MAX_AGE_MS;
+    const suggestLimitReached =
+      mapboxSessionSuggestCountRef.current >= MAPBOX_SESSION_MAX_SUGGESTS;
+
+    if (!mapboxSessionTokenRef.current || sessionExpired || suggestLimitReached) {
+      mapboxSessionTokenRef.current = Crypto.randomUUID();
+      mapboxSessionStartedAtRef.current = now;
+      mapboxSessionSuggestCountRef.current = 0;
+    }
+
+    mapboxSessionSuggestCountRef.current += 1;
+    return mapboxSessionTokenRef.current;
+  }, []);
 
   const clusterRef = useRef(
     new Supercluster<ClusterProps>({
@@ -509,6 +607,41 @@ export default function HomeScreen() {
     ]);
 
     return null;
+  }
+
+  async function findNearbyExistingStop(
+    name: string,
+    address: string,
+    lat: number,
+    lng: number,
+  ): Promise<Pin | null> {
+    const visibleCandidates = mergePinsById(pins, freightIqResults);
+    const localMatch = findMatchingExistingStop(name, lat, lng, visibleCandidates);
+    if (localMatch) return localMatch.pin;
+
+    const { data, error } = await supabase.rpc("match_nearby_mfi_stop", {
+      p_name: name,
+      p_address: address,
+      p_lat: lat,
+      p_lng: lng,
+      p_radius_meters: DUPLICATE_DISTANCE_FEET / 3.28084,
+    });
+
+    if (error) {
+      console.log("Nearby stop match failed", error.message);
+      return null;
+    }
+
+    const row = (data as NearbyStopMatchRow[] | null)?.[0];
+    if (!row) return null;
+
+    return {
+      id: String(row.id),
+      name: row.name,
+      address: row.address ?? undefined,
+      lat: Number(row.lat),
+      lng: Number(row.lng),
+    };
   }
 
   async function updateCachedStopCount() {
@@ -1760,34 +1893,12 @@ export default function HomeScreen() {
       address: address || undefined,
     };
 
-    let candidatePins = pins;
-
-    try {
-      const { data: cloudStops, error } = await supabase
-        .from("mfi_stops")
-        .select("id, name, lat, lng, address");
-
-      if (!error) {
-        const cloudPins: Pin[] = sanitizePins(
-          (cloudStops ?? []).map((row: any) => ({
-            id: String(row.id),
-            name: row.name ?? "Unknown",
-            lat: Number(row.lat),
-            lng: Number(row.lng),
-            address: row.address ?? undefined,
-          })),
-        );
-
-        candidatePins = mergePinsById(pins, cloudPins);
-      }
-    } catch {}
-
-    const matchingStop = findMatchingExistingStop(name, pin.lat, pin.lng, candidatePins);
+    const matchingStop = await findNearbyExistingStop(name, address, pin.lat, pin.lng);
 
     if (matchingStop) {
       Alert.alert(
         "Existing stop found",
-        `${matchingStop.pin.name}\n${matchingStop.pin.address ?? "No address"}\n\nOpen it and add your intel there?`,
+        `${matchingStop.name}\n${matchingStop.address ?? "No address"}\n\nOpen it and add your intel there?`,
         [
           { text: "Cancel", style: "cancel" },
           {
@@ -1795,60 +1906,20 @@ export default function HomeScreen() {
             onPress: () => {
               setNewPinOpen(false);
               setTempSearchPin(null);
-              jumpToStop(matchingStop.pin);
+              if (!pins.some((existing) => existing.id === matchingStop.id)) {
+                setPins((previous) => mergePinsById(previous, [matchingStop]));
+              }
+              jumpToStop(matchingStop);
               router.push({
                 pathname: "/(tabs)/stop",
                 params: {
-                  id: matchingStop.pin.id,
-                  lat: String(matchingStop.pin.lat),
-                  lng: String(matchingStop.pin.lng),
-                  name: matchingStop.pin.name,
-                  address: matchingStop.pin.address ?? "",
+                  id: matchingStop.id,
+                  lat: String(matchingStop.lat),
+                  lng: String(matchingStop.lng),
+                  name: matchingStop.name,
+                  address: matchingStop.address ?? "",
                 },
               });
-            },
-          },
-        ],
-      );
-      return;
-    }
-
-    const nearest = candidatePins
-      .map((existing) => ({
-        pin: existing,
-        feet: feetBetween(pin.lat, pin.lng, existing.lat, existing.lng),
-      }))
-      .sort((a, b) => a.feet - b.feet)[0];
-
-    if (nearest && nearest.feet <= DUPLICATE_DISTANCE_FEET) {
-      Alert.alert(
-        "Existing stop found",
-        `${nearest.pin.name}\n${nearest.pin.address ?? "No address"}\n\nOpen it and add your intel there?`,
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Open Stop",
-            onPress: () => {
-              setNewPinOpen(false);
-              setTempSearchPin(null);
-              jumpToStop(nearest.pin);
-              router.push({
-                pathname: "/(tabs)/stop",
-                params: {
-                  id: nearest.pin.id,
-                  lat: String(nearest.pin.lat),
-                  lng: String(nearest.pin.lng),
-                  name: nearest.pin.name,
-                  address: nearest.pin.address ?? "",
-                },
-              });
-            },
-          },
-          {
-            text: "Create Anyway",
-            onPress: () => {
-              setTempSearchPin(null);
-              createStopPin(pin);
             },
           },
         ],
@@ -1862,36 +1933,110 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const q = query.trim();
+    const requestId = ++lastRequestId.current;
+    const abortController = new AbortController();
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (q.length < 3) {
+      endMapboxSearchSession();
       setFreightIqResults([]);
       setResults([]);
       setSearching(false);
-      return;
+      return () => abortController.abort();
     }
 
     debounceRef.current = setTimeout(async () => {
-      const requestId = ++lastRequestId.current;
-
       try {
         setSearching(true);
 
-        const { data: freightIqStops, error: freightIqError } = await supabase
-          .from("mfi_stops")
-          .select("id, name, lat, lng, address")
-          .ilike("name", `%${q}%`)
-          .limit(10);
+        const searchCenter = {
+          latitude: region.latitude,
+          longitude: region.longitude,
+        };
+        const searchRadiusMeters = searchRadiusMetersFromRegion(region);
+        const sessionToken = MAPBOX_TOKEN ? getMapboxSearchSessionToken() : null;
+
+        const freightIqRequest = (async () => {
+          const { data, error } = await supabase
+            .rpc("search_mfi_stops", {
+              p_search_text: q,
+              p_center_lat: searchCenter.latitude,
+              p_center_lng: searchCenter.longitude,
+              p_radius_meters: searchRadiusMeters,
+              p_result_limit: 10,
+            })
+            .abortSignal(abortController.signal);
+
+          if (error) throw error;
+          return (data ?? []) as FreightIqSearchRow[];
+        })();
+
+        const placeRequest = (async (): Promise<PlaceResult[]> => {
+          if (!MAPBOX_TOKEN || !sessionToken) return [];
+
+          const proximity = `${searchCenter.longitude},${searchCenter.latitude}`;
+          const url =
+            `https://api.mapbox.com/search/searchbox/v1/suggest?` +
+            `q=${encodeURIComponent(q)}` +
+            `&access_token=${encodeURIComponent(MAPBOX_TOKEN)}` +
+            `&limit=8` +
+            `&language=en` +
+            `&country=US` +
+            `&proximity=${encodeURIComponent(proximity)}` +
+            `&session_token=${encodeURIComponent(sessionToken)}`;
+
+          const response = await fetch(url, {
+            headers: { Accept: "application/json" },
+            signal: abortController.signal,
+          });
+
+          if (!response.ok) {
+            throw new Error(`Place search failed with status ${response.status}.`);
+          }
+
+          const json = await response.json();
+          const suggestions = Array.isArray(json?.suggestions) ? json.suggestions : [];
+
+          const mappedResults = suggestions
+            .map((item: any) => {
+              const mapboxId = String(item?.mapbox_id ?? "");
+              if (!mapboxId) return null;
+
+              const name = item?.name ?? item?.place_formatted ?? item?.full_address ?? "Unknown";
+              const fullAddress =
+                item?.place_formatted ?? item?.full_address ?? item?.name ?? "Unknown";
+
+              return {
+                id: mapboxId,
+                mapboxId,
+                name: String(name),
+                fullAddress: String(fullAddress),
+                sessionToken,
+                distanceMeters: Number.isFinite(Number(item?.distance))
+                  ? Number(item.distance)
+                  : undefined,
+              };
+            })
+            .filter(Boolean) as PlaceResult[];
+
+          return orderPlaceResults(mappedResults, q);
+        })();
+
+        const [freightIqOutcome, placeOutcome] = await Promise.allSettled([
+          freightIqRequest,
+          placeRequest,
+        ]);
 
         if (requestId !== lastRequestId.current) return;
 
-        if (freightIqError) {
-          console.log("FreightIQ search failed", freightIqError.message);
+        if (freightIqOutcome.status === "rejected") {
+          console.log("FreightIQ search failed", freightIqOutcome.reason);
           setFreightIqResults([]);
         } else {
           setFreightIqResults(
             sanitizePins(
-              (freightIqStops ?? []).map((row: any) => ({
+              freightIqOutcome.value.map((row) => ({
                 id: String(row.id),
                 name: row.name ?? "Unknown",
                 lat: Number(row.lat),
@@ -1902,55 +2047,16 @@ export default function HomeScreen() {
           );
         }
 
-        if (!MAPBOX_TOKEN) {
-          if (requestId !== lastRequestId.current) return;
+        if (placeOutcome.status === "rejected") {
+          console.log("Place search failed", placeOutcome.reason);
           setResults([]);
-          return;
+        } else {
+          setResults(placeOutcome.value);
         }
-
-        const proximity = `${region.longitude},${region.latitude}`;
-        const bbox = searchBboxStringFromRegion(region);
-        const url =
-          `https://api.mapbox.com/search/searchbox/v1/suggest?` +
-          `q=${encodeURIComponent(q)}` +
-          `&access_token=${encodeURIComponent(MAPBOX_TOKEN)}` +
-          `&limit=8` +
-          `&language=en` +
-          `&country=US` +
-          `&proximity=${encodeURIComponent(proximity)}` +
-          `&bbox=${encodeURIComponent(bbox)}` +
-          `&session_token=mfi-search-session`;
-
-        const resp = await fetch(url, {
-          headers: { Accept: "application/json" },
-        });
-
-        const json = await resp.json();
-        const suggestions = Array.isArray(json?.suggestions) ? json.suggestions : [];
-
-        const mapped: PlaceResult[] = suggestions
-          .map((item: any) => {
-            const mapboxId = String(item?.mapbox_id ?? "");
-            if (!mapboxId) return null;
-
-            const name = item?.name ?? item?.place_formatted ?? item?.full_address ?? "Unknown";
-
-            const fullAddress =
-              item?.place_formatted ?? item?.full_address ?? item?.name ?? "Unknown";
-
-            return {
-              id: mapboxId,
-              mapboxId,
-              name: String(name),
-              fullAddress: String(fullAddress),
-            };
-          })
-          .filter(Boolean) as PlaceResult[];
-
+      } catch (error) {
         if (requestId !== lastRequestId.current) return;
-        setResults(mapped);
-      } catch {
-        if (requestId !== lastRequestId.current) return;
+        console.log("Search failed", error);
+        setFreightIqResults([]);
         setResults([]);
       } finally {
         if (requestId === lastRequestId.current) setSearching(false);
@@ -1959,10 +2065,18 @@ export default function HomeScreen() {
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (lastRequestId.current === requestId) {
+        lastRequestId.current += 1;
+      }
+      abortController.abort();
     };
-  }, [query, region]);
+  }, [endMapboxSearchSession, getMapboxSearchSessionToken, query, region]);
 
   async function selectResult(r: PlaceResult) {
+    lastRequestId.current += 1;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setSearching(false);
+
     try {
       if (!MAPBOX_TOKEN) {
         Alert.alert("Search error", "Mapbox token is missing.");
@@ -1972,11 +2086,15 @@ export default function HomeScreen() {
       const url =
         `https://api.mapbox.com/search/searchbox/v1/retrieve/${encodeURIComponent(r.mapboxId)}?` +
         `access_token=${encodeURIComponent(MAPBOX_TOKEN)}` +
-        `&session_token=mfi-search-session`;
+        `&session_token=${encodeURIComponent(r.sessionToken)}`;
 
       const resp = await fetch(url, {
         headers: { Accept: "application/json" },
       });
+
+      if (!resp.ok) {
+        throw new Error(`Place retrieval failed with status ${resp.status}.`);
+      }
 
       const json = await resp.json();
       const features = Array.isArray(json?.features) ? json.features : [];
@@ -2015,29 +2133,7 @@ export default function HomeScreen() {
         address: retrievedAddress || undefined,
       };
 
-      let candidatePins = pins;
-
-      try {
-        const { data: cloudStops, error } = await supabase
-          .from("mfi_stops")
-          .select("id, name, lat, lng, address");
-
-        if (!error) {
-          const cloudPins: Pin[] = sanitizePins(
-            (cloudStops ?? []).map((row: any) => ({
-              id: String(row.id),
-              name: row.name ?? "Unknown",
-              lat: Number(row.lat),
-              lng: Number(row.lng),
-              address: row.address ?? undefined,
-            })),
-          );
-
-          candidatePins = mergePinsById(pins, cloudPins);
-        }
-      } catch {}
-
-      const matchingStop = findMatchingExistingStop(name, lat, lng, candidatePins);
+      const matchingStop = await findNearbyExistingStop(name, retrievedAddress, lat, lng);
 
       const verticalOffset = region.latitudeDelta * 0.2;
 
@@ -2050,14 +2146,15 @@ export default function HomeScreen() {
       setRegion(next);
       mapRef.current?.animateToRegion(next, 300);
       setQuery("");
+      setFreightIqResults([]);
       setResults([]);
 
       if (matchingStop) {
         setTempSearchPin(null);
-        if (!pins.some((p) => p.id === matchingStop.pin.id)) {
-          setPins((prev) => mergePinsById(prev, [matchingStop.pin]));
+        if (!pins.some((p) => p.id === matchingStop.id)) {
+          setPins((prev) => mergePinsById(prev, [matchingStop]));
         }
-        jumpToStop(matchingStop.pin);
+        jumpToStop(matchingStop);
         return;
       }
 
@@ -2068,6 +2165,10 @@ export default function HomeScreen() {
       setPreviewVisible(true);
     } catch {
       Alert.alert("Search error", "Could not open that search result.");
+    } finally {
+      if (mapboxSessionTokenRef.current === r.sessionToken) {
+        endMapboxSearchSession();
+      }
     }
   }
 

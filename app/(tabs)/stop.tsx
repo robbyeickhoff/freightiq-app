@@ -538,19 +538,7 @@ export default function StopScreen() {
       setStopOwnerId(data?.user_id ?? null);
 
       const isOwner = !!data?.user_id && !!sessionUserId && data.user_id === sessionUserId;
-
-      let orphanHasNoReports = false;
-
-      if (!data?.user_id) {
-        const { count } = await supabase
-          .from("mfi_reports")
-          .select("id", { count: "exact", head: true })
-          .eq("stop_id", stopId);
-
-        orphanHasNoReports = (count ?? 0) === 0;
-      }
-
-      setCanDeleteStop(isOwner || orphanHasNoReports);
+      setCanDeleteStop(isOwner);
     })();
   }, [stopId, sessionUserId]);
 
@@ -1309,9 +1297,8 @@ export default function StopScreen() {
     if (!userId) return;
 
     const isOwner = !!stopOwnerId && stopOwnerId === userId;
-    const isOrphan = !stopOwnerId;
 
-    if (!canDeleteStop || (!isOwner && !isOrphan)) {
+    if (!canDeleteStop || !isOwner) {
       Alert.alert("Delete blocked", "You can only delete stops you created.");
       return;
     }
@@ -1354,11 +1341,11 @@ export default function StopScreen() {
         return;
       }
 
-      let stopDeleteQuery = supabase.from("mfi_stops").delete().eq("id", stopId);
-
-      if (stopOwnerId) {
-        stopDeleteQuery = stopDeleteQuery.eq("user_id", userId);
-      }
+      const stopDeleteQuery = supabase
+        .from("mfi_stops")
+        .delete()
+        .eq("id", stopId)
+        .eq("user_id", userId);
 
       const { error: stopDeleteError, data: deletedStopRows } = await stopDeleteQuery.select("id");
 
@@ -2299,6 +2286,14 @@ export default function StopScreen() {
                           style={styles.secondaryBtn}
                           onPress={async () => {
                             if (!(await requireSignedIn())) return;
+
+                            if (!canDeleteStop) {
+                              Alert.alert(
+                                "Merge blocked",
+                                "Only the driver who created this stop can merge it.",
+                              );
+                              return;
+                            }
 
                             Alert.alert(
                               "Start merge?",
