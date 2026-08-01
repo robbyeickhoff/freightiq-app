@@ -11,16 +11,19 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Radius, Sizes, Spacing, Typography } from "@/constants/theme";
+import { useNavigationPreference } from "@/context/navigation-preference-context";
 import { useAppTheme } from "@/context/theme-context";
 import { AppCard } from "@/components/ui/app-card";
 import { AppIcon, type AppIconName } from "@/components/ui/app-icon";
 import { supabase } from "@/utils/supabase";
+import { navigationPreferenceLabel } from "@/utils/navigation-apps";
 
 type SettingsRowProps = {
   accessibilityHint?: string;
   icon: AppIconName;
   label: string;
   onPress: () => void;
+  stacksValue?: boolean;
   value?: string;
   showsChevron?: boolean;
 };
@@ -31,6 +34,7 @@ function SettingsRow({
   label,
   onPress,
   showsChevron = true,
+  stacksValue = false,
   value,
 }: SettingsRowProps) {
   const { colors } = useAppTheme();
@@ -52,11 +56,16 @@ function SettingsRow({
       <View style={[styles.iconContainer, { backgroundColor: colors.accentMuted }]}>
         <AppIcon name={icon} size={22} color={colors.accentStrong} />
       </View>
-      <View style={[styles.rowCopy, usesAccessibilityLayout ? styles.accessibilityRowCopy : null]}>
+      <View
+        style={[
+          styles.rowCopy,
+          usesAccessibilityLayout || stacksValue ? styles.stackedRowCopy : null,
+        ]}
+      >
         <Text
           style={[
             styles.rowLabel,
-            usesAccessibilityLayout && styles.accessibilityRowLabel,
+            (usesAccessibilityLayout || stacksValue) && styles.stackedRowLabel,
             { color: colors.textPrimary },
           ]}
         >
@@ -76,6 +85,7 @@ function SettingsRow({
 export default function SettingsScreen() {
   const router = useRouter();
   const { colors, themeMode } = useAppTheme();
+  const { navigationPreference } = useNavigationPreference();
   const appearanceValue =
     themeMode === "system" ? "System" : themeMode === "light" ? "Light" : "Dark";
 
@@ -109,6 +119,15 @@ export default function SettingsScreen() {
             label="Appearance"
             onPress={() => router.push("/(tabs)/profile/appearance")}
             value={appearanceValue}
+          />
+          <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+          <SettingsRow
+            accessibilityHint="Opens navigation preference choices"
+            icon="navigation"
+            label="Navigation Preference"
+            onPress={() => router.push("/(tabs)/profile/navigation-app")}
+            stacksValue
+            value={navigationPreferenceLabel(navigationPreference)}
           />
         </AppCard>
 
@@ -164,6 +183,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     gap: Spacing.sm,
   },
+  rowDivider: {
+    height: 1,
+    marginLeft: Sizes.minimumTouchTarget + Spacing.md + Spacing.sm,
+  },
   accessibilityRow: {
     alignItems: "flex-start",
     flexDirection: "column",
@@ -183,11 +206,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.sm,
   },
-  accessibilityRowCopy: {
+  stackedRowCopy: {
     alignSelf: "stretch",
     flex: 0,
     flexDirection: "column",
     alignItems: "flex-start",
+    gap: 0,
   },
   rowLabel: {
     flex: 1,
@@ -197,7 +221,7 @@ const styles = StyleSheet.create({
   rowValue: {
     ...Typography.body,
   },
-  accessibilityRowLabel: {
+  stackedRowLabel: {
     flex: 0,
     width: "100%",
   },

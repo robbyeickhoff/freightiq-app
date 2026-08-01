@@ -23,6 +23,7 @@ const ICONS = {
   location: { default: "location-searching", active: "my-location" },
   logout: { default: "logout" },
   map: { default: "map" },
+  navigation: { default: "navigation" },
   profile: { default: "person-outline", active: "person" },
   satellite: { default: "satellite-alt" },
   search: { default: "search" },

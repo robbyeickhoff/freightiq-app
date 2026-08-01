@@ -22,7 +22,8 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-Rename the saved-stop Preview Card action from Reports to Driver Reports.
+Complete and physically verify the approved Navigation App Choice workstream while preserving
+FreightIQ's in-app map and search behavior.
 
 The Product Owner approved this single-label UI correction on 2026-08-01. It is a small direct
 correction under the Engineering Playbook and does not require a separate Build Specification.
@@ -30,10 +31,37 @@ correction under the Engineering Playbook and does not require a separate Build 
 Search Relevance is committed, pushed, and accepted in Expo testing. Its EAS standalone-build gate
 is intentionally parked until the Product Owner is ready to build the weekend's approved work.
 The Stop Preview Return fix is also committed, pushed, and accepted on iPhone and Pixel.
+The Driver Reports button presentation is committed, pushed, and accepted on iPhone and Pixel.
 
 ---
 
 ## Current Focus
+
+The approved Navigation App Choice implementation is complete locally. Profile Settings now has a
+device-local Navigation Preference with FreightIQ Default, Ask Every Time, and the supported
+platform-specific providers. The Preview Card Navigate action opens an explicit saved provider
+directly; it shows the custom picker only for Ask Every Time; and it offers a one-trip FreightIQ
+Default fallback when an optional provider is unavailable. Native iOS and Android availability
+declarations are present and resolve correctly through Expo configuration introspection.
+
+Pixel acceptance exposed that the inherited Android `geo:` default could display Android's own app
+chooser when both Google Maps and Waze were installed. The Product Owner approved a focused
+correction on 2026-08-01: FreightIQ Default now opens Apple Maps directly on iPhone and Google Maps
+directly on Android, so only Ask Every Time intentionally presents navigation choices.
+
+Focused lint has zero errors, `git diff --check` passes, and local iOS and Android Expo exports
+compile successfully. Repository-wide TypeScript verification still reports only the two unchanged
+website demo import failures, `HowItWorksWorkflow` and `RealExampleDiagram`. A development or
+preview build remains separately gated for final installed-app detection; no build, Supabase,
+deployment, or release action has been performed.
+
+Expo-compatible acceptance is now complete on iPhone and Pixel. FreightIQ Default, explicit
+providers, Ask Every Time selection and cancel, local persistence, saved and temporary destinations,
+missing-app cancel and one-trip fallback, and VoiceOver/TalkBack selection all pass. The Pixel
+Settings row is physically accepted with the final Navigation Preference label and stacked current
+value. Android Google launches use Google's verified Maps URL so Google opens directly without the
+Android Waze/Google chooser. Final native installed-app detection remains gated to a future approved
+development or preview build.
 
 Present the saved-stop Preview Card action as `Driver Reports` with its report count in a clear
 32-point badge, then verify fit and readability on iPhone and Pixel. Preview Card button order and
@@ -57,6 +85,17 @@ label, count badge, responsive wrapping, and navigation behavior are physically 
 Final local iOS and Android Expo exports compile successfully. Focused lint has zero errors and
 `git diff --check` passes. No EAS build, Supabase, deployment, or release action was performed.
 The Product Owner approved one focused Driver Reports button commit and push on 2026-08-01.
+
+After reviewing the completed Preview Card on both phones, the Product Owner decided the existing
+button hierarchy is solid and should remain unchanged. No hierarchy implementation work is needed.
+
+The Product Owner approved the Navigation App Choice Build Specification on 2026-08-01: keep
+platform-native in-app map viewing and current Mapbox/FreightIQ search, while allowing drivers to
+choose the external turn-by-turn navigation app. The active controlling specification is
+`docs/build-specs/FreightIQNavigationAppChoiceBuildSpec.md`; implementation is authorized but no
+native build or release action is authorized. After physical iPhone and Pixel acceptance passed,
+the Product Owner separately approved one focused Navigation Preference commit and push on
+2026-08-01.
 
 The focused local implementation is complete:
 
@@ -307,6 +346,7 @@ an acceptable Search Relevance rollback.
 
 ## Next Safe Step
 
-Complete the approved focused commit and push. After repository sync, evaluate Preview Card button
-hierarchy as a separate workstream without changing it until approved. Do not modify Supabase or
-start any build or release action.
+After the approved focused Navigation Preference commit and push, keep the native development or
+preview build as a separate future gate for final installed-app detection. Preserve in-app map
+viewing, search, and Preview Card hierarchy. Do not modify Supabase or start any build, deployment,
+or release action without separate approval.

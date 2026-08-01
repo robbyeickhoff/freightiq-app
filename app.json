@@ -14,7 +14,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.robbyeickhof.mfi",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": [
+          "comgooglemaps",
+          "waze"
+        ]
       }
     },
     "plugins": [
@@ -30,7 +34,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "./plugins/withNavigationAppQueries.js"
     ],
     "android": {
       "icon": "./assets/images/app-icon.png",

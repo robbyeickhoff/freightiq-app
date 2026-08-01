@@ -5,6 +5,10 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
 import "react-native-reanimated";
 
+import {
+  NavigationPreferenceProvider,
+  useNavigationPreference,
+} from "@/context/navigation-preference-context";
 import { AppThemeProvider, useAppTheme } from "@/context/theme-context";
 
 const ONBOARDING_SEEN_KEY = "freightiq:onboarding-seen:v1";
@@ -16,6 +20,7 @@ export const unstable_settings = {
 
 function RootNavigator() {
   const { colorScheme, colors, isReady: isThemeReady } = useAppTheme();
+  const { isReady: isNavigationPreferenceReady } = useNavigationPreference();
   const [initialRouteName, setInitialRouteName] = useState<string | null>(null);
   const navigationTheme = useMemo(() => {
     const baseTheme = colorScheme === "dark" ? DarkTheme : DefaultTheme;
@@ -68,7 +73,7 @@ function RootNavigator() {
     };
   }, []);
 
-  if (!initialRouteName || !isThemeReady) {
+  if (!initialRouteName || !isThemeReady || !isNavigationPreferenceReady) {
     return null;
   }
 
@@ -109,7 +114,9 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <AppThemeProvider>
-      <RootNavigator />
+      <NavigationPreferenceProvider>
+        <RootNavigator />
+      </NavigationPreferenceProvider>
     </AppThemeProvider>
   );
 }

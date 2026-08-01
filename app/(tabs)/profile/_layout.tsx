@@ -21,6 +21,10 @@ export default function ProfileLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="settings" options={{ headerShown: true, title: "Settings" }} />
       <Stack.Screen name="appearance" options={{ headerShown: true, title: "Appearance" }} />
+      <Stack.Screen
+        name="navigation-app"
+        options={{ headerShown: true, title: "Navigation Preference" }}
+      />
       <Stack.Screen name="help" options={{ headerShown: true, title: "Help Center" }} />
       <Stack.Screen
         name="getting-started"

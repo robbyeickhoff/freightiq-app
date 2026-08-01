@@ -1,7 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import * as Crypto from "expo-crypto";
-import * as Linking from "expo-linking";
 import * as Location from "expo-location";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -26,12 +25,22 @@ import {
 import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Supercluster from "supercluster";
+import { NavigationAppPicker } from "@/components/navigation-app-picker";
 import { AppButton } from "@/components/ui/app-button";
 import { AppCard } from "@/components/ui/app-card";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Elevation, Typography } from "@/constants/theme";
+import { useNavigationPreference } from "@/context/navigation-preference-context";
 import { useAppTheme } from "@/context/theme-context";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import {
+  availableNavigationProviders,
+  isNavigationProviderAvailable,
+  navigationProviderLabel,
+  openNavigationProvider,
+  type NavigationDestination,
+  type NavigationProvider,
+} from "@/utils/navigation-apps";
 import { supabase } from "../../../utils/supabase";
 
 type Pin = {
@@ -255,16 +264,6 @@ async function loadSavedPinsFromStorage() {
   }
 }
 
-function mapsUrl(lat: number, lng: number, label: string) {
-  const q = encodeURIComponent(label);
-
-  if (Platform.OS === "android") {
-    return `geo:${lat},${lng}?q=${lat},${lng}(${q})`;
-  }
-
-  return `http://maps.apple.com/?ll=${lat},${lng}&q=${q}`;
-}
-
 function hasUsefulIntel(s?: StopIntel | null) {
   if (!s) return false;
 
@@ -443,6 +442,7 @@ function resolveStopHasIntel(
 export default function HomeScreen() {
   const router = useRouter();
   const { colorScheme, colors } = useAppTheme();
+  const { navigationPreference } = useNavigationPreference();
   const { fontScale, height: windowHeight } = useWindowDimensions();
   const safeAreaInsets = useSafeAreaInsets();
   const reduceMotionEnabled = useReducedMotion();
@@ -518,6 +518,12 @@ export default function HomeScreen() {
   const [deliveryZoneInspectionSource, setDeliveryZoneInspectionSource] =
     useState<DeliveryZoneInspectionSource | null>(null);
   const [mapPhotoViewerOpen, setMapPhotoViewerOpen] = useState(false);
+  const [navigationLaunching, setNavigationLaunching] = useState(false);
+  const [navigationPickerDestination, setNavigationPickerDestination] =
+    useState<NavigationDestination | null>(null);
+  const [navigationPickerProviders, setNavigationPickerProviders] = useState<
+    NavigationProvider[]
+  >([]);
 
   useEffect(() => {
     selectedStopRef.current = selectedStop;
@@ -2263,9 +2269,85 @@ export default function HomeScreen() {
 
   const showPreview = !!selectedStopId && !!selectedStop && previewVisible;
 
-  function navToStop() {
-    if (!selectedStop) return;
-    Linking.openURL(mapsUrl(selectedStop.lat, selectedStop.lng, selectedStop.name));
+  function showNavigationFallback(
+    provider: NavigationProvider,
+    destination: NavigationDestination,
+  ) {
+    Alert.alert(
+      `${navigationProviderLabel(provider)} isn’t available`,
+      "You can use FreightIQ Default for this trip or cancel and choose another navigation app in Settings.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Use FreightIQ Default",
+          onPress: () => void launchNavigation("default", destination),
+        },
+      ],
+    );
+  }
+
+  async function launchNavigation(
+    provider: NavigationProvider,
+    destination: NavigationDestination,
+  ) {
+    setNavigationPickerDestination(null);
+    setNavigationPickerProviders([]);
+    setNavigationLaunching(true);
+
+    try {
+      await openNavigationProvider(provider, destination);
+    } catch {
+      if (provider !== "default") {
+        showNavigationFallback(provider, destination);
+      } else {
+        Alert.alert(
+          "Couldn’t open navigation",
+          "FreightIQ could not open your device’s default navigation app.",
+        );
+      }
+    } finally {
+      setNavigationLaunching(false);
+    }
+  }
+
+  async function navToStop() {
+    if (!selectedStop || navigationLaunching) return;
+
+    const destination: NavigationDestination = {
+      label: selectedStop.name,
+      lat: selectedStop.lat,
+      lng: selectedStop.lng,
+    };
+
+    if (navigationPreference === "ask") {
+      setNavigationLaunching(true);
+
+      try {
+        const providers = await availableNavigationProviders();
+        setNavigationPickerProviders(providers);
+        setNavigationPickerDestination(destination);
+      } finally {
+        setNavigationLaunching(false);
+      }
+
+      return;
+    }
+
+    const provider = navigationPreference;
+    setNavigationLaunching(true);
+
+    try {
+      const isAvailable = await isNavigationProviderAvailable(provider);
+
+      if (!isAvailable) {
+        showNavigationFallback(provider, destination);
+        return;
+      }
+    } finally {
+      setNavigationLaunching(false);
+    }
+
+    await launchNavigation(provider, destination);
   }
 
   function onPressCluster(clusterFeature: any) {
@@ -3181,6 +3263,7 @@ export default function HomeScreen() {
                     <View style={styles.previewSecondaryRow}>
                       <AppButton
                         onPress={navToStop}
+                        loading={navigationLaunching}
                         maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
                         size="compact"
                         style={styles.previewSecondaryBtn}
@@ -3231,6 +3314,7 @@ export default function HomeScreen() {
 
                       <AppButton
                         onPress={navToStop}
+                        loading={navigationLaunching}
                         maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
                         size="compact"
                         style={styles.previewSavedActionBtn}
@@ -3420,6 +3504,20 @@ export default function HomeScreen() {
           </AppCard>
         </View>
       ) : null}
+
+      <NavigationAppPicker
+        destinationLabel={navigationPickerDestination?.label ?? "Destination"}
+        onClose={() => {
+          setNavigationPickerDestination(null);
+          setNavigationPickerProviders([]);
+        }}
+        onSelect={(provider) => {
+          if (!navigationPickerDestination) return;
+          void launchNavigation(provider, navigationPickerDestination);
+        }}
+        providers={navigationPickerProviders}
+        visible={navigationPickerDestination !== null}
+      />
 
       <Modal
         visible={nearbyStopsOpen}
