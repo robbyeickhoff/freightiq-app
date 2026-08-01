@@ -22,21 +22,74 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-Implement the approved FreightIQ Search Relevance build.
+Fix the approved Stop Preview Card return reliability issue.
 
 The controlling specification is:
 
-`docs/build-specs/FreightIQSearchRelevanceBuildSpec.md`
+`docs/build-specs/FreightIQStopPreviewReturnBuildSpec.md`
 
-The Product Owner accepted Mobile Redesign V2 as complete and approved Search Relevance as the new
-active objective on 2026-08-01.
+Search Relevance is committed, pushed, and accepted in Expo testing. Its EAS standalone-build gate
+is intentionally parked until the Product Owner is ready to build the weekend's approved work.
 
 ---
 
 ## Current Focus
 
-Complete final diff review and prepare the separately approved application rollout gate after the
-successful production database migration and iPhone/Pixel device acceptance.
+Complete physical-device acceptance of the implemented same-stop return contract between the Stop
+Preview Card, Stop Intel, Quick Intel, and the map. Reports naming and Preview Card hierarchy remain
+separate future work.
+
+The focused local implementation is complete:
+
+- Saved-stop Preview Card actions now identify Preview Card origin explicitly.
+- Ordinary Stop Intel, Quick Intel, Reports, and Delivery Zone return paths carry a complete
+  same-stop fallback back to the map.
+- The map consumes the one-time return request, restores the selected stop, refreshes its state, and
+  reopens the Preview Card without invoking the nearby-stop chooser.
+- Direct Stop Intel entry, deletion behavior, and merge behavior retain their separate outcomes.
+- Focused lint has zero errors, `git diff --check` passes, and local iOS and Android Expo exports
+  compile successfully.
+- Repository-wide TypeScript verification still reports only the two unchanged website demo import
+  failures, `HowItWorksWorkflow` and `RealExampleDiagram`.
+- No Supabase, search, naming, hierarchy, build, deployment, or release action was performed.
+- On iPhone, Edit Intel followed by Back to Map without changes returns to the same saved stop with
+  its Preview Card open. The core no-edit return path passes.
+- On iPhone, changing and saving a Core Intel value returns to the same Preview Card and displays
+  the updated value. The save-and-refresh return path passes.
+- On iPhone, canceling an unsaved Intel change returns to the same Preview Card without applying the
+  change. The cancel return path passes.
+- Acceptance review of the original failure found a remaining new-stop handoff gap. Creating a
+  FreightIQ stop from a provider-only result opens Stop Intel without Preview Card return intent,
+  so returning can restore the temporary provider result instead of the new FreightIQ stop. The
+  Product Owner approved the documented focused handoff correction on 2026-08-01.
+- The new-stop handoff correction is locally implemented. Both a newly created FreightIQ stop and
+  an existing-stop match now carry Preview Card return intent into Stop Intel. Focused lint has zero
+  errors and `git diff --check` passes. The original iPhone reproduction remains the next gate.
+- The original iPhone reproduction now passes: selecting a provider-only business, creating its
+  FreightIQ stop, adding Intel, and returning to the map opens the new FreightIQ stop's Preview Card
+  with the saved Intel. The temporary provider card does not regain ownership.
+- On iPhone, opening Reports from a saved stop and returning to the map reopens the same stop's
+  Preview Card. The Reports return path passes.
+- On iPhone, Show DZ followed by Return to stop closes Delivery Zone inspection and reopens the
+  same stop's Preview Card. The Delivery Zone inspection handoff passes.
+- On iPhone, entering Set DZ for a stop without a Delivery Zone and returning without saving
+  reopens the same Preview Card and leaves its Delivery Zone unsaved. The Set DZ cancel/return path
+  passes. All normal iPhone return paths in this focused build now pass.
+- On Pixel, Edit Intel followed by Back to Map without changes reopens the same saved stop's Preview
+  Card. The Pixel core return path passes.
+- On Pixel, the original provider-result creation flow also passes: after creating the FreightIQ
+  stop and saving Intel, returning opens the new FreightIQ stop's Preview Card rather than the
+  temporary provider card. Cross-platform core acceptance is complete.
+- The existing-stop match guard passes: selecting a matching provider result, choosing Create Stop
+  Here, accepting Existing stop found, and returning opens the canonical FreightIQ Preview Card
+  without creating or restoring a temporary duplicate.
+- The deletion guard passes: deleting a disposable owned stop returns to the map without reopening
+  the deleted stop's Preview Card.
+- The merge guard passes: starting merge mode keeps the Preview Card hidden, and canceling before
+  selecting a target makes no data change.
+- Final local iOS and Android Expo exports compile successfully after all acceptance corrections.
+  The focused Stop Preview Return implementation and physical-device matrix are complete. No EAS
+  build or distribution action was performed.
 
 The approved local Supabase workflow is now established and verified:
 
@@ -208,7 +261,7 @@ an acceptable Search Relevance rollback.
 
 - Preview Card content or action hierarchy
 - Report naming
-- Routing behavior
+- Unrelated routing behavior
 - New Intel fields
 - Stop-pin design
 - Authentication experience
@@ -221,11 +274,10 @@ an acceptable Search Relevance rollback.
 
 ## Active Requirements
 
-- Follow the approved Search Relevance Build Specification and implementation sequence.
-- Keep the visible map center as the search context.
-- Preserve intentional distant place searches while preventing distant FreightIQ database matches
-  from appearing merely because of database order.
-- Use a safe development database environment before any production migration.
+- Follow the approved Stop Preview Return Build Specification and acceptance sequence.
+- Restore only the saved stop that originated the Preview Card navigation.
+- Consume return intent once so later map visits do not reopen stale selections.
+- Preserve direct Stop Intel entry, deletion, merge, and Delivery Zone inspection outcomes.
 - Reverify official vendor documentation before operational changes.
 - Obtain separate explicit approval for Supabase, provider, data-cleanup, production, commit, push,
   build, deployment, and release actions.
@@ -237,8 +289,5 @@ an acceptable Search Relevance rollback.
 
 ## Next Safe Step
 
-Request separate approval to stage and create one focused Search Relevance commit. After verifying
-that commit, request separate approval to push it and create iPhone/Android EAS `preview` internal
-candidate builds. Smoke-test both installed candidates without Expo Go before any separate
-TestFlight or Google Play internal-distribution approval. Keep data cleanup separate and do not
-expand provider-backed persistence before the provider/storage-rights decision.
+Request separate approval for one focused Stop Preview Return commit. Do not rename Reports,
+reorder Preview Card buttons, modify Supabase, push, or start any build or release action.

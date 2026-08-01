@@ -308,6 +308,7 @@ export default function StopScreen() {
   const setDeliveryZone = String(params.setDeliveryZone ?? "") === "1";
   const quickIntelRequested = String(params.quickIntel ?? "") === "1";
   const openedAt = String(params.openedAt ?? "");
+  const returnToPreviewRequested = String(params.returnToPreview ?? "") === "1";
 
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
 
@@ -416,6 +417,36 @@ export default function StopScreen() {
     contact ||
     notes,
   );
+
+  function returnToMap(options?: { includeMergeState?: boolean }) {
+    const returnAt = String(Date.now());
+    const restorePreviewParams = returnToPreviewRequested
+      ? {
+          returnToPreview: "1",
+          focusStopId: stopId,
+          focusStopName: currentStopName,
+          focusStopAddress: currentStopAddress,
+          focusStopLat: String(previewStopLat),
+          focusStopLng: String(previewStopLng),
+          previewReturnAt: returnAt,
+        }
+      : {};
+
+    router.replace({
+      pathname: "/(tabs)/(map)",
+      params: {
+        refreshAt: returnAt,
+        ...restorePreviewParams,
+        ...(options?.includeMergeState && mergeMode && mergeSourceStopId
+          ? {
+              mergeMode: "1",
+              mergeSourceStopId,
+              mergeStartedAt: returnAt,
+            }
+          : {}),
+      },
+    });
+  }
   const reportSaveLabel = loading
     ? "Saving..."
     : myReportId
@@ -1050,10 +1081,7 @@ export default function StopScreen() {
       setQuickIntelOpen(false);
       Alert.alert("Saved", myReportId ? "Report updated." : "Report posted.");
       await loadReports(userId);
-      router.replace({
-        pathname: "/(tabs)/(map)",
-        params: { refreshAt: String(Date.now()) },
-      });
+      returnToMap();
     } finally {
       setLoading(false);
     }
@@ -1065,10 +1093,7 @@ export default function StopScreen() {
 
     if (!myReportId && !hasReportCoreIntel) {
       setQuickIntelOpen(false);
-      router.replace({
-        pathname: "/(tabs)/(map)",
-        params: { refreshAt: String(Date.now()) },
-      });
+      returnToMap();
       return;
     }
 
@@ -1092,10 +1117,7 @@ export default function StopScreen() {
   async function cancelQuickIntel() {
     setQuickIntelOpen(false);
     await loadReports();
-    router.replace({
-      pathname: "/(tabs)/(map)",
-      params: { refreshAt: String(Date.now()) },
-    });
+    returnToMap();
   }
 
   async function handleVote(reportId: string, voteValue: 1 | -1) {
@@ -1683,6 +1705,7 @@ export default function StopScreen() {
                             entranceLat: String(entranceLat),
                             entranceLng: String(entranceLng),
                             revealAt: String(Date.now()),
+                            ...(returnToPreviewRequested ? { returnToPreview: "1" } : {}),
                           },
                         })
                       }
@@ -2077,19 +2100,7 @@ export default function StopScreen() {
                 onPress={() => {
                   setShowManageStop(false);
                   setReportsExpanded(false);
-                  router.replace({
-                    pathname: "/(tabs)/(map)",
-                    params: {
-                      refreshAt: String(Date.now()),
-                      ...(mergeMode && mergeSourceStopId
-                        ? {
-                            mergeMode: "1",
-                            mergeSourceStopId,
-                            mergeStartedAt: String(Date.now()),
-                          }
-                        : {}),
-                    },
-                  });
+                  returnToMap({ includeMergeState: true });
                 }}
               >
                 Back to Map

@@ -507,6 +507,7 @@ export default function HomeScreen() {
 
   const [showSelectedEntrance, setShowSelectedEntrance] = useState(false);
   const handledShowEntranceKeyRef = useRef<string | null>(null);
+  const handledPreviewReturnKeyRef = useRef<string | null>(null);
   const [selectedStop, setSelectedStop] = useState<Pin | null>(null);
   const selectedStopRef = useRef<Pin | null>(null);
   const [nearbyStopsOpen, setNearbyStopsOpen] = useState(false);
@@ -931,6 +932,76 @@ export default function HomeScreen() {
       }
     })();
   }, [params.focusStopId, params.showEntrance, params.hidePreview, params.revealAt, pins]);
+
+  useEffect(() => {
+    const returnToPreview = String(params.returnToPreview ?? "") === "1";
+    const focusStopId = String(params.focusStopId ?? "").trim();
+    const previewReturnAt = String(params.previewReturnAt ?? "").trim();
+
+    if (!returnToPreview || !focusStopId || !previewReturnAt) return;
+
+    const previewReturnKey = `${focusStopId}:${previewReturnAt}`;
+    if (handledPreviewReturnKeyRef.current === previewReturnKey) return;
+
+    const focusStopLatParam = String(params.focusStopLat ?? "").trim();
+    const focusStopLngParam = String(params.focusStopLng ?? "").trim();
+    const focusStopLat = Number(focusStopLatParam);
+    const focusStopLng = Number(focusStopLngParam);
+    const validCoordinates =
+      Boolean(focusStopLatParam) &&
+      Boolean(focusStopLngParam) &&
+      Number.isFinite(focusStopLat) &&
+      Number.isFinite(focusStopLng) &&
+      focusStopLat >= -90 &&
+      focusStopLat <= 90 &&
+      focusStopLng >= -180 &&
+      focusStopLng <= 180;
+
+    const existingPin = pins.find((pin) => pin.id === focusStopId);
+    if (!existingPin && !validCoordinates) return;
+
+    handledPreviewReturnKeyRef.current = previewReturnKey;
+
+    const returnedPin: Pin = {
+      id: focusStopId,
+      name:
+        String(params.focusStopName ?? "").trim() || existingPin?.name || "Unknown location",
+      address: String(params.focusStopAddress ?? "").trim() || undefined,
+      lat: validCoordinates ? focusStopLat : existingPin!.lat,
+      lng: validCoordinates ? focusStopLng : existingPin!.lng,
+    };
+
+    setPins((previous) => mergePinsById(previous, [returnedPin]));
+
+    setQuery("");
+    setFreightIqResults([]);
+    setResults([]);
+    setTempSearchPin(null);
+    jumpToStop(returnedPin, { skipNearbyChoice: true });
+
+    router.setParams({
+      focusStopAddress: undefined,
+      focusStopId: undefined,
+      focusStopLat: undefined,
+      focusStopLng: undefined,
+      focusStopName: undefined,
+      previewReturnAt: undefined,
+      returnToPreview: undefined,
+    });
+    // The one-time route contract is intentionally the trigger. Selection helpers and current map
+    // state are omitted so ordinary map interactions cannot replay an already consumed return.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    params.focusStopAddress,
+    params.focusStopId,
+    params.focusStopLat,
+    params.focusStopLng,
+    params.focusStopName,
+    params.previewReturnAt,
+    params.returnToPreview,
+    pins,
+    router,
+  ]);
 
   async function loadCloudReportStats() {
     try {
@@ -1652,12 +1723,15 @@ export default function HomeScreen() {
           name: stop.name,
           address: stop.address ?? "",
           openedAt: String(Date.now()),
+          ...(String(params.returnToPreview ?? "") === "1"
+            ? { returnToPreview: "1" }
+            : {}),
         },
       });
     }
   }
 
-  async function selectStop(p: Pin) {
+  async function selectStop(p: Pin, options?: { skipNearbyChoice?: boolean }) {
     if (loading) return;
 
     setDeliveryZoneInspectionSource(null);
@@ -1720,17 +1794,19 @@ export default function HomeScreen() {
     resetSelectedEntranceState();
 
     // Detect nearby stops (potential duplicates)
-    const nearby = pins.filter((other) => {
-      if (other.id === p.id) return false;
+    if (!options?.skipNearbyChoice) {
+      const nearby = pins.filter((other) => {
+        if (other.id === p.id) return false;
 
-      const dist = feetBetween(p.lat, p.lng, other.lat, other.lng);
-      return dist <= 50;
-    });
+        const dist = feetBetween(p.lat, p.lng, other.lat, other.lng);
+        return dist <= 50;
+      });
 
-    if (nearby.length > 0) {
-      setNearbyStops([p, ...nearby]);
-      setNearbyStopsOpen(true);
-      return;
+      if (nearby.length > 0) {
+        setNearbyStops([p, ...nearby]);
+        setNearbyStopsOpen(true);
+        return;
+      }
     }
     setPreviewVisible(true);
 
@@ -1767,7 +1843,7 @@ export default function HomeScreen() {
     }
   }
 
-  function jumpToStop(p: Pin) {
+  function jumpToStop(p: Pin, options?: { skipNearbyChoice?: boolean }) {
     const next: Region = {
       latitude: p.lat,
       longitude: p.lng,
@@ -1777,7 +1853,7 @@ export default function HomeScreen() {
     setRegion(next);
     mapRef.current?.animateToRegion(next, 300);
     recomputeClusters(next);
-    selectStop(p);
+    selectStop(p, options);
   }
 
   function selectFreightIqSearchResult(p: Pin) {
@@ -1856,6 +1932,7 @@ export default function HomeScreen() {
         lng: String(pin.lng),
         name: pin.name,
         address: pin.address ?? "",
+        returnToPreview: "1",
       },
     });
   }
@@ -1918,6 +1995,7 @@ export default function HomeScreen() {
                   lng: String(matchingStop.lng),
                   name: matchingStop.name,
                   address: matchingStop.address ?? "",
+                  returnToPreview: "1",
                 },
               });
             },
@@ -3084,6 +3162,7 @@ export default function HomeScreen() {
                           address: selectedStop?.address ?? "",
                           quickIntel: "1",
                           openedAt: String(Date.now()),
+                          returnToPreview: "1",
                         },
                       });
                     }}
@@ -3139,6 +3218,7 @@ export default function HomeScreen() {
                               name: selectedStop?.name,
                               address: selectedStop?.address ?? "",
                               openedAt: String(Date.now()),
+                              returnToPreview: "1",
                             },
                           })
                         }
@@ -3173,6 +3253,7 @@ export default function HomeScreen() {
                               address: selectedStop?.address ?? "",
                               viewReports: "1",
                               openedAt: String(Date.now()),
+                              returnToPreview: "1",
                             },
                           })
                         }
@@ -3205,6 +3286,7 @@ export default function HomeScreen() {
                               address: selectedStop?.address ?? "",
                               setDeliveryZone: "1",
                               openedAt: String(Date.now()),
+                              returnToPreview: "1",
                             },
                           });
                         }}
