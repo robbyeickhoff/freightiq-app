@@ -22,8 +22,8 @@ Its purpose is to answer one question:
 
 ## Current Objective
 
-Complete and physically verify the approved Navigation App Choice workstream while preserving
-FreightIQ's in-app map and search behavior.
+Implement the approved focused Structured Contact / Check-In workstream for Additional Driver Intel
+while preserving every existing report and the established Intel hierarchy.
 
 The Product Owner approved this single-label UI correction on 2026-08-01. It is a small direct
 correction under the Engineering Playbook and does not require a separate Build Specification.
@@ -36,6 +36,112 @@ The Driver Reports button presentation is committed, pushed, and accepted on iPh
 ---
 
 ## Current Focus
+
+The Product Owner approved the controlling specification at
+`docs/build-specs/FreightIQStructuredContactCheckInBuildSpec.md` on 2026-08-01. The approved phone
+types are Mobile, Work Mobile, Receiving, and Office. Mobile and Work Mobile support Call and
+Message; Receiving and Office support Call only. Additional Driver Intel keeps each number editable
+and provides separate action buttons, while Driver Reports presents the saved actions directly.
+
+Inspection confirms that Additional Driver Intel currently stores Contact / Check-In as one
+nullable `mfi_reports.contact` string. Driver Reports makes only the first recognizable phone number
+tappable. A read-only aggregate production inspection found 60 nonblank contact entries across 218
+reports: 57 contain phone-sized digit sequences, 52 combine text and a phone, two likely contain two
+numbers, and three contain text without a full phone. No raw contact values were retrieved.
+
+The approved safe direction is additive: preserve the legacy column; add optional Contact Name,
+typed phone rows, and Check-In Notes; adapt old strings in memory without guessing names or types;
+and continue composing the legacy string when the new client saves so prior app versions remain
+compatible. The local migration, structured editor, report presentation, legacy adapter, and
+Call/Message actions are implemented. A clean local reset, schema lint, focused app lint, helper
+checks, and iOS/Android exports pass. TypeScript reports only the two documented pre-existing website
+import failures. The separately approved production migration was applied on 2026-08-01 and is the
+only new production migration. Verification confirms all 218 reports and all 60 nonblank legacy
+contact values remain, zero rows were automatically converted, all three columns and five
+constraints are present, and existing RLS policies remain in force. Production advisors report only
+pre-existing findings. No EAS build, commit, push, deployment, or release action is authorized by
+this approval.
+
+The first iPhone entry test passed: the initial row defaults to Receiving, valid-number formatting
+works, Call becomes available, and Message remains unavailable for that call-only type. The test
+also exposed a large-text keyboard issue where focusing a Contact / Check-In field left the lower
+card behind the keyboard. The focused correction now scrolls the entire Contact / Check-In card to
+the top of the keyboard-safe viewport; focused lint, `git diff --check`, and an iOS export pass. The
+physical iPhone keyboard retest is pending.
+
+The first keyboard correction improved the phone-field visibility but iOS still performed a later
+automatic scroll that covered the lower card. The follow-up now reapplies the card-level position
+after `keyboardDidShow`, when iOS has finished opening the keyboard. Focused lint, `git diff
+--check`, and a fresh iOS export pass; the second physical retest is pending.
+
+The second physical retest confirmed that the enlarged Contact / Check-In card is taller than the
+available area above the iPhone keyboard. The positioning now bottom-aligns the card to the measured
+keyboard-safe viewport, allowing the helper content at the top to scroll offscreen so the lower
+phone controls and Check-In Notes remain above the keyboard. Focused lint, `git diff --check`, and a
+fresh iOS export pass. The third physical iPhone retest passed; the keyboard positioning correction
+is accepted.
+
+The iPhone structured-save test passed: Contact Name, Receiving number, and Check-In Notes persist
+and render correctly in Driver Reports; Receiving exposes Call and does not expose Message.
+The iPhone Mobile test also passed: Driver Reports exposes both actions and Message opens a composer
+addressed to the saved number.
+The iPhone Work Mobile test passed with the same correct Call and Message behavior.
+The iPhone Office test passed: Call opens the correct number and Message remains unavailable. All
+four approved phone-type action rules now pass on iPhone.
+The iPhone multiple-phone test passed: an additional row requires an explicit type, both numbers
+persist in entered order, and each row exposes the correct actions for its type.
+The iPhone removal test passed: a removed secondary phone remains deleted after reopening both
+Additional Intel and Driver Reports, while the retained phone remains intact.
+The iPhone read-only legacy compatibility test passed: pre-update Contact / Check-In text remains
+visible, recognized numbers are formatted and callable, and merely viewing the report does not
+rewrite it.
+The iPhone legacy-owner edit test passed: the adapted number initially uses the generic Phone label,
+Contact Name remains blank rather than guessed, surrounding text appears in Check-In Notes, and
+choosing a type then saving preserves all original information.
+The iPhone invalid-number test passed: a partially entered five-digit row blocks saving with the
+approved 7–15 digit explanation.
+The iPhone empty-row test passed: a completely blank added row is ignored on save and does not
+reappear. Core iPhone structured-contact entry, actions, compatibility, validation, and keyboard
+checks are complete.
+
+The first Pixel layout check found that the iPhone card-bottom keyboard alignment scrolled Contact
+Name above the Android viewport. Keyboard handling is now platform-specific: iPhone retains the
+accepted card-bottom alignment, while Pixel follows the focused field within Android's resized
+viewport. Focused lint, `git diff --check`, and an Android export pass; the Pixel retest is pending.
+
+The Pixel retest kept Contact Name visible but placed it too close to the keyboard. Android contact
+fields now use a larger keyboard clearance, with an increased offset when the accessibility layout
+is active. Focused lint, `git diff --check`, and a fresh Android export pass; the spacing retest is
+pending.
+
+The next Pixel screenshot showed improved context but left Check-In Notes at the keyboard edge. The
+enlarged-text Android clearance is increased again so the lower Contact / Check-In controls clear
+the keyboard while Contact Name remains visible. Focused lint, `git diff --check`, and a fresh
+Android export pass; the final spacing retest is pending.
+
+The following Pixel screenshot showed the Check-In Notes field beginning above the keyboard but not
+fully clearing it. The enlarged-text Android offset now moves one additional input height, allowing
+the helper content to leave the viewport so the full notes box can remain visible. Focused lint,
+`git diff --check`, and a fresh Android export pass; acceptance is pending.
+
+The clean Pixel retest passed: after dismissing the keyboard and reopening Additional Intel, the
+first Contact Name tap positions the enlarged-text layout correctly with the lower Contact /
+Check-In controls accessible above the keyboard. Pixel keyboard behavior is accepted.
+
+The Pixel structured-save test passed: Work Mobile and Check-In Notes persist into Driver Reports,
+both Call and Message appear, and Message opens the correct number.
+The Pixel Office test passed: Call opens the correct number and Message remains unavailable.
+The remaining Pixel matrix passed, including multiple-number behavior, removal, validation, legacy
+compatibility, and persistence. The final return-path regression also passed: after saving Additional
+Intel, FreightIQ returns to the same saved FreightIQ Stop Preview Card rather than the temporary
+provider result, and the structured Contact / Check-In change remains present.
+
+Final aggregate production verification found 220 reports, including three reports saved with
+structured Contact / Check-In data. Zero structured reports have invalid phone data, zero have
+invalid structured text, and zero are missing the legacy compatibility value. Migration history is
+aligned and production advisors report only the previously documented findings; this workstream
+introduced no new finding. The complete physical iPhone and Pixel acceptance matrix is now
+accepted.
 
 The approved Navigation App Choice implementation is complete locally. Profile Settings now has a
 device-local Navigation Preference with FreightIQ Default, Ask Every Time, and the supported
@@ -332,9 +438,10 @@ an acceptable Search Relevance rollback.
 
 ## Active Requirements
 
-- Change only the approved Driver Reports button presentation.
-- Preserve its count, navigation behavior, position, row-height consistency, and accessibility
-  behavior.
+- Keep Contact / Check-In limited to Contact Name, up to five typed phone rows, and Check-In Notes.
+- Use Mobile and Work Mobile for Call + Message; Receiving and Office for Call only.
+- Keep phone text editable in Additional Driver Intel and provide separate action buttons.
+- Preserve the legacy `contact` value and existing RLS behavior.
 - Reverify official vendor documentation before operational changes.
 - Obtain separate explicit approval for Supabase, provider, data-cleanup, production, commit, push,
   build, deployment, and release actions.
@@ -346,7 +453,5 @@ an acceptable Search Relevance rollback.
 
 ## Next Safe Step
 
-After the approved focused Navigation Preference commit and push, keep the native development or
-preview build as a separate future gate for final installed-app detection. Preserve in-app map
-viewing, search, and Preview Card hierarchy. Do not modify Supabase or start any build, deployment,
-or release action without separate approval.
+Obtain separate Product Owner approval to commit and push the accepted Structured Contact /
+Check-In workstream. Do not start an EAS build, deployment, or release action.
