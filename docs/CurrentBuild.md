@@ -13,47 +13,36 @@ answer one question:
 
 ## Current Objective
 
-Authentication V2 is the selected major objective for 2026-08-02.
+No new major implementation objective has been selected after completing Authentication V2 on
+2026-08-02. The Product Owner will review the current backlog and choose the next best-return task
+before another focused build begins.
 
-The current focused workstream is to implement the approved
-[FreightIQ Authentication V2 — Email and Password Build Specification](build-specs/FreightIQAuthenticationV2BuildSpec.md),
-following the completed live authentication-readiness inspection.
-
-Local application implementation and focused physical-iPhone validation are substantially complete. The
-central session gate, password-first Auth entry, account-creation UI, in-app password-recovery code UI,
-temporary login-code fallback, and V2 onboarding handoff are implemented locally. The approved
-Supabase password policy, URL configuration, branded email templates, and password-changed
-notification are applied; the existing working Resend SMTP configuration was preserved. The complete
-recovery-code path and same-account password sign-in passed on physical iPhone, with the Driver
-Profile, 201 reports, 7 votes, and 205 owned stops unchanged. A full Expo Go close and reopen also
-preserved the valid session and returned directly to the Map. Build, deployment, and release changes
-remain separately gated. The former password is rejected after logout and the new password restores
-the same account, completing the existing-user migration test. The next EAS candidate build remains parked until the Product Owner finishes
-today's approved work and separately authorizes the Sunday afternoon/evening build workflow.
-
-The already-used recovery code was also rejected on a second attempt with the approved safe error
-and request-another-code path.
-
-The first controlled new-account confirmation attempt exposed Supabase's verification URL in the
-email provider and routed Safari to the public website. The verified empty, unconfirmed test account
-owned no FreightIQ data and was deleted with Product Owner approval, invalidating that one-time
-link. Signup confirmation is now implemented locally as an in-app code flow, matching the verified
-recovery pattern. The Confirm Signup template was converted to an eight-digit code and the complete
-new-account confirmation flow passed on physical iPhone, ending at the correct Driver Profile setup
-screen without opening Safari. The test user then completed Driver Profile and Tractor Type, passed
-the welcome handoff, reached the Map, logged out, and signed back in to the same new profile. The
-confirmed test account owned one test profile and no reports, votes, or stops. After the flow passed,
-the Product Owner approved its deletion; the Auth user and cascaded test profile were removed, and a
-follow-up audit confirmed no remaining profile, reports, votes, or stops for that test identity.
-The deleted test session was then cleared from the iPhone, and the Product Owner signed back into
-the original FreightIQ account successfully with the expected Map, Driver Profile, and contributions
-intact.
-The two temporary LAN-specific Expo Go redirect entries were removed after code-flow testing; the
-production allow list retains only the approved `mfi://auth` and `mfi://update-password` entries.
+Do not treat a candidate build as the next product objective. EAS, TestFlight, Google Play,
+deployment, and release work remain separately gated and may proceed only through the applicable
+approved release workflow.
 
 ---
 
 ## Completed Build Status
+
+Authentication V2 is implemented, accepted locally, committed in `1a35d08`, and pushed to
+`clean-main` on 2026-08-02. The completed work includes the central session gate, password-first
+sign-in, confirmed-email account creation, in-app signup and recovery codes, temporary login-code
+fallback, V2 onboarding handoff, approved Supabase authentication configuration, branded email
+templates, and the password-changed notification. The working Resend SMTP configuration was
+preserved.
+
+The Product Owner's existing account completed password migration with the same Driver Profile,
+201 reports, 7 votes, and 205 owned stops preserved. Session persistence, logout, rejection of the
+former password, returning sign-in with the new password, used-code rejection, and full app close
+and reopen passed on physical iPhone. A controlled new account completed confirmation, Driver
+Profile and Tractor Type setup, welcome handoff, logout, and returning sign-in before its verified
+test-only Auth and profile data were deleted. The Product Owner then restored the original account
+successfully. Temporary LAN-specific Expo Go redirects were removed; only `mfi://auth` and
+`mfi://update-password` remain in the production allow list.
+
+Standalone iPhone, Pixel, broader accessibility, edge-case, and new-tester validation remain release
+gates and do not keep the accepted implementation open as the active build.
 
 The following focused workstreams were accepted on iPhone and Pixel, committed separately, and
 pushed to `clean-main` on 2026-08-01:
@@ -108,6 +97,6 @@ deployment, or release was performed for this completed tranche.
 
 ## Next Safe Step
 
-Run the remaining Authentication V2 installed-platform validation in the next separately approved
-candidate build. Keep EAS, TestFlight, Google Play, deployment, and release actions parked until the
-Product Owner explicitly authorizes the applicable workflow.
+Review `MasterTODO.md` and select the next best-return product task. Keep EAS, TestFlight, Google
+Play, deployment, and release actions parked until the Product Owner explicitly authorizes the
+applicable workflow.

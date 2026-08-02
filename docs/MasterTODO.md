@@ -63,6 +63,7 @@ preparation for expanding the tester base.
 - [ ] Verify Help Center effectiveness with new users.
 - [ ] Confirm onboarding successfully communicates FreightIQ's value proposition.
 - [ ] Evaluate whether users naturally discover and use the Help Center.
+- [ ] Validate Authentication V2 with new testers in installed iPhone and Android builds.
 
 ## App
 
@@ -82,31 +83,6 @@ preparation for expanding the tester base.
 - [x] Simplify the onboarding experience.
 - [x] Ensure onboarding communicates FreightIQ's unique value.
 - [ ] Validate onboarding with new testers.
-
----
-
-#### Authentication Experience
-
-##### Goals
-
-Create a familiar, professional account creation and sign-in experience that minimizes hesitation and inspires confidence.
-
-Accepted active build specification:
-[FreightIQ Authentication V2 — Email and Password Build Specification](build-specs/FreightIQAuthenticationV2BuildSpec.md)
-
-##### Active Tasks
-
-- [x] Review the current authentication workflow.
-- [x] Evaluate moving toward a more familiar account creation and sign-in experience.
-- [x] Reduce friction during sign-up and sign-in with familiar email-and-password authentication.
-- [x] Preserve security while improving usability through confirmed-email signup, neutral errors,
-  eight-character minimum passwords, and one-time signup/recovery codes.
-- [x] Gracefully clear an invalid persisted refresh token and return the driver to signed-out state
-  instead of surfacing a startup error.
-- [x] Validate the complete controlled new-account journey on physical iPhone, including email
-  confirmation, profile setup, logout, returning sign-in, test-account cleanup, and restoration of
-  the original account.
-- [ ] Validate the updated authentication experience with new users.
 
 #### Profile Screen Polish
 
@@ -206,14 +182,6 @@ Continue improving FreightIQ's public presence through a professional, trustwort
 
 - [ ] Continue production monitoring of the completed Sunrise System website and its Contact and
   Early Access forms.
-
----
-
-#### Infrastructure
-
-- [ ] Replace the legacy blue-pin and Vercel-placeholder Safari icon set with the approved FreightIQ
-  Sunrise icon, deploy it, and verify tabs, bookmarks, and Home Screen presentation on Mac and
-  iPhone.
 
 ## Security & Trust
 
@@ -536,6 +504,28 @@ Completed
 
 ## App
 
+### Authentication V2
+
+Completed
+
+- ✓ Replaced the email-code-first entry experience with familiar email-and-password sign-in while
+  preserving the temporary one-time-code fallback.
+- ✓ Added confirmed-email account creation, in-app eight-digit confirmation and recovery codes,
+  password visibility controls, an eight-character minimum, and neutral authentication errors.
+- ✓ Added the central session gate, correct new-user and returning-user routing, reliable logout,
+  session persistence, and graceful invalid-refresh-token recovery.
+- ✓ Applied the approved production Supabase password policy, redirect allow list, branded email
+  templates, and password-changed notification while preserving the working Resend SMTP setup.
+- ✓ Verified the Product Owner's existing-account migration with the same profile, 201 reports,
+  7 votes, and 205 owned stops preserved.
+- ✓ Completed the controlled physical-iPhone new-account journey through confirmation, profile
+  setup, welcome handoff, logout, returning sign-in, test-account cleanup, and restoration of the
+  original account.
+- ✓ Accepted and pushed the implementation in `1a35d08` on 2026-08-02; standalone-platform,
+  accessibility, and broader-tester validation remain release gates.
+
+---
+
 ### Mobile Redesign V2
 
 Completed
@@ -616,6 +606,21 @@ Completed
 - ✓ Added repository-backed sitemap and robots metadata.
 - ✓ Completed the currently actionable Google Search Console and DNS setup, including valid root
   and `www` configuration and sitemap submission.
+
+---
+
+### Website Icon Infrastructure
+
+Completed
+
+- ✓ Replaced the legacy blue-pin and Vercel-placeholder website icon assets with the approved
+  FreightIQ Sunrise icon.
+- ✓ Added and production-verified the conventional root favicon, versioned favicon, PNG icon,
+  Apple touch icon, and legacy preview-image compatibility paths.
+- ✓ Verified the Sunrise icon in Mac Safari tabs and bookmarks.
+- ✓ Accepted that an existing iPhone Safari bookmark may retain cached Vercel artwork through
+  iOS or iCloud bookmark metadata; the production assets are correct and no further engineering
+  work is planned for that device-side cache artifact.
 
 ---
 

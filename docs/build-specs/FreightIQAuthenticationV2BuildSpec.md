@@ -1,6 +1,6 @@
 # FreightIQ Authentication V2 — Email and Password Build Specification
 
-> **Status: Implemented and accepted locally — installed-build validation pending**
+> **Status: Implementation completed and accepted — installed-build validation pending**
 >
 > This document defines the accepted first implementation of FreightIQ Authentication V2.
 >
@@ -13,7 +13,7 @@
 - **Title:** FreightIQ Authentication V2 — Email and Password Build Specification
 - **Purpose:** Define a familiar, professional, and safe first-iteration account experience
 - **Repository path:** `docs/build-specs/FreightIQAuthenticationV2BuildSpec.md`
-- **Repository status:** Accepted Active Build Specification
+- **Repository status:** Accepted Completed Build Specification
 - **Implementation status:** Implemented and accepted locally; standalone iPhone, Pixel, and broader
   accessibility/edge-case validation remain release gates
 - **Approval status:** Implementation accepted and commit/push approved by the Product Owner on
@@ -817,9 +817,9 @@ Stop implementation or rollout if:
 - Official vendor documentation conflicts with this specification
 - A critical accessibility regression remains
 
-## 18. Acceptance Criteria
+## 18. Release Acceptance Criteria
 
-Authentication V2 is complete only when:
+Authentication V2 is ready for broader installed-build rollout only when:
 
 - Returning users can sign in with email and password.
 - New users can create and confirm an account.
@@ -866,10 +866,10 @@ Removing the email-code fallback requires a later explicit decision and is not p
 
 ## 20. Change Control
 
-- This document remains planning-only until explicitly approved and activated.
+- This document is the accepted implementation contract for the completed Authentication V2 build.
 - `docs/CurrentBuild.md` remains authoritative for the active build.
-- Pixel discoveries may be handled inside the Mobile Redesign V2 build without silently changing
-  this queued Authentication V2 scope.
+- Installed-platform discoveries remain release validation unless they require a separately approved
+  material implementation change.
 - Material changes require:
   1. A clear reason
   2. Scope and security impact
@@ -882,16 +882,13 @@ Removing the email-code fallback requires a later explicit decision and is not p
 - Implementation, Supabase changes, email-provider changes, DNS changes, credentials, commits,
   pushes, builds, and releases require the applicable separate approval.
 
-## 21. Next Gate
+## 21. Completion and Release State
 
-Implementation remains queued until:
-
-1. Mobile Redesign V2 passes its remaining Pixel and standalone-iPhone validation. **Satisfied on
-   2026-08-01 when the Product Owner accepted Mobile Redesign V2 as complete.**
-2. The current build is closed through the FreightIQ completion workflow. **Satisfied before the
-   completed 2026-08-01 focused workstreams were reconciled and pushed.**
-3. This specification is explicitly approved. **Satisfied on 2026-08-02.**
-4. `docs/CurrentBuild.md` is updated to activate Authentication V2. **Satisfied on 2026-08-02 for
-   specification review and readiness work.**
-5. The live authentication-readiness audit is completed. **Satisfied on 2026-08-02; separately
-   gated operational configuration remains before external rollout.**
+- The specification, live readiness audit, and implementation were approved on 2026-08-02.
+- Local implementation, production Supabase authentication configuration, focused physical-iPhone
+  acceptance, existing-account migration, and controlled new-account validation are complete.
+- The accepted implementation was committed in `1a35d08` and pushed to `clean-main` on 2026-08-02.
+- Standalone iPhone, Pixel, broader accessibility, edge-case, and new-tester validation remain
+  release gates.
+- EAS builds, TestFlight, Google Play, deployment, and release remain separately gated through the
+  applicable release workflow.
