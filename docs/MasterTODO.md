@@ -91,17 +91,21 @@ preparation for expanding the tester base.
 
 Create a familiar, professional account creation and sign-in experience that minimizes hesitation and inspires confidence.
 
-Queued planning specification:
+Accepted active build specification:
 [FreightIQ Authentication V2 — Email and Password Build Specification](build-specs/FreightIQAuthenticationV2BuildSpec.md)
 
 ##### Active Tasks
 
 - [x] Review the current authentication workflow.
 - [x] Evaluate moving toward a more familiar account creation and sign-in experience.
-- [ ] Reduce friction during sign-up and sign-in.
-- [ ] Preserve security while improving usability.
-- [ ] Gracefully clear an invalid persisted refresh token and return the driver to signed-out state
+- [x] Reduce friction during sign-up and sign-in with familiar email-and-password authentication.
+- [x] Preserve security while improving usability through confirmed-email signup, neutral errors,
+  eight-character minimum passwords, and one-time signup/recovery codes.
+- [x] Gracefully clear an invalid persisted refresh token and return the driver to signed-out state
   instead of surfacing a startup error.
+- [x] Validate the complete controlled new-account journey on physical iPhone, including email
+  confirmation, profile setup, logout, returning sign-in, test-account cleanup, and restoration of
+  the original account.
 - [ ] Validate the updated authentication experience with new users.
 
 #### Profile Screen Polish

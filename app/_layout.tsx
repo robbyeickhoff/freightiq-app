@@ -1,8 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { Stack, usePathname, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { StyleSheet, View } from "react-native";
 import "react-native-reanimated";
 
 import {
@@ -10,18 +11,23 @@ import {
   useNavigationPreference,
 } from "@/context/navigation-preference-context";
 import { AppThemeProvider, useAppTheme } from "@/context/theme-context";
+import { clearInvalidStoredSession, isInvalidStoredSessionError } from "@/utils/auth-session";
+import { supabase } from "@/utils/supabase";
 
 const ONBOARDING_SEEN_KEY = "freightiq:onboarding-seen:v1";
-const PROFILE_SETUP_COMPLETE_KEY = "freightiq:profile-setup-complete:v1";
 
 export const unstable_settings = {
   anchor: "(tabs)",
 };
 
 function RootNavigator() {
+  const pathname = usePathname();
+  const router = useRouter();
   const { colorScheme, colors, isReady: isThemeReady } = useAppTheme();
   const { isReady: isNavigationPreferenceReady } = useNavigationPreference();
   const [initialRouteName, setInitialRouteName] = useState<string | null>(null);
+  const [startupRouteApplied, setStartupRouteApplied] = useState(false);
+  const [startupRouteRequested, setStartupRouteRequested] = useState(false);
   const navigationTheme = useMemo(() => {
     const baseTheme = colorScheme === "dark" ? DarkTheme : DefaultTheme;
 
@@ -39,39 +45,139 @@ function RootNavigator() {
     };
   }, [colorScheme, colors]);
 
+  const routeSignedInUser = useCallback(
+    async (userId: string, replace = true): Promise<"(tabs)" | "setup-profile"> => {
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("username, tractor_type")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      const hasCompleteProfile = Boolean(profile?.username?.trim() && profile?.tractor_type?.trim());
+      const route = hasCompleteProfile ? "(tabs)" : "setup-profile";
+
+      if (replace) {
+        router.replace(route === "(tabs)" ? "/(tabs)/(map)" : "/setup-profile");
+      }
+
+      return route;
+    },
+    [router],
+  );
+
   useEffect(() => {
     let mounted = true;
 
-    async function loadOnboardingState() {
+    async function resolveInitialRoute() {
       try {
-        const onboardingValue = await AsyncStorage.getItem(ONBOARDING_SEEN_KEY);
-        const profileValue = await AsyncStorage.getItem(PROFILE_SETUP_COMPLETE_KEY);
+        const [onboardingValue, sessionResult] = await Promise.all([
+          AsyncStorage.getItem(ONBOARDING_SEEN_KEY),
+          supabase.auth.getSession(),
+        ]);
 
         if (!mounted) return;
 
-        const hasSeenOnboarding = onboardingValue === "true";
-        const hasCompletedProfileSetup = profileValue === "true";
+        if (sessionResult.error) {
+          if (isInvalidStoredSessionError(sessionResult.error)) {
+            await clearInvalidStoredSession();
+            if (mounted) {
+              setInitialRouteName(onboardingValue === "true" ? "auth" : "onboarding");
+            }
+            return;
+          }
 
-        setInitialRouteName(
-          !hasSeenOnboarding
-            ? "onboarding"
-            : !hasCompletedProfileSetup
-              ? "setup-profile"
-              : "(tabs)",
-        );
+          throw sessionResult.error;
+        }
+
+        if (!sessionResult.data.session) {
+          setInitialRouteName(onboardingValue === "true" ? "auth" : "onboarding");
+          return;
+        }
+
+        const userResult = await supabase.auth.getUser();
+        if (userResult.error || !userResult.data.user) {
+          if (isInvalidStoredSessionError(userResult.error)) {
+            await clearInvalidStoredSession();
+          }
+          if (mounted) {
+            setInitialRouteName(onboardingValue === "true" ? "auth" : "onboarding");
+          }
+          return;
+        }
+
+        const signedInRoute = await routeSignedInUser(userResult.data.user.id, false);
+        if (mounted) setInitialRouteName(signedInRoute);
       } catch {
         if (mounted) {
-          setInitialRouteName("onboarding");
+          setInitialRouteName("auth");
         }
       }
     }
 
-    void loadOnboardingState();
+    void resolveInitialRoute();
 
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [routeSignedInUser]);
+
+  useEffect(() => {
+    if (!initialRouteName) return;
+
+    const targetPath =
+      initialRouteName === "(tabs)"
+        ? "/(tabs)/(map)"
+        : initialRouteName === "setup-profile"
+          ? "/setup-profile"
+          : initialRouteName === "onboarding"
+            ? "/onboarding"
+            : "/auth";
+
+    router.replace(targetPath);
+    setStartupRouteRequested(true);
+  }, [initialRouteName, router]);
+
+  const startupRouteMatches = useMemo(() => {
+    if (!initialRouteName || !startupRouteRequested) return false;
+
+    if (initialRouteName === "(tabs)") return pathname === "/";
+    if (initialRouteName === "setup-profile") return pathname === "/setup-profile";
+    if (initialRouteName === "onboarding") return pathname === "/onboarding";
+    return pathname === "/auth";
+  }, [initialRouteName, pathname, startupRouteRequested]);
+
+  useEffect(() => {
+    if (startupRouteMatches) setStartupRouteApplied(true);
+  }, [startupRouteMatches]);
+
+  useEffect(() => {
+    if (!initialRouteName) return;
+
+    const { data: authSubscription } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        router.replace("/auth");
+        return;
+      }
+
+      if (
+        (event === "SIGNED_IN" || event === "USER_UPDATED") &&
+        session &&
+        pathname !== "/update-password"
+      ) {
+        setTimeout(() => {
+          void routeSignedInUser(session.user.id).catch(() => {
+            router.replace("/auth");
+          });
+        }, 0);
+      }
+    });
+
+    return () => {
+      authSubscription.subscription.unsubscribe();
+    };
+  }, [initialRouteName, pathname, routeSignedInUser, router]);
 
   if (!initialRouteName || !isThemeReady || !isNavigationPreferenceReady) {
     return null;
@@ -99,6 +205,9 @@ function RootNavigator() {
           }}
         />
         <Stack.Screen name="auth" options={{ headerShown: false }} />
+        <Stack.Screen name="create-account" options={{ headerShown: false }} />
+        <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+        <Stack.Screen name="update-password" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: "modal", title: "Modal" }} />
       </Stack>
@@ -107,6 +216,13 @@ function RootNavigator() {
         backgroundColor={colors.surface}
         style={colorScheme === "dark" ? "light" : "dark"}
       />
+      {!startupRouteApplied ? (
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]}
+        />
+      ) : null}
     </ThemeProvider>
   );
 }

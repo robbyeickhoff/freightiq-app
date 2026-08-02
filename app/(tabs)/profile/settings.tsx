@@ -98,7 +98,7 @@ export default function SettingsScreen() {
     }
 
     Alert.alert("Logged out", "You have been logged out.");
-    router.push("/auth");
+    router.replace("/auth");
   }
 
   return (

@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text } from "react-native";
@@ -10,8 +9,6 @@ import { useAppTheme } from "@/context/theme-context";
 
 import ProfileForm from "../components/ProfileForm";
 import { supabase } from "../utils/supabase";
-
-const PROFILE_SETUP_COMPLETE_KEY = "freightiq:profile-setup-complete:v1";
 
 export default function SetupProfileScreen() {
   const [name, setName] = useState("");
@@ -70,7 +67,7 @@ export default function SetupProfileScreen() {
     }
 
     void loadProfile();
-  }, []);
+  }, [params.name, params.tractorType, router]);
 
   async function saveProfile() {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -92,7 +89,6 @@ export default function SetupProfileScreen() {
       return;
     }
 
-    await AsyncStorage.setItem(PROFILE_SETUP_COMPLETE_KEY, "true");
     router.replace("/welcome");
   }
 

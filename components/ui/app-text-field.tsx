@@ -1,5 +1,6 @@
 import { forwardRef, useState } from "react";
 import {
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -12,6 +13,13 @@ import {
 
 import { Borders, Radius, Sizes, Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
+import { AppIcon, type AppIconName } from "@/components/ui/app-icon";
+
+type TextFieldTrailingAction = {
+  accessibilityLabel: string;
+  icon: AppIconName;
+  onPress: () => void;
+};
 
 export type AppTextFieldProps = Omit<TextInputProps, "editable" | "style"> & {
   containerStyle?: StyleProp<ViewStyle>;
@@ -21,6 +29,7 @@ export type AppTextFieldProps = Omit<TextInputProps, "editable" | "style"> & {
   label: string;
   successMessage?: string;
   supportingText?: string;
+  trailingAction?: TextFieldTrailingAction;
 };
 
 export const AppTextField = forwardRef<TextInput, AppTextFieldProps>(
@@ -38,6 +47,7 @@ export const AppTextField = forwardRef<TextInput, AppTextFieldProps>(
       placeholderTextColor,
       successMessage,
       supportingText,
+      trailingAction,
       ...props
     },
     ref,
@@ -61,36 +71,50 @@ export const AppTextField = forwardRef<TextInput, AppTextFieldProps>(
         <Text style={[styles.label, { color: disabled ? colors.disabled : colors.textPrimary }]}>
           {label}
         </Text>
-        <TextInput
-          ref={ref}
-          accessibilityLabel={accessibilityLabel ?? label}
-          cursorColor={colors.accentStrong}
-          editable={!disabled}
-          keyboardAppearance={colorScheme}
-          multiline={multiline}
-          onBlur={(event) => {
-            setIsFocused(false);
-            onBlur?.(event);
-          }}
-          onFocus={(event) => {
-            setIsFocused(true);
-            onFocus?.(event);
-          }}
-          placeholderTextColor={placeholderTextColor ?? colors.textSecondary}
-          selectionColor={colors.accent}
-          style={[
-            styles.input,
-            multiline ? styles.multiline : null,
-            {
-              backgroundColor: disabled ? colors.surface : colors.surfaceElevated,
-              borderColor,
-              borderWidth: error || isFocused ? 2 : Borders.thin,
-              color: disabled ? colors.disabled : colors.textPrimary,
-            },
-            inputStyle,
-          ]}
-          {...props}
-        />
+        <View style={styles.inputShell}>
+          <TextInput
+            ref={ref}
+            accessibilityLabel={accessibilityLabel ?? label}
+            cursorColor={colors.accentStrong}
+            editable={!disabled}
+            keyboardAppearance={colorScheme}
+            multiline={multiline}
+            onBlur={(event) => {
+              setIsFocused(false);
+              onBlur?.(event);
+            }}
+            onFocus={(event) => {
+              setIsFocused(true);
+              onFocus?.(event);
+            }}
+            placeholderTextColor={placeholderTextColor ?? colors.textSecondary}
+            selectionColor={colors.accent}
+            style={[
+              styles.input,
+              multiline ? styles.multiline : null,
+              trailingAction ? styles.inputWithTrailingAction : null,
+              {
+                backgroundColor: disabled ? colors.surface : colors.surfaceElevated,
+                borderColor,
+                borderWidth: error || isFocused ? 2 : Borders.thin,
+                color: disabled ? colors.disabled : colors.textPrimary,
+              },
+              inputStyle,
+            ]}
+            {...props}
+          />
+          {trailingAction ? (
+            <Pressable
+              accessibilityLabel={trailingAction.accessibilityLabel}
+              accessibilityRole="button"
+              hitSlop={Spacing.xs}
+              onPress={trailingAction.onPress}
+              style={({ pressed }) => [styles.trailingAction, pressed ? styles.pressed : null]}
+            >
+              <AppIcon color={colors.textSecondary} name={trailingAction.icon} size={24} />
+            </Pressable>
+          ) : null}
+        </View>
         {message ? (
           <Text
             accessibilityLiveRegion="polite"
@@ -119,6 +143,24 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     fontSize: Typography.body.fontSize,
     fontWeight: Typography.body.fontWeight,
+  },
+  inputShell: {
+    position: "relative",
+  },
+  inputWithTrailingAction: {
+    paddingRight: Sizes.minimumTouchTarget + Spacing.sm,
+  },
+  trailingAction: {
+    alignItems: "center",
+    bottom: 0,
+    justifyContent: "center",
+    position: "absolute",
+    right: Spacing.xs,
+    top: 0,
+    width: Sizes.minimumTouchTarget,
+  },
+  pressed: {
+    opacity: 0.6,
   },
   multiline: {
     minHeight: 112,

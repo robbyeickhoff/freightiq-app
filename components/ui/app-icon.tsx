@@ -20,6 +20,8 @@ const ICONS = {
   gettingStarted: { default: "local-shipping" },
   help: { default: "help-outline", active: "help" },
   incomplete: { default: "pending-actions" },
+  passwordHidden: { default: "visibility-off" },
+  passwordVisible: { default: "visibility" },
   location: { default: "location-searching", active: "my-location" },
   logout: { default: "logout" },
   map: { default: "map" },
