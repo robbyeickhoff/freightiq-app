@@ -1,6 +1,6 @@
 # FreightIQ Structured Contact / Check-In — Focused Build Specification
 
-> **Status: Approved by Product Owner — 2026-08-01**
+> **Status: Implemented, accepted, committed, and pushed — 2026-08-01**
 >
 > This specification improves only Contact / Check-In inside Additional Driver Intel. It preserves
 > existing report content, the established Intel hierarchy, and compatibility with older app
@@ -11,9 +11,9 @@
 - **Title:** FreightIQ Structured Contact / Check-In — Focused Build Specification
 - **Purpose:** Make business contact information cleaner to enter, read, call, and message
 - **Repository path:** `docs/build-specs/FreightIQStructuredContactCheckInBuildSpec.md`
-- **Repository status:** Approved controlling Build Specification
-- **Implementation status:** Local implementation, production migration, and physical iPhone and
-  Pixel acceptance complete; commit and push pending separate approval
+- **Repository status:** Completed controlling Build Specification
+- **Implementation status:** Local implementation, production migration, physical iPhone and Pixel
+  acceptance, commit, and push complete
 - **Approval status:** Approved by Product Owner on 2026-08-01
 - **Source Field Note:** `docs/field-notes/entries/2026-07-30-1342-stop-intel-contact-check-in-polish.md`
 
@@ -355,7 +355,7 @@ gate.
 If inspection or local testing shows that the legacy adapter cannot preserve current content, stop
 implementation and return to Product Owner review rather than guessing or rewriting user data.
 
-## 13. Next Gate
+## 13. Completion Status and Next Gate
 
 Local implementation, internal verification, and the separately approved additive production
 migration are complete. Final production verification found 220 reports, including three reports
@@ -364,5 +364,6 @@ zero structured reports missing the legacy compatibility value. All approved con
 present and the existing RLS policies remain in force. Physical iPhone and Pixel acceptance is
 complete, including large-text keyboard behavior, all four phone-type action rules, multiple-number
 ordering and removal, validation, legacy compatibility, persistence, and return to the same
-FreightIQ Stop Preview Card after saving. The next gate is separate approval to commit and push this
-focused workstream. No EAS build, deployment, or release is authorized.
+FreightIQ Stop Preview Card after saving. The focused workstream was committed and pushed as
+`b9432fd` on 2026-08-01. No EAS build, deployment, or release was performed. Standalone candidate-
+build verification remains part of a separately authorized Sunday release workflow.

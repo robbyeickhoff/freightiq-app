@@ -18,7 +18,7 @@
 
 ---
 
-Last Updated: 2026-07-26
+Last Updated: 2026-08-02
 
 ---
 
@@ -36,13 +36,10 @@ Continue improving the quality, consistency, and polish of the application. Ever
 
 Strengthen reliability, security, release processes, and project infrastructure to build long-term confidence in FreightIQ.
 
-4. Website Polish
+4. Broader Tester Growth
 
-Continue improving FreightIQ's public presence through a cleaner, more professional website and communications.
-
-5. Broader Tester Growth
-
-Continue improving onboarding, tester communication, professional email infrastructure, and release workflows in preparation for expanding the tester base.
+Continue improving onboarding, tester communication, release workflows, and outreach readiness in
+preparation for expanding the tester base.
 
 ---
 
@@ -81,9 +78,9 @@ Continue improving onboarding, tester communication, professional email infrastr
 
 ##### Active Tasks
 
-- [ ] Review the current onboarding screens with fresh eyes.
-- [ ] Simplify the onboarding experience.
-- [ ] Ensure onboarding communicates FreightIQ's unique value.
+- [x] Review the current onboarding screens with fresh eyes.
+- [x] Simplify the onboarding experience.
+- [x] Ensure onboarding communicates FreightIQ's unique value.
 - [ ] Validate onboarding with new testers.
 
 ---
@@ -115,9 +112,9 @@ Continue improving the profile experience to feel simple, clean, and native.
 
 ##### Active Tasks
 
-- [ ] Refine button styling.
-- [ ] Improve visual hierarchy.
-- [ ] Improve spacing and grouping of actions.
+- [x] Refine button styling.
+- [x] Improve visual hierarchy.
+- [x] Improve spacing and grouping of actions.
 - [ ] Continue Apple-quality polish.
 
 ---
@@ -130,8 +127,8 @@ Continue refining FreightIQ's in-app documentation experience.
 
 ##### Active Tasks
 
-- [ ] Continue polishing Help Center cards.
-- [ ] Refine Help Center copy and educational content.
+- [x] Polish the Help Center cards and shared guide presentation.
+- [x] Update Help Center copy and educational content for Intel V2.
 - [ ] Validate Help Center effectiveness through real-world testing.
 - [ ] Continue improving overall Help Center user experience.
 
@@ -145,7 +142,8 @@ Create a navigation experience that feels consistent throughout the application.
 
 ##### Active Tasks
 
-- [ ] Continue reviewing overall navigation consistency.
+- [x] Review and correct navigation consistency through Mobile Redesign V2 and the focused Stop
+  Preview Return workstream.
 - [ ] Validate navigation through continued real-world testing.
 
 ---
@@ -161,7 +159,7 @@ Validate the completed Intel V2 experience through real-world driver use before 
 - [ ] Continue real-world validation of Operational Essentials.
 - [ ] Validate whether Back In should remain before Delivery Zone.
 - [ ] Observe whether drivers naturally use Additional Driver Intel.
-- [ ] Validate Intel V2 on Android and additional screen sizes.
+- [x] Validate Intel V2 on Android and additional screen sizes.
 - [x] Update Help Center guidance to reflect Intel V2 before the next broader tester release.
 
 ### Map
@@ -176,7 +174,6 @@ Continue improving map reliability, stop discovery, and rendering performance.
 - [ ] Continue monitoring repeated Show/Hide Stops interactions for stability.
 - [ ] Continue monitoring repeated Preview Card interactions for stability.
 - [ ] Validate the polished Nearby Stops workflow with broader tester use.
-- [ ] Implement the approved location-aware Search Relevance Build Specification now active through `docs/CurrentBuild.md`.
 - [ ] Conduct a focused place-search provider review comparing Mapbox, Google Places, and platform-specific Apple/Google search before deciding whether to keep or remove Mapbox. Review result quality, storage rights, pricing, attribution, cross-platform consistency, and migration risk.
 
 ---
@@ -203,30 +200,16 @@ Continue improving FreightIQ's public presence through a professional, trustwort
 
 #### User Experience
 
-- [ ] Review homepage hero messaging.
-- [ ] Continue improving onboarding explanation.
-- [ ] Redesign the Real Example page.
-- [ ] Improve overall website navigation.
-- [ ] Add a top navigation/header.
-- [ ] Add a footer.
-- [ ] Add a Contact page.
-- [ ] Add a simple contact form.
-
----
-
-#### Branding
-
-- [ ] Complete professional email migration.
-- [ ] Replace Proton email references with the FreightIQ domain where appropriate.
-- [ ] Update business cards with the new professional email address.
+- [ ] Continue production monitoring of the completed Sunrise System website and its Contact and
+  Early Access forms.
 
 ---
 
 #### Infrastructure
 
-- [ ] Create and verify the Apple Touch Icon.
-- [ ] Verify website appearance when saved to the iPhone Home Screen.
-- [ ] Create an account deletion page.
+- [ ] Replace the legacy blue-pin and Vercel-placeholder Safari icon set with the approved FreightIQ
+  Sunrise icon, deploy it, and verify tabs, bookmarks, and Home Screen presentation on Mac and
+  iPhone.
 
 ## Security & Trust
 
@@ -240,11 +223,14 @@ Strengthen the systems, infrastructure, and safeguards that quietly build user c
 
 #### Security Audit
 
-- [ ] Review Supabase Row Level Security (RLS).
-- [ ] Review Storage permissions.
-- [ ] Review Authentication permissions.
+- [x] Harden and verify production stop-write Row Level Security, constraints, and grants.
+- [ ] Complete the broader Supabase Row Level Security review outside the accepted stop-write scope.
+- [ ] Review and correct broad public listing on the legacy entrance-photo storage bucket.
+- [ ] Review anonymous and authenticated execution access to `public.rls_auto_enable()`.
+- [ ] Review Authentication permissions and enable leaked-password protection when supported.
+- [ ] Review older RLS initialization-plan performance warnings.
 - [ ] Review API key management.
-- [ ] Document security findings and improvements.
+- [ ] Prioritize and document the remaining security remediations before implementation.
 
 ---
 
@@ -280,28 +266,17 @@ Continue improving reliability so FreightIQ consistently behaves as drivers expe
 
 ### Goals
 
-Establish a professional communication infrastructure that reinforces FreightIQ's credibility and supports long-term growth.
+Maintain the completed professional email foundation and finish the supporting communication assets
+and account organization needed for tester growth.
 
 ### Active Tasks
 
-#### Professional Email Identity
-
-- [ ] Connect freightiqapp.com to Proton custom domain.
-- [ ] Create hello@freightiqapp.com.
-- [ ] Verify SPF configuration.
-- [ ] Verify DKIM configuration.
-- [ ] Verify DMARC configuration.
-- [ ] Migrate public communications away from the Proton address.
-
----
-
 #### Communication Assets
 
-- [ ] Update website to use the professional email address.
 - [ ] Update email signatures.
 - [ ] Update tester communication templates.
 - [ ] Update business cards with the professional email address.
-- [ ] Replace remaining Proton email references throughout FreightIQ.
+- [ ] Audit FreightIQ for any remaining obsolete Proton email references.
 
 ---
 
@@ -327,6 +302,11 @@ Establish a consistent, repeatable release process that produces reliable builds
 
 #### Build Verification
 
+- [ ] After today's selected work is complete, prepare the separately approved Sunday iPhone and
+  Android candidate builds for real-world testing during the week.
+- [ ] Verify the corrected Android launcher assets in the next Android candidate build.
+- [ ] Verify Navigation App Choice installed-app detection in a native candidate build.
+- [ ] Verify standalone iPhone stability and dynamic text-size behavior outside Expo Go.
 - [ ] Continue verifying iPhone builds before release.
 - [ ] Continue verifying Android builds before release.
 - [ ] Continue refining the TestFlight release workflow.
@@ -378,9 +358,30 @@ Maintain a reliable, maintainable, and well-engineered codebase while continuing
 
 #### Code Quality
 
+- [ ] Resolve the two website demo import failures involving `HowItWorksWorkflow` and
+  `RealExampleDiagram` without expanding unrelated mobile scope.
 - [ ] Continue reducing technical debt where appropriate.
 - [ ] Continue simplifying implementations without changing behavior.
 - [ ] Continue protecting stable production code during refactors.
+
+## Routing Lab
+
+### Goals
+
+Complete the isolated Routing Lab Slice 1 learning loop without allowing it to displace higher-
+priority adoption, reliability, tester, or release work. Routing Lab is an important long-term
+FreightIQ capability and remains active when time allows.
+
+### Active Tasks
+
+- [x] Establish the isolated Routing Lab application and validation boundary.
+- [x] Load and replay the frozen GR-001 baseline proposal.
+- [x] Track the active route and stop outcomes.
+- [x] Capture out-of-order route corrections and driver reasons.
+- [ ] Implement end-of-day lesson review and approval.
+- [ ] Approve the expected GR-001 sandbox lesson.
+- [ ] Rerun GR-001 and verify the approved lesson changes the next proposal.
+- [ ] Verify fixture reset behavior and complete the Slice 1 acceptance matrix.
 
 ## Feature Backlog
 
@@ -398,6 +399,10 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 
 ### Driver Experience
 
+- [ ] Route Builder V1: let a driver select an additional FreightIQ stop without losing the first
+  destination, then hand off a supported multi-stop route or next-stop sequence to the selected
+  navigation app. Verify current Apple Maps, Google Maps, and Waze capabilities before choosing the
+  implementation approach.
 - [ ] Improve Driver Reports consumption.
 - [ ] Continue refining route knowledge workflows.
 
@@ -527,6 +532,36 @@ Completed
 
 ## App
 
+### Mobile Redesign V2
+
+Completed
+
+- ✓ Established the System, Light, and Dark theme foundation and shared application shell.
+- ✓ Refreshed map controls, search overlays, Preview Card, Quick Intel, Stop Intel, Profile, and
+  Help Center presentation.
+- ✓ Completed iPhone and Pixel accessibility, large-text, appearance, and interaction validation.
+- ✓ Integrated the approved FreightIQ V2 mobile icon assets.
+- ✓ Accepted Mobile Redesign V2 as complete on 2026-08-01.
+
+---
+
+### August 1 Focused Build Tranche
+
+Completed
+
+- ✓ Implemented and verified location-aware Search Relevance on iPhone and Pixel.
+- ✓ Restored the correct saved-stop Preview Card across Intel, Reports, Delivery Zone, creation,
+  deletion, and merge return paths.
+- ✓ Improved the Driver Reports Preview Card action and accepted its responsive iPhone and Pixel
+  presentation.
+- ✓ Added device-local Navigation App Choice with platform-specific defaults and accessible
+  provider selection.
+- ✓ Added structured Contact / Check-In fields, legacy compatibility, typed Call/Message actions,
+  and verified production data preservation.
+- ✓ Committed and pushed the five focused workstreams separately to `clean-main` on 2026-08-01.
+
+---
+
 ### Delivery Zone Migration (Phase 1)
 
 Completed
@@ -564,6 +599,32 @@ Completed
 
 ## Website
 
+### Sunrise System Website Redesign
+
+Completed
+
+- ✓ Redesigned and production-verified the homepage, Real Example, How It Works, Early Access,
+  Contact, Delete Account, and Privacy Policy pages.
+- ✓ Added the shared header, footer, navigation, and Sunrise System visual foundation.
+- ✓ Verified responsive layouts, keyboard interaction, required-field validation, and production
+  Contact and Early Access submissions.
+- ✓ Confirmed Contact and Early Access notifications at `hello@freightiqapp.com`.
+- ✓ Added repository-backed sitemap and robots metadata.
+- ✓ Completed the currently actionable Google Search Console and DNS setup, including valid root
+  and `www` configuration and sitemap submission.
+
+---
+
+### Professional Email Identity
+
+Completed
+
+- ✓ Connected `freightiqapp.com` to Proton Mail.
+- ✓ Established and verified `hello@freightiqapp.com` with SPF, DKIM, and DMARC.
+- ✓ Migrated the website and primary public communications to the FreightIQ address.
+
+---
+
 ### Early Access System
 
 Completed
@@ -578,6 +639,17 @@ Completed
 
 ## Engineering
 
+### Field Notes and Repository Handoff
+
+Completed
+
+- ✓ Established individual Field Note capture and End-of-Day Review workflows.
+- ✓ Created the authoritative Field Notes Action Queue.
+- ✓ Added repository synchronization verification before reporting local status.
+- ✓ Added the Mac home-handoff workflow for synchronized Action Queue review.
+
+---
+
 ### Development Workflow
 
 Completed
@@ -590,17 +662,28 @@ Completed
 
 ---
 
-### TypeScript Cleanup
+### Prior TypeScript Cleanup
 
 Completed
 
-- ✓ TypeScript errors resolved.
+- ✓ Resolved the previously tracked mobile TypeScript errors.
 - ✓ Supercluster typings installed.
-- ✓ Clean TypeScript build restored.
+- ✓ Restored a clean TypeScript build for that milestone; the current website demo import failures
+  are tracked separately under active Code Quality work.
 
 ---
 
 ## Release
+
+### Mobile Build Packaging Corrections
+
+Completed
+
+- ✓ Reduced the EAS mobile build archive.
+- ✓ Excluded generated Android assets so future EAS builds regenerate the approved launcher icon.
+- ✓ Preserved physical verification of the regenerated icon as a next-build acceptance gate.
+
+---
 
 ### Build 28
 

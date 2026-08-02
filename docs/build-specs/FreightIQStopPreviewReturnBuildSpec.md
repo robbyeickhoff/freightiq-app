@@ -1,6 +1,6 @@
 # FreightIQ Stop Preview Return — Focused Reliability Build Specification
 
-> **Status: Implementation and physical-device acceptance complete — commit pending approval**
+> **Status: Implemented, physically accepted, committed, and pushed — 2026-08-01**
 >
 > This specification defines one focused correction: returning from Stop Intel or Quick Intel to
 > the map must restore the same selected stop and reopen its Preview Card with refreshed data.
@@ -10,12 +10,11 @@
 - **Title:** FreightIQ Stop Preview Return — Focused Reliability Build Specification
 - **Purpose:** Preserve selected-stop context across the Stop Intel-to-map return path
 - **Repository path:** `docs/build-specs/FreightIQStopPreviewReturnBuildSpec.md`
-- **Repository status:** Active controlling Build Specification
-- **Implementation status:** Local implementation, static verification, and physical-device
-  acceptance complete
+- **Repository status:** Completed controlling Build Specification
+- **Implementation status:** Local implementation, static verification, physical-device acceptance,
+  commit, and push complete
 - **Approval status:** Approved by the Product Owner on 2026-08-01
-- **Activation status:** Active through `docs/CurrentBuild.md`; Search Relevance is parked at
-  standalone-build verification
+- **Activation status:** Completed through `docs/CurrentBuild.md`
 
 ## 1. Objective
 
@@ -181,35 +180,12 @@ database operations, or releases. Those remain separate approval gates.
 Any evidence that the failure has a different cause or requires a broader navigation redesign must
 stop implementation and return to Product Owner review.
 
-## 10. Next Gate
+## 10. Completion Status and Next Gate
 
-The Product Owner approved this specification and authorized focused implementation on 2026-08-01.
-The local navigation contract is implemented. Focused lint has zero errors, `git diff --check`
-passes, and local iOS and Android Expo exports compile successfully. Repository-wide TypeScript
-verification continues to report only the two unchanged website demo import failures documented in
-`docs/CurrentBuild.md`.
+The complete iPhone and Pixel acceptance matrix passed, including saved-stop return, save, cancel,
+provider-result creation, existing-stop matching, Reports, Delivery Zone, deletion, and merge guard
+paths. Focused lint and `git diff --check` passed, and local iOS and Android Expo exports compiled
+successfully. The work was committed and pushed as `013225b` on 2026-08-01.
 
-Run the physical iPhone and Pixel acceptance matrix before requesting any commit, push, build,
-deployment, or release approval.
-
-Acceptance progress: the iPhone saved-stop no-edit, save-and-refresh, and cancel-without-save paths
-pass. Inspection of the Product Owner's original provider-result creation reproduction exposed a
-separate handoff gap: newly created stops currently open Stop Intel without Preview Card return
-intent. The Product Owner approved the focused new-stop handoff correction on 2026-08-01. That
-correction is now implemented for both newly created stops and the existing-stop match handoff;
-focused lint and `git diff --check` pass. The original iPhone provider-result creation reproduction
-also passes: returning after creation and Intel entry opens the new FreightIQ stop's Preview Card
-with its saved Intel rather than reopening the temporary provider card.
-The iPhone Reports return path also passes.
-The iPhone Show DZ inspection handoff also passes and restores the same Preview Card.
-The iPhone Set DZ return-without-save path passes and leaves Delivery Zone state unchanged. All
-normal iPhone return paths in the focused acceptance matrix now pass.
-The Pixel saved-stop no-edit return path also passes.
-The Pixel provider-result creation flow also passes and restores the newly created FreightIQ stop
-rather than the temporary provider result. Cross-platform core acceptance is complete.
-The existing-stop match handoff also passes and restores the canonical FreightIQ Preview Card
-without creating or reopening a temporary duplicate.
-The deletion guard also passes; a deleted disposable stop does not reopen its Preview Card.
-The merge guard passes: starting merge mode keeps the Preview Card hidden, and canceling before a
-target is selected makes no data change. Final local iOS and Android Expo exports compile
-successfully. No EAS build or distribution action was performed.
+No EAS build or distribution action was performed. Standalone regression verification remains part
+of a separately authorized release workflow.

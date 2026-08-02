@@ -1,6 +1,6 @@
 # FreightIQ Navigation App Choice — Focused Build Specification
 
-> **Status: Implementation and Expo-compatible acceptance complete — commit/push approved**
+> **Status: Implemented, Expo-compatible acceptance complete, committed, and pushed**
 >
 > This specification adds driver choice only for external turn-by-turn navigation. FreightIQ's
 > in-app map viewing and Mapbox/FreightIQ search behavior remain unchanged.
@@ -10,8 +10,9 @@
 - **Title:** FreightIQ Navigation App Choice — Focused Build Specification
 - **Purpose:** Let each driver choose which supported navigation app opens from FreightIQ
 - **Repository path:** `docs/build-specs/FreightIQNavigationAppChoiceBuildSpec.md`
-- **Repository status:** Active controlling Build Specification
-- **Implementation status:** Implemented locally; Expo-compatible iPhone and Pixel acceptance passed
+- **Repository status:** Completed controlling Build Specification
+- **Implementation status:** Implemented; Expo-compatible iPhone and Pixel acceptance, commit, and
+  push complete
 - **Approval status:** Approved by the Product Owner on 2026-08-01
 
 ## 1. Objective
@@ -252,8 +253,8 @@ analytics, TestFlight, Google Play distribution, or releases. Each applicable ac
 separate approval gate.
 
 After the complete iPhone and Pixel acceptance matrix passed, the Product Owner separately approved
-one focused Navigation Preference commit and push on 2026-08-01. Native builds and all other gates
-remain unauthorized.
+one focused Navigation Preference commit and push on 2026-08-01. The work was committed and pushed
+as `e3a16fa`. Native builds and all other gates remain separately gated.
 
 Any evidence that installed-app detection cannot be implemented safely in the managed Expo
 configuration must stop implementation and return to Product Owner review rather than silently
@@ -265,4 +266,5 @@ The focused preference, Settings UI, provider launcher, custom picker, failure h
 availability declarations are implemented. Static validation and local iOS/Android exports pass.
 Expo-compatible iPhone and Pixel acceptance also passes, including accessibility and missing-app
 fallback behavior. Any native development or preview build needed for final installed-app detection
-remains separately gated. The focused repository commit and push are approved.
+remains separately gated. The focused repository work was committed and pushed as `e3a16fa` on
+2026-08-01.

@@ -1,6 +1,6 @@
 # FreightIQ Search Relevance — Location-Aware Stop Search Build Specification
 
-> **Status: Approved for implementation — Active**
+> **Status: Implemented, accepted, committed, and pushed — 2026-08-01**
 >
 > This document is the controlling implementation contract for the first production-ready
 > FreightIQ search-relevance build.
@@ -15,11 +15,11 @@
 - **Title:** FreightIQ Search Relevance — Location-Aware Stop Search Build Specification
 - **Purpose:** Replace global, unranked stop matching with scalable, location-aware search
 - **Repository path:** `docs/build-specs/FreightIQSearchRelevanceBuildSpec.md`
-- **Repository status:** Active controlling Build Specification
-- **Implementation status:** In progress — local implementation, production database migration,
-  and iPhone/Pixel device validation verified; application rollout acceptance pending
+- **Repository status:** Completed controlling Build Specification
+- **Implementation status:** Local implementation, production database migration, iPhone/Pixel
+  device validation, commit, and push complete; standalone rollout verification remains gated
 - **Approval status:** Approved as written by the Product Owner on 2026-08-01
-- **Activation status:** Active through `docs/CurrentBuild.md`
+- **Activation status:** Completed through `docs/CurrentBuild.md`
 
 ## Repository and Vendor Alignment
 
@@ -619,15 +619,12 @@ than tuning production interactively.
 - If repository reality or current vendor guidance conflicts with this specification, stop and
   reconcile the conflict rather than improvising.
 
-## 19. Next Implementation Gate
+## 19. Completion Status and Next Gate
 
-Before the first implementation edit:
+The approved application changes, local Supabase workflow, production search and stop-write
+migrations, performance checks, and complete iPhone/Pixel acceptance matrix are complete. The work
+was committed and pushed as `0f2002d` on 2026-08-01.
 
-- Read the canonical repository and governing documents again.
-- Reverify current Supabase and Mapbox documentation and changelogs.
-- Present one safe test-environment and repository-backed migration procedure.
-- Obtain Product Owner approval for that procedure and explicit authorization to begin direct
-  implementation.
-
-No Supabase, provider, production, data-cleanup, commit, push, build, deployment, or release action
-is implied by activation of this specification.
+No EAS build, application deployment, provider replacement, data cleanup, or release was performed.
+Standalone candidate-build stability and release acceptance remain separately gated. The focused
+place-search provider review also remains a separate future workstream.
