@@ -481,6 +481,10 @@ export default function HomeScreen() {
   );
 
   const [reportStatsByStopId, setReportStatsByStopId] = useState<Record<string, ReportStats>>({});
+  const [selectedReportStatsStatus, setSelectedReportStatsStatus] = useState<
+    "idle" | "loading" | "resolved" | "error"
+  >("idle");
+  const selectedReportStatsRequestIdRef = useRef(0);
 
   const [recent, setRecent] = useState<RecentItem[]>([]);
   const [recentCollapsed, setRecentCollapsed] = useState(false);
@@ -996,14 +1000,14 @@ export default function HomeScreen() {
     router,
   ]);
 
-  async function loadCloudReportStats() {
+  async function loadCloudReportStats(stopIdsOverride?: string[]) {
     try {
-      if (!pins.length) {
-        setReportStatsByStopId({});
-        return;
-      }
+      const stopIds = [...new Set(stopIdsOverride ?? pins.map((p) => p.id))];
 
-      const stopIds = pins.map((p) => p.id);
+      if (!stopIds.length) {
+        setReportStatsByStopId({});
+        return true;
+      }
 
       const { data: reports, error } = await supabase
         .from("mfi_reports")
@@ -1013,7 +1017,7 @@ export default function HomeScreen() {
 
       if (error) {
         console.log("Report stats load failed", error.message);
-        return;
+        return false;
       }
 
       const rows = reports ?? [];
@@ -1188,10 +1192,12 @@ export default function HomeScreen() {
         };
       });
 
-      setScoreByStopId(scoreMap);
-      setReportStatsByStopId(next);
+      setScoreByStopId((previous) => ({ ...previous, ...scoreMap }));
+      setReportStatsByStopId((previous) => ({ ...previous, ...next }));
+      return true;
     } catch (e) {
       console.log("Report stats load failed", e);
+      return false;
     }
   }
 
@@ -1569,6 +1575,8 @@ export default function HomeScreen() {
   }
 
   function clearSelection() {
+    selectedReportStatsRequestIdRef.current += 1;
+    setSelectedReportStatsStatus("idle");
     setSelectedStopId(null);
     resetSelectedEntranceState();
     setShowSelectedEntrance(false);
@@ -1767,6 +1775,10 @@ export default function HomeScreen() {
         return;
       }
     }
+
+    const reportStatsRequestId = selectedReportStatsRequestIdRef.current + 1;
+    selectedReportStatsRequestIdRef.current = reportStatsRequestId;
+    setSelectedReportStatsStatus("loading");
     setPreviewVisible(true);
 
     try {
@@ -1794,8 +1806,15 @@ export default function HomeScreen() {
         [p.id]: { up, down },
       }));
 
-      await loadCloudReportStats();
+      const reportStatsLoaded = await loadCloudReportStats([p.id]);
+
+      if (reportStatsRequestId === selectedReportStatsRequestIdRef.current) {
+        setSelectedReportStatsStatus(reportStatsLoaded ? "resolved" : "error");
+      }
     } catch {
+      if (reportStatsRequestId === selectedReportStatsRequestIdRef.current) {
+        setSelectedReportStatsStatus("error");
+      }
     } finally {
       setLoading(false);
     }
@@ -2187,16 +2206,15 @@ export default function HomeScreen() {
 
       if (matchingStop) {
         setTempSearchPin(null);
-        if (!pins.some((p) => p.id === matchingStop.id)) {
-          setPins((prev) => mergePinsById(prev, [matchingStop]));
-        }
-        jumpToStop(matchingStop);
+        selectFreightIqSearchResult(matchingStop);
         return;
       }
 
       setTempSearchPin(tempPin);
       setSelectedStop(tempPin);
       setSelectedStopId(tempPin.id);
+      selectedReportStatsRequestIdRef.current += 1;
+      setSelectedReportStatsStatus("resolved");
       resetSelectedEntranceState();
       setPreviewVisible(true);
     } catch {
@@ -2359,6 +2377,10 @@ export default function HomeScreen() {
         truckFit: null,
         backInRequired: null,
       };
+  const selectedReportStatsLoading =
+    selectedReportStatsStatus === "idle" || selectedReportStatsStatus === "loading";
+  const selectedReportStatsUnavailable = selectedReportStatsStatus === "error";
+  const unresolvedReportValue = selectedReportStatsLoading ? "Checking…" : "Unavailable";
 
   const selectedDeliveryZoneStatus =
     selectedEntranceStatus === "loading" || selectedEntranceStatus === "idle"
@@ -2370,10 +2392,13 @@ export default function HomeScreen() {
           : "Not set";
   const selectedCoreIntel = [
     {
-      complete: Boolean(selectedReportStats.truckFit),
+      complete: selectedReportStatsStatus === "resolved" && Boolean(selectedReportStats.truckFit),
       icon: "truckFit" as const,
       label: "Truck Fit",
-      value: selectedReportStats.truckFit ?? "Missing",
+      value:
+        selectedReportStatsStatus === "resolved"
+          ? (selectedReportStats.truckFit ?? "Missing")
+          : unresolvedReportValue,
     },
     {
       complete: Boolean(selectedEntrance),
@@ -2382,30 +2407,40 @@ export default function HomeScreen() {
       value: selectedDeliveryZoneStatus,
     },
     {
-      complete: Boolean(selectedReportStats.deliveryType),
+      complete:
+        selectedReportStatsStatus === "resolved" && Boolean(selectedReportStats.deliveryType),
       icon: "deliveryType" as const,
       label: "Delivery Type",
-      value: selectedReportStats.deliveryType ?? "Missing",
+      value:
+        selectedReportStatsStatus === "resolved"
+          ? (selectedReportStats.deliveryType ?? "Missing")
+          : unresolvedReportValue,
     },
     {
-      complete: selectedReportStats.backInRequired !== null,
+      complete:
+        selectedReportStatsStatus === "resolved" && selectedReportStats.backInRequired !== null,
       icon: "backIn" as const,
       label: "Back In",
       value:
-        selectedReportStats.backInRequired === null
-          ? "Missing"
-          : selectedReportStats.backInRequired
-            ? "Yes"
-            : "No",
+        selectedReportStatsStatus !== "resolved"
+          ? unresolvedReportValue
+          : selectedReportStats.backInRequired === null
+            ? "Missing"
+            : selectedReportStats.backInRequired
+              ? "Yes"
+              : "No",
     },
   ];
   const selectedCoreIntelCount = selectedCoreIntel.filter((item) => item.complete).length;
-  const selectedCoreIntelStatus =
-    selectedCoreIntelCount === 4
-      ? "Core intel complete"
-      : selectedCoreIntelCount === 3
-        ? "3 of 4 core intel"
-        : "Needs core intel";
+  const selectedCoreIntelStatus = selectedReportStatsLoading
+    ? "Checking core intel"
+    : selectedReportStatsUnavailable
+      ? "Core intel unavailable"
+      : selectedCoreIntelCount === 4
+        ? "Core intel complete"
+        : selectedCoreIntelCount === 3
+          ? "3 of 4 core intel"
+          : "Needs core intel";
 
   useEffect(() => {
     if (!entranceHighlightOn) return;
@@ -3123,7 +3158,9 @@ export default function HomeScreen() {
                       <Text
                         style={[styles.previewCompletionCount, { color: colors.textSecondary }]}
                       >
-                        {selectedCoreIntelCount} of 4
+                        {selectedReportStatsLoading || selectedReportStatsUnavailable
+                          ? "— of 4"
+                          : `${selectedCoreIntelCount} of 4`}
                       </Text>
                     </View>
 
@@ -3177,7 +3214,9 @@ export default function HomeScreen() {
                   </View>
                 )}
 
-                {selectedStop?.id !== "temp-search-result" && selectedCoreIntelCount < 4 ? (
+                {selectedStop?.id !== "temp-search-result" &&
+                selectedReportStatsStatus === "resolved" &&
+                selectedCoreIntelCount < 4 ? (
                   <AppButton
                     fullWidth
                     onPress={async () => {
@@ -3275,9 +3314,15 @@ export default function HomeScreen() {
 
                     <View style={styles.previewSavedActionRow}>
                       <AppButton
-                        accessibilityLabel={`Driver Reports, ${selectedReportStats.count} ${
-                          selectedReportStats.count === 1 ? "report" : "reports"
-                        }`}
+                        accessibilityLabel={
+                          selectedReportStatsLoading
+                            ? "Checking Driver Reports"
+                            : selectedReportStatsUnavailable
+                              ? "Driver Reports unavailable"
+                              : `Driver Reports, ${selectedReportStats.count} ${
+                                  selectedReportStats.count === 1 ? "report" : "reports"
+                                }`
+                        }
                         onPress={() =>
                           router.push({
                             pathname: "/(tabs)/stop",
@@ -3319,7 +3364,9 @@ export default function HomeScreen() {
                                 { color: colors.accentStrong },
                               ]}
                             >
-                              {selectedReportStats.count}
+                              {selectedReportStatsLoading || selectedReportStatsUnavailable
+                                ? "—"
+                                : selectedReportStats.count}
                             </Text>
                           </View>
                         </View>

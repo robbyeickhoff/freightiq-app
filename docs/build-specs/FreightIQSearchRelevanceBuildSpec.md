@@ -10,14 +10,83 @@
 > Mapbox configuration changes, provider commitments, data cleanup, commits, pushes, builds,
 > deployments, or releases. Those actions remain subject to the gates below.
 
+## Approved Focused Amendment — 2026-08-03
+
+The Product Owner approved a focused correction after physical-iPhone testing exposed two gaps in
+the accepted implementation:
+
+1. A distant existing FreightIQ stop could be absent from the FreightIQ results because the
+   database search applied its map-context radius before evaluating a clear business-name match.
+   Mapbox could still find the business, causing the existing stop to appear under Nearby Places.
+2. When that Mapbox result reconciled to an existing FreightIQ stop, the Preview Card could open
+   before the selected stop's report summary was authoritatively loaded. Competing whole-map report
+   requests could then leave the card showing false `Missing` and zero-report values even though
+   the saved Stop Intel was complete.
+
+This amendment preserves location-aware search as the default and does not restore unranked global
+fuzzy matching. The approved correction is:
+
+- Keep fuzzy name and address candidates scoped to the current map-context radius.
+- Also admit clear literal business-name matches of four or more characters and strong literal
+  address matches of six or more characters regardless of distance.
+- Continue ranking exact name, name prefix, literal name fragment, fuzzy name, address, and distance
+  deterministically through the bounded server-side function.
+- Keep Mapbox results separate and reconcile retrieved places through the existing server-side
+  nearby-stop matcher.
+- Route a reconciled existing stop through the same pending-pin selection path as a direct
+  FreightIQ result.
+- Load the selected stop's report summary explicitly by stop ID, merge it into existing map state,
+  and prevent whole-map refreshes from deleting a newly selected stop's summary.
+- Show `Checking…` or `Unavailable` while report-backed core intel is unresolved; show `Missing`
+  and zero only after an authoritative response confirms those values.
+
+The correction is limited to the existing search function, map search and Preview Card hydration,
+and governing documentation. It does not authorize provider replacement, data cleanup, Preview
+Card redesign, builds, deployments, or releases. The forward-only production migration remains a
+separate operational gate after local and read-only verification.
+
+### Migration Verification Record — 2026-08-03
+
+The first production migration failed its initial live function call because the `candidate_ids`
+union used an unqualified `id`, which conflicted with the PL/pgSQL output column of the same name.
+Execution stopped immediately. A forward-only restoration migration reapplied the previously
+working function, and its invoker security, fixed search path, role grants, and nearby behavior were
+verified. The failed migration is retained as immutable history. The corrected forward migration
+qualifies both candidate ID sources. After replacement approval it was applied successfully. Live
+verification passed the four named search cases, function security and role grants, cached
+execution timing, and both Supabase advisor checks. The advisor output contained only the
+already-tracked `rls_auto_enable()`, leaked-password protection, RLS initialization-plan, and
+unused-index notices. Focused physical-iPhone acceptance subsequently passed all amendment cases:
+direct FreightIQ discovery, Mapbox reconciliation to the existing stop, completed-intel hydration,
+nearby ordering, distant test-stop discovery, and new-place separation. The Florida `test` result
+was confirmed as a legitimate saved FreightIQ stop rather than search noise.
+The same focused acceptance matrix subsequently passed on the physical Pixel.
+
+### Amendment Acceptance Matrix
+
+- Grand Junction map context plus `Isun` returns Isun Skincare under FreightIQ Stops.
+- Grand Junction map context plus `Ridgway Animal Hospital` returns the existing FreightIQ stop.
+- Ridgway map context plus `test` returns the matching Grand Junction FreightIQ test stops while
+  retaining separate Mapbox place results.
+- Ridgway map context plus `ridgway` preserves the useful nearby FreightIQ ordering, including
+  Ridgway State Park.
+- A genuinely new distant business remains a Nearby Place and opens the Create Stop card.
+- A reconciled existing stop shows `Checking…` until its report summary resolves and never flashes
+  false missing intel or a false zero-report count.
+- Rapid search, selection, and map refresh activity cannot replace the selected stop's report
+  summary with an older whole-map response.
+- Existing nearby exact, prefix, fuzzy, Preview Card, Stop Intel, reports, and map behavior do not
+  regress.
+
 ## Document Control
 
 - **Title:** FreightIQ Search Relevance — Location-Aware Stop Search Build Specification
 - **Purpose:** Replace global, unranked stop matching with scalable, location-aware search
 - **Repository path:** `docs/build-specs/FreightIQSearchRelevanceBuildSpec.md`
 - **Repository status:** Completed controlling Build Specification
-- **Implementation status:** Local implementation, production database migration, iPhone/Pixel
-  device validation, commit, and push complete; standalone rollout verification remains gated
+- **Implementation status:** Local implementation, production database migration, and focused
+  iPhone/Pixel device validation complete; commit and push are approved; standalone rollout
+  verification remains gated
 - **Approval status:** Approved as written by the Product Owner on 2026-08-01
 - **Activation status:** Completed through `docs/CurrentBuild.md`
 

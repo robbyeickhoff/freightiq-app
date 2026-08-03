@@ -13,10 +13,11 @@ answer one question:
 
 ## Current Objective
 
-Complete repository review and obtain commit approval for the approved Pre-Build Security
-Remediation. The implementation, production database migration, and focused physical-iPhone
-acceptance are complete and verified. The governing specification is
-`docs/build-specs/FreightIQSecurityRemediationBuildSpec.md`.
+The focused Search Relevance and Preview Card hydration correction is complete and accepted. The
+local application change, production migration, server-side verification, and focused physical-
+iPhone and Pixel acceptance passed. Preserve that accepted state while the Product Owner selects
+the next objective. The controlling contract is the approved 2026-08-03 amendment in
+`docs/build-specs/FreightIQSearchRelevanceBuildSpec.md`.
 
 Do not treat a candidate build as the next product objective. EAS, TestFlight, Google Play,
 deployment, and release work remain separately gated and may proceed only through the applicable
@@ -33,8 +34,27 @@ check-in fields is closed, Early Access submissions are limited to applicant-con
 obsolete token-bearing Auth URL handling is removed, and the legacy entrance-photo bucket is
 private with no app-user object policies. All seven archived objects and five stop references were
 preserved. Database role tests, permission checks, mobile lint, website lint, and the website
-production build passed. Focused physical-iPhone acceptance also passed; repository review and
-commit approval remain open.
+production build passed. Focused physical-iPhone acceptance also passed. The website hardening was
+committed and pushed in `be5836a`; the outer remediation was committed and pushed in `ae21a5b`.
+
+The 2026-08-03 focused search correction is implemented locally and verified in production.
+The first approved production migration exposed an ambiguous `id` reference during its first live
+verification call and was immediately rolled back through a forward-only restoration migration.
+The previous search function, security settings, execution grants, and nearby search behavior were
+verified after restoration. The corrected forward migration qualifies both candidate ID sources and
+is now live. Grand Junction searches returned Isun Skincare and Ridgway Animal Hospital; the
+Ridgway `test` search returned all matching Grand Junction test stops; and nearby `ridgway` ordering
+preserved Ridgway State Park. The function remains stable, security invoker, fixed to an empty
+search path, and executable by the intended roles. Timed verification completed in roughly 47–115
+milliseconds with cached reads and no writes. Advisors reported only the already-tracked security
+and RLS performance notices. The app-side correction routes reconciled existing stops through the
+direct FreightIQ selection path, loads report-backed core intel explicitly by stop ID, merges report
+summaries rather than replacing the complete map cache, and shows an unresolved state rather than
+false missing intel. Physical-iPhone acceptance passed direct FreightIQ selection, Mapbox-to-
+FreightIQ reconciliation, distant name discovery, nearby ordering, new-place separation, and
+Preview Card hydration. The distant Florida `test` result was confirmed as a legitimate FreightIQ
+stop created by the Product Owner, not a search defect. Docker remains unavailable for a local
+Supabase reset. The same focused acceptance matrix subsequently passed on the physical Pixel.
 
 Authentication V2 is implemented, accepted locally, committed in `1a35d08`, and pushed to
 `clean-main` on 2026-08-02. The completed work includes the central session gate, password-first
@@ -110,6 +130,5 @@ deployment, or release was performed for this completed tranche.
 
 ## Next Safe Step
 
-Review the complete outer and nested repository diffs and request Product Owner commit approval.
-Keep EAS, TestFlight, Google Play, deployment, and release actions parked until the Product Owner
-explicitly authorizes the applicable workflow.
+With the accepted focused tranche published, select the next objective with the Product Owner. Do
+not start a build, deployment, or release without the separately approved workflow.

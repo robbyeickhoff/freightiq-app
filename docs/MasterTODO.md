@@ -165,6 +165,10 @@ Continue improving map reliability, stop discovery, and rendering performance.
 
 ##### Active Tasks
 
+- [x] Complete the approved 2026-08-03 Search Relevance and Preview Card hydration correction,
+      including production migration recovery, corrected server-side search verification, strong
+      distant FreightIQ name/address matches, nearby ordering, new-place separation, and reconciled
+      Preview Card hydration on physical iPhone and Pixel.
 - [ ] Continue monitoring stop-marker loading and color accuracy.
 - [ ] Continue monitoring repeated Show/Hide Stops interactions for stability.
 - [ ] Continue monitoring repeated Preview Card interactions for stability.
