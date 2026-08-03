@@ -13,15 +13,14 @@ answer one question:
 
 ## Current Objective
 
-The focused Search Relevance and Preview Card hydration correction is complete and accepted. The
-local application change, production migration, server-side verification, and focused physical-
-iPhone and Pixel acceptance passed. Preserve that accepted state while the Product Owner selects
-the next objective. The controlling contract is the approved 2026-08-03 amendment in
-`docs/build-specs/FreightIQSearchRelevanceBuildSpec.md`.
+Create the separately approved iOS and Android production candidate builds from the accepted
+`clean-main` state, submit them only to TestFlight and Google Play Internal Testing, and complete
+the remaining installed-build acceptance gates before any broader distribution. The Product Owner
+approved this candidate-release phase on 2026-08-03 after the Search Relevance and Preview Card
+hydration correction passed focused physical-iPhone and Pixel acceptance.
 
-Do not treat a candidate build as the next product objective. EAS, TestFlight, Google Play,
-deployment, and release work remain separately gated and may proceed only through the applicable
-approved release workflow.
+This is a validation release, not a new product-development objective or a public rollout. Preserve
+the accepted application and production-database state while validating the store-delivered builds.
 
 ---
 
@@ -130,5 +129,6 @@ deployment, or release was performed for this completed tranche.
 
 ## Next Safe Step
 
-With the accepted focused tranche published, select the next objective with the Product Owner. Do
-not start a build, deployment, or release without the separately approved workflow.
+Create traceable production candidates through the approved Release Process, submit them only to
+TestFlight and Google Play Internal Testing, and personally validate the remaining release gates on
+the installed iPhone and Pixel builds before expanding distribution.
