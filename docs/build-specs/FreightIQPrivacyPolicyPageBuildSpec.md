@@ -1,6 +1,6 @@
 # FreightIQ Privacy Policy Page Build Specification
 
-**Status:** Approved for implementation
+**Status:** Implemented; amended by the 2026-08-02 Pre-Build Security Remediation
 **Mode:** Product → Build after documentation and pre-build verification
 **Scope:** Privacy Policy page only
 
@@ -53,7 +53,9 @@ Repository and service inspection confirmed:
 - Apple Maps or Google Maps provides map display and interactions.
 - The current application code does not provide a new photo-upload control or request camera or photo-library access.
 - Supabase still contains a limited number of legacy entrance-photo objects and stop references.
-- The current application can display and delete those legacy photos.
+- The legacy entrance-photo objects and stop references are archived in place.
+- The current application does not display or delete those archived photos.
+- The legacy storage bucket is private and has no anon or authenticated object policies.
 - The Early Access form stores submitted request information in Supabase and sends a notification through a Supabase Edge Function and Resend.
 - The Contact form sends submitted information through a Supabase Edge Function and Resend.
 - Vercel hosts the public website.
@@ -167,11 +169,11 @@ When you use map search, your search text and the current map-center coordinates
 
 FreightIQ does not intentionally maintain continuous device-location history. Stop and delivery-zone coordinates that you deliberately create or update are stored as shared stop intelligence.
 
-#### Legacy stop photos
+#### Archived legacy stop photos
 
-FreightIQ may retain and display a limited number of stop photos submitted through an earlier product workflow. New photo uploads are not part of the current FreightIQ app workflow, and the current app does not request camera or photo-library access for new uploads.
+FreightIQ retains a limited number of stop photos submitted through an earlier product workflow. The current app does not display those archived files, accept new photo uploads, or request camera or photo-library access.
 
-Legacy photos may remain visible as part of shared stop intelligence until they are deleted through the applicable stop-management or account-deletion process.
+Access to the archived files is restricted. They are retained only while reasonably necessary to preserve historical data integrity and may be deleted separately when that retention is no longer required.
 
 #### Website forms and communications
 
@@ -237,7 +239,7 @@ These providers may process information as necessary to provide their services a
 
 FreightIQ retains information while an account is active and as reasonably necessary to operate the service, respond to requests, maintain security, and meet legal obligations.
 
-When an account-deletion request is confirmed, FreightIQ deletes the account and associated personal data, including the driver profile, user-linked reports and votes, and legacy photo submissions associated with that user.
+When an account-deletion request is confirmed, FreightIQ deletes the account and associated personal data, including the driver profile, user-linked reports and votes.
 
 Factual stop information may remain only when it has been de-identified and can no longer be connected to the deleted user.
 

@@ -13,9 +13,10 @@ answer one question:
 
 ## Current Objective
 
-No new major implementation objective has been selected after completing Authentication V2 on
-2026-08-02. The Product Owner will review the current backlog and choose the next best-return task
-before another focused build begins.
+Complete repository review and obtain commit approval for the approved Pre-Build Security
+Remediation. The implementation, production database migration, and focused physical-iPhone
+acceptance are complete and verified. The governing specification is
+`docs/build-specs/FreightIQSecurityRemediationBuildSpec.md`.
 
 Do not treat a candidate build as the next product objective. EAS, TestFlight, Google Play,
 deployment, and release work remain separately gated and may proceed only through the applicable
@@ -24,6 +25,16 @@ approved release workflow.
 ---
 
 ## Completed Build Status
+
+The approved Pre-Build Security Remediation was implemented and applied to production on
+2026-08-02. Stop updates now require ownership or trusted-editor status; the Product Owner's
+original account is the single initial trusted editor. Anonymous access to business contact and
+check-in fields is closed, Early Access submissions are limited to applicant-controlled fields,
+obsolete token-bearing Auth URL handling is removed, and the legacy entrance-photo bucket is
+private with no app-user object policies. All seven archived objects and five stop references were
+preserved. Database role tests, permission checks, mobile lint, website lint, and the website
+production build passed. Focused physical-iPhone acceptance also passed; repository review and
+commit approval remain open.
 
 Authentication V2 is implemented, accepted locally, committed in `1a35d08`, and pushed to
 `clean-main` on 2026-08-02. The completed work includes the central session gate, password-first
@@ -82,7 +93,9 @@ deployment, or release was performed for this completed tranche.
 - The focused place-search provider review remains open before any Mapbox replacement decision.
 - Repository-wide TypeScript verification still reports the two pre-existing website demo import
   failures involving `HowItWorksWorkflow` and `RealExampleDiagram`.
-- Previously documented Supabase advisor findings remain separate security workstreams.
+- The pre-existing `public.rls_auto_enable()` execution warning, unavailable-on-Free leaked-password
+  protection, older RLS initialization-plan performance warnings, and API-key review remain
+  separate security workstreams.
 
 ---
 
@@ -97,6 +110,6 @@ deployment, or release was performed for this completed tranche.
 
 ## Next Safe Step
 
-Review `MasterTODO.md` and select the next best-return product task. Keep EAS, TestFlight, Google
-Play, deployment, and release actions parked until the Product Owner explicitly authorizes the
-applicable workflow.
+Review the complete outer and nested repository diffs and request Product Owner commit approval.
+Keep EAS, TestFlight, Google Play, deployment, and release actions parked until the Product Owner
+explicitly authorizes the applicable workflow.

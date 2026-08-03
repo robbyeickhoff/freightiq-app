@@ -1,4 +1,3 @@
-import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
@@ -10,12 +9,10 @@ import { AppTextField } from "@/components/ui/app-text-field";
 import { Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { friendlyAuthError } from "@/utils/auth-errors";
-import { readAuthSessionFromUrl } from "@/utils/auth-links";
 import { supabase } from "@/utils/supabase";
 
 export default function UpdatePasswordScreen() {
   const router = useRouter();
-  const url = Linking.useURL();
   const { colors } = useAppTheme();
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -36,26 +33,11 @@ export default function UpdatePasswordScreen() {
         return;
       }
 
-      const callbackSession = url ? readAuthSessionFromUrl(url) : null;
-      if (!callbackSession || callbackSession.type !== "recovery") {
-        setError("This recovery session is expired or invalid. Request another reset code.");
-        return;
-      }
-
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: callbackSession.accessToken,
-        refresh_token: callbackSession.refreshToken,
-      });
-      if (sessionError) {
-        if (mounted) setError("This recovery session is expired or invalid. Request another reset code.");
-        return;
-      }
-
-      if (mounted) setReady(true);
+      setError("This recovery session is expired or invalid. Request another reset code.");
     }
     void establishRecoverySession();
     return () => { mounted = false; };
-  }, [url]);
+  }, []);
 
   async function savePassword() {
     if (password.length < 8) return setError("Use at least 8 characters for your password.");

@@ -8,7 +8,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Animated,
-  Image,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -483,10 +482,6 @@ export default function HomeScreen() {
 
   const [reportStatsByStopId, setReportStatsByStopId] = useState<Record<string, ReportStats>>({});
 
-  const [entrancePhotoUrlByStopId, setEntrancePhotoUrlByStopId] = useState<
-    Record<string, string | null>
-  >({});
-
   const [recent, setRecent] = useState<RecentItem[]>([]);
   const [recentCollapsed, setRecentCollapsed] = useState(false);
 
@@ -517,7 +512,6 @@ export default function HomeScreen() {
   const [entranceHighlightOn, setEntranceHighlightOn] = useState(false);
   const [deliveryZoneInspectionSource, setDeliveryZoneInspectionSource] =
     useState<DeliveryZoneInspectionSource | null>(null);
-  const [mapPhotoViewerOpen, setMapPhotoViewerOpen] = useState(false);
   const [navigationLaunching, setNavigationLaunching] = useState(false);
   const [navigationPickerDestination, setNavigationPickerDestination] =
     useState<NavigationDestination | null>(null);
@@ -692,12 +686,6 @@ export default function HomeScreen() {
       return next;
     });
 
-    setEntrancePhotoUrlByStopId((prev) => {
-      const next = { ...prev };
-      delete next[deletedStopId];
-      return next;
-    });
-
     setRecent((prev) => prev.filter((item) => item.id !== deletedStopId));
 
     (async () => {
@@ -862,7 +850,6 @@ export default function HomeScreen() {
     if (!isMapReady) return;
 
     loadCloudReportStats();
-    loadEntrancePhotoUrls();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMapReady, pins, params.refreshAt]);
 
@@ -1205,40 +1192,6 @@ export default function HomeScreen() {
       setReportStatsByStopId(next);
     } catch (e) {
       console.log("Report stats load failed", e);
-    }
-  }
-
-  async function loadEntrancePhotoUrls() {
-    try {
-      if (!pins.length) {
-        setEntrancePhotoUrlByStopId({});
-        return;
-      }
-
-      const stopIds = pins.map((p) => p.id);
-
-      const { data, error } = await supabase
-        .from("mfi_stops")
-        .select("id, entrance_photo_url")
-        .in("id", stopIds);
-
-      if (error) {
-        console.log("Entrance photo load failed", error.message);
-        return;
-      }
-
-      const next: Record<string, string | null> = {};
-      stopIds.forEach((id) => {
-        next[id] = null;
-      });
-
-      (data ?? []).forEach((row: any) => {
-        next[row.id] = row.entrance_photo_url ?? null;
-      });
-
-      setEntrancePhotoUrlByStopId(next);
-    } catch (e) {
-      console.log("Entrance photo load failed", e);
     }
   }
 
@@ -1842,7 +1795,6 @@ export default function HomeScreen() {
       }));
 
       await loadCloudReportStats();
-      await loadEntrancePhotoUrls();
     } catch {
     } finally {
       setLoading(false);
@@ -2408,9 +2360,6 @@ export default function HomeScreen() {
         backInRequired: null,
       };
 
-  const selectedEntrancePhotoUrl = selectedStopId
-    ? (entrancePhotoUrlByStopId[selectedStopId] ?? null)
-    : null;
   const selectedDeliveryZoneStatus =
     selectedEntranceStatus === "loading" || selectedEntranceStatus === "idle"
       ? "Checking…"
@@ -3678,45 +3627,6 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      <Modal
-        visible={mapPhotoViewerOpen}
-        transparent={true}
-        animationType={reduceMotionEnabled ? "none" : "fade"}
-        onRequestClose={() => setMapPhotoViewerOpen(false)}
-      >
-        <Pressable
-          style={{
-            flex: 1,
-            backgroundColor: "black",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-          onPress={() => setMapPhotoViewerOpen(false)}
-        >
-          {selectedEntrancePhotoUrl ? (
-            <ScrollView
-              style={{ width: "100%", height: "100%" }}
-              contentContainerStyle={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-              maximumZoomScale={4}
-              minimumZoomScale={1}
-              pinchGestureEnabled={true}
-              showsHorizontalScrollIndicator={false}
-              showsVerticalScrollIndicator={false}
-              bouncesZoom={true}
-            >
-              <Image
-                source={{ uri: selectedEntrancePhotoUrl }}
-                style={{ width: "100%", height: "100%" }}
-                resizeMode="contain"
-              />
-            </ScrollView>
-          ) : null}
-        </Pressable>
-      </Modal>
     </View>
   );
 }

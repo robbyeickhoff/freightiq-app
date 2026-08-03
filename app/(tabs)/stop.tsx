@@ -191,7 +191,6 @@ type StopIntel = {
 
 const PINS_KEY = "mfi:pins:v1";
 const VIEW_CACHE_KEY = "mfi:view-cache:v1";
-const ENTRANCE_BUCKET = "entrance-photos";
 
 function stopKey(stopId: string) {
   return `mfi:stop:${stopId}:v1`;
@@ -339,7 +338,6 @@ export default function StopScreen() {
   const [entranceLng, setEntranceLng] = useState<number | null>(null);
   const [previewStopLat, setPreviewStopLat] = useState(lat);
   const [previewStopLng, setPreviewStopLng] = useState(lng);
-  const [entrancePhotoPath, setEntrancePhotoPath] = useState<string | null>(null);
   const [entranceLoaded, setEntranceLoaded] = useState(false);
 
   const [entrancePickerOpen, setEntrancePickerOpen] = useState(false);
@@ -617,7 +615,7 @@ export default function StopScreen() {
 
       const { data } = await supabase
         .from("mfi_stops")
-        .select("lat, lng, entrance_lat, entrance_lng, entrance_photo_path")
+        .select("lat, lng, entrance_lat, entrance_lng")
         .eq("id", stopId)
         .maybeSingle();
 
@@ -657,10 +655,9 @@ export default function StopScreen() {
         });
       }
 
-      setEntrancePhotoPath(data?.entrance_photo_path ?? null);
       setEntranceLoaded(true);
     } catch {
-      setEntrancePhotoPath(null);
+      setEntranceLoaded(true);
     }
   }
 
@@ -1489,10 +1486,6 @@ export default function StopScreen() {
       if (!deletedStopRows || deletedStopRows.length === 0) {
         Alert.alert("Delete failed", "No stop row was deleted.");
         return;
-      }
-
-      if (entrancePhotoPath) {
-        await supabase.storage.from(ENTRANCE_BUCKET).remove([entrancePhotoPath]);
       }
 
       const rawPins = await AsyncStorage.getItem(PINS_KEY);

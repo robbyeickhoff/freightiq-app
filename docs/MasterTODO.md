@@ -99,6 +99,21 @@ Continue improving the profile experience to feel simple, clean, and native.
 
 ---
 
+#### Authentication Screen Polish
+
+##### Goals
+
+Give the completed Authentication V2 screens one consistent, intentional visual hierarchy without
+changing their accepted behavior.
+
+##### Active Tasks
+
+- [ ] Polish the lower action area of the Welcome Back screen so Forgot Password, Create Account,
+  and Email Me a Login Code Instead use consistent alignment, spacing, sizing, and interaction
+  treatment.
+
+---
+
 #### Help Center V2
 
 ##### Goals
@@ -197,12 +212,18 @@ Strengthen the systems, infrastructure, and safeguards that quietly build user c
 
 - [x] Harden and verify production stop-write Row Level Security, constraints, and grants.
 - [ ] Complete the broader Supabase Row Level Security review outside the accepted stop-write scope.
-- [ ] Review and correct broad public listing on the legacy entrance-photo storage bucket.
+- [x] Restrict shared stop updates to stop owners and approved trusted editors.
+- [x] Restrict anonymous business contact and check-in field access.
+- [x] Constrain Early Access inserts to applicant-controlled fields.
+- [x] Make the legacy entrance-photo bucket private, remove app-user policies, and preserve its
+  archived objects without exposing them in the app.
+- [x] Remove obsolete token-bearing Auth URL session handling while preserving in-app code flows.
 - [ ] Review anonymous and authenticated execution access to `public.rls_auto_enable()`.
 - [ ] Review Authentication permissions and enable leaked-password protection when supported.
 - [ ] Review older RLS initialization-plan performance warnings.
 - [ ] Review API key management.
-- [ ] Prioritize and document the remaining security remediations before implementation.
+- [x] Prioritize, document, implement, and verify the approved pre-build security-remediation scope.
+- [x] Complete focused physical-iPhone acceptance for the approved pre-build security remediation.
 
 ---
 

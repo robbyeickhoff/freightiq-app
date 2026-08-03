@@ -1,4 +1,3 @@
-import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -18,14 +17,12 @@ import { AppTextField } from "@/components/ui/app-text-field";
 import { Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { friendlyAuthError } from "@/utils/auth-errors";
-import { readAuthSessionFromUrl } from "@/utils/auth-links";
 import { supabase } from "@/utils/supabase";
 
 type AuthMode = "password" | "code-request" | "code-verify";
 
 export default function AuthScreen() {
   const router = useRouter();
-  const url = Linking.useURL();
   const { colors } = useAppTheme();
   const scrollViewRef = useRef<ScrollView>(null);
   const [mode, setMode] = useState<AuthMode>("password");
@@ -46,16 +43,6 @@ export default function AuthScreen() {
     const keyboardSubscription = Keyboard.addListener("keyboardDidShow", revealFormActions);
     return () => keyboardSubscription.remove();
   }, [revealFormActions]);
-
-  useEffect(() => {
-    const callbackSession = url ? readAuthSessionFromUrl(url) : null;
-    if (!callbackSession || callbackSession.type === "recovery") return;
-
-    void supabase.auth.setSession({
-      access_token: callbackSession.accessToken,
-      refresh_token: callbackSession.refreshToken,
-    });
-  }, [url]);
 
   function validateEmail(): string | null {
     const normalizedEmail = email.trim().toLowerCase();
