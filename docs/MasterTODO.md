@@ -401,6 +401,10 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
   destination, then hand off a supported multi-stop route or next-stop sequence to the selected
   navigation app. Verify current Apple Maps, Google Maps, and Waze capabilities before choosing the
   implementation approach.
+- [ ] Return to FreightIQ Live Activity — iOS: after handing a stop off to Apple Maps, Google Maps,
+  or Waze, provide a persistent Lock Screen and Dynamic Island control that deep-links back to that
+  stop's Preview Card or Intel screen. Treat this as a one-tap return experience, not automatic
+  app reopening when navigation ends, and revisit it after the current tester-validation cycle.
 - [ ] Improve Driver Reports consumption.
 - [ ] Continue refining route knowledge workflows.
 
