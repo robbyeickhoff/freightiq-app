@@ -13,11 +13,11 @@ answer one question:
 
 ## Current Objective
 
-Prepare the accepted `clean-main` state for replacement iOS and Android production candidate builds,
-then create and submit those replacements only after separate Product Owner approval. The
-replacement candidates must include the accepted duplicate-account correction and authentication
-UI polish from `94f5863`. Submit them only to TestFlight and Google Play Closed testing – Alpha,
-then complete the remaining installed-build acceptance gates before any broader distribution.
+Complete tester-channel submission and installed-build validation for the approved replacement iOS
+and Android production candidates created from `71bbe1b`. The replacements include the accepted
+duplicate-account correction and authentication UI polish from `94f5863`. Keep them limited to
+TestFlight and Google Play Closed testing – Alpha, then complete the remaining installed-build
+acceptance gates before any broader distribution.
 
 This is a validation release, not a new product-development objective or a public rollout. Preserve
 the accepted application and production-database state while validating the store-delivered builds.
@@ -123,7 +123,20 @@ item; it is not part of the release path.
 
 Build 34 and version code 16 remain valid records of the first candidate submission, but they
 predate `94f5863` and are superseded for final acceptance. Do not use them to complete the remaining
-release gates or expand distribution. Replacement builds remain separately approval-gated.
+release gates or expand distribution.
+
+The Product Owner approved replacement candidate creation and tester-channel submission on
+2026-08-03. Both replacements were built from clean commit `71bbe1b` with version 1.0.1:
+
+- iOS build 35 (`1979b739-f72c-4984-a28d-4b138b514e40`) finished successfully and was uploaded to
+  App Store Connect through submission `e17d4b10-ecfe-4a12-bc86-7529650084b7`. Apple accepted the
+  upload and is processing it for TestFlight. It was not submitted for App Review or public release.
+- Android version code 17 (`ad2d2820-97a6-4e87-83a6-76e1c58a4775`) finished successfully. Its
+  signed AAB was downloaded and verified as a 70 MB ZIP-format Android App Bundle with SHA-256
+  `7543cec4bc1371448d2fcefbd5006d6b9579aae684faae078f94e1fb464b9f62`. The Product Owner manually
+  uploaded it to the existing Google Play Closed testing – Alpha track with version code 16 excluded.
+  The closed-test release was submitted for the full Alpha audience and is in Google Play's quick
+  checks/review flow. It was not uploaded or promoted to another track.
 
 ---
 
@@ -136,8 +149,8 @@ release gates or expand distribution. Replacement builds remain separately appro
 - Verify native installed-app detection for Navigation App Choice outside Expo Go.
 - Recheck standalone iPhone stability; the observed Expo Go reload crash remains development-
   container evidence rather than a confirmed FreightIQ defect.
-- After separate approval, create, submit, install, and personally validate replacement iOS and
-  Android candidates before expanding distribution.
+- After Google Play accepts Android version code 17 and Apple finishes TestFlight processing,
+  install and personally validate both replacement candidates before expanding distribution.
 
 ---
 
@@ -163,5 +176,5 @@ release gates or expand distribution. Replacement builds remain separately appro
 
 ## Next Safe Step
 
-Wait for separate Product Owner approval before creating replacement iOS and Android production
-candidates from the accepted `clean-main` state.
+Wait for Google Play to accept Android version code 17 and Apple to finish TestFlight processing,
+then install and personally validate both replacement candidates before any broader distribution.
