@@ -148,8 +148,16 @@ export default function AuthScreen() {
         >
           <AppCard contentStyle={styles.card} surface="surface">
             <Text style={[styles.eyebrow, { color: colors.accentStrong }]}>FreightIQ account</Text>
-            <Text style={[styles.title, { color: colors.textPrimary }]}>Welcome back</Text>
-            <Text style={[styles.body, { color: colors.textSecondary }]}>Sign in to keep your driver intel connected to you.</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>
+              {isPasswordMode ? "Welcome back" : isCodeVerifyMode ? "Check your email" : "Use a login code"}
+            </Text>
+            <Text style={[styles.body, { color: colors.textSecondary }]}>
+              {isPasswordMode
+                ? "Sign in to keep your driver intel connected to you."
+                : isCodeVerifyMode
+                  ? "Enter the one-time code sent to your FreightIQ email."
+                  : "We’ll email a one-time code to the address already connected to FreightIQ."}
+            </Text>
 
             <AppTextField
               autoCapitalize="none"
@@ -199,21 +207,48 @@ export default function AuthScreen() {
             {message ? <Text accessibilityLiveRegion="polite" style={[styles.status, { color: colors.textSecondary }]}>{message}</Text> : null}
 
             <AppButton fullWidth loading={loading} onPress={() => void (isPasswordMode ? signIn() : isCodeVerifyMode ? verifyCode() : sendCode())}>
-              {isPasswordMode ? "Sign In" : isCodeVerifyMode ? "Verify Code" : "Email My Login Code"}
+              {isPasswordMode ? "Sign In" : isCodeVerifyMode ? "Verify Code" : "Send Login Code"}
             </AppButton>
 
             {isPasswordMode ? (
-              <>
-                <View style={styles.linkRow}>
-                  <AppButton onPress={() => router.push("./forgot-password")} size="compact" variant="tertiary">Forgot Password?</AppButton>
-                  <AppButton onPress={() => router.push("./create-account")} size="compact" variant="secondary">Create Account</AppButton>
-                </View>
-                <AppButton onPress={() => { setMode("code-request"); setError(""); setHasAttemptedSubmit(false); setMessage("Use the same email already connected to FreightIQ."); }} variant="tertiary">
-                  Email Me a Login Code Instead
+              <View style={styles.accountActions}>
+                <AppButton onPress={() => router.push("./forgot-password")} size="compact" variant="tertiary">
+                  Forgot Password?
                 </AppButton>
-              </>
+                <AppButton fullWidth onPress={() => router.push("./create-account")} variant="secondary">
+                  Create Account
+                </AppButton>
+                <View style={[styles.actionDivider, { backgroundColor: colors.border }]} />
+                <AppButton
+                  onPress={() => {
+                    setMode("code-request");
+                    setError("");
+                    setHasAttemptedSubmit(false);
+                    setMessage("");
+                  }}
+                  size="compact"
+                  variant="tertiary"
+                >
+                  Use a Login Code
+                </AppButton>
+              </View>
             ) : (
-              <AppButton onPress={() => { setMode("password"); setCode(""); setError(""); setHasAttemptedSubmit(false); setMessage(""); }} variant="tertiary">Back to Password Sign In</AppButton>
+              <View style={styles.accountActions}>
+                <View style={[styles.actionDivider, { backgroundColor: colors.border }]} />
+                <AppButton
+                  onPress={() => {
+                    setMode("password");
+                    setCode("");
+                    setError("");
+                    setHasAttemptedSubmit(false);
+                    setMessage("");
+                  }}
+                  size="compact"
+                  variant="tertiary"
+                >
+                  Back to Sign In
+                </AppButton>
+              </View>
             )}
           </AppCard>
         </ScrollView>
@@ -230,5 +265,6 @@ const styles = StyleSheet.create({
   title: { ...Typography.screenTitle },
   body: { ...Typography.body },
   status: { ...Typography.supporting },
-  linkRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: Spacing.sm },
+  accountActions: { gap: Spacing.sm },
+  actionDivider: { alignSelf: "stretch", height: 1, marginVertical: Spacing.xs },
 });

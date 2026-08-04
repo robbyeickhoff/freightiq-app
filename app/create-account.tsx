@@ -39,10 +39,22 @@ export default function CreateAccountScreen() {
     try {
       setLoading(true);
       setError("");
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
       });
+      const accountAlreadyExists =
+        signUpError?.code === "user_already_exists" ||
+        /already (registered|exists)/.test(signUpError?.message.toLowerCase() ?? "") ||
+        signUpData.user?.identities?.length === 0;
+
+      if (accountAlreadyExists) {
+        router.replace({
+          pathname: "/forgot-password",
+          params: { email: normalizedEmail, reason: "existing-account" },
+        });
+        return;
+      }
       if (signUpError) return setError(friendlyAuthError(signUpError));
       setComplete(true);
       setResendCooldown(60);

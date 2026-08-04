@@ -1,6 +1,6 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppButton } from "@/components/ui/app-button";
@@ -15,9 +15,10 @@ type RecoveryMode = "request" | "verify";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ email?: string; reason?: string }>();
   const { colors } = useAppTheme();
   const [mode, setMode] = useState<RecoveryMode>("request");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(typeof params.email === "string" ? params.email : "");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -97,7 +98,9 @@ export default function ForgotPasswordScreen() {
             <Text style={[styles.body, { color: colors.textSecondary }]}>
               {isVerifyMode
                 ? "Enter the one-time reset code from your FreightIQ email."
-                : "Enter the email connected to your FreightIQ account."}
+                : params.reason === "existing-account"
+                  ? "An account with this email already exists. Reset your password to keep your existing profile and contributions."
+                  : "Enter the email connected to your FreightIQ account."}
             </Text>
 
             <AppTextField
@@ -143,8 +146,10 @@ export default function ForgotPasswordScreen() {
             </AppButton>
 
             {isVerifyMode ? (
-              <>
-                <AppButton onPress={() => void requestReset()} variant="tertiary">Send Another Code</AppButton>
+              <View style={styles.recoveryActions}>
+                <AppButton fullWidth onPress={() => void requestReset()} variant="secondary">
+                  Send Another Code
+                </AppButton>
                 <AppButton
                   onPress={() => {
                     setMode("request");
@@ -153,25 +158,35 @@ export default function ForgotPasswordScreen() {
                     setError("");
                     setMessage("");
                   }}
+                  size="compact"
                   variant="tertiary"
                 >
                   Use a Different Email
                 </AppButton>
-              </>
+                <View style={[styles.actionDivider, { backgroundColor: colors.border }]} />
+                <AppButton onPress={() => router.replace("/auth")} size="compact" variant="tertiary">
+                  Return to Sign In
+                </AppButton>
+              </View>
             ) : (
-              <AppButton
-                onPress={() => {
-                  setMode("verify");
-                  setError("");
-                  setMessage("Enter your account email and the unexpired reset code.");
-                }}
-                variant="tertiary"
-              >
-                Already Have a Reset Code?
-              </AppButton>
+              <View style={styles.recoveryActions}>
+                <AppButton
+                  fullWidth
+                  onPress={() => {
+                    setMode("verify");
+                    setError("");
+                    setMessage("");
+                  }}
+                  variant="secondary"
+                >
+                  Enter an Existing Code
+                </AppButton>
+                <View style={[styles.actionDivider, { backgroundColor: colors.border }]} />
+                <AppButton onPress={() => router.replace("/auth")} size="compact" variant="tertiary">
+                  Return to Sign In
+                </AppButton>
+              </View>
             )}
-
-            <AppButton onPress={() => router.replace("/auth")} variant="tertiary">Return to Sign In</AppButton>
           </AppCard>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -187,4 +202,6 @@ const styles = StyleSheet.create({
   title: { ...Typography.screenTitle },
   body: { ...Typography.body },
   status: { ...Typography.supporting },
+  recoveryActions: { gap: Spacing.sm },
+  actionDivider: { alignSelf: "stretch", height: 1, marginVertical: Spacing.xs },
 });
