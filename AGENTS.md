@@ -36,3 +36,18 @@ The active objective comes from `docs/CurrentBuild.md`, not this file.
 Long-term product direction comes from `docs/ProductVision.md`. Engineering agents should not make product decisions independently.
 
 Commits, pushes, deployments, database changes, credentials, infrastructure changes, and destructive actions require the applicable explicit user approval.
+
+## FreightIQ Git Publishing Rule
+
+When the Product Owner says `commit and push`:
+
+1. Confirm the intended files and review the staged diff.
+2. Commit directly on the current `clean-main` branch.
+3. Push with `git push origin clean-main`.
+4. Verify the working tree is clean and local `clean-main` matches `origin/clean-main`.
+
+Do not use GitHub CLI (`gh`), GitHub connectors, publishing plugins, pull requests, or a new branch
+unless the Product Owner explicitly requests that method.
+
+If direct Git push fails, report the exact failure. Do not switch publishing methods without
+approval.
