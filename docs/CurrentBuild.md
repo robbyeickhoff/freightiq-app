@@ -84,7 +84,8 @@ the separate nested website repository passed its own TypeScript and lint checks
 mobile TypeScript project was incorrectly compiling it with the mobile `@/*` alias. The mobile
 configuration now excludes `freightiq-site`, matching the existing `routing-lab` project boundary.
 Repository-wide mobile TypeScript verification passes with no errors; focused website TypeScript
-and lint checks also pass. This configuration correction remains local pending review and commit.
+and lint checks also pass. The configuration correction and reconciled release documentation were
+committed and pushed in `8e4afec`.
 
 Standalone iPhone, Pixel, broader accessibility, edge-case, and new-tester validation remain release
 gates and do not keep the accepted implementation open as the active build.
@@ -162,6 +163,5 @@ release gates or expand distribution. Replacement builds remain separately appro
 
 ## Next Safe Step
 
-Review and commit the TypeScript project-boundary correction and reconciled release documentation.
-Then wait for separate Product Owner approval before creating replacement iOS and Android
-production candidates from the accepted `clean-main` state.
+Wait for separate Product Owner approval before creating replacement iOS and Android production
+candidates from the accepted `clean-main` state.
