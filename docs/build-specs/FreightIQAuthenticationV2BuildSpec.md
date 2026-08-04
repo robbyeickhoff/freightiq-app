@@ -1,12 +1,12 @@
 # FreightIQ Authentication V2 — Email and Password Build Specification
 
-> **Status: Implementation completed and accepted — installed-build validation pending**
+> **Status: Implementation and personal installed-build validation completed — new-tester validation pending**
 >
 > This document defines the accepted first implementation of FreightIQ Authentication V2.
 >
-> Local implementation, approved Supabase configuration, and focused physical-iPhone acceptance are
-> complete. This specification does not authorize EAS builds, deployment, or release; those actions
-> remain separately gated.
+> Local implementation, approved Supabase configuration, and personal store-installed iPhone and
+> Pixel acceptance are complete. This specification does not authorize EAS builds, deployment, or
+> release; those actions remain separately gated.
 
 ## Document Control
 
@@ -14,8 +14,9 @@
 - **Purpose:** Define a familiar, professional, and safe first-iteration account experience
 - **Repository path:** `docs/build-specs/FreightIQAuthenticationV2BuildSpec.md`
 - **Repository status:** Accepted Completed Build Specification
-- **Implementation status:** Implemented and accepted locally; standalone iPhone, Pixel, and broader
-  accessibility/edge-case validation remain release gates
+- **Implementation status:** Implemented and accepted; personal standalone iPhone, Pixel,
+  accessibility, and focused edge-case validation completed on 2026-08-04; new-tester validation
+  remains gated
 - **Approval status:** Implementation accepted and commit/push approved by the Product Owner on
   2026-08-02
 - **Activation gate:** Satisfied — Mobile Redesign V2 accepted on 2026-08-01
@@ -693,10 +694,23 @@ Passed in Expo Go with the Product Owner's existing FreightIQ account:
 - Post-recovery ownership matches the recorded baseline: the same Driver Profile, 201 reports,
   7 votes, and 205 owned stops.
 
-Still gated on the remaining full matrix:
+### Store-Installed Acceptance — 2026-08-04
 
-- Expired-code cases
-- Remaining accessibility, network, standalone-build, and Pixel coverage
+The Product Owner installed iOS build 35 and Android version code 17 from their tester channels.
+Both candidates passed cold launch, valid-session restart, logout, password sign-in, email-code
+fallback, full password recovery, duplicate-existing-email recovery handoff, return to Sign In,
+profile and contribution preservation, offline sign-in recovery, Light/Dark/System appearance,
+maximum text size, VoiceOver, TalkBack, reduced-motion behavior, and readable local and neutral
+authentication errors. Authentication actions remained reachable with the keyboard and at maximum
+text size.
+
+One Pixel Back gesture returned to Authentication after the first password sign-in. The session
+remained valid, and the result did not recur after controlled cold-start, password-sign-in,
+email-code-sign-in, and root-Back checks. It remains a non-reproduced monitoring observation.
+
+Graceful invalid-persisted-refresh-token recovery remains unverified. The Product Owner explicitly
+deferred that disruptive regression on 2026-08-04; it must not be represented as passed. Controlled
+standalone new-account and new-tester validation also remain future gates.
 
 Focused follow-up validation on 2026-08-03 passed duplicate-existing-email detection, automatic
 handoff to the prefilled Account Recovery flow, return to Sign In, existing-password sign-in, and
@@ -707,9 +721,9 @@ created and the existing account remained usable.
 
 - [x] Valid new account
 - [x] Duplicate existing email
-- Invalid email
-- Password mismatch
-- Weak password
+- [x] Invalid email
+- [x] Password mismatch
+- [x] Weak password
 - [x] Email confirmation
 - Resend confirmation
 - Incorrect confirmation code
@@ -720,7 +734,7 @@ created and the existing account remained usable.
 
 - [x] Correct email and password
 - [x] Incorrect password
-- Unknown email with neutral error
+- [x] Unknown email with neutral error
 - Unconfirmed email
 - [x] Show/hide password
 - Keyboard autofill
@@ -730,7 +744,7 @@ created and the existing account remained usable.
 ### Password Recovery
 
 - [x] Valid reset request
-- Unknown email with neutral response
+- [x] Unknown email with neutral response
 - [x] Valid recovery code
 - Expired recovery code
 - [x] Reused recovery code
@@ -775,8 +789,8 @@ created and the existing account remained usable.
 - [x] Reset email delivery
 - [x] Authentication-email sender identity
 - [x] Expo Go authentication-code flow
-- Standalone iPhone authentication-code flow
-- Standalone Android authentication-code flow
+- [x] Standalone iPhone authentication-code flow
+- [x] Standalone Android authentication-code flow
 
 ## 16. Implementation Sequence
 
@@ -895,7 +909,9 @@ Removing the email-code fallback requires a later explicit decision and is not p
 - The accepted implementation was committed in `1a35d08` and pushed to `clean-main` on 2026-08-02.
 - The duplicate-existing-email correction and Auth presentation polish were accepted on physical
   iPhone and Pixel, committed in `94f5863`, and pushed to `clean-main` on 2026-08-03.
-- Standalone iPhone, Pixel, broader accessibility, edge-case, and new-tester validation remain
-  release gates.
+- Personal standalone iPhone, Pixel, broader accessibility, and focused edge-case validation passed
+  on store-installed iOS build 35 and Android version code 17 on 2026-08-04.
+- Controlled standalone new-account and new-tester validation remain release gates. The Product
+  Owner deferred the invalid-persisted-refresh-token regression; it remains unverified.
 - EAS builds, TestFlight, Google Play, deployment, and release remain separately gated through the
   applicable release workflow.

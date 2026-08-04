@@ -265,6 +265,7 @@ degrading to browser navigation.
 The focused preference, Settings UI, provider launcher, custom picker, failure handling, and native
 availability declarations are implemented. Static validation and local iOS/Android exports pass.
 Expo-compatible iPhone and Pixel acceptance also passes, including accessibility and missing-app
-fallback behavior. Any native development or preview build needed for final installed-app detection
-remains separately gated. The focused repository work was committed and pushed as `e3a16fa` on
-2026-08-01.
+fallback behavior. Final native installed-app detection, direct provider launch, correct-destination
+handoff, platform-specific option visibility, missing-app fallback, preference persistence, and
+root return behavior passed on store-installed iOS build 35 and Android version code 17 on
+2026-08-04. The focused repository work was committed and pushed as `e3a16fa` on 2026-08-01.

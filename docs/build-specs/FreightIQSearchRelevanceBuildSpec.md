@@ -84,9 +84,8 @@ The same focused acceptance matrix subsequently passed on the physical Pixel.
 - **Purpose:** Replace global, unranked stop matching with scalable, location-aware search
 - **Repository path:** `docs/build-specs/FreightIQSearchRelevanceBuildSpec.md`
 - **Repository status:** Completed controlling Build Specification
-- **Implementation status:** Local implementation, production database migration, and focused
-  iPhone/Pixel device validation complete; commit and push are approved; standalone rollout
-  verification remains gated
+- **Implementation status:** Local implementation, production database migration, focused device
+  validation, and store-installed iPhone/Pixel verification complete; commit and push are approved
 - **Approval status:** Approved as written by the Product Owner on 2026-08-01
 - **Activation status:** Completed through `docs/CurrentBuild.md`
 

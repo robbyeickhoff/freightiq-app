@@ -13,11 +13,12 @@ answer one question:
 
 ## Current Objective
 
-Complete tester-channel submission and installed-build validation for the approved replacement iOS
-and Android production candidates created from `71bbe1b`. The replacements include the accepted
-duplicate-account correction and authentication UI polish from `94f5863`. Keep them limited to
-TestFlight and Google Play Closed testing – Alpha, then complete the remaining installed-build
-acceptance gates before any broader distribution.
+Reconcile the completed personal installed-build acceptance for the approved replacement iOS and
+Android production candidates created from `71bbe1b`, then prepare for the separately approval-
+gated next step of limited new-tester validation. The replacements include the accepted duplicate-
+account correction and authentication UI polish from `94f5863`. Keep them limited to TestFlight
+and Google Play Closed testing – Alpha unless the Product Owner separately approves a tester
+expansion.
 
 This is a validation release, not a new product-development objective or a public rollout. Preserve
 the accepted application and production-database state while validating the store-delivered builds.
@@ -87,8 +88,9 @@ Repository-wide mobile TypeScript verification passes with no errors; focused we
 and lint checks also pass. The configuration correction and reconciled release documentation were
 committed and pushed in `8e4afec`.
 
-Standalone iPhone, Pixel, broader accessibility, edge-case, and new-tester validation remain release
-gates and do not keep the accepted implementation open as the active build.
+Personal standalone iPhone, Pixel, broader accessibility, and focused edge-case validation are now
+complete. New-tester validation remains a separate release gate and does not reopen the accepted
+implementation as active development.
 
 The following focused workstreams were accepted on iPhone and Pixel, committed separately, and
 pushed to `clean-main` on 2026-08-01:
@@ -129,35 +131,48 @@ The Product Owner approved replacement candidate creation and tester-channel sub
 2026-08-03. Both replacements were built from clean commit `71bbe1b` with version 1.0.1:
 
 - iOS build 35 (`1979b739-f72c-4984-a28d-4b138b514e40`) finished successfully and was uploaded to
-  App Store Connect through submission `e17d4b10-ecfe-4a12-bc86-7529650084b7`. Apple accepted the
-  upload and is processing it for TestFlight. It was not submitted for App Review or public release.
+  App Store Connect through submission `e17d4b10-ecfe-4a12-bc86-7529650084b7`. Apple accepted and
+  processed the upload for TestFlight. It was not submitted for App Review or public release.
 - Android version code 17 (`ad2d2820-97a6-4e87-83a6-76e1c58a4775`) finished successfully. Its
   signed AAB was downloaded and verified as a 70 MB ZIP-format Android App Bundle with SHA-256
   `7543cec4bc1371448d2fcefbd5006d6b9579aae684faae078f94e1fb464b9f62`. The Product Owner manually
   uploaded it to the existing Google Play Closed testing – Alpha track with version code 16 excluded.
-  The closed-test release was submitted for the full Alpha audience and is in Google Play's quick
-  checks/review flow. It was not uploaded or promoted to another track.
+  Google Play accepted the closed-test release for the full Alpha audience. It was not uploaded or
+  promoted to another track.
+
+On 2026-08-04, both replacements became available and were installed on the Product Owner's
+physical iPhone and Pixel. Personal acceptance passed cold launch, session persistence, logout and
+returning sign-in, password sign-in, email-code fallback, password recovery, duplicate-existing-
+email recovery handoff, profile and contribution preservation, Search Relevance, Preview Card
+hydration, native Navigation App Choice and preference persistence, offline sign-in recovery,
+Light/Dark/System appearance, maximum text size, VoiceOver, TalkBack, and reduced-motion behavior.
+The standalone search checks resolved Isun Skincare and Ridgway Animal Hospital as their existing
+FreightIQ stops, hydrated their existing Intel, and cleared changed queries without stale results.
+
+One Pixel Back gesture returned to Authentication immediately after the first password sign-in.
+The session remained valid, and the behavior did not recur after cold launch, password sign-in, or
+email-code sign-in; subsequent Back gestures minimized the app as expected. Treat this as a
+non-reproduced observation to monitor rather than a confirmed defect. No profile, contribution, or
+session data was lost.
 
 ---
 
 ## Remaining Release Gates
 
-- Complete the remaining Authentication V2 edge-case, accessibility, and standalone-platform
-  validation in replacement installed builds. Focused duplicate-email validation has passed on
-  physical iPhone and Pixel in Expo Go.
-- Verify Search Relevance and accumulated app changes in an appropriate standalone candidate build.
-- Verify native installed-app detection for Navigation App Choice outside Expo Go.
-- Recheck standalone iPhone stability; the observed Expo Go reload crash remains development-
-  container evidence rather than a confirmed FreightIQ defect.
-- After Google Play accepts Android version code 17 and Apple finishes TestFlight processing,
-  install and personally validate both replacement candidates before expanding distribution.
+- Validate Authentication V2, onboarding, Help Center effectiveness, and normal app use with a
+  small new-tester group before any broader tester expansion.
+- Continue monitoring Android Back behavior for recurrence; the single 2026-08-04 Authentication
+  return was not reproduced in controlled password, email-code, cold-start, or root-Back checks.
+- Obtain separate Product Owner approval before changing TestFlight groups, the Google Play closed-
+  test audience, or any broader distribution state.
 
 ---
 
 ## Open Findings Outside the Completed Scope
 
-- Graceful recovery from an invalid persisted Supabase refresh token is implemented locally; a
-  targeted invalid-token regression remains part of installed-build validation.
+- Graceful recovery from an invalid persisted Supabase refresh token is implemented. The Product
+  Owner explicitly deferred the disruptive targeted invalid-token regression on 2026-08-04; it
+  remains unverified and must not be represented as passed.
 - The focused place-search provider review remains open before any Mapbox replacement decision.
 - The pre-existing `public.rls_auto_enable()` execution warning, unavailable-on-Free leaked-password
   protection, older RLS initialization-plan performance warnings, and API-key review remain
@@ -176,5 +191,6 @@ The Product Owner approved replacement candidate creation and tester-channel sub
 
 ## Next Safe Step
 
-Wait for Google Play to accept Android version code 17 and Apple to finish TestFlight processing,
-then install and personally validate both replacement candidates before any broader distribution.
+Prepare accurate tester transition instructions and identify a small trusted new-tester group for
+the next validation gate. Any tester expansion remains separately approval-gated; do not change
+TestFlight, Google Play, deployment, or public-release state through this documentation update.

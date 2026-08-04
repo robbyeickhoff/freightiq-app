@@ -18,7 +18,7 @@
 
 ---
 
-Last Updated: 2026-08-02
+Last Updated: 2026-08-04
 
 ---
 
@@ -299,11 +299,11 @@ Establish a consistent, repeatable release process that produces reliable builds
 
 #### Build Verification
 
-- [ ] After today's selected work is complete, prepare the separately approved Sunday iPhone and
-  Android candidate builds for real-world testing during the week.
+- [x] Prepare the approved replacement iPhone and Android candidates and place them in TestFlight
+  and Google Play Closed testing – Alpha for installed-build validation.
 - [ ] Verify the corrected Android launcher assets in the next Android candidate build.
-- [ ] Verify Navigation App Choice installed-app detection in a native candidate build.
-- [ ] Verify standalone iPhone stability and dynamic text-size behavior outside Expo Go.
+- [x] Verify Navigation App Choice installed-app detection in native iPhone and Android candidates.
+- [x] Verify standalone iPhone stability and dynamic text-size behavior outside Expo Go.
 - [ ] Continue verifying iPhone builds before release.
 - [ ] Continue verifying Android builds before release.
 - [ ] Continue refining the TestFlight release workflow.
