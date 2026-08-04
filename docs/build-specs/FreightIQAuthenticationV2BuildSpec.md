@@ -695,13 +695,18 @@ Passed in Expo Go with the Product Owner's existing FreightIQ account:
 
 Still gated on the remaining full matrix:
 
-- Duplicate-email and expired-code cases
+- Expired-code cases
 - Remaining accessibility, network, standalone-build, and Pixel coverage
+
+Focused follow-up validation on 2026-08-03 passed duplicate-existing-email detection, automatic
+handoff to the prefilled Account Recovery flow, return to Sign In, existing-password sign-in, and
+the polished Auth presentation in Expo Go on physical iPhone and Pixel. No replacement account was
+created and the existing account remained usable.
 
 ### Account Creation
 
 - [x] Valid new account
-- Duplicate existing email
+- [x] Duplicate existing email
 - Invalid email
 - Password mismatch
 - Weak password
@@ -888,6 +893,8 @@ Removing the email-code fallback requires a later explicit decision and is not p
 - Local implementation, production Supabase authentication configuration, focused physical-iPhone
   acceptance, existing-account migration, and controlled new-account validation are complete.
 - The accepted implementation was committed in `1a35d08` and pushed to `clean-main` on 2026-08-02.
+- The duplicate-existing-email correction and Auth presentation polish were accepted on physical
+  iPhone and Pixel, committed in `94f5863`, and pushed to `clean-main` on 2026-08-03.
 - Standalone iPhone, Pixel, broader accessibility, edge-case, and new-tester validation remain
   release gates.
 - EAS builds, TestFlight, Google Play, deployment, and release remain separately gated through the

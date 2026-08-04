@@ -355,8 +355,9 @@ Maintain a reliable, maintainable, and well-engineered codebase while continuing
 
 #### Code Quality
 
-- [ ] Resolve the two website demo import failures involving `HowItWorksWorkflow` and
-  `RealExampleDiagram` without expanding unrelated mobile scope.
+- [x] Resolve the false website demo import failures by excluding the separate nested website
+  repository from the mobile TypeScript project; verify mobile TypeScript plus website TypeScript
+  and lint independently.
 - [ ] Continue reducing technical debt where appropriate.
 - [ ] Continue simplifying implementations without changing behavior.
 - [ ] Continue protecting stable production code during refactors.
@@ -548,6 +549,8 @@ Completed
   original account.
 - ✓ Accepted and pushed the implementation in `1a35d08` on 2026-08-02; standalone-platform,
   accessibility, and broader-tester validation remain release gates.
+- ✓ Corrected the duplicate-existing-email path, polished the Auth action hierarchy, and accepted
+  the focused flow on physical iPhone and Pixel in Expo Go; pushed in `94f5863` on 2026-08-03.
 
 ---
 

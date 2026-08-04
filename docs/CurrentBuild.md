@@ -13,11 +13,11 @@ answer one question:
 
 ## Current Objective
 
-Create the separately approved iOS and Android production candidate builds from the accepted
-`clean-main` state, submit them only to TestFlight and Google Play Internal Testing, and complete
-the remaining installed-build acceptance gates before any broader distribution. The Product Owner
-approved this candidate-release phase on 2026-08-03 after the Search Relevance and Preview Card
-hydration correction passed focused physical-iPhone and Pixel acceptance.
+Prepare the accepted `clean-main` state for replacement iOS and Android production candidate builds,
+then create and submit those replacements only after separate Product Owner approval. The
+replacement candidates must include the accepted duplicate-account correction and authentication
+UI polish from `94f5863`. Submit them only to TestFlight and Google Play Closed testing – Alpha,
+then complete the remaining installed-build acceptance gates before any broader distribution.
 
 This is a validation release, not a new product-development objective or a public rollout. Preserve
 the accepted application and production-database state while validating the store-delivered builds.
@@ -71,6 +71,21 @@ test-only Auth and profile data were deleted. The Product Owner then restored th
 successfully. Temporary LAN-specific Expo Go redirects were removed; only `mfi://auth` and
 `mfi://update-password` remain in the production allow list.
 
+The duplicate-existing-email edge case discovered during candidate validation was corrected and
+accepted on 2026-08-03. FreightIQ now detects Supabase's confirmed-account duplicate response,
+skips the invalid signup-code path, and opens Account Recovery with the existing email prefilled.
+The Sign In, login-code, and password-recovery action hierarchy was polished without changing Auth
+provider behavior. The focused duplicate-account route, return to Sign In, existing-password sign
+in, and updated Auth presentation passed in Expo Go on physical iPhone and Pixel. The correction
+was committed and pushed in `94f5863`.
+
+The two reported website component-import errors were confirmed to be false cross-project errors:
+the separate nested website repository passed its own TypeScript and lint checks, while the outer
+mobile TypeScript project was incorrectly compiling it with the mobile `@/*` alias. The mobile
+configuration now excludes `freightiq-site`, matching the existing `routing-lab` project boundary.
+Repository-wide mobile TypeScript verification passes with no errors; focused website TypeScript
+and lint checks also pass. This configuration correction remains local pending review and commit.
+
 Standalone iPhone, Pixel, broader accessibility, edge-case, and new-tester validation remain release
 gates and do not keep the accepted implementation open as the active build.
 
@@ -91,17 +106,37 @@ Search Relevance and Structured Contact / Check-In include separately approved p
 migrations that were applied and verified. No EAS build, TestFlight or Google Play distribution,
 deployment, or release was performed for this completed tranche.
 
+The approved candidate builds were created and submitted on 2026-08-03:
+
+- iOS build 34 (`092251f2-8b55-49bc-ba98-9cac72372168`) was submitted to TestFlight
+  (`3ded67aa-f3af-4bee-adf4-3b3ab6c36568`) and is available to the internal Team (Expo) group.
+- Android version code 16 / version 1.0.1 (`424f607a-160e-4648-9dc8-7658b83160db`) was downloaded
+  from EAS and manually uploaded to the existing Google Play Closed testing – Alpha track. The
+  release was submitted at 100% of that closed-test audience and is currently in Google Play review
+  after its automated checks. It is not a Production-track or public release.
+
+Google Play submission remains a manual Play Console workflow. EAS automated Android submission
+is not configured because no Google service-account JSON key is assigned. The unused service
+account created during the investigation has no JSON key and remains a separately approved cleanup
+item; it is not part of the release path.
+
+Build 34 and version code 16 remain valid records of the first candidate submission, but they
+predate `94f5863` and are superseded for final acceptance. Do not use them to complete the remaining
+release gates or expand distribution. Replacement builds remain separately approval-gated.
+
 ---
 
 ## Remaining Release Gates
 
-- Complete the remaining Authentication V2 edge-case, accessibility, Pixel, and standalone-iPhone
-  validation in the appropriate installed build.
+- Complete the remaining Authentication V2 edge-case, accessibility, and standalone-platform
+  validation in replacement installed builds. Focused duplicate-email validation has passed on
+  physical iPhone and Pixel in Expo Go.
 - Verify Search Relevance and accumulated app changes in an appropriate standalone candidate build.
 - Verify native installed-app detection for Navigation App Choice outside Expo Go.
 - Recheck standalone iPhone stability; the observed Expo Go reload crash remains development-
   container evidence rather than a confirmed FreightIQ defect.
-- Run the applicable Release Process only after separate Product Owner approval.
+- After separate approval, create, submit, install, and personally validate replacement iOS and
+  Android candidates before expanding distribution.
 
 ---
 
@@ -110,8 +145,6 @@ deployment, or release was performed for this completed tranche.
 - Graceful recovery from an invalid persisted Supabase refresh token is implemented locally; a
   targeted invalid-token regression remains part of installed-build validation.
 - The focused place-search provider review remains open before any Mapbox replacement decision.
-- Repository-wide TypeScript verification still reports the two pre-existing website demo import
-  failures involving `HowItWorksWorkflow` and `RealExampleDiagram`.
 - The pre-existing `public.rls_auto_enable()` execution warning, unavailable-on-Free leaked-password
   protection, older RLS initialization-plan performance warnings, and API-key review remain
   separate security workstreams.
@@ -129,6 +162,6 @@ deployment, or release was performed for this completed tranche.
 
 ## Next Safe Step
 
-Create traceable production candidates through the approved Release Process, submit them only to
-TestFlight and Google Play Internal Testing, and personally validate the remaining release gates on
-the installed iPhone and Pixel builds before expanding distribution.
+Review and commit the TypeScript project-boundary correction and reconciled release documentation.
+Then wait for separate Product Owner approval before creating replacement iOS and Android
+production candidates from the accepted `clean-main` state.

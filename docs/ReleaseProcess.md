@@ -65,9 +65,24 @@ Before every release, confirm:
 
 Verify new functionality personally before inviting additional testers.
 
-### Google Play Internal Testing
+### Google Play Closed Testing
 
 Validate Android behavior before expanding distribution.
+
+For the current FreightIQ setup, the proven Android candidate route is:
+
+1. Create the Android production AAB with EAS Build.
+2. Download the exact completed AAB from its EAS build record.
+3. In Google Play Console, open the existing Closed testing – Alpha track and create a release.
+4. Upload the new AAB manually; do not include the preceding bundle in the new release.
+5. Add accurate release notes, preview the release, and resolve any blocking validation errors.
+6. Use 100% only for the closed-test audience, save the release, and submit the change for review.
+7. Wait for Google Play processing, then install and validate the candidate from the closed-test
+   track before considering any broader rollout.
+
+EAS Submit for Android is not currently configured. Do not start a service-account or automated-
+submission setup unless the Product Owner separately approves changing this established manual
+workflow.
 
 ### Early Testers
 
