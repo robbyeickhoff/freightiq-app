@@ -237,15 +237,16 @@ Strengthen the systems, infrastructure, and safeguards that quietly build user c
 
 ##### Goals
 
-Help drivers contribute useful operational knowledge without accidentally sharing sensitive information.
+Help drivers contribute useful operational knowledge without accidentally sharing sensitive information. Shared Driver Reports must remain separate from any future owner-only Private Intel feature.
 
 ##### Active Tasks
 
-- [ ] Discourage gate codes in Driver Reports.
-- [ ] Discourage alarm codes in Driver Reports.
-- [ ] Discourage access credentials in Driver Reports.
+- [ ] Discourage gate codes in shared Driver Reports.
+- [ ] Discourage alarm codes in shared Driver Reports.
+- [ ] Discourage access credentials in shared Driver Reports.
 - [ ] Encourage operational delivery guidance instead of sensitive information.
 - [ ] Evaluate warning prompts before saving potentially sensitive information.
+- [ ] Preserve the rule that private credentials must never appear in shared reports, search results, contribution attribution, Founding Driver views, or public/admin recognition surfaces.
 
 ---
 
@@ -391,7 +392,11 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 
 ### User Experience
 
-- [ ] Browse by City.
+#### Near-Term Search Expansion
+
+- [ ] Search and browse FreightIQ stops by city so a driver can intentionally explore a service area without first moving the map there.
+- [ ] Search FreightIQ stops by contributing username so drivers can find the stops and Intel associated with a known FreightIQ contributor.
+- [ ] Define clear result labels, privacy boundaries, ranking behavior, and combined city/username filtering before implementation.
 - [ ] Recent Cities.
 - [ ] Save Today's Stops.
 
@@ -399,6 +404,7 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 
 ### Driver Experience
 
+- [ ] Locked Private Intel: let a signed-in driver save stop-specific private information such as gate codes in a separate owner-only experience. Keep it completely separate from shared Driver Reports and all shared search, attribution, Founder Program, and recognition surfaces. Require owner-scoped Row Level Security and a dedicated data model rather than a client-side visibility flag. Before implementation, define the threat model and decide whether owner-only Supabase access is sufficient or whether client-side encryption and a device unlock step are required before claiming that only the driver can read it.
 - [ ] [Route Builder V1](design/RouteBuilderV1.md): let a driver select an additional FreightIQ
   stop without losing the first destination, then hand off a supported multi-stop route or
   next-stop sequence to the selected navigation app. Preserve manual driver ordering in V1 and
