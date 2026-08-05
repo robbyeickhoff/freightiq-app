@@ -1,0 +1,381 @@
+# Founding Driver Program V0 — Build Specification
+
+## Status
+
+Approved product design captured for implementation planning.
+
+This document defines the smallest complete Founding Driver Program that FreightIQ can operate with Driver #1 and then expand to a small group of founding drivers.
+
+It does not authorize production database, application, website, authentication, deployment, or release changes. Those changes remain subject to the FreightIQ Engineering Playbook and their applicable approval gates.
+
+---
+
+## Product Objective
+
+Create a simple, driver-to-driver program that:
+
+- Helps a small group of trusted local freight drivers learn and use FreightIQ on real routes.
+- Encourages useful Stop Intel contributions.
+- Gives each driver a clear, live view of their progress and rewards.
+- Gives Robby a simple private view for reviewing contributions and operating the program.
+- Produces real-world feedback before the program expands.
+
+The driver-facing experience must feel personal and straightforward. It must not feel like a corporate recruiting, compliance, or employee-performance system.
+
+---
+
+## V0 Program Rules
+
+### Candidate
+
+A candidate is an active local freight driver Robby trusts to:
+
+- Use FreightIQ during real delivery work.
+- Contribute useful Intel.
+- Give honest feedback when something is confusing, breaks, or should work differently.
+
+Driver #1 will be invited through a casual in-person conversation with Robby.
+
+### Onboarding and Day 1
+
+- Driver #1 receives an in-person FreightIQ walkthrough from Robby.
+- Day 1 begins after onboarding is complete and Robby and the driver agree the driver is ready to start.
+- The program window is 30 days.
+- Legitimate extensions may be handled case by case. V0 will not define a formal extension policy.
+
+### Active Day
+
+An active day is a calendar day when the driver meaningfully uses FreightIQ by doing at least one of the following:
+
+- Viewing Stop Intel.
+- Starting navigation from FreightIQ.
+- Contributing Intel.
+
+Merely opening the app does not count as an active day.
+
+### Qualifying Stop
+
+A stop may qualify when the driver:
+
+- Creates a new stop and completes its four Core Intel fields; or
+- Completes the missing Core Intel on an existing stop.
+
+Rules:
+
+- The driver does not need to re-enter Core Intel that already exists.
+- Each stop counts only once for that driver.
+- Robby performs a quick review to confirm the Core Intel is complete and useful.
+- If Intel is unclear or contains an honest mistake, Robby may ask the driver to correct it so the stop can count.
+- If a driver enters sensitive information such as a gate code, Robby will ask the driver to remove it and explain why. This has no bearing on whether the stop counts.
+
+The implementation must use the four Core Intel fields defined by the current mobile product rather than creating a second, program-specific definition.
+
+### Rewards
+
+All requirements must be completed within the same 30-day program window.
+
+- **$25 qualification reward:** 10 active days and 10 qualifying stops.
+- **$15 additional bonus:** 20 total qualifying stops.
+- **Maximum V0 reward:** $40.
+
+The driver may choose Venmo or an Amazon gift card. If another payment method is easier, the driver may ask Robby.
+
+### Founding Driver Status
+
+After qualifying, the driver receives:
+
+- Permanent Founding Driver status.
+- A Founding Driver profile badge.
+- Early access to new FreightIQ features.
+- A meaningful voice in FreightIQ's development.
+
+### Feedback
+
+No survey, required weekly report, or formal end-of-program interview is required.
+
+Robby will talk with the driver naturally throughout the 30 days. The driver is asked to tell Robby when:
+
+- Something is confusing.
+- Something breaks.
+- There is something they would like FreightIQ to do.
+
+### Referrals
+
+Referral mechanics and rewards are outside the V0 build. Robby may introduce a qualified driver to the future referral program when it feels natural.
+
+---
+
+## System of Record
+
+Supabase will be the single source of truth for Founding Driver enrollment, progress, contribution review, qualification, rewards, and payment status.
+
+The existing Founding Driver spreadsheet is the visual prototype and an emergency reference. It will not be the normal operating system and will not require duplicate manual entry once the Supabase-powered system is live.
+
+Before implementation, inspect the existing Supabase schema, mobile contribution flow, website architecture, and authentication setup. Reuse existing users, stops, reports, timestamps, and ownership relationships wherever practical. Do not duplicate data already recorded reliably.
+
+---
+
+## Required Tracking
+
+### Enrollment
+
+The system must retain:
+
+- Driver identity linked to the existing FreightIQ account/profile.
+- Program status.
+- Start date.
+- End date.
+- Qualification date when earned.
+- Permanent Founding Driver status.
+
+### Meaningful Activity
+
+The system must be able to determine unique active days from supported meaningful-use events:
+
+- Stop Intel viewed.
+- Navigation started from FreightIQ.
+- Intel contributed.
+
+Activity tracking must not count ordinary app opens as meaningful use.
+
+### Stop Progress
+
+The system must retain enough information to:
+
+- Identify the contributing driver.
+- Identify the stop.
+- Determine whether the driver created the stop or completed missing Core Intel.
+- Prevent the same stop from counting twice for the same driver.
+- Record Robby's quick review decision.
+- Preserve a short review note only when useful.
+- Calculate the driver's qualifying-stop total.
+
+Human review states should remain simple:
+
+- Pending review.
+- Counts.
+- Needs clarification.
+- Does not count.
+
+The driver must be able to correct Intel after `Needs clarification` and return it for review.
+
+### Rewards
+
+The system must calculate and retain:
+
+- Progress toward 10 active days.
+- Progress toward 10 qualifying stops.
+- Progress toward 20 qualifying stops.
+- $25 qualification eligibility.
+- $15 bonus eligibility.
+- Total earned.
+- Preferred payment method.
+- Payment status and payment date.
+
+Final payment remains a human action by Robby.
+
+---
+
+## Driver Experience
+
+### Access
+
+Only enrolled Founding Driver candidates and qualified Founding Drivers may access the private Founding Drivers website section.
+
+Each driver may see their own private progress data. Drivers must not be able to view another driver's private contribution, review, reward-payment, or account details.
+
+### Personal Progress Page
+
+The page must show, at minimum:
+
+- Current program day and program end date.
+- Active days completed out of 10.
+- Qualifying stops completed out of 10.
+- Bonus progress toward 20 total qualifying stops.
+- Next milestone.
+- Reward earned.
+- Review status for the driver's submitted stops.
+- Permanent Founding Driver status after qualification.
+
+Progress should update from Supabase data without Robby maintaining a second tracker.
+
+### Leaderboard
+
+Once multiple drivers are enrolled, the private Founding Drivers section will include a friendly leaderboard.
+
+- Rank by total qualifying stops.
+- Show active days beside each driver's stop total.
+- Show only the driver identity needed for friendly recognition.
+- Do not expose private review notes, payment details, contact details, or account information.
+
+The personal progress view is primary. The leaderboard is secondary.
+
+---
+
+## Robby's Admin Experience
+
+Robby needs a private dashboard that replaces routine spreadsheet maintenance.
+
+It must show:
+
+- All current and past program drivers.
+- Program dates and current status.
+- Active-day progress.
+- Qualifying-stop progress.
+- Pending contribution reviews.
+- Stops needing clarification.
+- Qualification and bonus eligibility.
+- Reward earned, preferred payment method, payment status, and payment date.
+
+Robby must be able to:
+
+- Enroll a driver and start the 30-day clock after onboarding.
+- Review a submitted stop quickly.
+- Mark it as Counts, Needs clarification, or Does not count.
+- Record a short note when useful.
+- Handle a case-by-case date extension.
+- Confirm qualification.
+- Record reward delivery.
+
+The dashboard should optimize for quick decisions, not database administration. Direct Supabase Table Editor use is not the intended normal workflow.
+
+---
+
+## Visual Direction
+
+The private Founding Drivers experience will use the approved FreightIQ Sunrise System direction shown in Concept D:
+
+- Charcoal and near-black foundation.
+- Sunrise gradient for progress, milestones, and positive emphasis.
+- Copper accents.
+- Slate supporting surfaces.
+- Stone text and neutral contrast.
+- FreightIQ Sunrise icon and wordmark.
+- Confident, practical language written driver-to-driver.
+
+The visual treatment must remain consistent with the production FreightIQ website. It should not create a separate sub-brand.
+
+Progress presentation should feel motivating without becoming childish, noisy, or game-like.
+
+---
+
+## Security and Privacy Requirements
+
+- Use the existing FreightIQ identity where practical.
+- Enforce driver access to only their own private program data.
+- Enforce separate admin access for Robby.
+- Do not rely only on hidden website routes or client-side filtering.
+- Keep reward-payment details and review notes out of the leaderboard.
+- Do not store payment credentials.
+- Preserve existing Supabase Row Level Security expectations.
+- Treat schema, policy, function, Auth, and production-data changes as separately approval-gated operational work.
+
+The implementation procedure must be verified against current official Supabase guidance before any production database change.
+
+---
+
+## Build Sequence
+
+### Phase 1 — Inspect and Map
+
+- Inspect the current mobile Core Intel contribution flow.
+- Inspect the current Supabase schema, policies, functions, and relevant production-safe metadata.
+- Inspect the current website architecture and authentication pattern.
+- Map existing data to the required program metrics.
+- Identify the smallest new data structures and events needed.
+
+Output: an implementation plan and proposed schema/event contract for approval.
+
+### Phase 2 — Supabase Foundation
+
+- Add the approved enrollment, activity, review, qualification, and reward structures.
+- Add approved access controls.
+- Add calculation/query support for driver and admin progress.
+- Verify permissions and calculations without altering unrelated production data.
+
+### Phase 3 — Mobile Activity Capture
+
+- Record the approved meaningful-use events.
+- Connect qualifying-stop candidates to the existing Core Intel workflow.
+- Avoid duplicate stop credit.
+- Preserve normal FreightIQ behavior for drivers outside the program.
+
+### Phase 4 — Robby's Admin Dashboard
+
+- Build the private program overview.
+- Build the quick contribution-review flow.
+- Build reward and payment-status management.
+
+### Phase 5 — Driver Website Experience
+
+- Build private Founding Drivers access.
+- Build the personal live-progress page.
+- Build the friendly leaderboard.
+- Apply the Sunrise System consistently.
+
+### Phase 6 — End-to-End Verification
+
+- Test enrollment through Day 1.
+- Test meaningful active-day counting.
+- Test new-stop and completed-existing-stop credit.
+- Test duplicate-stop prevention.
+- Test review and correction flow.
+- Test 10-stop qualification and 20-stop bonus calculations.
+- Test driver privacy and admin access.
+- Test reward recording.
+- Verify mobile, website, and Supabase behavior together.
+
+### Phase 7 — Driver #1 Launch Readiness
+
+- Confirm Robby can enroll Driver #1 after the in-person walkthrough.
+- Confirm Driver #1 can see live progress.
+- Confirm Robby can review stops and see pending work.
+- Confirm rewards calculate correctly.
+- Confirm the program can still be operated if the private website experience is temporarily unavailable.
+
+---
+
+## Acceptance Criteria
+
+Program V0 is ready for Driver #1 when:
+
+- Supabase is the working source of truth.
+- Robby can start a driver's 30-day program after onboarding.
+- Meaningful active days calculate correctly and app opens do not count.
+- Both newly created stops and existing stops with missing Core Intel can become qualifying stops.
+- A stop cannot count twice for the same driver.
+- Robby can complete a quick review and manage clarification.
+- The $25 qualification and $15 bonus calculate correctly from the approved rules.
+- Driver #1 can see live personal progress.
+- Robby can see and operate the program through a private dashboard.
+- Private driver, review, and reward data is protected appropriately.
+- The Sunrise presentation is consistent with the FreightIQ website.
+- The existing FreightIQ experience remains unchanged for non-participants.
+
+The private website section is strongly desired for Driver #1, but it is not an absolute launch blocker if the program, Supabase tracking, and Robby's operating view are ready and the website experience is close behind.
+
+---
+
+## Explicit Exclusions
+
+V0 does not include:
+
+- Public recruitment.
+- More than a small founding group.
+- Automated reward payment.
+- A formal extension policy.
+- Surveys or required weekly reports.
+- A formal end-of-program interview.
+- Referral tracking or referral rewards.
+- Public leaderboards.
+- Corporate-style application, compliance, or performance-management workflows.
+- Replacing the existing Core Intel model.
+- Broad analytics unrelated to operating the Founding Driver Program.
+
+---
+
+## Implementation Gate
+
+This specification must be reviewed and approved by Robby before meaningful implementation begins.
+
+After approval, the next valid step is **Phase 1 — Inspect and Map**. That inspection must produce the proposed implementation plan and Supabase schema/event contract before any database, website, or mobile changes are made.
