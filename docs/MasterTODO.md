@@ -405,6 +405,10 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 ### Driver Experience
 
 - [ ] Locked Private Intel: let a signed-in driver save stop-specific private information such as gate codes in a separate owner-only experience. Keep it completely separate from shared Driver Reports and all shared search, attribution, Founder Program, and recognition surfaces. Require owner-scoped Row Level Security and a dedicated data model rather than a client-side visibility flag. Before implementation, define the threat model and decide whether owner-only Supabase access is sufficient or whether client-side encryption and a device unlock step are required before claiming that only the driver can read it.
+- [ ] [Operations Board](design/OperationsBoard.md): create a geographically organized,
+  self-expiring stream of short operational updates for road conditions, delivery access,
+  construction, hazards, services, and customer notices. Keep it professional and focused by
+  excluding comments, likes, and off-topic discussion.
 - [ ] [Route Builder V1](design/RouteBuilderV1.md): let a driver select an additional FreightIQ
   stop without losing the first destination, then hand off a supported multi-stop route or
   next-stop sequence to the selected navigation app. Preserve manual driver ordering in V1 and
