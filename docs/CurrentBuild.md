@@ -13,16 +13,14 @@ answer one question:
 
 ## Current Objective
 
-Implement Founding Driver Program V0 Phase 2 — Supabase Foundation — from the approved
+Implement Founding Driver Program V0 from the approved
 `docs/build-specs/FoundingDriverProgramV0.md` and approved Phase 1 implementation plan.
 
-Phase 2 is proceeding as small, separately verified database units. Unit 1 — Founding Driver
-admin authority and enrollment foundation with Row Level Security — Unit 2 — meaningful activity
-events and active-day calculation — Unit 3 — qualifying-stop contribution capture and Robby's
-review workflow — Unit 4 — progress and reward calculation — and Unit 5 — safe leaderboard
-totals — are complete. Unit 6 — Founding Driver profile-image foundation — is the next
-approval-gated unit. Production schema, policy, function, storage, data, app, and website changes
-remain separately approval-gated before execution.
+Phase 2 — Supabase Foundation — is complete through Unit 6. The live foundation now covers admin
+authority, enrollment, meaningful activity, qualifying-stop review, progress and rewards, the safe
+leaderboard, and private profile images. Phase 3 — Mobile Activity Capture — is the next
+approval-gated phase. Production app, website, data, deployment, and release changes remain
+separately approval-gated before execution.
 
 ---
 
@@ -95,6 +93,20 @@ recognition, participant/admin access, nonparticipant, output-privacy, function-
 and cleanup tests passed. No drivers were enrolled, no test data remain, and no app or website code
 changed. Advisor scans found no new Unit 5 security or performance finding; only the already-tracked
 project warnings and expected unused-index notices remain.
+
+Phase 2 Unit 6 — Founding Driver profile-image foundation — is complete. Production migration
+`20260805193828_add_founding_driver_profile_images.sql` was applied, verified, and committed to
+`clean-main` on 2026-08-05. The existing profile now has one optional fixed image path, and the
+private `profile-images` bucket accepts only JPEG, PNG, and WebP images up to 5 MB. Enrolled
+drivers can upload, replace, and remove only their own `{user-id}/profile` object. Active
+participants and the Founding Driver admin can retrieve or sign authorized images, while bucket
+listing, nonparticipant access, invalid paths, and cross-owner management are blocked. Robby's
+admin account is authorized to remove an image through the Storage API without broader profile-edit
+authority. Rollback and live ownership, retrieval, signing, replacement, path, listing, privacy,
+moderation-policy, bucket-restriction, and cleanup checks passed. No driver was enrolled, no image
+was uploaded, no test metadata remains, and no app or website interface changed. Advisor scans
+found no new Unit 6 security or performance finding; only the already-tracked project warnings and
+expected unused-index notices remain.
 
 The focused duplicate-username cleanup was completed and committed to `clean-main` in
 `225c412` on 2026-08-05. Both profile save paths trim usernames and show the approved friendly
@@ -265,9 +277,9 @@ session data was lost.
 
 ## Next Safe Step
 
-Inspect and present the complete verified procedure for Phase 2 Unit 6: the Founding Driver
-profile-image foundation. Reuse existing FreightIQ accounts and profiles, define the narrow storage
-and access boundary needed for approved Founding Driver recognition, and keep image upload,
-replacement, deletion, and display separately approval-gated. Do not change app or website
-interfaces in this database unit. Obtain explicit Product Owner approval before executing any
-production storage, policy, database, app, or data change.
+Inspect the existing mobile event and Core Intel save paths and present the complete verified
+procedure for Phase 3 — Mobile Activity Capture. Connect the already-live meaningful-use and
+qualifying-stop foundation to the approved app actions, preserve normal behavior for drivers
+outside the program, and keep every app-code change separately approval-gated. Do not enroll a
+driver, upload an image, build, distribute, deploy, or change the website in this inspection step.
+Obtain explicit Product Owner approval before executing Phase 3 implementation.
