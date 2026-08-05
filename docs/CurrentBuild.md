@@ -17,10 +17,11 @@ Implement Founding Driver Program V0 Phase 2 — Supabase Foundation — from th
 `docs/build-specs/FoundingDriverProgramV0.md` and approved Phase 1 implementation plan.
 
 Phase 2 is proceeding as small, separately verified database units. Unit 1 — Founding Driver
-admin authority and enrollment foundation with Row Level Security — and Unit 2 — meaningful
-activity events and active-day calculation — are complete. Unit 3 — qualifying-stop contribution
-capture and Robby's review workflow — is the next approval-gated unit. Production schema, policy,
-function, storage, data, app, and website changes remain separately approval-gated before execution.
+admin authority and enrollment foundation with Row Level Security — Unit 2 — meaningful activity
+events and active-day calculation — and Unit 3 — qualifying-stop contribution capture and Robby's
+review workflow — are complete. Unit 4 — progress and reward calculation — is the next
+approval-gated unit. Production schema, policy, function, storage, data, app, and website changes
+remain separately approval-gated before execution.
 
 ---
 
@@ -53,6 +54,20 @@ enrolled, no production activity rows were retained, and no app or website code 
 advisor-driven hardening removed the new callable-privileged-function warning and added both
 foreign-key indexes; their initial unused-index notices are expected while the activity table is
 empty. All remaining security and RLS performance warnings predate this unit.
+
+Phase 2 Unit 3 — qualifying-stop contribution capture and Robby's quick-review workflow — is
+complete. Production migration `20260805162610_add_founding_driver_stop_review.sql` was applied,
+verified, and committed to `clean-main` in `9a7854b` on 2026-08-05. The database creates at most
+one candidate per driver and stop only when a driver's action completes the four existing Core
+Intel items: Truck Fit, Delivery Type, Back In, and Delivery Zone. It classifies new stops versus
+completed existing stops, retains the completed fields and a small Core Intel snapshot, gives
+Robby the four approved review states, returns clarified Intel to Pending after a correction,
+prevents self-approval, and counts only `Counts` decisions. A narrow authenticated function lets
+an active Founding Driver set a missing Delivery Zone on an existing stop without broader stop-edit
+authority. Rollback, live isolation, new-stop, existing-stop, clarification/correction, duplicate,
+nonparticipant, review, total, and cleanup tests passed. No drivers were enrolled, no test rows
+remain, and no app or website code changed. Advisor scans found no new security warning or
+actionable performance finding; initial unused-index notices are expected while the table is empty.
 
 The focused duplicate-username cleanup was completed and committed to `clean-main` in
 `225c412` on 2026-08-05. Both profile save paths trim usernames and show the approved friendly
@@ -223,8 +238,8 @@ session data was lost.
 
 ## Next Safe Step
 
-Inspect and present the complete verified procedure for Phase 2 Unit 3: qualifying-stop
-contribution capture and Robby's review workflow. Reuse the existing stop and report records, retain
-who completed missing Core Intel, count each stop only once per driver after Robby's quick review,
-and preserve correction-before-approval. Obtain explicit Product Owner approval before executing
-any production database, app, or data change.
+Inspect and present the complete verified procedure for Phase 2 Unit 4: progress and reward
+calculation. Reuse the completed enrollment, active-day, and qualifying-stop structures to calculate
+progress toward 10 active days, 10 qualifying stops, 20 qualifying stops, the $25 qualification
+reward, and the $15 bonus. Keep final payment a human action by Robby. Obtain explicit Product Owner
+approval before executing any production database, app, or data change.
