@@ -184,6 +184,19 @@ Only enrolled Founding Driver candidates and qualified Founding Drivers may acce
 
 Each driver may see their own private progress data. Drivers must not be able to view another driver's private contribution, review, reward-payment, or account details.
 
+### Founding Driver Identity
+
+Founding Driver profiles should help the private program feel like a real group of drivers rather than an anonymous tracker.
+
+- A driver may choose a profile photo or a photo of their truck.
+- The existing FreightIQ username appears with the image on recognition-oriented program surfaces.
+- The FreightIQ logo avatar is the default when the driver does not upload an image.
+- Qualified Founding Drivers receive a distinctive copper or sunrise-gradient ring or badge treatment.
+- The identity treatment should appear on the personal progress page, friendly leaderboard, and contribution attribution where appropriate.
+- Uploading an image is optional and must not expose private account details.
+
+Phase 1 must inspect the existing profile model and define the smallest reusable image-storage, access-control, moderation, replacement, and deletion approach before implementation. The feature should extend the existing FreightIQ profile rather than create a separate Founding Driver identity.
+
 ### Personal Progress Page
 
 The page must show, at minimum:
