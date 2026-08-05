@@ -17,10 +17,10 @@ Implement Founding Driver Program V0 Phase 2 — Supabase Foundation — from th
 `docs/build-specs/FoundingDriverProgramV0.md` and approved Phase 1 implementation plan.
 
 Phase 2 is proceeding as small, separately verified database units. Unit 1 — Founding Driver
-admin authority and enrollment foundation with Row Level Security — is complete. Unit 2 —
-meaningful activity events and active-day calculation — is the next approval-gated unit. Production
-schema, policy, function, storage, data, app, and website changes remain separately approval-gated
-before execution.
+admin authority and enrollment foundation with Row Level Security — and Unit 2 — meaningful
+activity events and active-day calculation — are complete. Unit 3 — qualifying-stop contribution
+capture and Robby's review workflow — is the next approval-gated unit. Production schema, policy,
+function, storage, data, app, and website changes remain separately approval-gated before execution.
 
 ---
 
@@ -40,6 +40,19 @@ Driver admin. Drivers can read only their own enrollment and cannot modify progr
 or reward fields. Rollback testing and live account-isolation testing passed. No drivers were
 enrolled, no app or website code changed, and the optimized policy introduced no new security or
 performance advisor findings.
+
+Phase 2 Unit 2 — meaningful activity events and active-day calculation — is complete. The
+production migrations were applied, verified, and committed to `clean-main` in `139d772` and
+`4e7f214` on 2026-08-05. The database records only Stop Intel views, navigation starts, and Intel
+contributions for active participants inside their 30-day window; ordinary app opens do not count.
+Server-controlled timestamps and America/Denver calendar dates are enforced, repeated
+same-action/same-stop activity on the same day collapses to one event, and unique active days are
+available through an RLS-protected summary. Nonparticipants receive a harmless no-op. Rollback,
+deduplication, date, account-isolation, admin-read, and cleanup tests passed. No drivers were
+enrolled, no production activity rows were retained, and no app or website code changed. The
+advisor-driven hardening removed the new callable-privileged-function warning and added both
+foreign-key indexes; their initial unused-index notices are expected while the activity table is
+empty. All remaining security and RLS performance warnings predate this unit.
 
 The focused duplicate-username cleanup was completed and committed to `clean-main` in
 `225c412` on 2026-08-05. Both profile save paths trim usernames and show the approved friendly
@@ -210,9 +223,8 @@ session data was lost.
 
 ## Next Safe Step
 
-Present the complete verified procedure for Phase 2 Unit 2: meaningful activity events and
-active-day calculation. The unit must record only approved meaningful actions, use server-controlled
-timestamps and the Colorado calendar date, collapse repeated same-action/same-stop activity on the
-same day, limit progress to active participants inside their 30-day window, and preserve normal app
-behavior for nonparticipants. Obtain explicit Product Owner approval before executing any production
-database, app, or data change.
+Inspect and present the complete verified procedure for Phase 2 Unit 3: qualifying-stop
+contribution capture and Robby's review workflow. Reuse the existing stop and report records, retain
+who completed missing Core Intel, count each stop only once per driver after Robby's quick review,
+and preserve correction-before-approval. Obtain explicit Product Owner approval before executing
+any production database, app, or data change.
