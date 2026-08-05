@@ -19,9 +19,10 @@ Implement Founding Driver Program V0 Phase 2 — Supabase Foundation — from th
 Phase 2 is proceeding as small, separately verified database units. Unit 1 — Founding Driver
 admin authority and enrollment foundation with Row Level Security — Unit 2 — meaningful activity
 events and active-day calculation — Unit 3 — qualifying-stop contribution capture and Robby's
-review workflow — and Unit 4 — progress and reward calculation — are complete. Unit 5 — safe
-leaderboard totals — is the next approval-gated unit. Production schema, policy, function, storage,
-data, app, and website changes remain separately approval-gated before execution.
+review workflow — Unit 4 — progress and reward calculation — and Unit 5 — safe leaderboard
+totals — are complete. Unit 6 — Founding Driver profile-image foundation — is the next
+approval-gated unit. Production schema, policy, function, storage, data, app, and website changes
+remain separately approval-gated before execution.
 
 ---
 
@@ -80,6 +81,20 @@ threshold, date-window, driver-privacy, nonparticipant, admin-visibility, and cl
 No drivers were enrolled, no test data remain, and no app or website code changed. Advisor scans
 found no new Unit 4 security or performance finding; only the already-tracked project warnings and
 expected unused-index notices remain.
+
+Phase 2 Unit 5 — safe leaderboard totals — is complete. Production migrations
+`20260805185917_add_founding_driver_leaderboard.sql` and
+`20260805190119_harden_founding_driver_leaderboard.sql` were applied and verified on 2026-08-05.
+The live leaderboard ranks participating drivers by approved qualifying stops, keeps tied drivers
+tied, shows active days alongside each total, and exposes only rank, username, qualifying-stop
+total, active-day total, and permanent Founding Driver recognition. Participating drivers and the
+Founding Driver admin can view the same safe leaderboard; nonparticipants receive no rows. The
+advisor-identified callable privileged function was removed from the exposed public API by using a
+caller-level public wrapper over the locked private implementation. Rollback, live ranking, tie,
+recognition, participant/admin access, nonparticipant, output-privacy, function-grant, hardening,
+and cleanup tests passed. No drivers were enrolled, no test data remain, and no app or website code
+changed. Advisor scans found no new Unit 5 security or performance finding; only the already-tracked
+project warnings and expected unused-index notices remain.
 
 The focused duplicate-username cleanup was completed and committed to `clean-main` in
 `225c412` on 2026-08-05. Both profile save paths trim usernames and show the approved friendly
@@ -250,9 +265,9 @@ session data was lost.
 
 ## Next Safe Step
 
-Inspect and present the complete verified procedure for Phase 2 Unit 5: safe leaderboard totals.
-Reuse the completed progress calculation, rank drivers by approved qualifying stops, show active days
-alongside each total, and expose only the recognition identity and small cross-driver totals approved
-for the private Founding Driver experience. Do not expose program dates, stop IDs, review notes,
-contact details, payment details, or account details. Obtain explicit Product Owner approval before
-executing any production database, app, or data change.
+Inspect and present the complete verified procedure for Phase 2 Unit 6: the Founding Driver
+profile-image foundation. Reuse existing FreightIQ accounts and profiles, define the narrow storage
+and access boundary needed for approved Founding Driver recognition, and keep image upload,
+replacement, deletion, and display separately approval-gated. Do not change app or website
+interfaces in this database unit. Obtain explicit Product Owner approval before executing any
+production storage, policy, database, app, or data change.
