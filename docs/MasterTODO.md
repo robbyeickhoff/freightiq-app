@@ -18,7 +18,7 @@
 
 ---
 
-Last Updated: 2026-08-04
+Last Updated: 2026-08-05
 
 ---
 
@@ -111,6 +111,8 @@ changing their accepted behavior.
 - [ ] Polish the lower action area of the Welcome Back screen so Forgot Password, Create Account,
   and Email Me a Login Code Instead use consistent alignment, spacing, sizing, and interaction
   treatment.
+- [ ] Prevent duplicate usernames after trimming surrounding spaces and ignoring capitalization,
+  and show a friendly “That username is already taken” message.
 
 ---
 
