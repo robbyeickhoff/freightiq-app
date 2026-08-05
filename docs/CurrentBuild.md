@@ -13,15 +13,15 @@ answer one question:
 
 ## Current Objective
 
-Reconcile the completed personal installed-build acceptance for the approved replacement iOS and
-Android production candidates created from `71bbe1b`, then prepare for the separately approval-
-gated next step of limited new-tester validation. The replacements include the accepted duplicate-
-account correction and authentication UI polish from `94f5863`. Keep them limited to TestFlight
-and Google Play Closed testing – Alpha unless the Product Owner separately approves a tester
-expansion.
+Complete the approved focused duplicate-username cleanup before returning to Founding Driver
+Program Phase 1. Trim usernames at both profile save paths, protect production uniqueness while
+ignoring surrounding spaces and capitalization, and show the approved friendly username-taken
+message.
 
-This is a validation release, not a new product-development objective or a public rollout. Preserve
-the accepted application and production-database state while validating the store-delivered builds.
+The production migration was applied and verified on 2026-08-05. The mobile implementation and
+matching repository migration are prepared in the working tree. TypeScript and lint completed with
+no errors; the eleven lint warnings are pre-existing and outside this scope. Physical-device
+acceptance and explicit commit/sync approval remain.
 
 ---
 
@@ -191,6 +191,7 @@ session data was lost.
 
 ## Next Safe Step
 
-Prepare accurate tester transition instructions and identify a small trusted new-tester group for
-the next validation gate. Any tester expansion remains separately approval-gated; do not change
-TestFlight, Google Play, deployment, or public-release state through this documentation update.
+Review the focused duplicate-username diff and complete the remaining physical-device checks on the
+initial Driver Profile and existing Profile save paths. After acceptance, obtain explicit approval
+to commit and sync the focused files, then resume Founding Driver Program Phase 1 in its existing
+approved Build Specification.

@@ -78,6 +78,7 @@ export default function ProfileScreen() {
   async function saveProfile() {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData.session?.user?.id;
+    const normalizedName = name.trim();
 
     if (!userId) {
       Alert.alert("Not logged in", "Please login first.");
@@ -86,16 +87,22 @@ export default function ProfileScreen() {
 
     const { error } = await supabase.from("profiles").upsert({
       id: userId,
-      username: name,
+      username: normalizedName,
       tractor_type: tractorType,
     });
 
     if (error) {
+      if (error.code === "23505") {
+        Alert.alert("Username taken", "That username is already taken.");
+        return;
+      }
+
       Alert.alert("Save failed", error.message);
       return;
     }
 
-    setInitialName(name);
+    setName(normalizedName);
+    setInitialName(normalizedName);
     setInitialTractorType(tractorType);
     setHasExistingProfile(true);
 
