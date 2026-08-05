@@ -31,6 +31,11 @@ of truth; and divides Phase 2 into focused database units for enrollment/admin a
 activity, qualifying-stop review, narrow Delivery Zone contribution, progress/rewards, leaderboard
 totals, and profile images.
 
+The focused duplicate-username cleanup was completed and committed to `clean-main` in
+`225c412` on 2026-08-05. Both profile save paths trim usernames and show the approved friendly
+duplicate message, and the matching repository migration preserves case-insensitive,
+space-normalized uniqueness.
+
 The approved Pre-Build Security Remediation was implemented and applied to production on
 2026-08-02. Stop updates now require ownership or trusted-editor status; the Product Owner's
 original account is the single initial trusted editor. Anonymous access to business contact and
@@ -174,10 +179,6 @@ session data was lost.
 
 ## Open Findings Outside the Completed Scope
 
-- The focused duplicate-username production constraint is live and verified. Its matching mobile
-  implementation and repository migration were prepared in the Mac working tree but were not
-  committed after the interrupted 429 session. Preserve that recovery work as a separate unfinished
-  objective; do not represent it as committed or reconstruct it inside the Founding Driver scope.
 - Graceful recovery from an invalid persisted Supabase refresh token is implemented. The Product
   Owner explicitly deferred the disruptive targeted invalid-token regression on 2026-08-04; it
   remains unverified and must not be represented as passed.
