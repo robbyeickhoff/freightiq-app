@@ -13,19 +13,23 @@ answer one question:
 
 ## Current Objective
 
-Complete the approved focused duplicate-username cleanup before returning to Founding Driver
-Program Phase 1. Trim usernames at both profile save paths, protect production uniqueness while
-ignoring surrounding spaces and capitalization, and show the approved friendly username-taken
-message.
+Implement Founding Driver Program V0 Phase 2 — Supabase Foundation — from the approved
+`docs/build-specs/FoundingDriverProgramV0.md` and approved Phase 1 implementation plan.
 
-The production migration was applied and verified on 2026-08-05. The mobile implementation and
-matching repository migration are prepared in the working tree. TypeScript and lint completed with
-no errors; the eleven lint warnings are pre-existing and outside this scope. Physical-device
-acceptance and explicit commit/sync approval remain.
+Phase 2 will proceed as small, separately verified database units. The first unit is the Founding
+Driver admin and enrollment foundation with Row Level Security. Production schema, policy,
+function, storage, and data changes remain separately approval-gated before execution.
 
 ---
 
 ## Completed Build Status
+
+Phase 1 — Inspect and Map — is complete and was approved by the Product Owner on 2026-08-05.
+The approved implementation contract reuses existing Auth users, profiles, stops, reports,
+timestamps, and ownership; adds a small program-specific audit layer; keeps Supabase as the source
+of truth; and divides Phase 2 into focused database units for enrollment/admin authority, meaningful
+activity, qualifying-stop review, narrow Delivery Zone contribution, progress/rewards, leaderboard
+totals, and profile images.
 
 The approved Pre-Build Security Remediation was implemented and applied to production on
 2026-08-02. Stop updates now require ownership or trusted-editor status; the Product Owner's
@@ -170,6 +174,10 @@ session data was lost.
 
 ## Open Findings Outside the Completed Scope
 
+- The focused duplicate-username production constraint is live and verified. Its matching mobile
+  implementation and repository migration were prepared in the Mac working tree but were not
+  committed after the interrupted 429 session. Preserve that recovery work as a separate unfinished
+  objective; do not represent it as committed or reconstruct it inside the Founding Driver scope.
 - Graceful recovery from an invalid persisted Supabase refresh token is implemented. The Product
   Owner explicitly deferred the disruptive targeted invalid-token regression on 2026-08-04; it
   remains unverified and must not be represented as passed.
@@ -191,7 +199,7 @@ session data was lost.
 
 ## Next Safe Step
 
-Review the focused duplicate-username diff and complete the remaining physical-device checks on the
-initial Driver Profile and existing Profile save paths. After acceptance, obtain explicit approval
-to commit and sync the focused files, then resume Founding Driver Program Phase 1 in its existing
-approved Build Specification.
+Identify the exact production FreightIQ account that will receive Founding Driver admin authority,
+confirm the safest available migration-testing route, and present the complete verified procedure
+for the first Phase 2 unit: admin authority, enrollment, and Row Level Security. Obtain explicit
+Product Owner approval before executing any production database or data change.
