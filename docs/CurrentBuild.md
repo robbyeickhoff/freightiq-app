@@ -16,9 +16,11 @@ answer one question:
 Implement Founding Driver Program V0 Phase 2 — Supabase Foundation — from the approved
 `docs/build-specs/FoundingDriverProgramV0.md` and approved Phase 1 implementation plan.
 
-Phase 2 will proceed as small, separately verified database units. The first unit is the Founding
-Driver admin and enrollment foundation with Row Level Security. Production schema, policy,
-function, storage, and data changes remain separately approval-gated before execution.
+Phase 2 is proceeding as small, separately verified database units. Unit 1 — Founding Driver
+admin authority and enrollment foundation with Row Level Security — is complete. Unit 2 —
+meaningful activity events and active-day calculation — is the next approval-gated unit. Production
+schema, policy, function, storage, data, app, and website changes remain separately approval-gated
+before execution.
 
 ---
 
@@ -30,6 +32,14 @@ timestamps, and ownership; adds a small program-specific audit layer; keeps Supa
 of truth; and divides Phase 2 into focused database units for enrollment/admin authority, meaningful
 activity, qualifying-stop review, narrow Delivery Zone contribution, progress/rewards, leaderboard
 totals, and profile images.
+
+Phase 2 Unit 1 — Founding Driver admin authority and enrollment foundation — is complete. The
+production migrations were applied, verified, and committed to `clean-main` in `c623fef` and
+`b4177fd` on 2026-08-05. The Product Owner's existing Gmail FreightIQ account is the sole Founding
+Driver admin. Drivers can read only their own enrollment and cannot modify program dates, status,
+or reward fields. Rollback testing and live account-isolation testing passed. No drivers were
+enrolled, no app or website code changed, and the optimized policy introduced no new security or
+performance advisor findings.
 
 The focused duplicate-username cleanup was completed and committed to `clean-main` in
 `225c412` on 2026-08-05. Both profile save paths trim usernames and show the approved friendly
@@ -200,7 +210,9 @@ session data was lost.
 
 ## Next Safe Step
 
-Identify the exact production FreightIQ account that will receive Founding Driver admin authority,
-confirm the safest available migration-testing route, and present the complete verified procedure
-for the first Phase 2 unit: admin authority, enrollment, and Row Level Security. Obtain explicit
-Product Owner approval before executing any production database or data change.
+Present the complete verified procedure for Phase 2 Unit 2: meaningful activity events and
+active-day calculation. The unit must record only approved meaningful actions, use server-controlled
+timestamps and the Colorado calendar date, collapse repeated same-action/same-stop activity on the
+same day, limit progress to active participants inside their 30-day window, and preserve normal app
+behavior for nonparticipants. Obtain explicit Product Owner approval before executing any production
+database, app, or data change.
