@@ -18,10 +18,10 @@ Implement Founding Driver Program V0 Phase 2 — Supabase Foundation — from th
 
 Phase 2 is proceeding as small, separately verified database units. Unit 1 — Founding Driver
 admin authority and enrollment foundation with Row Level Security — Unit 2 — meaningful activity
-events and active-day calculation — and Unit 3 — qualifying-stop contribution capture and Robby's
-review workflow — are complete. Unit 4 — progress and reward calculation — is the next
-approval-gated unit. Production schema, policy, function, storage, data, app, and website changes
-remain separately approval-gated before execution.
+events and active-day calculation — Unit 3 — qualifying-stop contribution capture and Robby's
+review workflow — and Unit 4 — progress and reward calculation — are complete. Unit 5 — safe
+leaderboard totals — is the next approval-gated unit. Production schema, policy, function, storage,
+data, app, and website changes remain separately approval-gated before execution.
 
 ---
 
@@ -68,6 +68,18 @@ authority. Rollback, live isolation, new-stop, existing-stop, clarification/corr
 nonparticipant, review, total, and cleanup tests passed. No drivers were enrolled, no test rows
 remain, and no app or website code changed. Advisor scans found no new security warning or
 actionable performance finding; initial unused-index notices are expected while the table is empty.
+
+Phase 2 Unit 4 — progress and reward calculation — is complete. Production migration
+`20260805164844_add_founding_driver_progress_rewards.sql` was applied, verified, and committed to
+`clean-main` in `15c45ca` on 2026-08-05. The security-invoker progress view calculates live
+active-day and approved qualifying-stop totals only inside each enrollment's program window,
+remaining progress toward 10 active days, 10 stops, and 20 stops, $25 base eligibility, the
+additional $15 bonus eligibility, and a maximum earned reward of $40. Qualification confirmation,
+permanent status, payment status, and payment remain under Robby's control. Rollback and live
+threshold, date-window, driver-privacy, nonparticipant, admin-visibility, and cleanup tests passed.
+No drivers were enrolled, no test data remain, and no app or website code changed. Advisor scans
+found no new Unit 4 security or performance finding; only the already-tracked project warnings and
+expected unused-index notices remain.
 
 The focused duplicate-username cleanup was completed and committed to `clean-main` in
 `225c412` on 2026-08-05. Both profile save paths trim usernames and show the approved friendly
@@ -238,8 +250,9 @@ session data was lost.
 
 ## Next Safe Step
 
-Inspect and present the complete verified procedure for Phase 2 Unit 4: progress and reward
-calculation. Reuse the completed enrollment, active-day, and qualifying-stop structures to calculate
-progress toward 10 active days, 10 qualifying stops, 20 qualifying stops, the $25 qualification
-reward, and the $15 bonus. Keep final payment a human action by Robby. Obtain explicit Product Owner
-approval before executing any production database, app, or data change.
+Inspect and present the complete verified procedure for Phase 2 Unit 5: safe leaderboard totals.
+Reuse the completed progress calculation, rank drivers by approved qualifying stops, show active days
+alongside each total, and expose only the recognition identity and small cross-driver totals approved
+for the private Founding Driver experience. Do not expose program dates, stop IDs, review notes,
+contact details, payment details, or account details. Obtain explicit Product Owner approval before
+executing any production database, app, or data change.
