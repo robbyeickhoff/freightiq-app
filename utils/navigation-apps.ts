@@ -8,6 +8,7 @@ export type NavigationDestination = {
   label: string;
   lat: number;
   lng: number;
+  stopId?: string;
 };
 
 export type NavigationPreferenceOption = {

@@ -16,9 +16,10 @@ answer one question:
 Implement Founding Driver Program V0 from the approved
 `docs/build-specs/FoundingDriverProgramV0.md` and approved Phase 1 implementation plan.
 
-Phase 2 — Supabase Foundation — is complete through Unit 6. The live foundation now covers admin
+Phase 2 — Supabase Foundation — is complete through Unit 6. The live foundation covers admin
 authority, enrollment, meaningful activity, qualifying-stop review, progress and rewards, the safe
-leaderboard, and private profile images. Phase 3 — Mobile Activity Capture — is the next
+leaderboard, and private profile images. Phase 3 — Mobile Activity Capture — is implemented and
+accepted on physical iPhone and Pixel. Phase 4 — Robby's Admin Dashboard — is the next
 approval-gated phase. Production app, website, data, deployment, and release changes remain
 separately approval-gated before execution.
 
@@ -107,6 +108,28 @@ moderation-policy, bucket-restriction, and cleanup checks passed. No driver was 
 was uploaded, no test metadata remains, and no app or website interface changed. Advisor scans
 found no new Unit 6 security or performance finding; only the already-tracked project warnings and
 expected unused-index notices remain.
+
+Phase 3 — Mobile Activity Capture — is implemented and accepted on 2026-08-06. The mobile app now
+records Stop Intel views, successful navigation starts, and successful Intel contributions through
+the already-live meaningful-activity function without blocking ordinary FreightIQ behavior.
+Navigation attempts that do not open a provider and unsaved external search results do not create
+activity. Delivery Zone saves use the narrow Founding Driver function for an active participant
+completing a missing zone on an existing stop, then preserve the normal owner-only save path for
+drivers outside the program. The existing report and Delivery Zone triggers remain responsible for
+creating one reviewable qualifying-stop candidate and preventing duplicate stop credit.
+
+TypeScript and lint completed with no errors; lint retained only the 11 pre-existing warnings on
+untouched lines. Focused Expo Go acceptance passed on physical iPhone and Pixel. A nonparticipant
+retained normal Stop Intel and navigation behavior. A controlled temporary participant produced
+exactly one event for each approved activity type on a stop in one day, one active day, one
+`completed_existing_stop` candidate, and one `new_stop` candidate with the expected four-field Core
+Intel snapshots. Reopening and resaving unchanged Intel did not duplicate the event or candidate.
+The active participant could set a missing Delivery Zone on a stop owned by another user without
+receiving broader edit authority. The Pixel repeated the approved event, Delivery Zone, and
+existing-stop path successfully. All temporary enrollments, stops, reports, activity events, and
+contribution candidates were removed after verification; the controlled Auth account and profile
+were preserved. No website, schema, Auth setting, build, distribution, deployment, or release
+change was made.
 
 The focused duplicate-username cleanup was completed and committed to `clean-main` in
 `225c412` on 2026-08-05. Both profile save paths trim usernames and show the approved friendly
@@ -277,9 +300,9 @@ session data was lost.
 
 ## Next Safe Step
 
-Inspect the existing mobile event and Core Intel save paths and present the complete verified
-procedure for Phase 3 — Mobile Activity Capture. Connect the already-live meaningful-use and
-qualifying-stop foundation to the approved app actions, preserve normal behavior for drivers
-outside the program, and keep every app-code change separately approval-gated. Do not enroll a
-driver, upload an image, build, distribute, deploy, or change the website in this inspection step.
-Obtain explicit Product Owner approval before executing Phase 3 implementation.
+Inspect the existing private website architecture and the approved Founding Driver admin
+requirements, then present the complete verified procedure for Phase 4 — Robby's Admin Dashboard.
+Define the smallest private program overview, contribution-review flow, and reward/payment-status
+management that use the already-live Supabase foundation. Do not implement the website, change
+production data, enroll a driver, build, distribute, deploy, or change authentication in this
+inspection step. Obtain explicit Product Owner approval before executing Phase 4 implementation.

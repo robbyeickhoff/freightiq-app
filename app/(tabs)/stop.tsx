@@ -30,6 +30,7 @@ import { AppIcon } from "../../components/ui/app-icon";
 import { Spacing, Typography } from "../../constants/theme";
 import { useAppTheme } from "../../context/theme-context";
 import { useReducedMotion } from "../../hooks/use-reduced-motion";
+import { recordFoundingDriverActivity } from "../../utils/founding-driver-activity";
 import {
   canMessagePhoneType,
   composeLegacyContact,
@@ -349,6 +350,7 @@ export default function StopScreen() {
     "backIn",
   ]);
   const handledQuickIntelRequestRef = useRef<string | null>(null);
+  const recordedStopIntelViewRef = useRef<string | null>(null);
   const returnToQuickIntelAfterEntranceRef = useRef(false);
   const [pickerMapType, setPickerMapType] = useState<"standard" | "satellite">("standard");
   const [entranceRegion, setEntranceRegion] = useState<Region>({
@@ -564,6 +566,16 @@ export default function StopScreen() {
 
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!isFocused || !stopId || !sessionUserId) return;
+
+    const viewKey = `${stopId}:${openedAt || "initial"}`;
+    if (recordedStopIntelViewRef.current === viewKey) return;
+
+    recordedStopIntelViewRef.current = viewKey;
+    void recordFoundingDriverActivity("stop_intel_viewed", stopId);
+  }, [isFocused, openedAt, sessionUserId, stopId]);
 
   useEffect(() => {
     if (!stopId || !sessionUserId) return;
@@ -1161,6 +1173,7 @@ export default function StopScreen() {
       }
 
       setMyReportId(savedReport.id);
+      void recordFoundingDriverActivity("intel_contributed", stopId);
 
       const localRaw = await AsyncStorage.getItem(stopKey(stopId));
       const localParsed: StopIntel = localRaw ? JSON.parse(localRaw) : {};
@@ -1302,6 +1315,49 @@ export default function StopScreen() {
     }
   }
 
+  async function persistDeliveryZone(nextLat: number | null, nextLng: number | null) {
+    const { data: programSaved, error: programError } = await supabase.rpc(
+      "set_founding_driver_delivery_zone",
+      {
+        p_stop_id: stopId,
+        p_lat: nextLat,
+        p_lng: nextLng,
+      },
+    );
+
+    if (programError) {
+      console.warn("Founding Driver Delivery Zone save failed", programError);
+    }
+
+    if (programSaved === true) {
+      return { saved: true, error: null };
+    }
+
+    const { data: updatedStop, error } = await supabase
+      .from("mfi_stops")
+      .update({
+        entrance_lat: nextLat,
+        entrance_lng: nextLng,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", stopId)
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      return { saved: false, error: error.message };
+    }
+
+    if (!updatedStop) {
+      return {
+        saved: false,
+        error: "Only the stop owner can change this Delivery Zone.",
+      };
+    }
+
+    return { saved: true, error: null };
+  }
+
   async function saveEntranceAtCurrentCenter() {
     if (!(await requireSignedIn())) return;
 
@@ -1311,19 +1367,14 @@ export default function StopScreen() {
       const nextLat = entranceRegion.latitude;
       const nextLng = entranceRegion.longitude;
 
-      const { error } = await supabase
-        .from("mfi_stops")
-        .update({
-          entrance_lat: nextLat,
-          entrance_lng: nextLng,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", stopId);
+      const result = await persistDeliveryZone(nextLat, nextLng);
 
-      if (error) {
-        Alert.alert("Delivery zone save failed", error.message);
+      if (!result.saved) {
+        Alert.alert("Delivery zone save failed", result.error ?? "Please try again.");
         return;
       }
+
+      void recordFoundingDriverActivity("intel_contributed", stopId);
 
       const localRaw = await AsyncStorage.getItem(stopKey(stopId));
       const localParsed: StopIntel = localRaw ? JSON.parse(localRaw) : {};
@@ -1354,19 +1405,14 @@ export default function StopScreen() {
     try {
       setSavingEntrance(true);
 
-      const { error } = await supabase
-        .from("mfi_stops")
-        .update({
-          entrance_lat: lat,
-          entrance_lng: lng,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", stopId);
+      const result = await persistDeliveryZone(lat, lng);
 
-      if (error) {
-        Alert.alert("Entrance save failed", error.message);
+      if (!result.saved) {
+        Alert.alert("Entrance save failed", result.error ?? "Please try again.");
         return;
       }
+
+      void recordFoundingDriverActivity("intel_contributed", stopId);
 
       const localRaw = await AsyncStorage.getItem(stopKey(stopId));
       const localParsed: StopIntel = localRaw ? JSON.parse(localRaw) : {};
@@ -1390,17 +1436,10 @@ export default function StopScreen() {
     try {
       setSavingEntrance(true);
 
-      const { error } = await supabase
-        .from("mfi_stops")
-        .update({
-          entrance_lat: null,
-          entrance_lng: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", stopId);
+      const result = await persistDeliveryZone(null, null);
 
-      if (error) {
-        Alert.alert("Clear failed", error.message);
+      if (!result.saved) {
+        Alert.alert("Clear failed", result.error ?? "Please try again.");
         return;
       }
 

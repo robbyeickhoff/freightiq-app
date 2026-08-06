@@ -32,6 +32,7 @@ import { Elevation, Typography } from "@/constants/theme";
 import { useNavigationPreference } from "@/context/navigation-preference-context";
 import { useAppTheme } from "@/context/theme-context";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { recordFoundingDriverActivity } from "@/utils/founding-driver-activity";
 import {
   availableNavigationProviders,
   isNavigationProviderAvailable,
@@ -2266,6 +2267,9 @@ export default function HomeScreen() {
 
     try {
       await openNavigationProvider(provider, destination);
+      if (destination.stopId) {
+        void recordFoundingDriverActivity("navigation_started", destination.stopId);
+      }
     } catch {
       if (provider !== "default") {
         showNavigationFallback(provider, destination);
@@ -2287,6 +2291,7 @@ export default function HomeScreen() {
       label: selectedStop.name,
       lat: selectedStop.lat,
       lng: selectedStop.lng,
+      ...(selectedStop.id === "temp-search-result" ? {} : { stopId: selectedStop.id }),
     };
 
     if (navigationPreference === "ask") {
