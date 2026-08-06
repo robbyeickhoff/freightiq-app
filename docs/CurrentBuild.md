@@ -19,9 +19,11 @@ Implement Founding Driver Program V0 from the approved
 Phase 2 — Supabase Foundation — is complete through Unit 6. The live foundation covers admin
 authority, enrollment, meaningful activity, qualifying-stop review, progress and rewards, the safe
 leaderboard, and private profile images. Phase 3 — Mobile Activity Capture — is implemented and
-accepted on physical iPhone and Pixel. Phase 4 — Robby's Admin Dashboard — is the next
-approval-gated phase. Production app, website, data, deployment, and release changes remain
-separately approval-gated before execution.
+accepted on physical iPhone and Pixel. Phase 4 — Robby's Admin Dashboard — is implemented and
+accepted in the browser. The narrow admin-access migration is live and verified; the website source
+is committed and pushed in `6aaf868` but remains undeployed. Production app, website deployment,
+real-driver enrollment, distribution, and release changes remain separately approval-gated before
+execution.
 
 ---
 
@@ -130,6 +132,31 @@ existing-stop path successfully. All temporary enrollments, stops, reports, acti
 contribution candidates were removed after verification; the controlled Auth account and profile
 were preserved. No website, schema, Auth setting, build, distribution, deployment, or release
 change was made.
+
+Phase 4 — Robby's Admin Dashboard — is implemented and accepted on 2026-08-06. Live
+migration `20260806111946_add_founding_driver_admin_access.sql` exposes only a caller-level boolean
+admin check over the existing private admin authority; anonymous execution is denied, the existing
+admin returns true, and a normal authenticated account returns false. The existing Next.js website
+now has Supabase cookie-backed server sessions, a private admin sign-in, protected server-rendered
+admin data, and server-authorized actions for enrollment, contribution review, date extension,
+program status, qualification, payment preference, and final reward delivery. Each mutation
+revalidates the caller as the Founding Driver admin and remains subject to the existing Row Level
+Security policies. The dashboard uses the production FreightIQ Sunrise presentation and keeps the
+admin route out of public navigation.
+
+Browser acceptance passed existing-account sign-in, unauthorized-route redirection, sign-out, the
+empty operating view, a controlled 30-day enrollment, live overview totals, clarification and
+counted review decisions, a case-by-case date extension, 10-active-day/10-stop qualification,
+permanent Founding Driver recognition without prematurely closing Active status, private payment
+preference, rejection of premature final payment, Qualified status, and final Paid recording with
+a server timestamp. Supabase verification confirmed each transition. All temporary enrollment,
+activity, contribution, report, and stop data were removed; the controlled Auth account and profile
+were preserved, and all program tables returned to zero rows. Website lint, TypeScript, the
+production build, the unauthenticated-route smoke test, and the production dependency audit passed.
+The website framework was updated from Next.js 16.2.4 to the current secure 16.3.0 release after the
+dependency audit identified published framework and transitive production advisories. Website
+source was committed and pushed in `6aaf868`. No website deployment, real-driver enrollment,
+Auth-setting change, distribution, or release was performed.
 
 The focused duplicate-username cleanup was completed and committed to `clean-main` in
 `225c412` on 2026-08-05. Both profile save paths trim usernames and show the approved friendly
@@ -300,9 +327,10 @@ session data was lost.
 
 ## Next Safe Step
 
-Inspect the existing private website architecture and the approved Founding Driver admin
-requirements, then present the complete verified procedure for Phase 4 — Robby's Admin Dashboard.
-Define the smallest private program overview, contribution-review flow, and reward/payment-status
-management that use the already-live Supabase foundation. Do not implement the website, change
-production data, enroll a driver, build, distribute, deploy, or change authentication in this
-inspection step. Obtain explicit Product Owner approval before executing Phase 4 implementation.
+Inspect the existing private website architecture and the approved Phase 5 driver-experience
+requirements, then present one complete verified procedure for Phase 5 — Driver Website Experience.
+Define the smallest enrolled-driver access, personal progress, friendly leaderboard, and optional
+profile-image experience using the live Supabase foundation. Do not implement, deploy, enroll a real
+driver, or change production Auth or data during inspection. Obtain explicit Product Owner approval
+before Phase 5 implementation; website deployment, distribution, and release remain separately
+approval-gated.
