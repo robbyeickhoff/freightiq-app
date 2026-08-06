@@ -4,11 +4,11 @@
 
 **Timezone:** UTC
 
-**Status:** Unreviewed
+**Status:** Reviewed
 
-**Classification:** Unassigned
+**Classification:** Feature improvement
 
-**Destination:** Unassigned
+**Destination:** docs/field-notes/ActionQueue.md
 
 ## Original Thought
 
@@ -53,4 +53,4 @@ User asked to capture two separate field notes pasted across two separate prompt
 
 ## Review Outcome
 
-Not yet reviewed.
+Action Required — Added to `docs/field-notes/ActionQueue.md` as `Create in-app Contact Support flow` with status `Ready to work`.
