@@ -59,6 +59,16 @@ Before every release, confirm:
 - Release notes accurately describe the changes.
 - Rollback path is understood if needed.
 
+## Store-Specific Audits
+
+Public store submissions require the general workflow above plus the applicable store-specific audit.
+
+### Apple App Store
+
+Use `AppleAppStoreReleaseAudit.md` for the detailed iOS public-release requirements, evidence, App Review preparation, privacy disclosures, account deletion, user-generated-content safeguards, and final submission gate.
+
+The Apple audit supplements this document. It does not replace physical-device verification, regression testing, production-build validation, or release-owner approval.
+
 ## FreightIQ Examples
 
 ### TestFlight
