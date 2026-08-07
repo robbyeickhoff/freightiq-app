@@ -158,6 +158,24 @@ dependency audit identified published framework and transitive production adviso
 source was committed and pushed in `6aaf868`. No website deployment, real-driver enrollment,
 Auth-setting change, distribution, or release was performed.
 
+Phase 5 — Founding Driver Portal — is implemented and accepted on 2026-08-06. The existing Next.js
+website now has a protected Founding Driver sign-in and driver dashboard for active, qualified, or
+completed program participants. The dashboard shows the driver's program day and date window,
+progress, reward and milestone status, contribution review state and notes, and the privacy-safe
+leaderboard. Nonparticipants are signed out with the approved enrollment message, while the shared
+sign-in continues to route the Founding Driver admin to the protected admin dashboard.
+
+Drivers can optionally upload, replace, and remove a private JPEG, PNG, or WebP profile image up to
+5 MB; the FreightIQ logo remains the default. First-upload acceptance exposed that Storage's
+`INSERT ... RETURNING` flow also requires the new object to pass SELECT RLS. Production migration
+`20260807041548_allow_initial_founding_driver_profile_image_upload.sql` now grants that metadata
+access only for an enrolled driver's own fixed `{user-id}/profile` path and preserves the existing
+operation-scoped participant and admin reads. Upload, replacement, removal, private retrieval,
+nonparticipant rejection, signed-out redirects, TypeScript, lint, production build, dependency
+audit, and advisor checks passed. The controlled Test Robby enrollment, image reference, and stored
+object were removed after acceptance; the Auth account and profile were preserved. No website
+deployment, real-driver enrollment, Auth-setting change, distribution, or release was performed.
+
 The focused duplicate-username cleanup was completed and committed to `clean-main` in
 `225c412` on 2026-08-05. Both profile save paths trim usernames and show the approved friendly
 duplicate message, and the matching repository migration preserves case-insensitive,
