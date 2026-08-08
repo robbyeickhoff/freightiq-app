@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,6 +13,7 @@ import { supabase } from "@/utils/supabase";
 
 export default function CreateAccountScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ referral_code?: string }>();
   const { colors } = useAppTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,6 +25,13 @@ export default function CreateAccountScreen() {
   const [complete, setComplete] = useState(false);
   const [confirmationCode, setConfirmationCode] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [referralCode, setReferralCode] = useState("");
+
+  useEffect(() => {
+    if (typeof params.referral_code === "string") {
+      setReferralCode(params.referral_code.trim().toUpperCase().slice(0, 6));
+    }
+  }, [params.referral_code]);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -39,9 +47,22 @@ export default function CreateAccountScreen() {
     try {
       setLoading(true);
       setError("");
+      const normalizedReferralCode = referralCode.trim().toUpperCase();
+      if (normalizedReferralCode) {
+        const { data: referral, error: referralError } = await supabase
+          .rpc("resolve_referral_code", { p_code: normalizedReferralCode })
+          .maybeSingle();
+        if (referralError || !referral) {
+          setError("That referral code could not be found. Check the code and try again.");
+          return;
+        }
+      }
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
+        options: normalizedReferralCode
+          ? { data: { referral_code: normalizedReferralCode } }
+          : undefined,
       });
       const accountAlreadyExists =
         signUpError?.code === "user_already_exists" ||
@@ -131,6 +152,15 @@ export default function CreateAccountScreen() {
               <>
                 <Text style={[styles.body, { color: colors.textSecondary }]}>Use your private email for account access. Your Driver Name is set up separately.</Text>
                 <AppTextField autoCapitalize="none" autoComplete="email" keyboardType="email-address" label="Email" onChangeText={setEmail} textContentType="emailAddress" value={email} />
+                <AppTextField
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  label="Referral Code (Optional)"
+                  maxLength={6}
+                  onChangeText={(value) => setReferralCode(value.replace(/[^a-z0-9]/gi, "").toUpperCase())}
+                  supportingText="Enter the code from the driver who invited you."
+                  value={referralCode}
+                />
                 <AppTextField autoCapitalize="none" autoComplete="new-password" label="Password" onChangeText={setPassword} secureTextEntry={!showPassword} supportingText="Use at least 8 characters. A longer passphrase works well." textContentType="newPassword" trailingAction={{ accessibilityLabel: showPassword ? "Hide password" : "Show password", icon: showPassword ? "passwordVisible" : "passwordHidden", onPress: () => setShowPassword((value) => !value) }} value={password} />
                 <AppTextField autoCapitalize="none" autoComplete="new-password" label="Confirm Password" onChangeText={setConfirmation} secureTextEntry={!showConfirmation} textContentType="newPassword" trailingAction={{ accessibilityLabel: showConfirmation ? "Hide password confirmation" : "Show password confirmation", icon: showConfirmation ? "passwordVisible" : "passwordHidden", onPress: () => setShowConfirmation((value) => !value) }} value={confirmation} />
                 {error ? <Text accessibilityLiveRegion="polite" style={[styles.status, { color: colors.danger }]}>{error}</Text> : null}

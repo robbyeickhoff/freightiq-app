@@ -27,6 +27,7 @@ const ICONS = {
   map: { default: "map" },
   navigation: { default: "navigation" },
   profile: { default: "person-outline", active: "person" },
+  referral: { default: "group-add" },
   satellite: { default: "satellite-alt" },
   search: { default: "search" },
   settings: { default: "settings" },

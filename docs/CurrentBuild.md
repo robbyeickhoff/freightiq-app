@@ -442,6 +442,22 @@ session data was lost.
 
 ---
 
+## Referral Program V1 — Engineering Complete, User Test Pending
+
+The Product Owner approved Referral Program V1 for every FreightIQ user on 2026-08-08. The live
+database now assigns each user a unique referral code, captures that code only during new-account
+creation, tracks the 30-day 5-active-day / 5-approved-stop requirement, and creates two $5 rewards
+after admin qualification. Controlled rollback tests verified qualification, rewards, privacy, and
+the narrow Delivery Zone contribution path without leaving test records in Production.
+
+The mobile app now provides a Refer a Driver screen with a scannable QR code and matching share
+link, accepts and validates a referral code during account creation, and shows referral progress.
+The website now resolves `/join/{code}` invitation pages, and the existing admin area now includes
+referral review, qualification, and payment controls. Automated type, lint, production-build, and
+database checks pass. Physical user testing and release/deployment remain the next gates.
+
+---
+
 ## Open Findings Outside the Completed Scope
 
 - Graceful recovery from an invalid persisted Supabase refresh token is implemented. The Product
@@ -466,6 +482,6 @@ session data was lost.
 
 ## Next Safe Step
 
-Commit and push the completed production-acceptance record, then return to the Founding Driver #1
-launch runbook. Do not expand distribution or enroll Driver #1 without the corresponding explicit
-Product Owner approval.
+Run the Product Owner referral test with one referrer and one newly created account. If accepted,
+commit and push the app and website changes through their canonical branches, then use the normal
+release process for any tester distribution change.

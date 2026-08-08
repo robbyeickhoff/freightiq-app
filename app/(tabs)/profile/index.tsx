@@ -155,6 +155,31 @@ export default function ProfileScreen() {
         ) : null}
 
         <View style={styles.appSection}>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Programs</Text>
+          <AppCard clipContent>
+            <Pressable
+              accessibilityHint="Opens your referral QR code, link, and progress"
+              accessibilityRole="button"
+              onPress={() => router.push("./refer-a-driver")}
+              style={({ pressed }) => [
+                styles.settingsRow,
+                { backgroundColor: colors.surfaceElevated },
+                pressed ? { backgroundColor: colors.accentMuted } : null,
+              ]}
+            >
+              <View style={[styles.settingsIconContainer, { backgroundColor: colors.accentMuted }]}>
+                <AppIcon name="referral" size={23} color={colors.accentStrong} />
+              </View>
+              <View style={styles.settingsCopy}>
+                <Text style={[styles.settingsRowLabel, { color: colors.textPrimary }]}>Refer a Driver</Text>
+                <Text style={[styles.settingsRowSubtitle, { color: colors.textSecondary }]}>Share your QR code and track 5–5 progress</Text>
+              </View>
+              <AppIcon name="chevronRight" size={26} color={colors.textSecondary} />
+            </Pressable>
+          </AppCard>
+        </View>
+
+        <View style={styles.appSection}>
           <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>App</Text>
           <AppCard clipContent>
             <Pressable

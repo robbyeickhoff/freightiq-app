@@ -12,19 +12,22 @@ export async function recordFoundingDriverActivity(
   if (!stopId.trim()) return false;
 
   try {
-    const { data, error } = await supabase.rpc("record_founding_driver_activity", {
-      p_event_type: eventType,
-      p_stop_id: stopId,
-    });
+    const args = { p_event_type: eventType, p_stop_id: stopId };
+    const [foundingDriver, referral] = await Promise.all([
+      supabase.rpc("record_founding_driver_activity", args),
+      supabase.rpc("record_referral_activity", args),
+    ]);
 
-    if (error) {
-      console.warn("Founding Driver activity capture failed", error);
-      return false;
+    if (foundingDriver.error) {
+      console.warn("Founding Driver activity capture failed", foundingDriver.error);
+    }
+    if (referral.error) {
+      console.warn("Referral activity capture failed", referral.error);
     }
 
-    return data === true;
+    return foundingDriver.data === true || referral.data === true;
   } catch (error) {
-    console.warn("Founding Driver activity capture failed", error);
+    console.warn("Program activity capture failed", error);
     return false;
   }
 }

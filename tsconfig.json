@@ -16,6 +16,7 @@
   ],
   "exclude": [
     "freightiq-site",
-    "routing-lab"
+    "routing-lab",
+    "supabase/functions"
   ]
 }

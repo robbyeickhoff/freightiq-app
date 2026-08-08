@@ -1416,6 +1416,19 @@ export default function StopScreen() {
       return { saved: true, error: null };
     }
 
+    const { data: referralSaved, error: referralError } = await supabase.rpc(
+      "set_referral_delivery_zone",
+      { p_stop_id: stopId, p_lat: nextLat, p_lng: nextLng },
+    );
+
+    if (referralError) {
+      console.warn("Referral Delivery Zone save failed", referralError);
+    }
+
+    if (referralSaved === true) {
+      return { saved: true, error: null };
+    }
+
     const { data: updatedStop, error } = await supabase
       .from("mfi_stops")
       .update({
