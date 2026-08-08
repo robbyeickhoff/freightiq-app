@@ -19,9 +19,11 @@ Implement Founding Driver Program V0 from the approved
 Phases 2 through 5 are implemented and accepted. Phase 6 — End-to-End Verification — is complete
 across the physical iPhone, local website, and live Supabase foundation. Phase 7 — Driver #1 Launch
 Readiness — is in progress. Repository preflight and the controlled Driver #1 operating runbook are
-complete; current candidate distribution, website deployment, and final installed-build acceptance
-remain before launch. Production app and website deployment, real-driver enrollment, distribution,
-and release changes remain separately approval-gated before execution.
+complete; current private candidate distribution and iPhone acceptance are complete, while Android
+installed-build acceptance and authenticated production-website acceptance remain before launch.
+The Founding Driver website changes were automatically deployed to Production by the existing
+Vercel Git integration when their approved `main` commits were pushed. Real-driver enrollment,
+broader distribution, and public app release remain separately approval-gated before execution.
 
 ---
 
@@ -153,8 +155,9 @@ were preserved, and all program tables returned to zero rows. Website lint, Type
 production build, the unauthenticated-route smoke test, and the production dependency audit passed.
 The website framework was updated from Next.js 16.2.4 to the current secure 16.3.0 release after the
 dependency audit identified published framework and transitive production advisories. Website
-source was committed and pushed in `6aaf868`. No website deployment, real-driver enrollment,
-Auth-setting change, distribution, or release was performed.
+source was committed and pushed in `6aaf868`. The existing Vercel Git integration automatically
+created ready Production deployment `dpl_7hMvbWkdsAz86GzVGWBJBrFReThu` from that commit. No
+real-driver enrollment, Auth-setting change, app distribution, or public app release was performed.
 
 Phase 5 — Founding Driver Portal — is implemented and accepted on 2026-08-06. The existing Next.js
 website now has a protected Founding Driver sign-in and driver dashboard for active, qualified, or
@@ -172,7 +175,10 @@ operation-scoped participant and admin reads. Upload, replacement, removal, priv
 nonparticipant rejection, signed-out redirects, TypeScript, lint, production build, dependency
 audit, and advisor checks passed. The controlled Test Robby enrollment, image reference, and stored
 object were removed after acceptance; the Auth account and profile were preserved. No website
-deployment, real-driver enrollment, Auth-setting change, distribution, or release was performed.
+deployment was manually initiated, but the existing Vercel Git integration automatically created
+ready Production deployment `dpl_4ZyGWgg4GHo1LFyhJTAJ6j9Rj5Ze` from portal commit `c96ad46`.
+No real-driver enrollment, Auth-setting change, app distribution, or public app release was
+performed.
 
 Phase 6 — End-to-End Verification — is complete and accepted on 2026-08-07. A controlled Test
 Robby enrollment passed nonparticipant rejection, enrollment and Day 1, meaningful activity and
@@ -192,8 +198,10 @@ labels shared values as unsaved personal changes. Mobile TypeScript and lint pas
 same 11 pre-existing warnings. Website lint, TypeScript, and the production build passed. Supabase
 advisors reported no new Phase 6 finding. All temporary enrollments, activity events,
 contributions, reports, and 20 Phase 6 stops were removed; the Test Robby Auth account and profile
-were preserved. No deployment, real-driver enrollment, Auth-setting change, distribution, or
-release was performed.
+were preserved. The website password-visibility correction was pushed in `8cfea03`, and the
+existing Vercel Git integration automatically created ready Production deployment
+`dpl_RCZ5r8rZBsUMKEfsmbcd8YExLTs8` from that commit. No real-driver enrollment, Auth-setting
+change, broader app distribution, or public app release was performed.
 
 Phase 7 — Driver #1 Launch Readiness — was approved for implementation on 2026-08-08. The mobile
 TypeScript check, website lint, website production build, and mobile lint all passed; mobile lint
@@ -226,10 +234,20 @@ version 1.0.1:
   manually uploaded it to the existing Google Play Closed testing — Alpha track, and Google Play
   accepted the release for review. It was not uploaded or promoted to Production.
 
-No public app release, broader tester expansion, website deployment, real-driver enrollment,
-production Auth change, or production-data change occurred. Android installed-build acceptance
-remains pending until Google Play finishes its closed-track review and makes version code 18
-available to the approved testers.
+No public app release, broader tester expansion, real-driver enrollment, production Auth change,
+or production-data change occurred during the candidate-build unit. The website was already live
+through its automatic Git deployment. Android installed-build acceptance remains pending until
+Google Play finishes its closed-track review and makes version code 18 available to the approved
+testers.
+
+The Phase 7 deployment-state reconciliation was completed on 2026-08-08 after direct Vercel
+inspection showed that the approved website pushes had automatically deployed from `main`, contrary
+to the earlier operating-state record. Production currently serves website commit `8cfea03` through
+ready deployment `dpl_RCZ5r8rZBsUMKEfsmbcd8YExLTs8` on `freightiqapp.com`. The Founding Driver
+sign-in route returns successfully, signed-out driver and admin requests redirect to that protected
+sign-in route, no Vercel runtime errors were reported for the inspected 24-hour period, and a ready
+rollback candidate exists. Reconciliation was read-only and caused no deployment or configuration
+change.
 
 The focused duplicate-username cleanup was completed and committed to `clean-main` in
 `225c412` on 2026-08-05. Both profile save paths trim usernames and show the approved friendly
@@ -401,9 +419,11 @@ session data was lost.
 
 ## Next Safe Step
 
-Review and approve the Phase 7 candidate-build and private-distribution operating-state update,
-then commit and push the focused documentation change. After that, present the separately gated
-Founding Driver website deployment procedure. Do not deploy the website, enroll a real driver,
-change production Auth or data, expand distribution, or release without the corresponding explicit
-Product Owner approval. When Google Play makes Android version code 18 available, complete the
-same focused installed-build smoke test on the physical Pixel before Driver #1 launch.
+Review and approve the corrected Phase 7 deployment-state diff, then commit and push the focused
+documentation change. After that, complete authenticated production-website acceptance without
+enrolling a real driver or changing production data: confirm nonparticipant rejection and Robby's
+admin access. Separately obtain approval before any temporary test enrollment needed to validate
+the enrolled-driver production view. When Google Play makes Android version code 18 available,
+complete the same focused installed-build smoke test on the physical Pixel. Do not enroll Driver #1,
+change production Auth or data, expand distribution, or publicly release without the corresponding
+explicit Product Owner approval.
