@@ -16,14 +16,10 @@ answer one question:
 Implement Founding Driver Program V0 from the approved
 `docs/build-specs/FoundingDriverProgramV0.md` and approved Phase 1 implementation plan.
 
-Phase 2 — Supabase Foundation — is complete through Unit 6. The live foundation covers admin
-authority, enrollment, meaningful activity, qualifying-stop review, progress and rewards, the safe
-leaderboard, and private profile images. Phase 3 — Mobile Activity Capture — is implemented and
-accepted on physical iPhone and Pixel. Phase 4 — Robby's Admin Dashboard — is implemented and
-accepted in the browser. The narrow admin-access migration is live and verified; the website source
-is committed and pushed in `6aaf868` but remains undeployed. Production app, website deployment,
-real-driver enrollment, distribution, and release changes remain separately approval-gated before
-execution.
+Phases 2 through 5 are implemented and accepted. Phase 6 — End-to-End Verification — is complete
+across the physical iPhone, local website, and live Supabase foundation. Phase 7 — Driver #1 Launch
+Readiness — is next. Production app and website deployment, real-driver enrollment, distribution,
+and release changes remain separately approval-gated before execution.
 
 ---
 
@@ -176,6 +172,27 @@ audit, and advisor checks passed. The controlled Test Robby enrollment, image re
 object were removed after acceptance; the Auth account and profile were preserved. No website
 deployment, real-driver enrollment, Auth-setting change, distribution, or release was performed.
 
+Phase 6 — End-to-End Verification — is complete and accepted on 2026-08-07. A controlled Test
+Robby enrollment passed nonparticipant rejection, enrollment and Day 1, meaningful activity and
+same-day deduplication, new-stop and completed-existing-stop candidates, clarification and
+correction, counted review, duplicate-stop prevention, 9/9 below-threshold behavior, the 10/10 $25
+qualification reward, the 10/19 bonus boundary, the 10/20 $40 maximum reward, admin qualification,
+permanent Founding Driver recognition, final Paid recording, and driver/admin privacy isolation.
+The driver website, admin dashboard, mobile app, and live Supabase totals agreed at every verified
+checkpoint.
+
+Physical-iPhone testing exposed and accepted three focused corrections. The website sign-in now
+has an accessible password visibility control. FreightIQ search results now open the selected stop
+directly, dismiss the keyboard reliably, and bound Preview Card cache/report loading so the card
+cannot remain on `Checking…` indefinitely. The Intel Page now prefills existing shared Core Intel,
+keeps another driver's unchanged values out of the current driver's report payload, and no longer
+labels shared values as unsaved personal changes. Mobile TypeScript and lint passed with only the
+same 11 pre-existing warnings. Website lint, TypeScript, and the production build passed. Supabase
+advisors reported no new Phase 6 finding. All temporary enrollments, activity events,
+contributions, reports, and 20 Phase 6 stops were removed; the Test Robby Auth account and profile
+were preserved. No deployment, real-driver enrollment, Auth-setting change, distribution, or
+release was performed.
+
 The focused duplicate-username cleanup was completed and committed to `clean-main` in
 `225c412` on 2026-08-05. Both profile save paths trim usernames and show the approved friendly
 duplicate message, and the matching repository migration preserves case-insensitive,
@@ -325,8 +342,9 @@ session data was lost.
 ## Open Findings Outside the Completed Scope
 
 - Graceful recovery from an invalid persisted Supabase refresh token is implemented. The Product
-  Owner explicitly deferred the disruptive targeted invalid-token regression on 2026-08-04; it
-  remains unverified and must not be represented as passed.
+  Owner encountered the invalid-refresh-token development overlay once in Expo Go during Phase 6.
+  Dismissing it and reloading recovered successfully with no further error, but first-pass recovery
+  without a development overlay remains unverified and should continue to be monitored.
 - The focused place-search provider review remains open before any Mapbox replacement decision.
 - The pre-existing `public.rls_auto_enable()` execution warning, unavailable-on-Free leaked-password
   protection, older RLS initialization-plan performance warnings, and API-key review remain
@@ -345,10 +363,9 @@ session data was lost.
 
 ## Next Safe Step
 
-Inspect the existing private website architecture and the approved Phase 5 driver-experience
-requirements, then present one complete verified procedure for Phase 5 — Driver Website Experience.
-Define the smallest enrolled-driver access, personal progress, friendly leaderboard, and optional
-profile-image experience using the live Supabase foundation. Do not implement, deploy, enroll a real
-driver, or change production Auth or data during inspection. Obtain explicit Product Owner approval
-before Phase 5 implementation; website deployment, distribution, and release remain separately
-approval-gated.
+Inspect the approved Phase 7 requirements and current operating surfaces, then present one complete
+verified procedure for Phase 7 — Driver #1 Launch Readiness. Confirm the in-person enrollment,
+driver progress, review queue, reward operation, and website-unavailable fallback without deploying,
+enrolling a real driver, changing production Auth or data, expanding distribution, or releasing.
+Obtain explicit Product Owner approval before Phase 7 implementation or any separately gated
+deployment, distribution, or release action.
