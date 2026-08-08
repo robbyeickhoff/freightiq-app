@@ -240,7 +240,13 @@ website was committed and pushed in `782602a`. The existing Vercel Git integrati
 created ready Production deployment `dpl_FnF9AvWjA9zRyzNa3UnYe1LFt7G6` from the website commit.
 Automated production checks confirmed the public page, navigation, Member Sign In route, and
 general Early Access page with no build or runtime errors. No live request was submitted, no
-applicant was enrolled, and Driver #1 remains paused pending production acceptance.
+applicant was enrolled, and Driver #1 remains paused pending production acceptance. Product Owner
+production acceptance then passed the public page and controlled Request to Join flow. The request
+was stored as `founding_driver`, displayed the approved success state, and sent the clearly labeled
+`New FreightIQ Founding Drivers Program Request` notification. The controlled request row was
+deleted after approval; all 24 existing `early_access` rows remain and no Founding Driver test
+request remains. The amended public-website launch gate is complete without creating an account,
+enrollment, or 30-day clock.
 
 The Product Owner separately approved current candidate creation and private tester distribution
 on 2026-08-08. The initial candidates were built from clean, pushed commit `2765f0d` with FreightIQ
@@ -460,8 +466,6 @@ session data was lost.
 
 ## Next Safe Step
 
-Complete Product Owner visual acceptance of the production Founding Drivers public page and normal
-navigation. Then obtain separate approval before submitting one controlled live Founding Driver
-request, verify that it is stored as `founding_driver` and sends a clearly labeled notification,
-and resolve the test intake row through an approved cleanup decision. Do not expand distribution or
-enroll Driver #1 until the amended launch gate is fully accepted.
+Commit and push the completed production-acceptance record, then return to the Founding Driver #1
+launch runbook. Do not expand distribution or enroll Driver #1 without the corresponding explicit
+Product Owner approval.
