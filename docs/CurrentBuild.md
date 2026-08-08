@@ -229,6 +229,15 @@ manual Request to Join flow that distinguishes Founding Driver interest from gen
 It does not authorize automatic account creation, enrollment, a 30-day clock, deployment, live form
 submission, or real-driver participation. Driver #1 enrollment remains paused.
 
+The amendment implementation passed local website lint, TypeScript, production build, and visual
+acceptance on 2026-08-08. The approved production migration
+`20260808170330_add_founding_driver_request_type.sql` was applied and verified, preserving all 24
+existing requests as `early_access` while adding the constrained `founding_driver` request type and
+column-limited anonymous insert permission. Reconciled `notify-early-access` function version 7 is
+active and distinguishes the two request categories. Supabase advisors reported no new amendment
+warning. The website and source changes remain uncommitted and unpushed pending the separate sync
+gate; no live request was submitted, no applicant was enrolled, and Driver #1 remains paused.
+
 The Product Owner separately approved current candidate creation and private tester distribution
 on 2026-08-08. The initial candidates were built from clean, pushed commit `2765f0d` with FreightIQ
 version 1.0.1:
@@ -447,9 +456,9 @@ session data was lost.
 
 ## Next Safe Step
 
-Complete the public Founding Drivers website amendment pre-build inspection: verify both canonical
-repositories, reconcile the existing Early Access request and notification contracts, inspect the
-Privacy Policy and shared website surfaces, verify current official Supabase guidance, and present
-the exact implementation file scope and production migration procedure for approval. Do not change
-website code, production data or configuration, deploy, submit a live request, expand distribution,
-or enroll Driver #1 without the corresponding explicit Product Owner approval.
+Obtain explicit commit-and-push approval acknowledging that pushing the website `main` branch will
+trigger the existing automatic Vercel production deployment. Then commit the focused Supabase and
+active-build record changes to `clean-main`, commit the focused website changes to website `main`,
+push both verified commits, and verify the production public page and protected routes. Do not
+submit a live request, expand distribution, or enroll Driver #1 without the corresponding explicit
+Product Owner approval.
