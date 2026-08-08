@@ -19,8 +19,9 @@ Implement Founding Driver Program V0 from the approved
 Phases 2 through 5 are implemented and accepted. Phase 6 — End-to-End Verification — is complete
 across the physical iPhone, local website, and live Supabase foundation. Phase 7 — Driver #1 Launch
 Readiness — is in progress. Repository preflight and the controlled Driver #1 operating runbook are
-complete; current private candidate distribution and iPhone acceptance are complete, while Android
-installed-build acceptance and authenticated production-website acceptance remain before launch.
+complete; current private candidate distribution, iPhone acceptance, and authenticated
+production-website acceptance are complete, while Android installed-build acceptance remains
+before launch.
 The Founding Driver website changes were automatically deployed to Production by the existing
 Vercel Git integration when their approved `main` commits were pushed. Real-driver enrollment,
 broader distribution, and public app release remain separately approval-gated before execution.
@@ -249,6 +250,13 @@ sign-in route, no Vercel runtime errors were reported for the inspected 24-hour 
 rollback candidate exists. Reconciliation was read-only and caused no deployment or configuration
 change.
 
+Authenticated production-website acceptance passed on 2026-08-08. Production correctly rejected
+the non-enrolled Test Robby account, allowed Robby's administrator account to open the dashboard,
+and loaded the driver list, program statistics, and driver controls without error. After separate
+Product Owner approval, Test Robby was temporarily enrolled, successfully opened the enrolled
+driver dashboard, and was then changed to Withdrawn. A final sign-in attempt again returned the
+expected not-enrolled message, confirming that no active test enrollment remained.
+
 The focused duplicate-username cleanup was completed and committed to `clean-main` in
 `225c412` on 2026-08-05. Both profile save paths trim usernames and show the approved friendly
 duplicate message, and the matching repository migration preserves case-insensitive,
@@ -419,11 +427,8 @@ session data was lost.
 
 ## Next Safe Step
 
-Review and approve the corrected Phase 7 deployment-state diff, then commit and push the focused
-documentation change. After that, complete authenticated production-website acceptance without
-enrolling a real driver or changing production data: confirm nonparticipant rejection and Robby's
-admin access. Separately obtain approval before any temporary test enrollment needed to validate
-the enrolled-driver production view. When Google Play makes Android version code 18 available,
-complete the same focused installed-build smoke test on the physical Pixel. Do not enroll Driver #1,
-change production Auth or data, expand distribution, or publicly release without the corresponding
-explicit Product Owner approval.
+When Google Play makes Android version code 18 available to the approved closed-track testers,
+install it and complete the focused candidate smoke test on the physical Pixel. After Android
+acceptance, review the remaining Driver #1 launch gates and obtain explicit Product Owner approval
+before enrolling Driver #1. Do not change production Auth or data, expand distribution, promote an
+app candidate, or publicly release without the corresponding explicit Product Owner approval.
