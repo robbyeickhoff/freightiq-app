@@ -141,11 +141,28 @@ const MAPBOX_SESSION_MAX_AGE_MS = 175_000;
 const MAPBOX_SESSION_MAX_SUGGESTS = 49;
 const MIN_SEARCH_RADIUS_METERS = 25_000;
 const MAX_SEARCH_RADIUS_METERS = 250_000;
+const PREVIEW_LOCAL_CACHE_TIMEOUT_MS = 2_000;
+const PREVIEW_REPORT_STATS_TIMEOUT_MS = 12_000;
 
 const MAPBOX_TOKEN = (Constants.expoConfig?.extra?.mapboxPublicToken as string | undefined) ?? "";
 
 function stopKey(stopId: string) {
   return `mfi:stop:${stopId}:v1`;
+}
+
+async function resolveWithin<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        timeout = setTimeout(() => resolve(fallback), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 }
 
 function sanitizePins(input: any): Pin[] {
@@ -453,6 +470,7 @@ export default function HomeScreen() {
   const mergeStartedAtParam = String(params.mergeStartedAt ?? "");
   const hidePreviewParam = String(params.hidePreview ?? "") === "1";
   const mapRef = useRef<MapView | null>(null);
+  const searchInputRef = useRef<TextInput | null>(null);
 
   const [region, setRegion] = useState<Region>({
     latitude: 39.7392,
@@ -469,7 +487,6 @@ export default function HomeScreen() {
   const [stopLayerLoading, setStopLayerLoading] = useState(false);
   const stopLayerLoadingRef = useRef(false);
   const stopLayerRequestIdRef = useRef(0);
-  const [loading, setLoading] = useState(false);
   const [tempSearchPin, setTempSearchPin] = useState<Pin | null>(null);
   const [didSetInitialLocation, setDidSetInitialLocation] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
@@ -491,7 +508,6 @@ export default function HomeScreen() {
   const [recentCollapsed, setRecentCollapsed] = useState(false);
 
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
-  const [pendingSearchStopId, setPendingSearchStopId] = useState<string | null>(null);
   const [mergeSourceStopId, setMergeSourceStopId] = useState<string | null>(null);
   const [mergeMode, setMergeMode] = useState(false);
   const [mergeTargetStopId, setMergeTargetStopId] = useState<string | null>(null);
@@ -857,17 +873,6 @@ export default function HomeScreen() {
     loadCloudReportStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMapReady, pins, params.refreshAt]);
-
-  useEffect(() => {
-    if (!pendingSearchStopId) return;
-
-    const pendingPin = pins.find((p) => p.id === pendingSearchStopId);
-    if (!pendingPin) return;
-
-    setPendingSearchStopId(null);
-    jumpToStop(pendingPin);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingSearchStopId, pins]);
 
   useEffect(() => {
     const focusStopId = String(params.focusStopId ?? "");
@@ -1700,8 +1705,6 @@ export default function HomeScreen() {
   }
 
   async function selectStop(p: Pin, options?: { skipNearbyChoice?: boolean }) {
-    if (loading) return;
-
     setDeliveryZoneInspectionSource(null);
     setShowSelectedEntrance(false);
     setSelectedStopId(p.id);
@@ -1783,16 +1786,23 @@ export default function HomeScreen() {
     setPreviewVisible(true);
 
     try {
-      setLoading(true);
+      const reportStatsPromise = resolveWithin(
+        loadCloudReportStats([p.id]),
+        PREVIEW_REPORT_STATS_TIMEOUT_MS,
+        false,
+      );
 
       let parsed: StopIntel | null = null;
-
-      const raw = await AsyncStorage.getItem(stopKey(p.id));
+      const raw = await resolveWithin(
+        AsyncStorage.getItem(stopKey(p.id)),
+        PREVIEW_LOCAL_CACHE_TIMEOUT_MS,
+        null,
+      );
       if (raw) {
         parsed = JSON.parse(raw) as StopIntel;
       }
 
-      await loadSelectedEntranceForStop(p, raw);
+      void loadSelectedEntranceForStop(p, raw);
 
       const up = typeof parsed?.votesUp === "number" ? parsed.votesUp : 0;
       const down = typeof parsed?.votesDown === "number" ? parsed.votesDown : 0;
@@ -1807,7 +1817,7 @@ export default function HomeScreen() {
         [p.id]: { up, down },
       }));
 
-      const reportStatsLoaded = await loadCloudReportStats([p.id]);
+      const reportStatsLoaded = await reportStatsPromise;
 
       if (reportStatsRequestId === selectedReportStatsRequestIdRef.current) {
         setSelectedReportStatsStatus(reportStatsLoaded ? "resolved" : "error");
@@ -1816,8 +1826,6 @@ export default function HomeScreen() {
       if (reportStatsRequestId === selectedReportStatsRequestIdRef.current) {
         setSelectedReportStatsStatus("error");
       }
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -1835,20 +1843,18 @@ export default function HomeScreen() {
   }
 
   function selectFreightIqSearchResult(p: Pin) {
+    searchInputRef.current?.blur();
     Keyboard.dismiss();
+    setTimeout(() => {
+      searchInputRef.current?.blur();
+      Keyboard.dismiss();
+    }, 0);
     setQuery("");
     setFreightIqResults([]);
     setResults([]);
     setTempSearchPin(null);
-
-    const existingPin = pins.find((pin) => pin.id === p.id);
-    if (existingPin) {
-      jumpToStop(existingPin);
-      return;
-    }
-
-    setPendingSearchStopId(p.id);
     setPins((prev) => mergePinsById(prev, [p]));
+    jumpToStop(p, { skipNearbyChoice: true });
   }
 
   async function startDropAtCenter() {
@@ -2820,6 +2826,7 @@ export default function HomeScreen() {
         onResponderRelease={() => Keyboard.dismiss()}
       >
         <TextInput
+          ref={searchInputRef}
           onLayout={(event) => setSearchInputHeight(event.nativeEvent.layout.height)}
           value={query}
           onChangeText={setQuery}

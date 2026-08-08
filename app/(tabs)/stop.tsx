@@ -120,6 +120,47 @@ type ReportDraft = {
   notes: string;
 };
 
+type InheritedCoreIntel = {
+  deliveryType?: "Dock" | "Forklift" | "Liftgate";
+  truckFit?: "53'" | "48'" | "40'" | "28'";
+  backInRequired?: boolean;
+};
+
+function getSharedCoreIntel(reports: ReportRow[]) {
+  function getConsensus<T extends string | boolean>(values: T[]): T | null {
+    const counts = new Map<T, number>();
+    values.forEach((value) => counts.set(value, (counts.get(value) ?? 0) + 1));
+
+    const highestCount = Math.max(0, ...counts.values());
+    const winners = [...counts.entries()].filter(([, count]) => count === highestCount);
+    return highestCount > 0 && winners.length === 1 ? winners[0][0] : null;
+  }
+
+  return {
+    deliveryType: getConsensus(
+      reports
+        .map((report) => report.delivery_type)
+        .filter(
+          (value): value is "Dock" | "Forklift" | "Liftgate" =>
+            value === "Dock" || value === "Forklift" || value === "Liftgate",
+        ),
+    ),
+    truckFit: getConsensus(
+      reports
+        .map((report) => report.truck_fit)
+        .filter(
+          (value): value is "53'" | "48'" | "40'" | "28'" =>
+            value === "53'" || value === "48'" || value === "40'" || value === "28'",
+        ),
+    ),
+    backInRequired: getConsensus(
+      reports
+        .map((report) => report.back_in_required)
+        .filter((value): value is boolean => typeof value === "boolean"),
+    ),
+  };
+}
+
 function createReportSnapshot(draft: ReportDraft): string {
   return JSON.stringify([
     draft.deliverFromType,
@@ -352,6 +393,7 @@ export default function StopScreen() {
   const handledQuickIntelRequestRef = useRef<string | null>(null);
   const recordedStopIntelViewRef = useRef<string | null>(null);
   const returnToQuickIntelAfterEntranceRef = useRef(false);
+  const inheritedCoreIntelRef = useRef<InheritedCoreIntel>({});
   const [pickerMapType, setPickerMapType] = useState<"standard" | "satellite">("standard");
   const [entranceRegion, setEntranceRegion] = useState<Region>({
     latitude: lat || 39.7392,
@@ -375,13 +417,16 @@ export default function StopScreen() {
   const [reportsExpanded, setReportsExpanded] = useState(viewReports);
   const [reportsSectionY, setReportsSectionY] = useState(0);
   const reportIsSaved = Boolean(myReportId && savedReportSnapshot === currentReportSnapshot);
+  const inheritedCoreIntel = inheritedCoreIntelRef.current;
+  const hasOwnedCoreIntel =
+    (Boolean(truckFit) && inheritedCoreIntel.truckFit !== truckFit) ||
+    (Boolean(deliveryType) && inheritedCoreIntel.deliveryType !== deliveryType) ||
+    (backInRequired !== null && inheritedCoreIntel.backInRequired !== backInRequired);
   const reportHasContent = Boolean(
     deliverFromType ||
     deliverFromDetails ||
-    deliveryType ||
     approachHint ||
-    backInRequired !== null ||
-    truckFit ||
+    hasOwnedCoreIntel ||
     contactName ||
     contactPhones.some((phone) => phone.number.trim()) ||
     checkInNotes ||
@@ -718,18 +763,47 @@ export default function StopScreen() {
       setReports(hydrated);
 
       const mine = hydrated.find((r) => r.user_id === ownerUserId);
+      const sharedCoreIntel = getSharedCoreIntel(hydrated);
+      const loadedDeliveryType =
+        mine?.delivery_type === "Dock" ||
+        mine?.delivery_type === "Forklift" ||
+        mine?.delivery_type === "Liftgate"
+          ? mine.delivery_type
+          : (sharedCoreIntel.deliveryType ?? "");
+      const loadedTruckFit =
+        mine?.truck_fit === "53'" ||
+        mine?.truck_fit === "48'" ||
+        mine?.truck_fit === "40'" ||
+        mine?.truck_fit === "28'"
+          ? mine.truck_fit
+          : (sharedCoreIntel.truckFit ?? "");
+      const loadedBackInRequired =
+        typeof mine?.back_in_required === "boolean"
+          ? mine.back_in_required
+          : sharedCoreIntel.backInRequired;
+
+      inheritedCoreIntelRef.current = {
+        ...(mine?.delivery_type == null && sharedCoreIntel.deliveryType
+          ? { deliveryType: sharedCoreIntel.deliveryType }
+          : {}),
+        ...(mine?.truck_fit == null && sharedCoreIntel.truckFit
+          ? { truckFit: sharedCoreIntel.truckFit }
+          : {}),
+        ...(mine?.back_in_required == null && sharedCoreIntel.backInRequired !== null
+          ? { backInRequired: sharedCoreIntel.backInRequired }
+          : {}),
+      };
+
       if (mine) {
-        const loadedBackInRequired =
-          mine.back_in_required === true ? true : mine.back_in_required === false ? false : null;
         const loadedContact = readStructuredContact(mine);
 
         setMyReportId(mine.id);
         setDeliverFromType((mine.deliver_from_type as any) ?? "");
         setDeliverFromDetails(mine.deliver_from_details ?? "");
-        setDeliveryType((mine.delivery_type as any) ?? "");
+        setDeliveryType(loadedDeliveryType);
         setApproachHint(mine.approach_hint ?? "");
-        setBackInRequired(loadedBackInRequired);
-        setTruckFit(mine.truck_fit ?? "");
+        setBackInRequired(loadedBackInRequired ?? null);
+        setTruckFit(loadedTruckFit);
         setContactName(loadedContact.contactName);
         setContactPhones(loadedContact.phones);
         setCheckInNotes(loadedContact.checkInNotes);
@@ -738,10 +812,10 @@ export default function StopScreen() {
           createReportSnapshot({
             deliverFromType: mine.deliver_from_type ?? "",
             deliverFromDetails: mine.deliver_from_details ?? "",
-            deliveryType: mine.delivery_type ?? "",
+            deliveryType: loadedDeliveryType,
             approachHint: mine.approach_hint ?? "",
-            backInRequired: loadedBackInRequired,
-            truckFit: mine.truck_fit ?? "",
+            backInRequired: loadedBackInRequired ?? null,
+            truckFit: loadedTruckFit,
             contactName: loadedContact.contactName,
             contactPhones: loadedContact.phones,
             checkInNotes: loadedContact.checkInNotes,
@@ -753,10 +827,10 @@ export default function StopScreen() {
         setSavedReportSnapshot(null);
         setDeliverFromType("");
         setDeliverFromDetails("");
-        setDeliveryType("");
+        setDeliveryType(loadedDeliveryType);
         setApproachHint("");
-        setBackInRequired(null);
-        setTruckFit("");
+        setBackInRequired(loadedBackInRequired ?? null);
+        setTruckFit(loadedTruckFit);
         setContactName("");
         setContactPhones([]);
         setCheckInNotes("");
@@ -1132,16 +1206,22 @@ export default function StopScreen() {
       setLoading(true);
       Keyboard.dismiss();
 
+      const inheritedCoreIntel = inheritedCoreIntelRef.current;
+      const ownedDeliveryType =
+        inheritedCoreIntel.deliveryType === deliveryType ? null : deliveryType || null;
+      const ownedTruckFit = inheritedCoreIntel.truckFit === truckFit ? null : truckFit || null;
+      const ownedBackInRequired =
+        inheritedCoreIntel.backInRequired === backInRequired ? null : backInRequired;
       const payload = {
         id: myReportId ?? undefined,
         stop_id: stopId,
         user_id: userId,
         deliver_from_type: deliverFromType || null,
         deliver_from_details: deliverFromDetails || null,
-        delivery_type: deliveryType || null,
+        delivery_type: ownedDeliveryType,
         approach_hint: approachHint || null,
-        back_in_required: backInRequired,
-        truck_fit: truckFit || null,
+        back_in_required: ownedBackInRequired,
+        truck_fit: ownedTruckFit,
         contact: legacyContact,
         contact_name: structuredContact.contactName || null,
         contact_phones: structuredContact.phones.length ? structuredContact.phones : null,
@@ -1208,8 +1288,11 @@ export default function StopScreen() {
   }
 
   async function saveQuickIntel() {
+    const inheritedCoreIntel = inheritedCoreIntelRef.current;
     const hasReportCoreIntel =
-      Boolean(truckFit) || Boolean(deliveryType) || backInRequired !== null;
+      (Boolean(truckFit) && inheritedCoreIntel.truckFit !== truckFit) ||
+      (Boolean(deliveryType) && inheritedCoreIntel.deliveryType !== deliveryType) ||
+      (backInRequired !== null && inheritedCoreIntel.backInRequired !== backInRequired);
 
     if (!myReportId && !hasReportCoreIntel) {
       setQuickIntelOpen(false);
