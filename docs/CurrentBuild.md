@@ -210,6 +210,27 @@ capture continues while program-changing admin actions pause. Direct Table Edito
 mutations are explicitly excluded from fallback operation. No application code, schema, production
 data, Auth setting, deployment, distribution, or release state changed during this readiness unit.
 
+The Product Owner separately approved current candidate creation and private tester distribution
+on 2026-08-08. Both candidates were built from clean, pushed commit `2765f0d` with FreightIQ
+version 1.0.1:
+
+- iOS build 36 (`d6b12a51-ac4a-422b-862e-35e71a40629a`) completed successfully and was scheduled
+  through EAS submission `2279ecba-06c6-481b-9ef2-deec14769473` for the existing internal
+  TestFlight group. App Store Connect processed the build, TestFlight offered it as an update, and
+  the Product Owner installed it on the physical iPhone. Acceptance passed launch and sign-in, map
+  loading, search-result selection and keyboard dismissal, Preview Card hydration, Intel Page and
+  Preview Card consistency, repeated stop opening, and session recovery after a full app close.
+- Android version code 18 (`d0ffec5d-46e4-4072-8ec4-09279c7e4fc9`) completed successfully. Its
+  signed 70 MB AAB was verified as a ZIP-format Android App Bundle with SHA-256
+  `e50ad8597e9de33eef24979f0c27e959b78b4a212fa87d07fae0d595c5bb6578`. The Product Owner
+  manually uploaded it to the existing Google Play Closed testing — Alpha track, and Google Play
+  accepted the release for review. It was not uploaded or promoted to Production.
+
+No public app release, broader tester expansion, website deployment, real-driver enrollment,
+production Auth change, or production-data change occurred. Android installed-build acceptance
+remains pending until Google Play finishes its closed-track review and makes version code 18
+available to the approved testers.
+
 The focused duplicate-username cleanup was completed and committed to `clean-main` in
 `225c412` on 2026-08-05. Both profile save paths trim usernames and show the approved friendly
 duplicate message, and the matching repository migration preserves case-insensitive,
@@ -380,8 +401,9 @@ session data was lost.
 
 ## Next Safe Step
 
-Review and approve the Phase 7 readiness documentation diff. After that approval, commit and push
-the focused documentation change. Then present the separately gated candidate-build creation and
-private tester distribution procedure. Do not build, submit, deploy, enroll a real driver, change
-production Auth or data, expand distribution, or release without the corresponding explicit
-Product Owner approval.
+Review and approve the Phase 7 candidate-build and private-distribution operating-state update,
+then commit and push the focused documentation change. After that, present the separately gated
+Founding Driver website deployment procedure. Do not deploy the website, enroll a real driver,
+change production Auth or data, expand distribution, or release without the corresponding explicit
+Product Owner approval. When Google Play makes Android version code 18 available, complete the
+same focused installed-build smoke test on the physical Pixel before Driver #1 launch.
