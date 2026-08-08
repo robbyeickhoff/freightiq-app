@@ -13,8 +13,8 @@ answer one question:
 
 ## Current Objective
 
-Implement Founding Driver Program V0 from the approved
-`docs/build-specs/FoundingDriverProgramV0.md` and approved Phase 1 implementation plan.
+Implement the public Founding Drivers website amendment from the approved
+`docs/build-specs/FreightIQFoundingDriversPublicWebsiteBuildSpec.md` before enrolling Driver #1.
 
 Phases 2 through 5 are implemented and accepted. Phase 6 — End-to-End Verification — is complete
 across the physical iPhone, local website, and live Supabase foundation. Phase 7 — Driver #1 Launch
@@ -22,7 +22,8 @@ Readiness — is in progress. Repository preflight and the controlled Driver #1 
 complete; current private candidate distribution, iPhone acceptance, and authenticated
 production-website acceptance are complete. Android version code 19 supersedes version code 18 and
 has completed installed-build acceptance on the physical Pixel. The remaining work is to review the
-Driver #1 launch gates before any real-driver enrollment.
+new public-page, member-access, and request-intake pre-build state. Driver #1 enrollment is paused
+until the amendment is implemented, deployed, and accepted in production.
 The Founding Driver website changes were automatically deployed to Production by the existing
 Vercel Git integration when their approved `main` commits were pushed. Real-driver enrollment,
 broader distribution, and public app release remain separately approval-gated before execution.
@@ -219,6 +220,14 @@ production Supabase; if both hosted and local admin surfaces are unavailable, mo
 capture continues while program-changing admin actions pause. Direct Table Editor and ad-hoc SQL
 mutations are explicitly excluded from fallback operation. No application code, schema, production
 data, Auth setting, deployment, distribution, or release state changed during this readiness unit.
+
+The Product Owner approved the Founding Drivers public website amendment on 2026-08-08 after the
+launch-gate review identified that the existing protected dashboard had no normal public entry point
+and Program V0 explicitly excluded public recruitment. The approved amendment adds a public
+`/founding-drivers-program` explanation page, visible website navigation, Member Sign In, and a
+manual Request to Join flow that distinguishes Founding Driver interest from general Early Access.
+It does not authorize automatic account creation, enrollment, a 30-day clock, deployment, live form
+submission, or real-driver participation. Driver #1 enrollment remains paused.
 
 The Product Owner separately approved current candidate creation and private tester distribution
 on 2026-08-08. The initial candidates were built from clean, pushed commit `2765f0d` with FreightIQ
@@ -438,7 +447,9 @@ session data was lost.
 
 ## Next Safe Step
 
-Review the remaining Driver #1 launch gates in the approved operating runbook and present the exact
-controlled enrollment procedure for Product Owner approval before enrolling Driver #1. Do not
-change production Auth or data, expand distribution, promote an app candidate, or publicly release
-without the corresponding explicit Product Owner approval.
+Complete the public Founding Drivers website amendment pre-build inspection: verify both canonical
+repositories, reconcile the existing Early Access request and notification contracts, inspect the
+Privacy Policy and shared website surfaces, verify current official Supabase guidance, and present
+the exact implementation file scope and production migration procedure for approval. Do not change
+website code, production data or configuration, deploy, submit a live request, expand distribution,
+or enroll Driver #1 without the corresponding explicit Product Owner approval.
