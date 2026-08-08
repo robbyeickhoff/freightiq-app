@@ -18,7 +18,9 @@ Implement Founding Driver Program V0 from the approved
 
 Phases 2 through 5 are implemented and accepted. Phase 6 — End-to-End Verification — is complete
 across the physical iPhone, local website, and live Supabase foundation. Phase 7 — Driver #1 Launch
-Readiness — is next. Production app and website deployment, real-driver enrollment, distribution,
+Readiness — is in progress. Repository preflight and the controlled Driver #1 operating runbook are
+complete; current candidate distribution, website deployment, and final installed-build acceptance
+remain before launch. Production app and website deployment, real-driver enrollment, distribution,
 and release changes remain separately approval-gated before execution.
 
 ---
@@ -193,6 +195,21 @@ contributions, reports, and 20 Phase 6 stops were removed; the Test Robby Auth a
 were preserved. No deployment, real-driver enrollment, Auth-setting change, distribution, or
 release was performed.
 
+Phase 7 — Driver #1 Launch Readiness — was approved for implementation on 2026-08-08. The mobile
+TypeScript check, website lint, website production build, and mobile lint all passed; mobile lint
+retains only the same 11 pre-existing warnings already accepted in Phases 3 and 6. The current
+Supabase changelog was reviewed for relevant breaking changes, and none invalidates the approved
+Founding Driver implementation. The upcoming Data API default-grant enforcement is already met by
+the program migrations' explicit table, view, and function grants.
+
+`docs/operations/FoundingDriverLaunchRunbook.md` now defines the launch gates, in-person
+walkthrough, enrollment and Day 1 checks, normal review and reward routine, stop conditions, and a
+website-unavailable fallback. The fallback uses the same protected website locally against
+production Supabase; if both hosted and local admin surfaces are unavailable, mobile contribution
+capture continues while program-changing admin actions pause. Direct Table Editor and ad-hoc SQL
+mutations are explicitly excluded from fallback operation. No application code, schema, production
+data, Auth setting, deployment, distribution, or release state changed during this readiness unit.
+
 The focused duplicate-username cleanup was completed and committed to `clean-main` in
 `225c412` on 2026-08-05. Both profile save paths trim usernames and show the approved friendly
 duplicate message, and the matching repository migration preserves case-insensitive,
@@ -363,9 +380,8 @@ session data was lost.
 
 ## Next Safe Step
 
-Inspect the approved Phase 7 requirements and current operating surfaces, then present one complete
-verified procedure for Phase 7 — Driver #1 Launch Readiness. Confirm the in-person enrollment,
-driver progress, review queue, reward operation, and website-unavailable fallback without deploying,
-enrolling a real driver, changing production Auth or data, expanding distribution, or releasing.
-Obtain explicit Product Owner approval before Phase 7 implementation or any separately gated
-deployment, distribution, or release action.
+Review and approve the Phase 7 readiness documentation diff. After that approval, commit and push
+the focused documentation change. Then present the separately gated candidate-build creation and
+private tester distribution procedure. Do not build, submit, deploy, enroll a real driver, change
+production Auth or data, expand distribution, or release without the corresponding explicit
+Product Owner approval.
