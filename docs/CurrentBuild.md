@@ -20,8 +20,9 @@ Phases 2 through 5 are implemented and accepted. Phase 6 — End-to-End Verifica
 across the physical iPhone, local website, and live Supabase foundation. Phase 7 — Driver #1 Launch
 Readiness — is in progress. Repository preflight and the controlled Driver #1 operating runbook are
 complete; current private candidate distribution, iPhone acceptance, and authenticated
-production-website acceptance are complete, while Android installed-build acceptance remains
-before launch.
+production-website acceptance are complete. Android version code 19 supersedes version code 18 and
+has completed installed-build acceptance on the physical Pixel. The remaining work is to review the
+Driver #1 launch gates before any real-driver enrollment.
 The Founding Driver website changes were automatically deployed to Production by the existing
 Vercel Git integration when their approved `main` commits were pushed. Real-driver enrollment,
 broader distribution, and public app release remain separately approval-gated before execution.
@@ -220,7 +221,7 @@ mutations are explicitly excluded from fallback operation. No application code, 
 data, Auth setting, deployment, distribution, or release state changed during this readiness unit.
 
 The Product Owner separately approved current candidate creation and private tester distribution
-on 2026-08-08. Both candidates were built from clean, pushed commit `2765f0d` with FreightIQ
+on 2026-08-08. The initial candidates were built from clean, pushed commit `2765f0d` with FreightIQ
 version 1.0.1:
 
 - iOS build 36 (`d6b12a51-ac4a-422b-862e-35e71a40629a`) completed successfully and was scheduled
@@ -233,13 +234,23 @@ version 1.0.1:
   signed 70 MB AAB was verified as a ZIP-format Android App Bundle with SHA-256
   `e50ad8597e9de33eef24979f0c27e959b78b4a212fa87d07fae0d595c5bb6578`. The Product Owner
   manually uploaded it to the existing Google Play Closed testing — Alpha track, and Google Play
-  accepted the release for review. It was not uploaded or promoted to Production.
+  accepted the release for review. Physical-Pixel acceptance passed the functional smoke test but
+  exposed a missing Profile tab icon specific to Android, so version code 18 was not accepted.
+
+The missing icon was traced to the absent Android fallback mapping for the iOS `person.fill`
+symbol. The approved one-line correction mapped it to Material Icons' `person`, passed TypeScript
+and lint with zero errors and the same 11 accepted warnings, and was committed in `9d1bd17`.
+Android version code 19 (`01343921-9bc5-4ff7-aa29-0f24a86cd614`) was built from that clean, pushed
+commit. Its verified 70 MB AAB has SHA-256
+`d41bb8f36180e7471085e7959ac2e42c16d4ce3e91888c282e4bf8205ca12f22`. The Product Owner uploaded
+it to Google Play Closed testing — Alpha, installed the reviewed update on the physical Pixel, and
+confirmed the Profile icon in inactive and selected states, Profile navigation, map search and
+keyboard dismissal, Preview Card hydration, and session recovery after a full app close. Version
+code 19 is the accepted Android candidate and was not promoted to Production.
 
 No public app release, broader tester expansion, real-driver enrollment, production Auth change,
-or production-data change occurred during the candidate-build unit. The website was already live
-through its automatic Git deployment. Android installed-build acceptance remains pending until
-Google Play finishes its closed-track review and makes version code 18 available to the approved
-testers.
+or production-data change occurred during the candidate-build units. The website was already live
+through its automatic Git deployment.
 
 The Phase 7 deployment-state reconciliation was completed on 2026-08-08 after direct Vercel
 inspection showed that the approved website pushes had automatically deployed from `main`, contrary
@@ -427,8 +438,7 @@ session data was lost.
 
 ## Next Safe Step
 
-When Google Play makes Android version code 18 available to the approved closed-track testers,
-install it and complete the focused candidate smoke test on the physical Pixel. After Android
-acceptance, review the remaining Driver #1 launch gates and obtain explicit Product Owner approval
-before enrolling Driver #1. Do not change production Auth or data, expand distribution, promote an
-app candidate, or publicly release without the corresponding explicit Product Owner approval.
+Review the remaining Driver #1 launch gates in the approved operating runbook and present the exact
+controlled enrollment procedure for Product Owner approval before enrolling Driver #1. Do not
+change production Auth or data, expand distribution, promote an app candidate, or publicly release
+without the corresponding explicit Product Owner approval.
