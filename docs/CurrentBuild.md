@@ -235,8 +235,12 @@ acceptance on 2026-08-08. The approved production migration
 existing requests as `early_access` while adding the constrained `founding_driver` request type and
 column-limited anonymous insert permission. Reconciled `notify-early-access` function version 7 is
 active and distinguishes the two request categories. Supabase advisors reported no new amendment
-warning. The website and source changes remain uncommitted and unpushed pending the separate sync
-gate; no live request was submitted, no applicant was enrolled, and Driver #1 remains paused.
+warning. The backend source and active-build record were committed and pushed in `cc2a9be`; the
+website was committed and pushed in `782602a`. The existing Vercel Git integration automatically
+created ready Production deployment `dpl_FnF9AvWjA9zRyzNa3UnYe1LFt7G6` from the website commit.
+Automated production checks confirmed the public page, navigation, Member Sign In route, and
+general Early Access page with no build or runtime errors. No live request was submitted, no
+applicant was enrolled, and Driver #1 remains paused pending production acceptance.
 
 The Product Owner separately approved current candidate creation and private tester distribution
 on 2026-08-08. The initial candidates were built from clean, pushed commit `2765f0d` with FreightIQ
@@ -456,9 +460,8 @@ session data was lost.
 
 ## Next Safe Step
 
-Obtain explicit commit-and-push approval acknowledging that pushing the website `main` branch will
-trigger the existing automatic Vercel production deployment. Then commit the focused Supabase and
-active-build record changes to `clean-main`, commit the focused website changes to website `main`,
-push both verified commits, and verify the production public page and protected routes. Do not
-submit a live request, expand distribution, or enroll Driver #1 without the corresponding explicit
-Product Owner approval.
+Complete Product Owner visual acceptance of the production Founding Drivers public page and normal
+navigation. Then obtain separate approval before submitting one controlled live Founding Driver
+request, verify that it is stored as `founding_driver` and sends a clearly labeled notification,
+and resolve the test intake row through an approved cleanup decision. Do not expand distribution or
+enroll Driver #1 until the amended launch gate is fully accepted.
