@@ -442,7 +442,7 @@ session data was lost.
 
 ---
 
-## Referral Program V1 — Engineering Complete, User Test Pending
+## Referral Program V1 — Accepted
 
 The Product Owner approved Referral Program V1 for every FreightIQ user on 2026-08-08. The live
 database now assigns each user a unique referral code, captures that code only during new-account
@@ -452,9 +452,17 @@ the narrow Delivery Zone contribution path without leaving test records in Produ
 
 The mobile app now provides a Refer a Driver screen with a scannable QR code and matching share
 link, accepts and validates a referral code during account creation, and shows referral progress.
-The website now resolves `/join/{code}` invitation pages, and the existing admin area now includes
-referral review, qualification, and payment controls. Automated type, lint, production-build, and
-database checks pass. Physical user testing and release/deployment remain the next gates.
+The website resolves `/join/{code}` invitation pages, and the existing admin area includes detailed
+stop review, qualification, and payment controls.
+
+The Product Owner completed the referral acceptance test on 2026-08-08. The QR invitation, new-
+account association, referrer progress, accelerated 5-day and 5-stop progress, admin review,
+qualification, both $5 rewards, and Paid recording all passed. The test also exposed and resolved
+the missing post-verification referral handoff and a startup-routing regression. All temporary
+activity, contributions, and rewards were removed after acceptance. Automated type, lint,
+production-build, database, and security-advisor checks pass. The installed-app **Open in
+FreightIQ** handoff remains pending verification during the next normal TestFlight build; no
+special build is required solely for that check.
 
 ---
 
@@ -482,6 +490,6 @@ database checks pass. Physical user testing and release/deployment remain the ne
 
 ## Next Safe Step
 
-Run the Product Owner referral test with one referrer and one newly created account. If accepted,
-commit and push the app and website changes through their canonical branches, then use the normal
-release process for any tester distribution change.
+Resume the normal FreightIQ release workflow. During the next approved TestFlight build, verify
+that **Open in FreightIQ** from the referral admin page opens the selected Stop Intel screen in the
+installed app. Do not create a separate build solely for that deferred check.
