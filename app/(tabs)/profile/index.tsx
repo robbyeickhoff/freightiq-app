@@ -160,7 +160,7 @@ export default function ProfileScreen() {
             <Pressable
               accessibilityHint="Opens your referral QR code, link, and progress"
               accessibilityRole="button"
-              onPress={() => router.push("./refer-a-driver")}
+              onPress={() => router.push("/(tabs)/profile/refer-a-driver")}
               style={({ pressed }) => [
                 styles.settingsRow,
                 { backgroundColor: colors.surfaceElevated },
