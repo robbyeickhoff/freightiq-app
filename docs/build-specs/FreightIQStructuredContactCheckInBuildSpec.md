@@ -1,5 +1,36 @@
 # FreightIQ Structured Contact / Check-In — Focused Build Specification
 
+## 2026-08-09 Approved Amendment — Multiple Named Contacts
+
+The Product Owner approved a focused amendment after real-world use exposed that a report could
+store several phone numbers but only one contact name. The amendment adds an additive
+`contact_people` JSON structure containing ordered named contacts and ordered typed phone numbers.
+The five-phone maximum remains global across the entire report, and Check-In Notes remain shared.
+
+Existing structured or legacy contact information becomes Contact 1 in memory. Viewing does not
+rewrite it. New-client saves write `contact_people`, continue populating the original structured
+columns for older clients, and continue composing the readable legacy `contact` value. The editor
+uses repeatable contact cards with add/remove-contact and add/remove-phone actions. Driver Reports
+group each phone beneath its correct contact name.
+
+This amendment authorizes local implementation and verification only. Production migration,
+commit, push, build, distribution, deployment, and release remain separately approval-gated.
+
+The Product Owner separately approved the additive production migration on 2026-08-09. Migration
+`20260809120000_add_multiple_contact_people.sql` was applied through the linked repository-backed
+workflow and verified in production: the column and all three constraints are present, the
+migration is recorded, the four existing report policies remain, and all 243 reports were
+preserved with zero `contact_people` rows backfilled or rewritten. Hosted advisors found no new
+finding from the amendment.
+
+Physical iPhone and Pixel acceptance passed on 2026-08-09. The Product Owner created five named
+contacts with one phone number each, added a sixth name without exceeding the five-phone report
+limit, saved and reopened the report, confirmed every number remained grouped under the correct
+name in Driver Reports, verified Call and Message actions, and deleted the test content. A focused
+keyboard correction also passed on both devices: editing an earlier contact name or number keeps
+the active field visible instead of scrolling to the bottom of the full contact section. Commit,
+push, build, distribution, deployment, and release remain separately approval-gated.
+
 > **Status: Implemented, accepted, committed, and pushed — 2026-08-01**
 >
 > This specification improves only Contact / Check-In inside Additional Driver Intel. It preserves

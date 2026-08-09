@@ -7,9 +7,13 @@ export type ContactPhone = {
   number: string;
 };
 
-export type StructuredContact = {
-  contactName: string;
+export type ContactPerson = {
+  name: string;
   phones: ContactPhone[];
+};
+
+export type StructuredContact = {
+  people: ContactPerson[];
   checkInNotes: string;
 };
 
@@ -97,11 +101,31 @@ export function sanitizeContactPhones(value: unknown): ContactPhone[] {
     .filter((row): row is ContactPhone => row !== null);
 }
 
+export function sanitizeContactPeople(value: unknown): ContactPerson[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((person): ContactPerson | null => {
+      if (!person || typeof person !== "object") return null;
+
+      const candidate = person as { name?: unknown; phones?: unknown };
+      const name = typeof candidate.name === "string" ? candidate.name.trim().slice(0, 100) : "";
+      const phones = sanitizeContactPhones(candidate.phones);
+      return name || phones.length ? { name, phones } : null;
+    })
+    .filter((person): person is ContactPerson => person !== null)
+    .reduce<ContactPerson[]>((people, person) => {
+      const phoneCount = people.reduce((count, current) => count + current.phones.length, 0);
+      if (phoneCount >= 5) return person.name ? [...people, { ...person, phones: [] }] : people;
+      return [...people, { ...person, phones: person.phones.slice(0, 5 - phoneCount) }];
+    }, []);
+}
+
 const LEGACY_PHONE_PATTERN = /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g;
 
 export function adaptLegacyContact(contact: string | null | undefined): StructuredContact {
   const source = contact?.trim() ?? "";
-  if (!source) return { contactName: "", phones: [], checkInNotes: "" };
+  if (!source) return { people: [], checkInNotes: "" };
 
   const matches = [...source.matchAll(LEGACY_PHONE_PATTERN)].slice(0, 5);
   const phones = matches.map((match) => ({
@@ -114,15 +138,24 @@ export function adaptLegacyContact(contact: string | null | undefined): Structur
     .replace(/\s+([,;|])/g, "$1")
     .trim();
 
-  return { contactName: "", phones, checkInNotes };
+  return { people: phones.length ? [{ name: "", phones }] : [], checkInNotes };
 }
 
 export function readStructuredContact(report: {
   contact?: string | null;
+  contact_people?: unknown;
   contact_name?: string | null;
   contact_phones?: unknown;
   check_in_notes?: string | null;
 }): StructuredContact {
+  const structuredPeople = sanitizeContactPeople(report.contact_people);
+  if (structuredPeople.length) {
+    return {
+      people: structuredPeople,
+      checkInNotes: report.check_in_notes?.trim() ?? "",
+    };
+  }
+
   const structuredPhones = sanitizeContactPhones(report.contact_phones);
   const hasStructuredValue = Boolean(
     report.contact_name?.trim() || structuredPhones.length || report.check_in_notes?.trim(),
@@ -130,19 +163,24 @@ export function readStructuredContact(report: {
 
   if (!hasStructuredValue) return adaptLegacyContact(report.contact);
 
+  const contactName = report.contact_name?.trim() ?? "";
   return {
-    contactName: report.contact_name?.trim() ?? "",
-    phones: structuredPhones,
+    people:
+      contactName || structuredPhones.length
+        ? [{ name: contactName, phones: structuredPhones }]
+        : [],
     checkInNotes: report.check_in_notes?.trim() ?? "",
   };
 }
 
 export function composeLegacyContact(contact: StructuredContact): string | null {
   const lines = [
-    contact.contactName.trim(),
-    ...contact.phones
-      .filter((phone) => isValidPhone(phone.number))
-      .map((phone) => `${phoneTypeLabel(phone.type)}: ${formatPhoneDisplay(phone.number)}`),
+    ...contact.people.flatMap((person) => [
+      person.name.trim(),
+      ...person.phones
+        .filter((phone) => isValidPhone(phone.number))
+        .map((phone) => `${phoneTypeLabel(phone.type)}: ${formatPhoneDisplay(phone.number)}`),
+    ]),
     contact.checkInNotes.trim(),
   ].filter(Boolean);
 

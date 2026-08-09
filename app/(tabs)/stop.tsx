@@ -36,6 +36,7 @@ import {
   composeLegacyContact,
   CONTACT_PHONE_LABELS,
   CONTACT_PHONE_TYPES,
+  type ContactPerson,
   type ContactPhone,
   dialablePhone,
   formatPhoneDisplay,
@@ -93,6 +94,7 @@ type ReportRow = {
   back_in_required: boolean | null;
   truck_fit: string | null;
   contact: string | null;
+  contact_people: unknown;
   contact_name: string | null;
   contact_phones: unknown;
   check_in_notes: string | null;
@@ -114,8 +116,7 @@ type ReportDraft = {
   approachHint: string;
   backInRequired: boolean | null;
   truckFit: string;
-  contactName: string;
-  contactPhones: ContactPhone[];
+  contactPeople: ContactPerson[];
   checkInNotes: string;
   notes: string;
 };
@@ -169,8 +170,7 @@ function createReportSnapshot(draft: ReportDraft): string {
     draft.approachHint,
     draft.backInRequired,
     draft.truckFit,
-    draft.contactName,
-    draft.contactPhones,
+    draft.contactPeople,
     draft.checkInNotes,
     draft.notes,
   ]);
@@ -220,8 +220,7 @@ type StopIntel = {
   backInRequired?: boolean | null;
   truckFit?: string;
   contact?: string;
-  contactName?: string;
-  contactPhones?: ContactPhone[];
+  contactPeople?: ContactPerson[];
   checkInNotes?: string;
   notes?: string;
   entranceLat?: number;
@@ -287,12 +286,6 @@ function fitDeliveryZonePreviewMap(
 export default function StopScreen() {
   const scrollViewRef = useRef<ScrollView | null>(null);
   const additionalIntelScrollRef = useRef<ScrollView | null>(null);
-  const additionalIntelViewportHeightRef = useRef(0);
-  const additionalIntelCardYRef = useRef(0);
-  const contactEditorYRef = useRef(0);
-  const contactEditorHeightRef = useRef(0);
-  const contactFieldFocusedRef = useRef(false);
-  const keyboardTopRef = useRef<number | null>(null);
   const deliveryZonePreviewMapRef = useRef<MapView | null>(null);
   const router = useRouter();
   const isFocused = useIsFocused();
@@ -344,8 +337,7 @@ export default function StopScreen() {
   const [approachHint, setApproachHint] = useState("");
   const [backInRequired, setBackInRequired] = useState<boolean | null>(null);
   const [truckFit, setTruckFit] = useState("");
-  const [contactName, setContactName] = useState("");
-  const [contactPhones, setContactPhones] = useState<ContactPhone[]>([]);
+  const [contactPeople, setContactPeople] = useState<ContactPerson[]>([]);
   const [checkInNotes, setCheckInNotes] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -358,8 +350,7 @@ export default function StopScreen() {
         approachHint,
         backInRequired,
         truckFit,
-        contactName,
-        contactPhones,
+        contactPeople,
         checkInNotes,
         notes,
       }),
@@ -367,8 +358,7 @@ export default function StopScreen() {
       approachHint,
       backInRequired,
       checkInNotes,
-      contactName,
-      contactPhones,
+      contactPeople,
       deliverFromDetails,
       deliverFromType,
       deliveryType,
@@ -427,8 +417,9 @@ export default function StopScreen() {
     deliverFromDetails ||
     approachHint ||
     hasOwnedCoreIntel ||
-    contactName ||
-    contactPhones.some((phone) => phone.number.trim()) ||
+    contactPeople.some(
+      (person) => person.name.trim() || person.phones.some((phone) => phone.number.trim()),
+    ) ||
     checkInNotes ||
     notes,
   );
@@ -804,8 +795,7 @@ export default function StopScreen() {
         setApproachHint(mine.approach_hint ?? "");
         setBackInRequired(loadedBackInRequired ?? null);
         setTruckFit(loadedTruckFit);
-        setContactName(loadedContact.contactName);
-        setContactPhones(loadedContact.phones);
+        setContactPeople(loadedContact.people);
         setCheckInNotes(loadedContact.checkInNotes);
         setNotes(mine.notes ?? "");
         setSavedReportSnapshot(
@@ -816,8 +806,7 @@ export default function StopScreen() {
             approachHint: mine.approach_hint ?? "",
             backInRequired: loadedBackInRequired ?? null,
             truckFit: loadedTruckFit,
-            contactName: loadedContact.contactName,
-            contactPhones: loadedContact.phones,
+            contactPeople: loadedContact.people,
             checkInNotes: loadedContact.checkInNotes,
             notes: mine.notes ?? "",
           }),
@@ -831,8 +820,7 @@ export default function StopScreen() {
         setApproachHint("");
         setBackInRequired(loadedBackInRequired ?? null);
         setTruckFit(loadedTruckFit);
-        setContactName("");
-        setContactPhones([]);
+        setContactPeople([]);
         setCheckInNotes("");
         setNotes("");
       }
@@ -1008,28 +996,68 @@ export default function StopScreen() {
     });
   }
 
-  function addContactPhone() {
-    setContactPhones((previous) => {
-      if (previous.length >= 5) return previous;
-
-      return [
-        ...previous,
-        {
-          type: previous.length === 0 ? "receiving" : null,
-          number: "",
-        },
-      ];
-    });
+  function contactPhoneCount(people = contactPeople) {
+    return people.reduce((count, person) => count + person.phones.length, 0);
   }
 
-  function updateContactPhone(index: number, update: Partial<ContactPhone>) {
-    setContactPhones((previous) =>
-      previous.map((phone, phoneIndex) => (phoneIndex === index ? { ...phone, ...update } : phone)),
+  function addContactPerson() {
+    setContactPeople((previous) => [...previous, { name: "", phones: [] }]);
+  }
+
+  function updateContactPersonName(personIndex: number, name: string) {
+    setContactPeople((previous) =>
+      previous.map((person, index) => (index === personIndex ? { ...person, name } : person)),
     );
   }
 
-  function removeContactPhone(index: number) {
-    setContactPhones((previous) => previous.filter((_, phoneIndex) => phoneIndex !== index));
+  function removeContactPerson(personIndex: number) {
+    setContactPeople((previous) => previous.filter((_, index) => index !== personIndex));
+  }
+
+  function addContactPhone(personIndex: number) {
+    setContactPeople((previous) => {
+      if (contactPhoneCount(previous) >= 5) return previous;
+      return previous.map((person, index) =>
+        index === personIndex
+          ? {
+              ...person,
+              phones: [
+                ...person.phones,
+                { type: contactPhoneCount(previous) === 0 ? "receiving" : null, number: "" },
+              ],
+            }
+          : person,
+      );
+    });
+  }
+
+  function updateContactPhone(
+    personIndex: number,
+    phoneIndex: number,
+    update: Partial<ContactPhone>,
+  ) {
+    setContactPeople((previous) =>
+      previous.map((person, index) =>
+        index === personIndex
+          ? {
+              ...person,
+              phones: person.phones.map((phone, index) =>
+                index === phoneIndex ? { ...phone, ...update } : phone,
+              ),
+            }
+          : person,
+      ),
+    );
+  }
+
+  function removeContactPhone(personIndex: number, phoneIndex: number) {
+    setContactPeople((previous) =>
+      previous.map((person, index) =>
+        index === personIndex
+          ? { ...person, phones: person.phones.filter((_, index) => index !== phoneIndex) }
+          : person,
+      ),
+    );
   }
 
   async function openContactAction(action: "call" | "message", phone: ContactPhone) {
@@ -1059,58 +1087,10 @@ export default function StopScreen() {
     }, 250);
   }
 
-  function scrollContactCardAboveKeyboard(animated: boolean) {
-    const contactTop = additionalIntelCardYRef.current + contactEditorYRef.current;
-    const contactBottom = contactTop + contactEditorHeightRef.current;
-    const keyboardTop = keyboardTopRef.current;
-    const viewportHeight = additionalIntelViewportHeightRef.current;
-    const availableHeight =
-      keyboardTop === null
-        ? viewportHeight
-        : viewportHeight > 0
-          ? Math.min(keyboardTop, viewportHeight)
-          : keyboardTop;
-    const bottomAlignedY = availableHeight > 0 ? contactBottom - availableHeight + 24 : 0;
-
-    additionalIntelScrollRef.current?.scrollTo({
-      y: Math.max(contactTop - 12, bottomAlignedY, 0),
-      animated,
-    });
-  }
-
-  function keepContactCardVisible() {
-    contactFieldFocusedRef.current = true;
-    scrollContactCardAboveKeyboard(true);
-  }
-
   function keepContactFieldVisible(nodeHandle: number) {
-    if (Platform.OS === "android") {
-      contactFieldFocusedRef.current = false;
-      keepAdditionalIntelInputVisible(nodeHandle, usesAccessibilityLayout ? 460 : 280);
-      return;
-    }
-
-    keepContactCardVisible();
+    const offset = Platform.OS === "android" ? (usesAccessibilityLayout ? 460 : 280) : 120;
+    keepAdditionalIntelInputVisible(nodeHandle, offset);
   }
-
-  useEffect(() => {
-    const keyboardDidShow = Keyboard.addListener("keyboardDidShow", (event) => {
-      keyboardTopRef.current = event.endCoordinates.screenY;
-      if (!contactFieldFocusedRef.current) return;
-
-      requestAnimationFrame(() => scrollContactCardAboveKeyboard(true));
-    });
-
-    const keyboardDidHide = Keyboard.addListener("keyboardDidHide", () => {
-      contactFieldFocusedRef.current = false;
-      keyboardTopRef.current = null;
-    });
-
-    return () => {
-      keyboardDidShow.remove();
-      keyboardDidHide.remove();
-    };
-  }, []);
 
   const deliveryZonePreviewRegion = useMemo(() => {
     if (typeof entranceLat !== "number" || typeof entranceLng !== "number") return null;
@@ -1149,8 +1129,7 @@ export default function StopScreen() {
             setApproachHint("");
             setBackInRequired(null);
             setTruckFit("");
-            setContactName("");
-            setContactPhones([]);
+            setContactPeople([]);
             setCheckInNotes("");
             setNotes("");
 
@@ -1173,7 +1152,9 @@ export default function StopScreen() {
 
     if (!userId) return;
 
-    const nonblankPhones = contactPhones.filter((phone) => phone.number.trim());
+    const nonblankPhones = contactPeople.flatMap((person) =>
+      person.phones.filter((phone) => phone.number.trim()),
+    );
     const invalidPhoneIndex = nonblankPhones.findIndex((phone) => !isValidPhone(phone.number));
     if (invalidPhoneIndex >= 0) {
       Alert.alert(
@@ -1193,11 +1174,17 @@ export default function StopScreen() {
     }
 
     const structuredContact = {
-      contactName: contactName.trim(),
-      phones: nonblankPhones.map((phone) => ({
-        type: phone.type,
-        number: formatPhoneDisplay(phone.number),
-      })),
+      people: contactPeople
+        .map((person) => ({
+          name: person.name.trim(),
+          phones: person.phones
+            .filter((phone) => phone.number.trim())
+            .map((phone) => ({
+              type: phone.type,
+              number: formatPhoneDisplay(phone.number),
+            })),
+        }))
+        .filter((person) => person.name || person.phones.length),
       checkInNotes: checkInNotes.trim(),
     };
     const legacyContact = composeLegacyContact(structuredContact);
@@ -1223,8 +1210,14 @@ export default function StopScreen() {
         back_in_required: ownedBackInRequired,
         truck_fit: ownedTruckFit,
         contact: legacyContact,
-        contact_name: structuredContact.contactName || null,
-        contact_phones: structuredContact.phones.length ? structuredContact.phones : null,
+        contact_people: structuredContact.people.length ? structuredContact.people : null,
+        contact_name: structuredContact.people[0]?.name || null,
+        contact_phones: nonblankPhones.length
+          ? nonblankPhones.map((phone) => ({
+              type: phone.type,
+              number: formatPhoneDisplay(phone.number),
+            }))
+          : null,
         check_in_notes: structuredContact.checkInNotes || null,
         notes: notes || null,
         updated_at: new Date().toISOString(),
@@ -1264,9 +1257,8 @@ export default function StopScreen() {
       localParsed.backInRequired = backInRequired;
       localParsed.truckFit = truckFit || undefined;
       localParsed.contact = legacyContact || undefined;
-      localParsed.contactName = structuredContact.contactName || undefined;
-      localParsed.contactPhones = structuredContact.phones.length
-        ? structuredContact.phones
+      localParsed.contactPeople = structuredContact.people.length
+        ? structuredContact.people
         : undefined;
       localParsed.checkInNotes = structuredContact.checkInNotes || undefined;
       localParsed.notes = notes || undefined;
@@ -2195,11 +2187,7 @@ export default function StopScreen() {
 
                         {(() => {
                           const reportContact = readStructuredContact(r);
-                          if (
-                            !reportContact.contactName &&
-                            !reportContact.phones.length &&
-                            !reportContact.checkInNotes
-                          ) {
+                          if (!reportContact.people.length && !reportContact.checkInNotes) {
                             return null;
                           }
 
@@ -2210,62 +2198,75 @@ export default function StopScreen() {
                               >
                                 Contact / Check-In
                               </Text>
-                              {reportContact.contactName ? (
-                                <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
-                                  {reportContact.contactName}
-                                </Text>
-                              ) : null}
-                              {reportContact.phones.map((phone, phoneIndex) => (
+                              {reportContact.people.map((person, personIndex) => (
                                 <View
-                                  key={`${phone.type ?? "phone"}-${phone.number}-${phoneIndex}`}
-                                  style={styles.reportContactPhoneRow}
+                                  key={`contact-person-${personIndex}`}
+                                  style={styles.reportContactPerson}
                                 >
-                                  <View style={styles.reportContactPhoneCopy}>
+                                  {person.name ? (
                                     <Text
                                       style={[
-                                        styles.reportPhoneType,
-                                        { color: colors.textSecondary },
-                                      ]}
-                                    >
-                                      {phoneTypeLabel(phone.type)}
-                                    </Text>
-                                    <Text
-                                      style={[
-                                        styles.reportPhoneNumber,
+                                        styles.reportLine,
+                                        styles.bold,
                                         { color: colors.textPrimary },
                                       ]}
                                     >
-                                      {formatPhoneDisplay(phone.number)}
+                                      {person.name}
                                     </Text>
-                                  </View>
-                                  <View style={styles.contactActionRow}>
-                                    <Pressable
-                                      accessibilityRole="button"
-                                      accessibilityLabel={`Call ${phoneTypeLabel(phone.type)} ${formatPhoneDisplay(phone.number)}`}
-                                      style={styles.contactActionButton}
-                                      onPress={() => openContactAction("call", phone)}
+                                  ) : null}
+                                  {person.phones.map((phone, phoneIndex) => (
+                                    <View
+                                      key={`${phone.type ?? "phone"}-${phone.number}-${phoneIndex}`}
+                                      style={styles.reportContactPhoneRow}
                                     >
-                                      <MaterialIcons
-                                        name="phone"
-                                        size={20}
-                                        color={colors.accentStrong}
-                                      />
-                                    </Pressable>
-                                    {canMessagePhoneType(phone.type) ? (
-                                      <Pressable
-                                        accessibilityRole="button"
-                                        accessibilityLabel={`Message ${phoneTypeLabel(phone.type)} ${formatPhoneDisplay(phone.number)}`}
-                                        style={styles.contactActionButton}
-                                        onPress={() => openContactAction("message", phone)}
-                                      >
-                                        <MaterialIcons
-                                          name="message"
-                                          size={20}
-                                          color={colors.accentStrong}
-                                        />
-                                      </Pressable>
-                                    ) : null}
-                                  </View>
+                                      <View style={styles.reportContactPhoneCopy}>
+                                        <Text
+                                          style={[
+                                            styles.reportPhoneType,
+                                            { color: colors.textSecondary },
+                                          ]}
+                                        >
+                                          {phoneTypeLabel(phone.type)}
+                                        </Text>
+                                        <Text
+                                          style={[
+                                            styles.reportPhoneNumber,
+                                            { color: colors.textPrimary },
+                                          ]}
+                                        >
+                                          {formatPhoneDisplay(phone.number)}
+                                        </Text>
+                                      </View>
+                                      <View style={styles.contactActionRow}>
+                                        <Pressable
+                                          accessibilityRole="button"
+                                          accessibilityLabel={`Call ${person.name || phoneTypeLabel(phone.type)} ${formatPhoneDisplay(phone.number)}`}
+                                          style={styles.contactActionButton}
+                                          onPress={() => openContactAction("call", phone)}
+                                        >
+                                          <MaterialIcons
+                                            name="phone"
+                                            size={20}
+                                            color={colors.accentStrong}
+                                          />
+                                        </Pressable>
+                                        {canMessagePhoneType(phone.type) ? (
+                                          <Pressable
+                                            accessibilityRole="button"
+                                            accessibilityLabel={`Message ${person.name || phoneTypeLabel(phone.type)} ${formatPhoneDisplay(phone.number)}`}
+                                            style={styles.contactActionButton}
+                                            onPress={() => openContactAction("message", phone)}
+                                          >
+                                            <MaterialIcons
+                                              name="message"
+                                              size={20}
+                                              color={colors.accentStrong}
+                                            />
+                                          </Pressable>
+                                        ) : null}
+                                      </View>
+                                    </View>
+                                  ))}
                                 </View>
                               ))}
                               {reportContact.checkInNotes ? (
@@ -2423,9 +2424,6 @@ export default function StopScreen() {
               >
                 <ScrollView
                   ref={additionalIntelScrollRef}
-                  onLayout={(event) => {
-                    additionalIntelViewportHeightRef.current = event.nativeEvent.layout.height;
-                  }}
                   contentContainerStyle={styles.additionalIntelContainer}
                   keyboardShouldPersistTaps="handled"
                   keyboardDismissMode="on-drag"
@@ -2445,12 +2443,7 @@ export default function StopScreen() {
                     <Text style={styles.secondaryBtnText}>← Back to Essentials</Text>
                   </Pressable>
 
-                  <View
-                    style={styles.card}
-                    onLayout={(event) => {
-                      additionalIntelCardYRef.current = event.nativeEvent.layout.y;
-                    }}
-                  >
+                  <View style={styles.card}>
                     <Text style={styles.sectionLabel}>Deliver From</Text>
                     <View style={styles.chipRow}>
                       {deliverFromChips.map(({ value, label }) => (
@@ -2494,126 +2487,150 @@ export default function StopScreen() {
                     />
 
                     <Text style={styles.sectionLabel}>Contact / Check-In</Text>
-                    <View
-                      style={styles.contactEditorCard}
-                      onLayout={(event) => {
-                        contactEditorYRef.current = event.nativeEvent.layout.y;
-                        contactEditorHeightRef.current = event.nativeEvent.layout.height;
-
-                        if (contactFieldFocusedRef.current && keyboardTopRef.current !== null) {
-                          requestAnimationFrame(() => scrollContactCardAboveKeyboard(true));
-                        }
-                      }}
-                    >
+                    <View style={styles.contactEditorCard}>
                       <Text style={styles.helperText}>
                         Add business delivery contacts only. Do not include passwords, gate codes,
                         or unrelated personal information.
                       </Text>
 
-                      <Text style={styles.contactFieldLabel}>Contact Name</Text>
-                      <TextInput
-                        value={contactName}
-                        onChangeText={(text) => setContactName(text.slice(0, 100))}
-                        onFocus={(event) => keepContactFieldVisible(event.nativeEvent.target)}
-                        placeholder="e.g. Shipping desk or contact name"
-                        style={styles.input}
-                        autoCapitalize="words"
-                      />
-
-                      <Text style={styles.contactFieldLabel}>Phone Numbers</Text>
-                      {contactPhones.map((phone, phoneIndex) => {
-                        const validPhone = isValidPhone(phone.number);
-
-                        return (
-                          <View key={`contact-phone-${phoneIndex}`} style={styles.contactPhoneCard}>
-                            <View style={styles.contactPhoneHeader}>
-                              <Text style={styles.contactPhoneRowTitle}>
-                                Phone {phoneIndex + 1}
-                              </Text>
-                              <Pressable
-                                accessibilityRole="button"
-                                accessibilityLabel={`Remove phone ${phoneIndex + 1}`}
-                                hitSlop={8}
-                                onPress={() => removeContactPhone(phoneIndex)}
-                              >
-                                <MaterialIcons name="close" size={22} color="#6b7280" />
-                              </Pressable>
-                            </View>
-
-                            <View style={styles.contactTypeRow}>
-                              {CONTACT_PHONE_TYPES.map((type) => (
-                                <Chip
-                                  key={type}
-                                  label={CONTACT_PHONE_LABELS[type]}
-                                  active={phone.type === type}
-                                  onPress={() => updateContactPhone(phoneIndex, { type })}
-                                  style={styles.contactTypeChip}
-                                />
-                              ))}
-                            </View>
-
-                            <View style={styles.contactPhoneInputRow}>
-                              <TextInput
-                                accessibilityLabel={`${phoneTypeLabel(phone.type)} phone number`}
-                                value={phone.number}
-                                onChangeText={(text) =>
-                                  updateContactPhone(phoneIndex, {
-                                    number: formatPhoneInput(text),
-                                  })
-                                }
-                                onFocus={(event) =>
-                                  keepContactFieldVisible(event.nativeEvent.target)
-                                }
-                                placeholder="Phone number"
-                                keyboardType="phone-pad"
-                                style={[styles.input, styles.contactPhoneInput]}
-                              />
-                              <Pressable
-                                accessibilityRole="button"
-                                accessibilityLabel={`Call ${phoneTypeLabel(phone.type)}`}
-                                disabled={!validPhone}
-                                style={[
-                                  styles.contactActionButton,
-                                  !validPhone && styles.contactActionButtonDisabled,
-                                ]}
-                                onPress={() => openContactAction("call", phone)}
-                              >
-                                <MaterialIcons name="phone" size={22} color="#d45b18" />
-                              </Pressable>
-                              {canMessagePhoneType(phone.type) ? (
-                                <Pressable
-                                  accessibilityRole="button"
-                                  accessibilityLabel={`Message ${phoneTypeLabel(phone.type)}`}
-                                  disabled={!validPhone}
-                                  style={[
-                                    styles.contactActionButton,
-                                    !validPhone && styles.contactActionButtonDisabled,
-                                  ]}
-                                  onPress={() => openContactAction("message", phone)}
-                                >
-                                  <MaterialIcons name="message" size={22} color="#d45b18" />
-                                </Pressable>
-                              ) : null}
-                            </View>
-                            {phone.number && !validPhone ? (
-                              <Text style={styles.contactValidationText}>
-                                Enter a phone number with 7–15 digits.
-                              </Text>
-                            ) : null}
-                          </View>
-                        );
-                      })}
-
-                      {contactPhones.length < 5 ? (
-                        <Pressable
-                          accessibilityRole="button"
-                          style={styles.addContactPhoneButton}
-                          onPress={addContactPhone}
+                      {contactPeople.map((person, personIndex) => (
+                        <View
+                          key={`contact-person-${personIndex}`}
+                          style={styles.contactPersonCard}
                         >
-                          <MaterialIcons name="add" size={20} color="#d45b18" />
-                          <Text style={styles.addContactPhoneText}>Add phone number</Text>
-                        </Pressable>
-                      ) : null}
+                          <View style={styles.contactPhoneHeader}>
+                            <Text style={styles.contactPhoneRowTitle}>
+                              Contact {personIndex + 1}
+                            </Text>
+                            <Pressable
+                              accessibilityRole="button"
+                              accessibilityLabel={`Remove contact ${personIndex + 1}`}
+                              hitSlop={8}
+                              onPress={() => removeContactPerson(personIndex)}
+                            >
+                              <MaterialIcons name="close" size={22} color="#6b7280" />
+                            </Pressable>
+                          </View>
+                          <Text style={styles.contactFieldLabel}>Contact Name</Text>
+                          <TextInput
+                            accessibilityLabel={`Contact ${personIndex + 1} name`}
+                            value={person.name}
+                            onChangeText={(text) =>
+                              updateContactPersonName(personIndex, text.slice(0, 100))
+                            }
+                            onFocus={(event) => keepContactFieldVisible(event.nativeEvent.target)}
+                            placeholder="e.g. Shipping desk or contact name"
+                            style={styles.input}
+                            autoCapitalize="words"
+                          />
+                          {person.phones.map((phone, phoneIndex) => {
+                            const validPhone = isValidPhone(phone.number);
+                            return (
+                              <View
+                                key={`contact-phone-${phoneIndex}`}
+                                style={styles.contactPhoneCard}
+                              >
+                                <View style={styles.contactPhoneHeader}>
+                                  <Text style={styles.contactPhoneRowTitle}>
+                                    Phone {phoneIndex + 1}
+                                  </Text>
+                                  <Pressable
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Remove phone ${phoneIndex + 1} from contact ${personIndex + 1}`}
+                                    hitSlop={8}
+                                    onPress={() => removeContactPhone(personIndex, phoneIndex)}
+                                  >
+                                    <MaterialIcons name="close" size={22} color="#6b7280" />
+                                  </Pressable>
+                                </View>
+                                <View style={styles.contactTypeRow}>
+                                  {CONTACT_PHONE_TYPES.map((type) => (
+                                    <Chip
+                                      key={type}
+                                      label={CONTACT_PHONE_LABELS[type]}
+                                      active={phone.type === type}
+                                      onPress={() =>
+                                        updateContactPhone(personIndex, phoneIndex, { type })
+                                      }
+                                      style={styles.contactTypeChip}
+                                    />
+                                  ))}
+                                </View>
+                                <View style={styles.contactPhoneInputRow}>
+                                  <TextInput
+                                    accessibilityLabel={`${person.name || `Contact ${personIndex + 1}`} ${phoneTypeLabel(phone.type)} phone number`}
+                                    value={phone.number}
+                                    onChangeText={(text) =>
+                                      updateContactPhone(personIndex, phoneIndex, {
+                                        number: formatPhoneInput(text),
+                                      })
+                                    }
+                                    onFocus={(event) =>
+                                      keepContactFieldVisible(event.nativeEvent.target)
+                                    }
+                                    placeholder="Phone number"
+                                    keyboardType="phone-pad"
+                                    style={[styles.input, styles.contactPhoneInput]}
+                                  />
+                                  <Pressable
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Call ${person.name || phoneTypeLabel(phone.type)}`}
+                                    disabled={!validPhone}
+                                    style={[
+                                      styles.contactActionButton,
+                                      !validPhone && styles.contactActionButtonDisabled,
+                                    ]}
+                                    onPress={() => openContactAction("call", phone)}
+                                  >
+                                    <MaterialIcons name="phone" size={22} color="#d45b18" />
+                                  </Pressable>
+                                  {canMessagePhoneType(phone.type) ? (
+                                    <Pressable
+                                      accessibilityRole="button"
+                                      accessibilityLabel={`Message ${person.name || phoneTypeLabel(phone.type)}`}
+                                      disabled={!validPhone}
+                                      style={[
+                                        styles.contactActionButton,
+                                        !validPhone && styles.contactActionButtonDisabled,
+                                      ]}
+                                      onPress={() => openContactAction("message", phone)}
+                                    >
+                                      <MaterialIcons name="message" size={22} color="#d45b18" />
+                                    </Pressable>
+                                  ) : null}
+                                </View>
+                                {phone.number && !validPhone ? (
+                                  <Text style={styles.contactValidationText}>
+                                    Enter a phone number with 7–15 digits.
+                                  </Text>
+                                ) : null}
+                              </View>
+                            );
+                          })}
+                          {contactPhoneCount() < 5 ? (
+                            <Pressable
+                              accessibilityRole="button"
+                              style={styles.addContactPhoneButton}
+                              onPress={() => addContactPhone(personIndex)}
+                            >
+                              <MaterialIcons name="add" size={20} color="#d45b18" />
+                              <Text style={styles.addContactPhoneText}>Add phone number</Text>
+                            </Pressable>
+                          ) : null}
+                        </View>
+                      ))}
+
+                      <Pressable
+                        accessibilityRole="button"
+                        style={styles.addContactPhoneButton}
+                        onPress={addContactPerson}
+                      >
+                        <MaterialIcons name="person-add" size={20} color="#d45b18" />
+                        <Text style={styles.addContactPhoneText}>Add another contact</Text>
+                      </Pressable>
+                      <Text style={styles.contactLimitText}>
+                        {contactPhoneCount()} of 5 phone numbers used
+                      </Text>
 
                       <Text style={styles.contactFieldLabel}>Check-In Notes</Text>
                       <TextInput
@@ -3291,6 +3308,14 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: "white",
   },
+  contactPersonCard: {
+    gap: 10,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 12,
+    padding: 10,
+    backgroundColor: "white",
+  },
   contactPhoneHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -3354,6 +3379,11 @@ const styles = StyleSheet.create({
   addContactPhoneText: {
     color: "#d45b18",
     fontWeight: "700",
+  },
+  contactLimitText: {
+    color: "#6b7280",
+    fontSize: 13,
+    textAlign: "center",
   },
   checkInNotesInput: {
     minHeight: 88,
@@ -3430,6 +3460,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: "#e5e7eb",
     paddingVertical: 10,
+  },
+  reportContactPerson: {
+    gap: 6,
   },
   reportContactHeading: {
     fontWeight: "800",
