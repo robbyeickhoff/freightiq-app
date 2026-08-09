@@ -126,6 +126,17 @@ function RootNavigator() {
   useEffect(() => {
     if (!initialRouteName) return;
 
+    const preserveCreateAccountLink =
+      pathname === "/create-account" &&
+      (initialRouteName === "auth" || initialRouteName === "onboarding");
+    const preserveStopLink = pathname === "/stop" && initialRouteName === "(tabs)";
+
+    if (preserveCreateAccountLink || preserveStopLink) {
+      setStartupRouteRequested(true);
+      setStartupRouteApplied(true);
+      return;
+    }
+
     const targetPath =
       initialRouteName === "(tabs)"
         ? "/(tabs)/(map)"
@@ -137,7 +148,7 @@ function RootNavigator() {
 
     router.replace(targetPath);
     setStartupRouteRequested(true);
-  }, [initialRouteName, router]);
+  }, [initialRouteName, pathname, router]);
 
   const startupRouteMatches = useMemo(() => {
     if (!initialRouteName || !startupRouteRequested) return false;
