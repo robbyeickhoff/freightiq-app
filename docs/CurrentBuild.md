@@ -13,20 +13,29 @@ answer one question:
 
 ## Current Objective
 
-Implement the public Founding Drivers website amendment from the approved
-`docs/build-specs/FreightIQFoundingDriversPublicWebsiteBuildSpec.md` before enrolling Driver #1.
+Implement the approved App Store Trust & Safety build from
+`docs/build-specs/FreightIQAppStoreTrustSafetyBuildSpec.md` before FreightIQ's first public Apple App
+Store submission.
 
-Phases 2 through 5 are implemented and accepted. Phase 6 — End-to-End Verification — is complete
-across the physical iPhone, local website, and live Supabase foundation. Phase 7 — Driver #1 Launch
-Readiness — is in progress. Repository preflight and the controlled Driver #1 operating runbook are
-complete; current private candidate distribution, iPhone acceptance, and authenticated
-production-website acceptance are complete. Android version code 19 supersedes version code 18 and
-has completed installed-build acceptance on the physical Pixel. The remaining work is to review the
-new public-page, member-access, and request-intake pre-build state. Driver #1 enrollment is paused
-until the amendment is implemented, deployed, and accepted in production.
-The Founding Driver website changes were automatically deployed to Production by the existing
-Vercel Git integration when their approved `main` commits were pushed. Real-driver enrollment,
-broader distribution, and public app release remain separately approval-gated before execution.
+The build adds the required in-app support, privacy, community-guideline, reporting, blocking,
+moderation, and permanent account-deletion controls while preserving FreightIQ as a professional
+operational-knowledge product rather than a social network. Local implementation is complete for
+Settings, public policies, reporting, blocking, moderation, and account deletion. Static checks,
+local migrations, schema lint, advisors, and rollback-only moderation authorization tests pass.
+The three approved production database migrations, authenticated `delete-account` Edge Function,
+and website changes were deployed and verified on 2026-08-09. Focused physical iPhone and Pixel
+functional acceptance passed support and guideline presentation, reporting and duplicate-report
+handling, contributor blocking and unblocking, moderator resolution, keyboard dismissal and focused
+field visibility, report loading, and permanent account deletion. Hosted verification confirmed
+deletion of a disposable account with no contributions and a second account with an owned stop and
+Driver Report; the second account's user-linked data was removed while its neutral stop facts
+remained de-identified. Mobile commit/push, candidate builds, broader large-text and screen-reader
+acceptance, App Store Connect changes, submission, and public release remain separately
+approval-gated.
+
+The Founding Driver launch-readiness work remains preserved in this document's completed status and
+operating runbook. This App Store compliance build does not enroll a driver, expand distribution,
+or initiate a public release.
 
 ---
 

@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { type PropsWithChildren, useEffect, useMemo, useRef, useState } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import {
+  ActivityIndicator,
   Alert,
   Keyboard,
   KeyboardAvoidingView,
@@ -316,6 +317,7 @@ export default function StopScreen() {
   const [mergeSourceStopId, setMergeSourceStopId] = useState<string | null>(null);
   const [mergeMode, setMergeMode] = useState(false);
   const [reports, setReports] = useState<ReportRow[]>([]);
+  const [blockedContributorIds, setBlockedContributorIds] = useState<string[]>([]);
   const [reportsLoaded, setReportsLoaded] = useState(false);
   const [voteStatsByReportId, setVoteStatsByReportId] = useState<Record<string, ReportVoteStats>>(
     {},
@@ -616,12 +618,20 @@ export default function StopScreen() {
   useEffect(() => {
     if (!stopId || !sessionUserId) return;
 
+    setReports([]);
     setReportsLoaded(false);
     setEntranceLoaded(false);
     loadReports();
     loadEntrance();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stopId, sessionUserId]);
+
+  useEffect(() => {
+    if (!isFocused || !stopId || !sessionUserId || !reportsLoaded) return;
+    void loadReports();
+    // Refresh blocks and reports after returning from the report/block flow.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFocused]);
 
   async function requireSignedIn() {
     if (sessionUserId) {
@@ -711,20 +721,25 @@ export default function StopScreen() {
 
   async function loadReports(ownerUserId = sessionUserId) {
     try {
-      setReports([]);
-
-      const { data, error } = await supabase
-        .from("mfi_reports")
-        .select("*")
-        .eq("stop_id", stopId)
-        .order("updated_at", { ascending: false });
+      const [{ data: blockedRows }, { data, error }] = await Promise.all([
+        supabase.from("blocked_contributors").select("blocked_user_id"),
+        supabase
+          .from("mfi_reports")
+          .select("*")
+          .eq("stop_id", stopId)
+          .order("updated_at", { ascending: false }),
+      ]);
+      const nextBlockedContributorIds = (blockedRows ?? []).map((row) => row.blocked_user_id);
+      setBlockedContributorIds(nextBlockedContributorIds);
 
       if (error) {
         Alert.alert("Load failed", error.message);
         return;
       }
 
-      const rows = (data ?? []) as ReportRow[];
+      const rows = ((data ?? []) as ReportRow[]).filter(
+        (report) => !nextBlockedContributorIds.includes(report.user_id),
+      );
       const uniqueUserIds = [...new Set(rows.map((r) => r.user_id))];
 
       let profileMap: Record<string, { username: string | null; tractor_type: string | null }> = {};
@@ -825,9 +840,11 @@ export default function StopScreen() {
         setNotes("");
       }
 
-      await loadVotesForReports(hydrated);
-      await loadReputationForUsers(uniqueUserIds);
       setReportsLoaded(true);
+      void Promise.all([
+        loadVotesForReports(hydrated),
+        loadReputationForUsers(uniqueUserIds),
+      ]);
     } catch {
       Alert.alert("Load failed", "Something went wrong loading reports.");
     }
@@ -940,7 +957,7 @@ export default function StopScreen() {
   }
 
   const sortedReports = useMemo(() => {
-    const copy = [...reports];
+    const copy = reports.filter((report) => !blockedContributorIds.includes(report.user_id));
 
     copy.sort((a, b) => {
       const aStats = voteStatsByReportId[a.id] ?? { up: 0, down: 0, myVote: 0 };
@@ -958,7 +975,7 @@ export default function StopScreen() {
     });
 
     return copy;
-  }, [reports, voteStatsByReportId]);
+  }, [blockedContributorIds, reports, voteStatsByReportId]);
 
   const deliverFromChips: {
     value: Exclude<typeof deliverFromType, "">;
@@ -1199,10 +1216,7 @@ export default function StopScreen() {
       const ownedTruckFit = inheritedCoreIntel.truckFit === truckFit ? null : truckFit || null;
       const ownedBackInRequired =
         inheritedCoreIntel.backInRequired === backInRequired ? null : backInRequired;
-      const payload = {
-        id: myReportId ?? undefined,
-        stop_id: stopId,
-        user_id: userId,
+      const reportFields = {
         deliver_from_type: deliverFromType || null,
         deliver_from_details: deliverFromDetails || null,
         delivery_type: ownedDeliveryType,
@@ -1222,23 +1236,33 @@ export default function StopScreen() {
         notes: notes || null,
         updated_at: new Date().toISOString(),
       };
+      const newReportPayload = {
+        ...reportFields,
+        stop_id: stopId,
+        user_id: userId,
+      };
 
       // Ensure stop exists in Supabase before saving report
       const { data: existingStop } = await supabase
         .from("mfi_stops")
         .select("id")
-        .eq("id", payload.stop_id)
+        .eq("id", stopId)
         .single();
 
       if (!existingStop) {
         return;
       }
 
-      const { data: savedReport, error } = await supabase
-        .from("mfi_reports")
-        .upsert(payload)
-        .select("id")
-        .single();
+      const saveResult = myReportId
+        ? await supabase
+            .from("mfi_reports")
+            .update(reportFields)
+            .eq("id", myReportId)
+            .eq("user_id", userId)
+            .select("id")
+            .single()
+        : await supabase.from("mfi_reports").insert(newReportPayload).select("id").single();
+      const { data: savedReport, error } = saveResult;
 
       if (error) {
         Alert.alert("Save failed", error.message);
@@ -1262,7 +1286,7 @@ export default function StopScreen() {
         : undefined;
       localParsed.checkInNotes = structuredContact.checkInNotes || undefined;
       localParsed.notes = notes || undefined;
-      localParsed.updatedAt = payload.updated_at;
+      localParsed.updatedAt = reportFields.updated_at;
       localParsed.votesUp = localParsed.votesUp ?? 0;
       localParsed.votesDown = localParsed.votesDown ?? 0;
 
@@ -2088,7 +2112,16 @@ export default function StopScreen() {
               </Pressable>
 
               {reportsExpanded ? (
-                sortedReports.length === 0 ? (
+                !reportsLoaded ? (
+                  <View style={styles.reportsLoadingState}>
+                    <ActivityIndicator color={colors.accentStrong} />
+                    <Text
+                      style={[styles.emptyText, { color: colors.textSecondary }]}
+                    >
+                      Loading driver reports…
+                    </Text>
+                  </View>
+                ) : sortedReports.length === 0 ? (
                   <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                     No reports yet. Be the first driver to add intel.
                   </Text>
@@ -2345,10 +2378,71 @@ export default function StopScreen() {
                             </Text>
                           </Pressable>
                         </View>
+
+                        {r.user_id !== sessionUserId ? (
+                          <Pressable
+                            accessibilityHint={`Opens reporting and blocking options for ${r.username ?? "this contributor"}`}
+                            accessibilityRole="button"
+                            onPress={() =>
+                              router.push({
+                                pathname: "/(tabs)/profile/report-content",
+                                params: {
+                                  ownerId: r.user_id,
+                                  ownerName: r.username ?? "Driver",
+                                  subjectId: r.id,
+                                  subjectType: "report",
+                                },
+                              })
+                            }
+                            style={({ pressed }) => [
+                              styles.reportSafetyAction,
+                              { borderColor: colors.border },
+                              pressed ? styles.reportSafetyActionPressed : null,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.reportSafetyActionText,
+                                { color: colors.textSecondary },
+                              ]}
+                            >
+                              Report or Block
+                            </Text>
+                          </Pressable>
+                        ) : null}
                       </View>
                     );
                   })
                 )
+              ) : null}
+
+              {stopOwnerId && stopOwnerId !== sessionUserId ? (
+                <>
+                  <View style={[styles.groupedDivider, { backgroundColor: colors.border }]} />
+                  <Pressable
+                    accessibilityHint="Reports incorrect, unsafe, private, abusive, or unrelated stop content"
+                    accessibilityRole="button"
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(tabs)/profile/report-content",
+                        params: {
+                          ownerId: stopOwnerId,
+                          subjectId: stopId,
+                          subjectType: "stop",
+                        },
+                      })
+                    }
+                    style={({ pressed }) => [
+                      styles.groupedDisclosureRow,
+                      pressed ? styles.disclosureRowPressed : null,
+                    ]}
+                  >
+                    <Text style={[styles.disclosureLabel, { color: colors.textSecondary }]}>
+                      Report Stop Content
+                    </Text>
+                    <AppIcon color={colors.textSecondary} name="chevronRight" />
+                  </Pressable>
+                </>
               ) : null}
 
               {canDeleteStop ? (
@@ -3486,6 +3580,16 @@ const styles = StyleSheet.create({
   },
   bold: { fontWeight: "800" },
   reportVotes: { color: "#666", marginTop: 4, fontWeight: "700" },
+  reportSafetyAction: {
+    alignItems: "center",
+    borderTopWidth: 1,
+    marginTop: Spacing.sm,
+    minHeight: 44,
+    justifyContent: "center",
+    paddingTop: Spacing.sm,
+  },
+  reportSafetyActionPressed: { opacity: 0.65 },
+  reportSafetyActionText: { ...Typography.buttonLabel },
   helperText: {
     color: "#666",
     fontSize: 13,
@@ -3493,6 +3597,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptyText: { color: "#666" },
+  reportsLoadingState: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+  },
 
   voteRow: {
     flexDirection: "row",

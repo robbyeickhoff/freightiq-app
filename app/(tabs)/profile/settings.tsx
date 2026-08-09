@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import {
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -101,6 +102,17 @@ export default function SettingsScreen() {
     router.replace("/auth");
   }
 
+  async function openPrivacyPolicy() {
+    try {
+      await Linking.openURL("https://freightiqapp.com/privacy");
+    } catch {
+      Alert.alert(
+        "Unable to open Privacy Policy",
+        "Visit freightiqapp.com/privacy in your browser.",
+      );
+    }
+  }
+
   return (
     <SafeAreaView
       edges={["bottom"]}
@@ -139,6 +151,37 @@ export default function SettingsScreen() {
             label="Help Center"
             onPress={() => router.push("/(tabs)/profile/help")}
           />
+          <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+          <SettingsRow
+            accessibilityHint="Opens FreightIQ support options"
+            icon="mail"
+            label="Contact Support"
+            onPress={() => router.push("/(tabs)/profile/contact-support")}
+          />
+        </AppCard>
+
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Privacy & Safety</Text>
+        <AppCard clipContent>
+          <SettingsRow
+            accessibilityHint="Opens the FreightIQ Privacy Policy in your browser"
+            icon="privacy"
+            label="Privacy Policy"
+            onPress={() => void openPrivacyPolicy()}
+          />
+          <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+          <SettingsRow
+            accessibilityHint="Opens FreightIQ community and contribution rules"
+            icon="community"
+            label="Community Guidelines"
+            onPress={() => router.push("/(tabs)/profile/community-guidelines")}
+          />
+          <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+          <SettingsRow
+            accessibilityHint="Opens your list of blocked FreightIQ contributors"
+            icon="blocked"
+            label="Blocked Contributors"
+            onPress={() => router.push("/(tabs)/profile/blocked-contributors")}
+          />
         </AppCard>
 
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Account</Text>
@@ -149,6 +192,15 @@ export default function SettingsScreen() {
             label="Log Out"
             onPress={() => void logOut()}
             showsChevron={false}
+          />
+        </AppCard>
+
+        <AppCard clipContent style={styles.destructiveCard}>
+          <SettingsRow
+            accessibilityHint="Opens permanent FreightIQ account deletion"
+            icon="delete"
+            label="Delete Account"
+            onPress={() => router.push("/(tabs)/profile/delete-account")}
           />
         </AppCard>
       </ScrollView>
@@ -175,6 +227,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
     marginLeft: Spacing.xs,
     textTransform: "uppercase",
+  },
+  destructiveCard: {
+    marginTop: Spacing.md,
   },
   row: {
     minHeight: 64,
