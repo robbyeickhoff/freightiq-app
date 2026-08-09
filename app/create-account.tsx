@@ -116,6 +116,14 @@ export default function CreateAccountScreen() {
         setConfirmationCode("");
         return setError("That confirmation code is incorrect or expired. Request another code and try again.");
       }
+      const normalizedReferralCode = referralCode.trim().toUpperCase();
+      if (normalizedReferralCode) {
+        const { data: referralFinalized, error: referralFinalizeError } = await supabase
+          .rpc("finalize_verified_signup_referral", { p_code: normalizedReferralCode });
+        if (referralFinalizeError || referralFinalized !== true) {
+          return setError("Your account is verified, but we could not attach the referral. Try Verify Code again.");
+        }
+      }
       router.replace("/setup-profile");
     } finally {
       setLoading(false);
