@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack, usePathname, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import "react-native-reanimated";
 
@@ -22,6 +22,7 @@ export const unstable_settings = {
 
 function RootNavigator() {
   const pathname = usePathname();
+  const startupPathnameRef = useRef(pathname);
   const router = useRouter();
   const { colorScheme, colors, isReady: isThemeReady } = useAppTheme();
   const { isReady: isNavigationPreferenceReady } = useNavigationPreference();
@@ -127,9 +128,9 @@ function RootNavigator() {
     if (!initialRouteName) return;
 
     const preserveCreateAccountLink =
-      pathname === "/create-account" &&
+      startupPathnameRef.current === "/create-account" &&
       (initialRouteName === "auth" || initialRouteName === "onboarding");
-    const preserveStopLink = pathname === "/stop" && initialRouteName === "(tabs)";
+    const preserveStopLink = startupPathnameRef.current === "/stop" && initialRouteName === "(tabs)";
 
     if (preserveCreateAccountLink || preserveStopLink) {
       setStartupRouteRequested(true);
@@ -148,7 +149,7 @@ function RootNavigator() {
 
     router.replace(targetPath);
     setStartupRouteRequested(true);
-  }, [initialRouteName, pathname, router]);
+  }, [initialRouteName, router]);
 
   const startupRouteMatches = useMemo(() => {
     if (!initialRouteName || !startupRouteRequested) return false;
