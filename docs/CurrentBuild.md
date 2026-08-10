@@ -31,10 +31,14 @@ deletion of a disposable account with no contributions and a second account with
 Driver Report; the second account's user-linked data was removed while its neutral stop facts
 remained de-identified. The accepted mobile and repository changes were committed and pushed in
 `73e8fda`. Production candidates were then created from that exact commit: iOS build 37 is processed,
-assigned to the Early Testers group, and installed on the Product Owner's iPhone; Android version
-code 20 was uploaded manually to Google Play Closed Testing — Alpha and is currently in review.
-Focused installed-build acceptance, broader large-text and screen-reader acceptance, App Store
-submission, and public release remain separately approval-gated.
+assigned to the Early Testers group, and installed on the Product Owner's iPhone. Android version
+code 20 reached Google Play Closed Testing — Alpha and passed an initial smoke test, but physical
+referral acceptance exposed an Android cold-start defect: **Open FreightIQ** launched the app and
+then routed a signed-out driver to Sign In instead of Create Account with the referral code. A
+narrow Android-only correction is now the active release-candidate step. The corrected code and
+physical-Pixel Expo regression checks passed for ordinary launch, Sign In, and Create
+Account. Exact production-scheme acceptance, broader large-text and screen-reader acceptance, App
+Store submission, and public release remain separately approval-gated.
 
 The Founding Driver launch-readiness work remains preserved in this document's completed status and
 operating runbook. This App Store compliance build does not enroll a driver, expand distribution,
@@ -479,8 +483,8 @@ same 11 pre-existing warnings.
   return was not reproduced in controlled password, email-code, cold-start, or root-Back checks.
 - Complete focused installed-build acceptance of iOS build 37, prioritizing Refer a Driver, the
   installed-app **Open in FreightIQ** handoff, and the Trust & Safety surfaces.
-- After Google Play approves Android version code 20, install it from Closed Testing — Alpha and
-  complete the corresponding focused Pixel pass.
+- Correct the Android-only cold-start referral handoff, verify it on physical Pixel, and replace
+  Android version code 20 only after separate build approval.
 - Complete broader large-text, VoiceOver, and TalkBack acceptance before any public-store
   submission.
 - Obtain separate Product Owner approval before changing TestFlight groups, the Google Play closed-
@@ -538,6 +542,7 @@ special build is required solely for that check.
 
 Complete focused installed-build acceptance of iOS build 37 from TestFlight, beginning with Refer a
 Driver and the **Open in FreightIQ** stop handoff, then smoke-test the new Trust & Safety surfaces and
-core app regressions. Wait for Google Play to approve Android version code 20, install it from Closed
-Testing — Alpha, and repeat the focused Pixel pass. Record both candidate outcomes before any
-broader distribution or public-store submission.
+core app regressions. Verify the Android-only cold-start referral correction in Expo, then obtain
+separate approval to commit, push, and create Android version code 21. Replace version code 20 in
+Closed Testing — Alpha only after physical Pixel acceptance. Record both candidate outcomes before
+any broader distribution or public-store submission.

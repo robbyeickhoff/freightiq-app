@@ -168,6 +168,25 @@ After Product Owner approval:
 - Each driver sees only the referral information appropriate to them.
 - Non-referred users and the existing Founding Driver program continue working unchanged.
 
+## Android Cold-Start Referral Amendment — 2026-08-09
+
+Physical acceptance of Android version code 20 found that scanning a valid referral QR code and
+tapping **Open FreightIQ** launched the installed Android app but allowed startup authentication
+routing to replace the intended Create Account destination with Sign In. The same referral handoff
+correctly opened Create Account on iPhone, confirming that the website URL and referral code were
+valid.
+
+The Product Owner approved a narrow Android-only release-candidate correction. On Android cold
+launch, the root navigator must read the initial app URL before applying its signed-out fallback. A
+valid `mfi://create-account?referral_code=...` URL must preserve Create Account and prefill the code.
+iOS startup behavior, the website URL, referral attribution, database behavior, and ordinary
+signed-out startup remain unchanged. Verify the correction on physical Pixel before replacing the
+closed-test candidate. Commit, push, and Android version code 21 remain separately approval-gated.
+
+The corrected routing passed TypeScript, focused lint, diff formatting, and physical-Pixel Expo
+regression checks for ordinary launch, Sign In, and Create Account. Exact production-scheme
+cold-start acceptance remains pending Android version code 21.
+
 ## Implementation Gate
 
 Robby must review and approve this specification before implementation begins.

@@ -1,9 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
+import * as Linking from "expo-linking";
 import { Stack, usePathname, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import "react-native-reanimated";
 
 import {
@@ -27,6 +28,7 @@ function RootNavigator() {
   const { colorScheme, colors, isReady: isThemeReady } = useAppTheme();
   const { isReady: isNavigationPreferenceReady } = useNavigationPreference();
   const [initialRouteName, setInitialRouteName] = useState<string | null>(null);
+  const [initialAndroidReferralCode, setInitialAndroidReferralCode] = useState<string | null>(null);
   const [startupRouteApplied, setStartupRouteApplied] = useState(false);
   const [startupRouteRequested, setStartupRouteRequested] = useState(false);
   const navigationTheme = useMemo(() => {
@@ -73,12 +75,27 @@ function RootNavigator() {
 
     async function resolveInitialRoute() {
       try {
-        const [onboardingValue, sessionResult] = await Promise.all([
+        const [onboardingValue, sessionResult, initialUrl] = await Promise.all([
           AsyncStorage.getItem(ONBOARDING_SEEN_KEY),
           supabase.auth.getSession(),
+          Platform.OS === "android" ? Linking.getInitialURL() : Promise.resolve(null),
         ]);
 
         if (!mounted) return;
+
+        if (initialUrl) {
+          const parsedInitialUrl = Linking.parse(initialUrl);
+          const referralCodeParam = parsedInitialUrl.queryParams?.referral_code;
+          const referralCode = Array.isArray(referralCodeParam)
+            ? referralCodeParam[0]
+            : referralCodeParam;
+
+          const initialRoute = parsedInitialUrl.path ?? parsedInitialUrl.hostname;
+
+          if (initialRoute === "create-account" && referralCode) {
+            setInitialAndroidReferralCode(referralCode.trim().toUpperCase().slice(0, 6));
+          }
+        }
 
         if (sessionResult.error) {
           if (isInvalidStoredSessionError(sessionResult.error)) {
@@ -127,6 +144,19 @@ function RootNavigator() {
   useEffect(() => {
     if (!initialRouteName) return;
 
+    if (
+      initialAndroidReferralCode &&
+      (initialRouteName === "auth" || initialRouteName === "onboarding")
+    ) {
+      router.replace({
+        pathname: "/create-account",
+        params: { referral_code: initialAndroidReferralCode },
+      });
+      setStartupRouteRequested(true);
+      setStartupRouteApplied(true);
+      return;
+    }
+
     const preserveCreateAccountLink =
       startupPathnameRef.current === "/create-account" &&
       (initialRouteName === "auth" || initialRouteName === "onboarding");
@@ -149,7 +179,7 @@ function RootNavigator() {
 
     router.replace(targetPath);
     setStartupRouteRequested(true);
-  }, [initialRouteName, router]);
+  }, [initialAndroidReferralCode, initialRouteName, router]);
 
   const startupRouteMatches = useMemo(() => {
     if (!initialRouteName || !startupRouteRequested) return false;
