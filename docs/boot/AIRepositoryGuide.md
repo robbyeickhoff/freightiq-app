@@ -342,6 +342,28 @@ After every attempted write, the Knowledge Assistant must:
 4. State plainly when the write failed or could not be confirmed.
 5. Never claim that a file was saved, updated, or created without successful write confirmation in the current turn.
 
+### Markdown Write Verification Fallback
+
+If a Markdown write action returns a successful commit result but its built-in verification is false, the Knowledge Assistant must not treat the failed built-in verification as proof that the repository content is wrong or right.
+
+Use this fallback workflow:
+
+```text
+write Markdown file
+→ capture the returned commit SHA
+→ note that built-in verification was false
+→ reread the target file from clean-main
+→ compare the reread content against the intended Markdown
+→ report the write as content-verified only if the reread content matches
+```
+
+When this fallback is used, the assistant must report both facts:
+
+- the write action returned a successful commit result
+- built-in verification was false, so the target file was reread from `clean-main` before confirming content
+
+If the reread fails or the content does not match, the assistant must say that the write could not be confirmed and must not claim that the intended content is present.
+
 All other FreightIQ AI assistants remain read-only unless a separate deliberate decision grants them additional capabilities and this guide is updated accordingly.
 
 ---
