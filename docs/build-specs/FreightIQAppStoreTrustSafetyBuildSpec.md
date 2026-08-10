@@ -4,8 +4,8 @@
 
 - **Status:** Approved for implementation on 2026-08-09
 - **Operating mode:** Product → Build Specification
-- **Implementation status:** Phase 5 — Focused iPhone and Pixel functional acceptance complete;
-  broader accessibility acceptance pending
+- **Implementation status:** Phase 5 — Implementation, production deployment, and focused Expo
+  acceptance complete; installed candidate and broader accessibility acceptance pending
 - **Scope:** App Store-required support, privacy, account deletion, and user-generated-content safety
 - **Canonical repository:** `/Users/robbyeickhoff/mfi`
 - **Related audit:** `docs/AppleAppStoreReleaseAudit.md`

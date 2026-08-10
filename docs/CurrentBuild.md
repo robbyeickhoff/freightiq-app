@@ -29,9 +29,12 @@ handling, contributor blocking and unblocking, moderator resolution, keyboard di
 field visibility, report loading, and permanent account deletion. Hosted verification confirmed
 deletion of a disposable account with no contributions and a second account with an owned stop and
 Driver Report; the second account's user-linked data was removed while its neutral stop facts
-remained de-identified. Mobile commit/push, candidate builds, broader large-text and screen-reader
-acceptance, App Store Connect changes, submission, and public release remain separately
-approval-gated.
+remained de-identified. The accepted mobile and repository changes were committed and pushed in
+`73e8fda`. Production candidates were then created from that exact commit: iOS build 37 is processed,
+assigned to the Early Testers group, and installed on the Product Owner's iPhone; Android version
+code 20 was uploaded manually to Google Play Closed Testing — Alpha and is currently in review.
+Focused installed-build acceptance, broader large-text and screen-reader acceptance, App Store
+submission, and public release remain separately approval-gated.
 
 The Founding Driver launch-readiness work remains preserved in this document's completed status and
 operating runbook. This App Store compliance build does not enroll a driver, expand distribution,
@@ -438,6 +441,34 @@ email-code sign-in; subsequent Back gestures minimized the app as expected. Trea
 non-reproduced observation to monitor rather than a confirmed defect. No profile, contribution, or
 session data was lost.
 
+### 2026-08-08–09 Weekend Build Closeout
+
+The weekend completed four related product and readiness units. Founding Driver launch readiness
+gained its controlled operating runbook, accepted private iPhone and Android candidates, and a
+public website amendment with program explanation, Member Sign In, and manual Request to Join. The
+Referral Program V1 then shipped across Supabase, mobile, and website with unique codes, QR and share
+links, verified account association, progress, protected admin review, qualification, two $5 reward
+records, and Paid tracking. Its full controlled acceptance passed without leaving test program data.
+
+Stop Intel Contact / Check-In was amended to support multiple named contacts with typed phone
+numbers while preserving the five-number report limit and legacy compatibility. The structure,
+persistence, report grouping, call/message actions, editing, and deletion passed on physical iPhone
+and Pixel.
+
+The App Store Trust & Safety build added native Contact Support, Privacy Policy, Community
+Guidelines, Blocked Contributors, report/block actions, moderator tooling, and permanent in-app
+account deletion. The public support, privacy, deletion, and Community Guidelines pages are live;
+the protected moderation queue, three production migrations, and authenticated deletion function
+are deployed. Reporting, duplicate handling, blocking, unblocking, moderator resolution, and both
+empty-account and contributed-data deletion scenarios passed. Hosted verification confirmed that
+user-linked data was removed while approved neutral stop facts remained de-identified.
+
+Physical testing exposed and resolved the Android Profile icon fallback, referral verification and
+incoming-link handoff defects, a tab-navigation regression, report/block permission mismatches,
+Support and Guidelines card spacing, iPhone and Android keyboard obstruction, and a false Driver
+Reports empty state during loading. TypeScript and focused mobile lint pass with zero errors and the
+same 11 pre-existing warnings.
+
 ---
 
 ## Remaining Release Gates
@@ -446,6 +477,12 @@ session data was lost.
   small new-tester group before any broader tester expansion.
 - Continue monitoring Android Back behavior for recurrence; the single 2026-08-04 Authentication
   return was not reproduced in controlled password, email-code, cold-start, or root-Back checks.
+- Complete focused installed-build acceptance of iOS build 37, prioritizing Refer a Driver, the
+  installed-app **Open in FreightIQ** handoff, and the Trust & Safety surfaces.
+- After Google Play approves Android version code 20, install it from Closed Testing — Alpha and
+  complete the corresponding focused Pixel pass.
+- Complete broader large-text, VoiceOver, and TalkBack acceptance before any public-store
+  submission.
 - Obtain separate Product Owner approval before changing TestFlight groups, the Google Play closed-
   test audience, or any broader distribution state.
 
@@ -499,6 +536,8 @@ special build is required solely for that check.
 
 ## Next Safe Step
 
-Resume the normal FreightIQ release workflow. During the next approved TestFlight build, verify
-that **Open in FreightIQ** from the referral admin page opens the selected Stop Intel screen in the
-installed app. Do not create a separate build solely for that deferred check.
+Complete focused installed-build acceptance of iOS build 37 from TestFlight, beginning with Refer a
+Driver and the **Open in FreightIQ** stop handoff, then smoke-test the new Trust & Safety surfaces and
+core app regressions. Wait for Google Play to approve Android version code 20, install it from Closed
+Testing — Alpha, and repeat the focused Pixel pass. Record both candidate outcomes before any
+broader distribution or public-store submission.
