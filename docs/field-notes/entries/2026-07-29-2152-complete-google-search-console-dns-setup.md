@@ -6,7 +6,7 @@
 
 **Status:** Action Required
 
-**Classification:** Build or workflow follow-up
+**Classification:** Operational concern
 
 **Destination:** docs/field-notes/ActionQueue.md
 

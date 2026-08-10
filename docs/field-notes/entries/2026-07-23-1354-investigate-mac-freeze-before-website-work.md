@@ -4,11 +4,11 @@
 
 **Timezone:** UTC
 
-**Status:** Reviewed
+**Status:** Documented
 
-**Classification:** Completed Investigation
+**Classification:** Operational concern
 
-**Destination:** Archive
+**Destination:** docs/field-notes/entries/2026-07-23-1354-investigate-mac-freeze-before-website-work.md
 
 ## Original Thought
 

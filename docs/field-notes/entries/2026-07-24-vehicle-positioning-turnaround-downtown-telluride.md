@@ -2,11 +2,11 @@
 
 **Captured:** 2026-07-28
 
-**Status:** Ready for Workflow
+**Status:** Documented
 
-**Classification:** Routing Lab Insight
+**Classification:** Duplicate
 
-**Destination:** Routing Lab documentation and routing knowledge
+**Destination:** docs/field-notes/entries/2026-07-28-vehicle-positioning-turnaround-downtown-telluride.md
 
 ## Original Thought
 
@@ -49,3 +49,12 @@ Potential reusable rule:
 
 - Should Vehicle Positioning become a first-class lesson type in Routing Lab?
 - Are there additional repeatable examples beyond Downtown Telluride?
+
+---
+
+## Review Outcome
+
+This earlier duplicate is documented through
+`docs/field-notes/entries/2026-07-28-vehicle-positioning-turnaround-downtown-telluride.md`, which
+preserves the same original thought and the completed review. Follow-up is tracked once in
+`docs/field-notes/ActionQueue.md`.

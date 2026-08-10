@@ -2,11 +2,11 @@
 
 **Captured:** 2026-07-28
 
-**Status:** Ready for Workflow
+**Status:** Action Required
 
 **Classification:** Routing lesson
 
-**Destination:** Routing Lab documentation and routing knowledge
+**Destination:** docs/field-notes/ActionQueue.md
 
 ## Original Thought
 
@@ -89,4 +89,6 @@ Incorporate vehicle positioning into Routing Lab documentation as a reusable rou
 
 ### Review Decision
 
-Keep as Ready for Workflow and route into Routing Lab documentation. Classification normalized from `Routing Lab Insight` to the approved `Routing lesson` classification.
+Keep as Action Required and route the approved follow-up through
+`docs/field-notes/ActionQueue.md`. Classification normalized from `Routing Lab Insight` to the
+approved `Routing lesson` classification.

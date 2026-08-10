@@ -18,7 +18,7 @@
 
 ---
 
-Last Updated: 2026-08-05
+Last Updated: 2026-08-10
 
 ---
 
@@ -108,10 +108,10 @@ changing their accepted behavior.
 
 ##### Active Tasks
 
-- [ ] Polish the lower action area of the Welcome Back screen so Forgot Password, Create Account,
+- [x] Polish the lower action area of the Welcome Back screen so Forgot Password, Create Account,
   and Email Me a Login Code Instead use consistent alignment, spacing, sizing, and interaction
   treatment.
-- [ ] Prevent duplicate usernames after trimming surrounding spaces and ignoring capitalization,
+- [x] Prevent duplicate usernames after trimming surrounding spaces and ignoring capitalization,
   and show a friendly “That username is already taken” message.
 
 ---
@@ -212,7 +212,7 @@ Strengthen the systems, infrastructure, and safeguards that quietly build user c
 
 ### Active Tasks
 
-- [ ] Add an in-app pathway for users to initiate deletion of their FreightIQ account and associated personal data.
+- [x] Add an in-app pathway for users to initiate deletion of their FreightIQ account and associated personal data.
 
 #### Security Audit
 
@@ -546,6 +546,61 @@ Completed
 ---
 
 ## App
+
+### App Store Trust & Safety
+
+Completed
+
+- ✓ Added in-app Support, Privacy Policy, Community Guidelines, reporting, contributor blocking,
+  moderation, and permanent account deletion.
+- ✓ Deployed and verified the required production database migrations, authenticated account-
+  deletion function, and public website policy changes.
+- ✓ Verified reporting, duplicate-report handling, blocking and unblocking, moderation,
+  keyboard behavior, and permanent account deletion on physical iPhone and Pixel devices.
+- ✓ Verified hosted deletion of disposable accounts with and without contributed stop data,
+  preserving neutral stop facts only after de-identification.
+- ✓ Accepted and pushed the implementation in `73e8fda` on 2026-08-09; installed-candidate and
+  broader accessibility acceptance remain release gates in `docs/CurrentBuild.md`.
+
+---
+
+### Founding Driver Program V0
+
+Completed
+
+- ✓ Implemented protected enrollment, meaningful activity, qualifying-stop review, progress,
+  rewards, leaderboard totals, profile images, mobile capture, and driver/admin web portals.
+- ✓ Added the approved public Founding Drivers explanation, Request to Join flow, Member Sign
+  In, and production operating runbook.
+- ✓ Completed database isolation, rollback, website, mobile, production, and physical-device
+  acceptance without enrolling Driver #1 or starting a participation window.
+- ✓ Preserved enrollment and real-driver launch as separate operational approval gates.
+
+---
+
+### Referral Program V1
+
+Completed
+
+- ✓ Added permanent personal referral codes, share links, QR invitations, account-creation
+  attribution, 30-day qualification tracking, protected review, and two $5 rewards.
+- ✓ Completed controlled end-to-end referral acceptance, including qualification, rewards,
+  payment recording, privacy, and cleanup of temporary production records.
+- ✓ Corrected the Android cold-start referral handoff and pushed the narrow fix in `175264d` on
+  2026-08-09; installed Android candidate acceptance remains a release gate.
+
+---
+
+### Contact Support
+
+Completed
+
+- ✓ Added Contact Support under Settings through the live FreightIQ website form with an email
+  fallback.
+- ✓ Verified native presentation and focused keyboard behavior on physical iPhone and Pixel
+  devices as part of the App Store Trust & Safety build.
+
+---
 
 ### Authentication V2
 

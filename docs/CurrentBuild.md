@@ -37,8 +37,10 @@ referral acceptance exposed an Android cold-start defect: **Open FreightIQ** lau
 then routed a signed-out driver to Sign In instead of Create Account with the referral code. A
 narrow Android-only correction is now the active release-candidate step. The corrected code and
 physical-Pixel Expo regression checks passed for ordinary launch, Sign In, and Create
-Account. Exact production-scheme acceptance, broader large-text and screen-reader acceptance, App
-Store submission, and public release remain separately approval-gated.
+Account, and the narrow fix was committed and pushed in `175264d` on 2026-08-09. Android version
+code 21 has not been created and remains separately approval-gated. Exact production-scheme
+acceptance, broader large-text and screen-reader acceptance, App Store submission, and public
+release remain separately approval-gated.
 
 The Founding Driver launch-readiness work remains preserved in this document's completed status and
 operating runbook. This App Store compliance build does not enroll a driver, expand distribution,
@@ -483,8 +485,9 @@ same 11 pre-existing warnings.
   return was not reproduced in controlled password, email-code, cold-start, or root-Back checks.
 - Complete focused installed-build acceptance of iOS build 37, prioritizing Refer a Driver, the
   installed-app **Open in FreightIQ** handoff, and the Trust & Safety surfaces.
-- Correct the Android-only cold-start referral handoff, verify it on physical Pixel, and replace
-  Android version code 20 only after separate build approval.
+- Create Android version code 21 from pushed correction `175264d` only after separate build
+  approval, verify the installed cold-start referral handoff on physical Pixel, and replace Android
+  version code 20 only after acceptance.
 - Complete broader large-text, VoiceOver, and TalkBack acceptance before any public-store
   submission.
 - Obtain separate Product Owner approval before changing TestFlight groups, the Google Play closed-
@@ -542,7 +545,7 @@ special build is required solely for that check.
 
 Complete focused installed-build acceptance of iOS build 37 from TestFlight, beginning with Refer a
 Driver and the **Open in FreightIQ** stop handoff, then smoke-test the new Trust & Safety surfaces and
-core app regressions. Verify the Android-only cold-start referral correction in Expo, then obtain
-separate approval to commit, push, and create Android version code 21. Replace version code 20 in
-Closed Testing — Alpha only after physical Pixel acceptance. Record both candidate outcomes before
-any broader distribution or public-store submission.
+core app regressions. Obtain separate approval to create Android version code 21 from pushed
+correction `175264d`, then verify the installed cold-start referral handoff on physical Pixel.
+Replace version code 20 in Closed Testing — Alpha only after acceptance. Record both candidate
+outcomes before any broader distribution or public-store submission.

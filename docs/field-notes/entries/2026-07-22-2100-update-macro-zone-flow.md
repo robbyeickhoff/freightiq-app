@@ -4,11 +4,11 @@
 
 **Timezone:** UTC
 
-**Status:** Reviewed
+**Status:** Documented
 
-**Classification:** Completed Documentation Correction
+**Classification:** Documentation correction
 
-**Destination:** Archive
+**Destination:** docs/routing/MacroZones.md
 
 ## Original Thought
 

@@ -2,11 +2,11 @@
 
 **Captured:** 2026-08-06
 
-**Status:** Ready for Workflow
+**Status:** Action Required
 
-**Classification:** Routing Lab Insight
+**Classification:** Routing lesson
 
-**Destination:** Routing Lab product and learning-model documentation
+**Destination:** docs/field-notes/ActionQueue.md
 
 ## Original Thought
 
@@ -105,3 +105,25 @@ Each captured correction could include:
 - Should estimated miles or minutes saved be captured when known?
 - Should Critical corrections receive more weight in future route proposals?
 - How should Routing Lab handle corrections where the impact is uncertain?
+
+---
+
+## Review Outcome
+
+### Final Summary
+
+Routing Lab should distinguish corrections by operational consequence so major route failures carry
+more learning weight than minor or equivalent sequence preferences.
+
+### Recommended Next Action
+
+During the next approved Routing Lab workflow, decide how impact levels are assigned and weighted,
+then incorporate the approved model into lesson review and route evaluation documentation.
+
+### Related Entry or Existing Work
+
+`docs/build-specs/FreightIQRoutingLabBuildSpec.md`
+
+### Review Decision
+
+Action Required. Track the approved follow-up in `docs/field-notes/ActionQueue.md`.
