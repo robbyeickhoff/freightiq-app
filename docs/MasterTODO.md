@@ -402,6 +402,16 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 
 ---
 
+#### Biometric Access
+
+- [ ] Add optional biometric unlock to the FreightIQ mobile app after Near-Term Search Expansion is complete. Use Face ID on supported iPhones and the Android system biometric prompt for fingerprint or supported face authentication.
+- [ ] Treat biometrics as a secure device-local unlock for the driver's existing Supabase session, not as a replacement account system. Require a normal sign-in first and preserve email/password recovery and fallback.
+- [ ] Add passkey sign-in to the Founding Drivers Dashboard when the supporting Supabase implementation is mature enough for production use. Allow the device to unlock the passkey with Face ID, fingerprint, supported face authentication, or screen lock.
+- [ ] Verify session handling, device enrollment and removal, fallback, recovery, logout, lost-device behavior, and iPhone/Android compatibility before release.
+- [ ] Complete Biometric Access before building Locked Private Intel so the secure device-unlock foundation can inform protection of gate codes and other owner-only information.
+
+---
+
 ### Driver Experience
 
 - [ ] Locked Private Intel: let a signed-in driver save stop-specific private information such as gate codes in a separate owner-only experience. Keep it completely separate from shared Driver Reports and all shared search, attribution, Founder Program, and recognition surfaces. Require owner-scoped Row Level Security and a dedicated data model rather than a client-side visibility flag. Before implementation, define the threat model and decide whether owner-only Supabase access is sufficient or whether client-side encryption and a device unlock step are required before claiming that only the driver can read it.
