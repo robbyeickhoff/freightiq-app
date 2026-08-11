@@ -424,8 +424,8 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 - [x] Review and approve the four stops created after the original locality snapshot: Sheridan
   Opera House and Zinque Design as Telluride, La Piazza del Villaggio Ristorante as Mountain
   Village, and Ouray County Road & Bridge as Ridgway.
-- [x] Prepare the exact guarded 227-stop production locality backfill runbook; execution remains
-  separately approval-gated.
+- [x] Prepare the exact guarded 227-stop production locality backfill runbook and preserve its
+  separate execution approval gate.
 - [x] Complete City & Driver Search V1 Phase 2 local database readiness: clean replay, pre-Phase-2
   removal, forward restoration, 18 focused tests, schema lint, and both advisors verified.
 - [x] Prepare the exact production schema migration runbook and verify the linked dry run contains
@@ -433,6 +433,9 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 - [x] Resolve the production-backup gate by upgrading to Pro and verifying a completed physical
   backup; apply and production-verify the separately approved Phase 2 schema migration with 227
   visible stops preserved and zero locality rows populated.
+- [x] Separately approve, execute, and production-verify the exact guarded 227-stop locality
+  backfill; all approved locality tuples match, no null or partial visible tuple remains, and both
+  existing stop search and new city search pass authenticated smoke checks.
 - [ ] Recent Cities.
 - [ ] Save Today's Stops.
 

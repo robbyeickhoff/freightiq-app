@@ -1,10 +1,10 @@
 # City & Driver Search V1 — Production Locality Backfill Runbook
 
-> **Status: Prepared for review; execution not authorized — 2026-08-11**
+> **Status: Production backfill executed and verified — 2026-08-11**
 >
 > This runbook defines the exact stop-ID-specific production locality backfill for the 227 visible
-> stops approved by the Product Owner. It does not authorize a schema migration, production write,
-> deployment, distribution, or release.
+> stops approved by the Product Owner. The approved production write is complete. It does not
+> authorize an application implementation, deployment, distribution, or release.
 
 ## Governing Records
 
@@ -446,6 +446,28 @@ After commit, verify read-only that:
 10. the new city search functions return representative expected cities only if those functions
     were included in the separately approved Phase 2 migration.
 
+### Production execution record
+
+- Product Owner execution approval: received in the active FreightIQ task
+- Execution time: 2026-08-11 12:18 UTC
+- Executor: Codex through the authenticated Supabase production SQL executor
+- Production project: `finjqunyuyfxiesumuxk`
+- Transaction result: committed successfully as one guarded operation
+- Visible stops before and after: 227
+- Exact approved rows written: 227
+- `locality_source = 'reviewed_backfill'`: 227
+- Null or partial visible locality tuples after execution: 0
+- Exact mapping fingerprint: matched the approved 227-row artifact
+- Telluride and Mountain Village: retained as distinct factual localities; discovery search passed
+- Product Owner exceptions: Saturday Test verified as Grand Junction; Adaptive Manufacturing
+  Solutions verified as Burton, Michigan
+- Existing authenticated stop search: passed with five representative results
+- New authenticated city search: passed; `tell` returned Telluride
+- Migration history: aligned through `20260811111436_add_city_driver_search_foundation`
+- Advisor result: no backfill-caused error-level security or performance finding; existing project
+  advisories remain unchanged in scope
+- App implementation, deployment, distribution, and release: not performed
+
 Record the execution timestamp, executor, before/after counts, migration version, verification
 results, and any advisor findings in this runbook. Never record credentials or private row data.
 
@@ -467,7 +489,6 @@ erasing newer data.
 
 ## Approval Gate
 
-This runbook is prepared for review only. The Phase 2 migration, clean migration replay, focused
-local verification, and forward-restoration check are complete. Production migration, this
-production backfill, application implementation, commit, push, deployment, distribution, and
-release remain separate approval gates.
+The Phase 2 migration and the separately approved fixed-ID production backfill are complete and
+verified. Application implementation, deployment, distribution, and release remain separate
+approval gates.

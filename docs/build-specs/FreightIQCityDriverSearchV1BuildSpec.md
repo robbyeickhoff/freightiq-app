@@ -643,8 +643,9 @@ Founding Driver admin provisioning only when the production admin Auth row is ab
 optional profile-image Storage-policy comment no longer aborts when the migration role does not own
 the managed Storage table. A full clean database reset now passes. Resetting to the migration before
 Phase 2 proves the new columns and functions are absent; reapplying Phase 2 restores them; and the
-18-test suite plus schema lint pass again afterward. Phase 2 is locally verified. Production
-migration and locality backfill remain separately approval-gated.
+18-test suite plus schema lint pass again afterward. Phase 2 was production-migrated and the
+separately approved 227-stop locality backfill was executed and verified on 2026-08-11. Application
+implementation, deployment, distribution, and release remain separately approval-gated.
 
 1. Create a migration through the documented Supabase migration workflow.
 2. Add only the approved locality fields, normalization, indexes, and bounded search functions.

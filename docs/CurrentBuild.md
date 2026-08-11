@@ -17,8 +17,7 @@ Implement the approved City & Driver Search V1 plan from
 `docs/build-specs/FreightIQCityDriverSearchV1BuildSpec.md`, beginning with the Phase 2 database
 foundation before any mobile search experience.
 
-The approved 227-stop locality mapping and guarded production backfill runbook are complete, but no
-locality has been written to production. Local migration
+The approved 227-stop locality mapping and guarded production backfill are complete. Local migration
 `20260811111436_add_city_driver_search_foundation.sql` now adds the approved locality contract,
 driver-confirmed write path, normalized indexes, Telluride–Mountain Village discovery relationship,
 and four authenticated, security-invoker city/driver search functions. The focused local pgTAP
@@ -28,18 +27,20 @@ fresh environments now skip admin provisioning only when the production admin ac
 and an optional Storage-policy comment no longer fails when the migration role does not own the
 managed Storage table. A full clean `supabase db reset` now passes. Resetting to the migration before
 Phase 2 removes the locality columns and functions, reapplying Phase 2 restores them, and all 18
-tests pass again afterward. Phase 2 is locally verified. Production migration, locality backfill,
-app implementation, commit, push, deployment, distribution, and release remain separate approval
-gates. The production schema migration runbook is prepared, linked history matches through the last
-applied migration, and the non-mutating dry run lists only the one new Phase 2 migration with no
-seed or role changes.
+tests pass again afterward. Phase 2 is locally verified. Application implementation, deployment,
+distribution, and release remain separate approval gates.
 
 The Product Owner upgraded the organization to Pro, and a completed 2026-08-11 physical backup was
 verified. The separately approved production schema migration was then applied and verified at
-approximately 11:57 UTC. Production retains 227 visible stops and zero populated locality rows; all
+approximately 11:57 UTC. All
 four nullable locality columns, four security-invoker search functions, grants, trigger, constraint,
-and four indexes passed verification, and existing stop search remained callable. The locality
-backfill was not run and remains separately approval-gated.
+and four indexes passed verification, and existing stop search remained callable. The separately
+approved fixed-ID locality backfill was executed at approximately 12:18 UTC as one guarded
+transaction. Production retains exactly 227 visible stops; all 227 match the approved city, state,
+country, and `reviewed_backfill` source values, with zero null or partial locality tuples. The exact
+mapping fingerprint, Telluride and Mountain Village distinction, Saturday Test, Burton exception,
+existing authenticated stop search, and new authenticated city search all passed. No application
+implementation or deployment was performed.
 
 ---
 

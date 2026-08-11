@@ -23,7 +23,7 @@ Provide the exact stop-ID-specific input for the future reviewed locality backfi
 - Total approved locality rows: 227
 - Current post-cleanup production baseline: 227 visible stops
 - New post-snapshot stops requiring separate locality review before backfill: 0
-- Locality backfill rows written: 0
+- Locality backfill rows written and production-verified: 227
 
 ## Decision Meanings
 
