@@ -32,6 +32,14 @@ Verified GR-001 route data
 → improved later proposal
 ```
 
+## Long-Term Product Context
+
+Future AI Routing direction is documented in:
+
+`docs/design/AIRoutingAssistantVision.md`
+
+That document is non-controlling product vision and does not expand the approved scope of Routing Lab Slice 1. This specification remains authoritative for current implementation.
+
 ## Governing Documents
 
 Implementation must follow:
