@@ -13,38 +13,33 @@ answer one question:
 
 ## Current Objective
 
-Implement the approved App Store Trust & Safety build from
-`docs/build-specs/FreightIQAppStoreTrustSafetyBuildSpec.md` before FreightIQ's first public Apple App
-Store submission.
+Implement the approved City & Driver Search V1 plan from
+`docs/build-specs/FreightIQCityDriverSearchV1BuildSpec.md`, beginning with the Phase 2 database
+foundation before any mobile search experience.
 
-The build adds the required in-app support, privacy, community-guideline, reporting, blocking,
-moderation, and permanent account-deletion controls while preserving FreightIQ as a professional
-operational-knowledge product rather than a social network. Local implementation is complete for
-Settings, public policies, reporting, blocking, moderation, and account deletion. Static checks,
-local migrations, schema lint, advisors, and rollback-only moderation authorization tests pass.
-The three approved production database migrations, authenticated `delete-account` Edge Function,
-and website changes were deployed and verified on 2026-08-09. Focused physical iPhone and Pixel
-functional acceptance passed support and guideline presentation, reporting and duplicate-report
-handling, contributor blocking and unblocking, moderator resolution, keyboard dismissal and focused
-field visibility, report loading, and permanent account deletion. Hosted verification confirmed
-deletion of a disposable account with no contributions and a second account with an owned stop and
-Driver Report; the second account's user-linked data was removed while its neutral stop facts
-remained de-identified. The accepted mobile and repository changes were committed and pushed in
-`73e8fda`. Production candidates were then created from that exact commit: iOS build 37 is processed,
-assigned to the Early Testers group, and installed on the Product Owner's iPhone. Android version
-code 20 reached Google Play Closed Testing — Alpha and passed an initial smoke test, but physical
-referral acceptance exposed an Android cold-start defect: **Open FreightIQ** launched the app and
-then routed a signed-out driver to Sign In instead of Create Account with the referral code. A
-narrow Android-only correction is now the active release-candidate step. The corrected code and
-physical-Pixel Expo regression checks passed for ordinary launch, Sign In, and Create
-Account, and the narrow fix was committed and pushed in `175264d` on 2026-08-09. Android version
-code 21 has not been created and remains separately approval-gated. Exact production-scheme
-acceptance, broader large-text and screen-reader acceptance, App Store submission, and public
-release remain separately approval-gated.
+The approved 227-stop locality mapping and guarded production backfill runbook are complete, but no
+locality has been written to production. Local migration
+`20260811111436_add_city_driver_search_foundation.sql` now adds the approved locality contract,
+driver-confirmed write path, normalized indexes, Telluride–Mountain Village discovery relationship,
+and four authenticated, security-invoker city/driver search functions. The focused local pgTAP
+suite passes all 18 tests, schema lint reports no errors, and both advisors report no new error-level
+finding. The two older local-replay defects were corrected without changing live production state:
+fresh environments now skip admin provisioning only when the production admin account is absent,
+and an optional Storage-policy comment no longer fails when the migration role does not own the
+managed Storage table. A full clean `supabase db reset` now passes. Resetting to the migration before
+Phase 2 removes the locality columns and functions, reapplying Phase 2 restores them, and all 18
+tests pass again afterward. Phase 2 is locally verified. Production migration, locality backfill,
+app implementation, commit, push, deployment, distribution, and release remain separate approval
+gates. The production schema migration runbook is prepared, linked history matches through the last
+applied migration, and the non-mutating dry run lists only the one new Phase 2 migration with no
+seed or role changes.
 
-The Founding Driver launch-readiness work remains preserved in this document's completed status and
-operating runbook. This App Store compliance build does not enroll a driver, expand distribution,
-or initiate a public release.
+The Product Owner upgraded the organization to Pro, and a completed 2026-08-11 physical backup was
+verified. The separately approved production schema migration was then applied and verified at
+approximately 11:57 UTC. Production retains 227 visible stops and zero populated locality rows; all
+four nullable locality columns, four security-invoker search functions, grants, trigger, constraint,
+and four indexes passed verification, and existing stop search remained callable. The locality
+backfill was not run and remains separately approval-gated.
 
 ---
 

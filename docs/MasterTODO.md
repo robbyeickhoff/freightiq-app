@@ -394,9 +394,45 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 
 #### Near-Term Search Expansion
 
-- [ ] Search and browse FreightIQ stops by city so a driver can intentionally explore a service area without first moving the map there.
-- [ ] Search FreightIQ stops by contributing username so drivers can find the stops and Intel associated with a known FreightIQ contributor.
-- [ ] Define clear result labels, privacy boundaries, ranking behavior, and combined city/username filtering before implementation.
+- [ ] Implement [City & Driver Search V1](build-specs/FreightIQCityDriverSearchV1BuildSpec.md):
+  use the existing map-search entry point, grouped All results, and All / Stops / Cities / Drivers
+  scope controls.
+- [ ] Open city results as list-first FreightIQ stop collections with compact counts and an optional
+  Map view.
+- [ ] Open driver results as list-first collections of all visible, durably attributable shared
+  contributions with compact distinct-stop counts and an optional Map view.
+- [x] Define the approved V1 result labels, privacy boundaries, ranking direction, list-first
+  collections, and scope-control interaction; combined city/driver filtering remains outside V1.
+- [x] Complete the authorized City & Driver Search V1 Phase 1 read-only production, repository,
+  provider, locality, attribution, and trust-boundary investigation.
+- [x] Review and approve the Phase 1 structured-locality, reviewed-backfill, authenticated-function,
+  permission, and future locality-capture contract before implementation.
+- [x] Prepare the read-only, stop-ID-specific existing-stop locality mapping: 223 of 237 visible
+  stops approved and 14 approved deletion candidates held out of the backfill.
+- [x] Review and approve the exact existing-stop locality mapping before generating any production
+  backfill operation.
+- [x] Complete the read-only production dependency audit for the 14 approved deletion candidates:
+  seven linked reports and one entrance-photo object require controlled cleanup.
+- [x] Prepare the recoverable production cleanup procedure for the 14 deletion candidates.
+- [x] Review, separately approve, execute, and production-verify the complete cleanup procedure:
+  14 stops, seven linked reports, and one entrance-photo object removed; protected keep records
+  preserved.
+- [x] Complete the focused Product Owner decision review for the 21 held locality exceptions: eight
+  resolved and thirteen marked as deletion candidates.
+- [x] Implement the approved Telluride–Mountain Village discovery relationship locally without
+  rewriting factual Mountain Village locality values.
+- [x] Review and approve the four stops created after the original locality snapshot: Sheridan
+  Opera House and Zinque Design as Telluride, La Piazza del Villaggio Ristorante as Mountain
+  Village, and Ouray County Road & Bridge as Ridgway.
+- [x] Prepare the exact guarded 227-stop production locality backfill runbook; execution remains
+  separately approval-gated.
+- [x] Complete City & Driver Search V1 Phase 2 local database readiness: clean replay, pre-Phase-2
+  removal, forward restoration, 18 focused tests, schema lint, and both advisors verified.
+- [x] Prepare the exact production schema migration runbook and verify the linked dry run contains
+  only the one approved Phase 2 migration with no seed or role changes.
+- [x] Resolve the production-backup gate by upgrading to Pro and verifying a completed physical
+  backup; apply and production-verify the separately approved Phase 2 schema migration with 227
+  visible stops preserved and zero locality rows populated.
 - [ ] Recent Cities.
 - [ ] Save Today's Stops.
 

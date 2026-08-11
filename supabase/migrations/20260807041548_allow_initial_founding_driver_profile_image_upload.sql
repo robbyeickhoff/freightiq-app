@@ -23,5 +23,12 @@ using (
   )
 );
 
-comment on policy profile_images_select on storage.objects is
-  'Allows Storage INSERT RETURNING and upsert metadata access for an enrolled driver''s own fixed image path, while retaining operation-scoped reads for authorized participants and admins.';
+do $$
+begin
+  comment on policy profile_images_select on storage.objects is
+    'Allows Storage INSERT RETURNING and upsert metadata access for an enrolled driver''s own fixed image path, while retaining operation-scoped reads for authorized participants and admins.';
+exception
+  when insufficient_privilege then
+    raise notice 'Skipping optional profile_images_select comment because the migration role does not own storage.objects';
+end;
+$$;

@@ -129,16 +129,20 @@ begin
   from auth.users
   where lower(email) = lower('robbyeickhoff@gmail.com');
 
-  if admin_count <> 1 then
-    raise exception 'Expected exactly one FreightIQ admin account for robbyeickhoff@gmail.com; found %', admin_count;
+  if admin_count > 1 then
+    raise exception 'Expected at most one FreightIQ admin account for robbyeickhoff@gmail.com; found %', admin_count;
   end if;
 
-  select id
-    into admin_user_id
-  from auth.users
-  where lower(email) = lower('robbyeickhoff@gmail.com');
+  if admin_count = 1 then
+    select id
+      into admin_user_id
+    from auth.users
+    where lower(email) = lower('robbyeickhoff@gmail.com');
 
-  insert into private.founding_driver_admins (user_id)
-  values (admin_user_id);
+    insert into private.founding_driver_admins (user_id)
+    values (admin_user_id);
+  else
+    raise notice 'FreightIQ admin account is absent; skipping local/fresh-environment admin provisioning';
+  end if;
 end;
 $$;
