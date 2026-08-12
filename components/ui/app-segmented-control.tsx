@@ -15,6 +15,7 @@ export type AppSegmentedControlProps<Value extends string> = {
   disabled?: boolean;
   onChange: (value: Value) => void;
   options: readonly AppSegmentedOption<Value>[];
+  segmentStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   value: Value;
@@ -25,6 +26,7 @@ export function AppSegmentedControl<Value extends string>({
   disabled = false,
   onChange,
   options,
+  segmentStyle,
   style,
   textStyle,
   value,
@@ -43,7 +45,7 @@ export function AppSegmentedControl<Value extends string>({
           label={option.label}
           onPress={() => onChange(option.value)}
           selected={value === option.value}
-          style={styles.segment}
+          style={[styles.segment, segmentStyle]}
           textStyle={textStyle}
         />
       ))}

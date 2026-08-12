@@ -42,6 +42,46 @@ mapping fingerprint, Telluride and Mountain Village distinction, Saturday Test, 
 existing authenticated stop search, and new authenticated city search all passed. No application
 implementation or deployment was performed.
 
+City & Driver Search Phase 3 is now implemented locally in the existing map search surface. Engaging
+search reveals the approved **All**, **Stops**, **Cities**, and **Drivers** scopes; All queries the
+existing FreightIQ stop search, structured city search, privacy-safe driver search, and Mapbox
+Nearby Places independently and renders only populated groups in the approved order. City and
+driver rows show compact authoritative distinct-stop counts. Source failures remain isolated,
+stale requests cannot replace newer query or scope state, and Stops or provider-only searches avoid
+unneeded requests. The existing FreightIQ stop selection and Mapbox place-selection paths are
+unchanged. TypeScript and lint pass with zero errors; lint retains only the same 11 pre-existing
+warnings.
+
+City & Driver Search Phases 4 and 5 are also implemented locally through one shared, list-first
+collection screen. City rows open authoritative stop collections with compact address, Core Intel,
+and visible Driver Report summaries. Driver rows open privacy-safe attributable collections with
+city and contribution-type summaries. Both start in List, switch to Map without changing the
+result set, fit the collection rather than the driver's GPS position, and open a selected stop
+through the existing map Preview Card before returning to the same collection. Loading, empty,
+retry, large-list, and accessibility states are included. Representative authenticated production
+reads returned three valid Grand Junction rows and three valid driver-contribution rows. TypeScript,
+lint, and a local iOS Expo bundle pass; lint retains only the same 11 pre-existing warnings. No
+database write, commit, push, candidate build, deployment, distribution, or release was performed.
+
+Focused physical-iPhone acceptance passed grouped All search, dedicated Stops, Cities, and Drivers
+scopes, Grand Junction list and Map collections, Driver list and Map collections, existing Preview
+Card selection, collection-preserving return, original query and scope return, and empty results.
+Review identified two refinements that were implemented and retested: All now shows at most three
+FreightIQ Stop rows before Cities and later groups while the dedicated Stops scope retains the full
+bounded list, and compact scope-control spacing keeps Drivers fully visible. TypeScript and lint
+still pass with zero errors and only the same 11 pre-existing warnings; the local iOS bundle passes.
+The same focused search, City collection, Driver collection, List/Map, Preview Card, and return-flow
+acceptance subsequently passed on the physical Pixel. Large-text, VoiceOver, TalkBack, reduced-
+motion, and representative regression checks also passed. Regression review then found that City
+collection Core Intel counts used legacy stop fields while the existing Preview Card used visible
+shared Driver Reports plus the saved Delivery Zone. The correction was implemented through
+`20260812025503_align_city_core_intel_with_preview.sql`, expanded the focused pgTAP suite from 18
+to 19 passing tests, passed public/private schema lint, and was separately approved, applied, and
+verified in production. Alpine Lumber now returns `4/4 Core Intel` with its one visible Driver
+Report, matching the Preview Card; the function remains authenticated, security-invoker, bounded,
+and block/restriction aware. No stop, report, user, or photo data changed. No commit, push,
+candidate build, deployment, distribution, or release was performed.
+
 ---
 
 ## Completed Build Status

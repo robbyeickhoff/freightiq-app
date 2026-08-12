@@ -681,6 +681,24 @@ implementation, deployment, distribution, and release remain separately approval
 
 ### Phase 6 — Integrated Acceptance
 
+**Focused physical-iPhone status — 2026-08-11:** The Product Owner accepted grouped All search,
+dedicated Stops, Cities, and Drivers scopes, City and Driver list-first collections, collection Map
+views, existing Preview Card selection, collection-preserving return, original query/scope return,
+and empty search behavior in Expo Go. Review identified and accepted two focused refinements: All
+now shows at most three FreightIQ Stop rows before later groups while Stops retains the full bounded
+result list, and the four scope controls use compact spacing so Drivers remains fully visible. Both
+refinements passed physical-iPhone retest. TypeScript, lint, and the local iOS bundle pass with zero
+new warnings. The same focused search, collection, List/Map, Preview Card, and return-state flow
+subsequently passed on the physical Pixel. Large-text, VoiceOver, TalkBack, reduced-motion, and
+representative regression checks passed. Regression review found that the City collection counted
+legacy stop-level Core Intel while the Preview Card counted visible shared Driver Report values plus
+the saved Delivery Zone. Migration `20260812025503_align_city_core_intel_with_preview.sql` now
+aligns the collection with the Preview Card, preserves blocking and restriction filtering, and adds
+a focused privacy regression check. All 19 pgTAP tests and public/private schema lint pass. The
+separately approved production migration was applied and verified: Alpine Lumber returns `4/4 Core
+Intel` and one visible Driver Report. Commit, push, candidate build, distribution, and release
+remain separately gated.
+
 1. Run TypeScript and focused lint.
 2. Run database tests, schema lint, and advisors.
 3. Verify representative queries on iPhone and Pixel.

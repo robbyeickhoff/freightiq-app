@@ -28,6 +28,7 @@ import { NavigationAppPicker } from "@/components/navigation-app-picker";
 import { AppButton } from "@/components/ui/app-button";
 import { AppCard } from "@/components/ui/app-card";
 import { AppIcon } from "@/components/ui/app-icon";
+import { AppSegmentedControl } from "@/components/ui/app-segmented-control";
 import { Elevation, Typography } from "@/constants/theme";
 import { useNavigationPreference } from "@/context/navigation-preference-context";
 import { useAppTheme } from "@/context/theme-context";
@@ -70,6 +71,21 @@ type FreightIqSearchRow = {
   match_tier: number;
   text_score: number;
   relevance_score: number;
+};
+
+type SearchScope = "all" | "stops" | "cities" | "drivers";
+
+type CitySearchRow = {
+  city: string;
+  state_code: string;
+  country_code: string;
+  stop_count: number;
+};
+
+type DriverSearchRow = {
+  contributor_id: string;
+  username: string;
+  stop_count: number;
 };
 
 type NearbyStopMatchRow = {
@@ -143,6 +159,12 @@ const MIN_SEARCH_RADIUS_METERS = 25_000;
 const MAX_SEARCH_RADIUS_METERS = 250_000;
 const PREVIEW_LOCAL_CACHE_TIMEOUT_MS = 2_000;
 const PREVIEW_REPORT_STATS_TIMEOUT_MS = 12_000;
+const SEARCH_SCOPE_OPTIONS = [
+  { label: "All", value: "all" },
+  { label: "Stops", value: "stops" },
+  { label: "Cities", value: "cities" },
+  { label: "Drivers", value: "drivers" },
+] as const;
 
 const MAPBOX_TOKEN = (Constants.expoConfig?.extra?.mapboxPublicToken as string | undefined) ?? "";
 
@@ -524,6 +546,8 @@ export default function HomeScreen() {
   const [showSelectedEntrance, setShowSelectedEntrance] = useState(false);
   const handledShowEntranceKeyRef = useRef<string | null>(null);
   const handledPreviewReturnKeyRef = useRef<string | null>(null);
+  const handledCollectionStopKeyRef = useRef<string | null>(null);
+  const openCollectionStopRef = useRef<(stop: Pin) => void>(() => {});
   const [selectedStop, setSelectedStop] = useState<Pin | null>(null);
   const selectedStopRef = useRef<Pin | null>(null);
   const [nearbyStopsOpen, setNearbyStopsOpen] = useState(false);
@@ -569,8 +593,13 @@ export default function HomeScreen() {
     windowHeight - accessibilityPreviewTop - 92 - 24,
   );
   const [freightIqResults, setFreightIqResults] = useState<Pin[]>([]);
+  const [cityResults, setCityResults] = useState<CitySearchRow[]>([]);
+  const [driverResults, setDriverResults] = useState<DriverSearchRow[]>([]);
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchScope, setSearchScope] = useState<SearchScope>("all");
+  const [failedSearchSources, setFailedSearchSources] = useState<string[]>([]);
+  const [searchInputFocused, setSearchInputFocused] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clusterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1851,11 +1880,44 @@ export default function HomeScreen() {
     }, 0);
     setQuery("");
     setFreightIqResults([]);
+    setCityResults([]);
+    setDriverResults([]);
     setResults([]);
     setTempSearchPin(null);
     setPins((prev) => mergePinsById(prev, [p]));
     jumpToStop(p, { skipNearbyChoice: true });
   }
+
+  openCollectionStopRef.current = (stop) => {
+    setPins((previous) => mergePinsById(previous, [stop]));
+    jumpToStop(stop, { skipNearbyChoice: true });
+  };
+
+  useEffect(() => {
+    const id = String(params.collectionStopId ?? "").trim();
+    const lat = Number(params.collectionStopLat);
+    const lng = Number(params.collectionStopLng);
+    if (!id || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    const key = `${id}:${lat}:${lng}`;
+    if (handledCollectionStopKeyRef.current === key) return;
+    handledCollectionStopKeyRef.current = key;
+
+    const stop: Pin = {
+      id,
+      name: String(params.collectionStopName ?? "Unknown"),
+      address: String(params.collectionStopAddress ?? "") || undefined,
+      lat,
+      lng,
+    };
+    openCollectionStopRef.current(stop);
+  }, [
+    params.collectionStopAddress,
+    params.collectionStopId,
+    params.collectionStopLat,
+    params.collectionStopLng,
+    params.collectionStopName,
+  ]);
 
   async function startDropAtCenter() {
     if (!(await requireSignedIn())) return;
@@ -2003,7 +2065,10 @@ export default function HomeScreen() {
     if (q.length < 3) {
       endMapboxSearchSession();
       setFreightIqResults([]);
+      setCityResults([]);
+      setDriverResults([]);
       setResults([]);
+      setFailedSearchSources([]);
       setSearching(false);
       return () => abortController.abort();
     }
@@ -2017,9 +2082,11 @@ export default function HomeScreen() {
           longitude: region.longitude,
         };
         const searchRadiusMeters = searchRadiusMetersFromRegion(region);
-        const sessionToken = MAPBOX_TOKEN ? getMapboxSearchSessionToken() : null;
+        const sessionToken =
+          searchScope === "all" && MAPBOX_TOKEN ? getMapboxSearchSessionToken() : null;
 
-        const freightIqRequest = (async () => {
+        const freightIqRequest = (async (): Promise<FreightIqSearchRow[]> => {
+          if (searchScope !== "all" && searchScope !== "stops") return [];
           const { data, error } = await supabase
             .rpc("search_mfi_stops", {
               p_search_text: q,
@@ -2034,8 +2101,43 @@ export default function HomeScreen() {
           return (data ?? []) as FreightIqSearchRow[];
         })();
 
+        const cityRequest = (async (): Promise<CitySearchRow[]> => {
+          if (searchScope !== "all" && searchScope !== "cities") return [];
+          const { data, error } = await supabase
+            .rpc("search_freightiq_cities", {
+              p_search_text: q,
+              p_result_limit: 10,
+            })
+            .abortSignal(abortController.signal);
+
+          if (error) throw error;
+          return (data ?? []).map((row: Record<string, unknown>) => ({
+            city: String(row.city),
+            state_code: String(row.state_code),
+            country_code: String(row.country_code),
+            stop_count: Number(row.stop_count),
+          }));
+        })();
+
+        const driverRequest = (async (): Promise<DriverSearchRow[]> => {
+          if (searchScope !== "all" && searchScope !== "drivers") return [];
+          const { data, error } = await supabase
+            .rpc("search_freightiq_drivers", {
+              p_search_text: q,
+              p_result_limit: 10,
+            })
+            .abortSignal(abortController.signal);
+
+          if (error) throw error;
+          return (data ?? []).map((row: Record<string, unknown>) => ({
+            contributor_id: String(row.contributor_id),
+            username: String(row.username),
+            stop_count: Number(row.stop_count),
+          }));
+        })();
+
         const placeRequest = (async (): Promise<PlaceResult[]> => {
-          if (!MAPBOX_TOKEN || !sessionToken) return [];
+          if (searchScope !== "all" || !MAPBOX_TOKEN || !sessionToken) return [];
 
           const proximity = `${searchCenter.longitude},${searchCenter.latitude}`;
           const url =
@@ -2085,16 +2187,22 @@ export default function HomeScreen() {
           return orderPlaceResults(mappedResults, q);
         })();
 
-        const [freightIqOutcome, placeOutcome] = await Promise.allSettled([
+        const [freightIqOutcome, cityOutcome, driverOutcome, placeOutcome] =
+          await Promise.allSettled([
           freightIqRequest,
+          cityRequest,
+          driverRequest,
           placeRequest,
-        ]);
+          ]);
 
         if (requestId !== lastRequestId.current) return;
+
+        const failedSources: string[] = [];
 
         if (freightIqOutcome.status === "rejected") {
           console.log("FreightIQ search failed", freightIqOutcome.reason);
           setFreightIqResults([]);
+          failedSources.push("Stops");
         } else {
           setFreightIqResults(
             sanitizePins(
@@ -2109,17 +2217,39 @@ export default function HomeScreen() {
           );
         }
 
+        if (cityOutcome.status === "rejected") {
+          console.log("City search failed", cityOutcome.reason);
+          setCityResults([]);
+          failedSources.push("Cities");
+        } else {
+          setCityResults(cityOutcome.value);
+        }
+
+        if (driverOutcome.status === "rejected") {
+          console.log("Driver search failed", driverOutcome.reason);
+          setDriverResults([]);
+          failedSources.push("Drivers");
+        } else {
+          setDriverResults(driverOutcome.value);
+        }
+
         if (placeOutcome.status === "rejected") {
           console.log("Place search failed", placeOutcome.reason);
           setResults([]);
+          failedSources.push("Nearby Places");
         } else {
           setResults(placeOutcome.value);
         }
+
+        setFailedSearchSources(failedSources);
       } catch (error) {
         if (requestId !== lastRequestId.current) return;
         console.log("Search failed", error);
         setFreightIqResults([]);
+        setCityResults([]);
+        setDriverResults([]);
         setResults([]);
+        setFailedSearchSources(["Search"]);
       } finally {
         if (requestId === lastRequestId.current) setSearching(false);
       }
@@ -2132,7 +2262,7 @@ export default function HomeScreen() {
       }
       abortController.abort();
     };
-  }, [endMapboxSearchSession, getMapboxSearchSessionToken, query, region]);
+  }, [endMapboxSearchSession, getMapboxSearchSessionToken, query, region, searchScope]);
 
   async function selectResult(r: PlaceResult) {
     lastRequestId.current += 1;
@@ -2209,6 +2339,8 @@ export default function HomeScreen() {
       mapRef.current?.animateToRegion(next, 300);
       setQuery("");
       setFreightIqResults([]);
+      setCityResults([]);
+      setDriverResults([]);
       setResults([]);
 
       if (matchingStop) {
@@ -2236,13 +2368,28 @@ export default function HomeScreen() {
   const resultLabel = useMemo(() => {
     if (!query.trim()) return "";
     if (query.trim().length < 3) return "Enter at least 3 characters";
-    const resultCount = freightIqResults.length + results.length;
-    return searching
-      ? "Searching…"
-      : resultCount
-        ? `${resultCount} result${resultCount === 1 ? "" : "s"}`
-        : "No results — try adding city or state";
-  }, [freightIqResults.length, query, searching, results.length]);
+    if (searching) return "Searching…";
+
+    const resultCount =
+      freightIqResults.length + cityResults.length + driverResults.length + results.length;
+    if (resultCount > 0) return searchScope === "all" ? "Search results" : "FreightIQ results";
+    if (failedSearchSources.length > 0) return "Some results are unavailable — try again";
+    if (searchScope === "cities") return "No FreightIQ cities match this search.";
+    if (searchScope === "drivers") return "No contributing drivers match this search.";
+    if (searchScope === "stops") return "No FreightIQ stops match this search.";
+    return "No FreightIQ results. Try a business, city, or driver name.";
+  }, [
+    cityResults.length,
+    driverResults.length,
+    failedSearchSources.length,
+    freightIqResults.length,
+    query,
+    results.length,
+    searchScope,
+    searching,
+  ]);
+  const visibleFreightIqResults =
+    searchScope === "all" ? freightIqResults.slice(0, 3) : freightIqResults;
 
   const showPreview = !!selectedStopId && !!selectedStop && previewVisible;
 
@@ -2513,6 +2660,7 @@ export default function HomeScreen() {
     setShowSelectedEntrance(false);
     setDeliveryZoneInspectionSource(null);
     setTempSearchPin(null);
+    if (String(params.returnToCollection ?? "") === "1") router.back();
   }
 
   useEffect(() => {
@@ -2830,7 +2978,9 @@ export default function HomeScreen() {
           onLayout={(event) => setSearchInputHeight(event.nativeEvent.layout.height)}
           value={query}
           onChangeText={setQuery}
-          placeholder="Search business name or address…"
+          onBlur={() => setSearchInputFocused(false)}
+          onFocus={() => setSearchInputFocused(true)}
+          placeholder="Search stops, cities, or drivers…"
           placeholderTextColor={colors.disabled}
           selectionColor={colors.accent}
           style={[
@@ -2845,10 +2995,23 @@ export default function HomeScreen() {
           autoCapitalize="none"
           autoCorrect={false}
           clearButtonMode="while-editing"
-          accessibilityLabel="Search by business name or address"
+          accessibilityLabel="Search stops, cities, or drivers"
         />
 
-        {recent.length ? (
+        {searchInputFocused || query.trim() ? (
+          <AppCard contentStyle={styles.scopeCard} elevation="floating">
+            <AppSegmentedControl
+              accessibilityLabel="Search scope"
+              onChange={setSearchScope}
+              options={SEARCH_SCOPE_OPTIONS}
+              segmentStyle={styles.scopeSegment}
+              textStyle={styles.scopeLabel}
+              value={searchScope}
+            />
+          </AppCard>
+        ) : null}
+
+        {recent.length && !searchInputFocused && !query.trim() ? (
           <AppCard contentStyle={styles.recentCard} elevation="floating">
             <View style={styles.recentHeader}>
               <Pressable
@@ -2997,11 +3160,14 @@ export default function HomeScreen() {
             <ScrollView style={styles.resultsScroll} keyboardShouldPersistTaps="handled">
               {freightIqResults.length > 0 ? (
                 <>
-                  <Text style={[styles.resultSectionLabel, { color: colors.textSecondary }]}>
+                  <Text
+                    accessibilityRole="header"
+                    style={[styles.resultSectionLabel, { color: colors.textSecondary }]}
+                  >
                     FreightIQ Stops
                   </Text>
 
-                  {freightIqResults.map((r) => (
+                  {visibleFreightIqResults.map((r) => (
                     <Pressable
                       key={`freightiq-${r.id}`}
                       style={[styles.resultRow, { borderBottomColor: colors.border }]}
@@ -3022,6 +3188,92 @@ export default function HomeScreen() {
                     </Pressable>
                   ))}
                 </>
+              ) : null}
+
+              {cityResults.length > 0 ? (
+                <>
+                  <Text
+                    accessibilityRole="header"
+                    style={[styles.resultSectionLabel, { color: colors.textSecondary }]}
+                  >
+                    Cities
+                  </Text>
+
+                  {cityResults.map((city) => (
+                    <Pressable
+                      accessibilityLabel={`${city.city}, ${city.state_code}, ${city.stop_count} FreightIQ ${city.stop_count === 1 ? "stop" : "stops"}`}
+                      accessibilityRole="button"
+                      key={`city-${city.country_code}-${city.state_code}-${city.city}`}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        router.push({
+                          pathname: "./search-collection",
+                          params: {
+                            kind: "city",
+                            city: city.city,
+                            stateCode: city.state_code,
+                            countryCode: city.country_code,
+                            stopCount: String(city.stop_count),
+                          },
+                        });
+                      }}
+                      style={[styles.resultRow, { borderBottomColor: colors.border }]}
+                    >
+                      <Text style={[styles.resultName, { color: colors.textPrimary }]}>
+                        {city.city}, {city.state_code}
+                      </Text>
+                      <Text style={[styles.resultAddr, { color: colors.textSecondary }]}>
+                        {city.stop_count} FreightIQ {city.stop_count === 1 ? "stop" : "stops"}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </>
+              ) : null}
+
+              {driverResults.length > 0 ? (
+                <>
+                  <Text
+                    accessibilityRole="header"
+                    style={[styles.resultSectionLabel, { color: colors.textSecondary }]}
+                  >
+                    Drivers
+                  </Text>
+
+                  {driverResults.map((driver) => (
+                    <Pressable
+                      accessibilityLabel={`${driver.username}, visible contributions at ${driver.stop_count} ${driver.stop_count === 1 ? "stop" : "stops"}`}
+                      accessibilityRole="button"
+                      key={`driver-${driver.contributor_id}`}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        router.push({
+                          pathname: "./search-collection",
+                          params: {
+                            kind: "driver",
+                            contributorId: driver.contributor_id,
+                            username: driver.username,
+                            stopCount: String(driver.stop_count),
+                          },
+                        });
+                      }}
+                      style={[styles.resultRow, { borderBottomColor: colors.border }]}
+                    >
+                      <Text style={[styles.resultName, { color: colors.textPrimary }]}>
+                        {driver.username}
+                      </Text>
+                      <Text style={[styles.resultAddr, { color: colors.textSecondary }]}>
+                        Visible contributions at {driver.stop_count}{" "}
+                        {driver.stop_count === 1 ? "stop" : "stops"}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </>
+              ) : null}
+
+              {failedSearchSources.length > 0 && !searching ? (
+                <Text style={[styles.partialFailureText, { color: colors.textSecondary }]}>
+                  {failedSearchSources.join(", ")} unavailable. Other results are still shown.
+                </Text>
               ) : null}
 
               {results.length > 0 ? (
@@ -3816,6 +4068,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
+  scopeCard: {
+    padding: 8,
+  },
+
+  scopeLabel: {
+    fontSize: 14,
+    lineHeight: 18,
+  },
+
+  scopeSegment: {
+    paddingHorizontal: 6,
+  },
+
   recentCard: {
     padding: 10,
     gap: 10,
@@ -3872,6 +4137,12 @@ const styles = StyleSheet.create({
 
   resultName: { fontWeight: "900" },
   resultAddr: {},
+
+  partialFailureText: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 12,
+  },
 
   floatingActions: {
     position: "absolute",

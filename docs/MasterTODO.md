@@ -394,13 +394,22 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 
 #### Near-Term Search Expansion
 
-- [ ] Implement [City & Driver Search V1](build-specs/FreightIQCityDriverSearchV1BuildSpec.md):
+- [x] Implement [City & Driver Search V1](build-specs/FreightIQCityDriverSearchV1BuildSpec.md)
+  locally:
   use the existing map-search entry point, grouped All results, and All / Stops / Cities / Drivers
   scope controls.
-- [ ] Open city results as list-first FreightIQ stop collections with compact counts and an optional
-  Map view.
-- [ ] Open driver results as list-first collections of all visible, durably attributable shared
+- [x] Open city results as list-first FreightIQ stop collections with compact counts and an optional
+  Map view; focused physical-iPhone acceptance passed.
+- [x] Open driver results as list-first collections of all visible, durably attributable shared
   contributions with compact distinct-stop counts and an optional Map view.
+- [x] Complete the focused City & Driver Search functional acceptance flow on physical iPhone and
+  Pixel, including grouped scopes, both collection types, List/Map, Preview Card, and return state.
+- [x] Complete remaining integrated acceptance for large text, VoiceOver, TalkBack, reduced motion,
+  and representative regression cases before commit, push, build, or release.
+- [x] Correct and production-verify City collection Core Intel completeness so visible shared
+  Driver Report values and the saved Delivery Zone match the existing Preview Card; Alpine Lumber
+  now returns `4/4 Core Intel` with one visible Driver Report, and all 19 focused database tests
+  pass.
 - [x] Define the approved V1 result labels, privacy boundaries, ranking direction, list-first
   collections, and scope-control interaction; combined city/driver filtering remains outside V1.
 - [x] Complete the authorized City & Driver Search V1 Phase 1 read-only production, repository,

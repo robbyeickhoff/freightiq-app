@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(19);
 
 insert into auth.users (id, email, created_at, updated_at) values
 ('10000000-0000-4000-8000-000000000001','city-search-caller@example.test',now(),now()),
@@ -17,15 +17,16 @@ insert into public.profiles (id, username) values
 insert into public.mfi_stops
 (id,name,address,lat,lng,user_id,city,state_code,country_code,locality_source,deliver_from_type,truck_fit,back_in_required,entrance_lat,entrance_lng,moderation_status)
 values
-('city-test-telluride','Telluride Visible Stop','1 Test St, Telluride, CO',37.93,-107.81,'10000000-0000-4000-8000-000000000002','Telluride','CO','US','reviewed_backfill','dock','full',true,37.9301,-107.8101,'visible'),
+('city-test-telluride','Telluride Visible Stop','1 Test St, Telluride, CO',37.93,-107.81,'10000000-0000-4000-8000-000000000002','Telluride','CO','US','reviewed_backfill',null,null,null,37.9301,-107.8101,'visible'),
 ('city-test-mountain-village','Mountain Village Visible Stop','2 Test St, Mountain Village, CO',37.94,-107.85,'10000000-0000-4000-8000-000000000003','Mountain Village','CO','US','reviewed_backfill',null,null,null,null,null,'visible'),
 ('city-test-hidden','Hidden Telluride Stop','3 Test St, Telluride, CO',37.95,-107.82,'10000000-0000-4000-8000-000000000004','Telluride','CO','US','reviewed_backfill',null,null,null,null,null,'hidden');
 
-insert into public.mfi_reports (stop_id,user_id,notes,moderation_status) values
-('city-test-telluride','10000000-0000-4000-8000-000000000002','Visible report','visible'),
-('city-test-telluride','10000000-0000-4000-8000-000000000003','Blocked report','visible'),
-('city-test-telluride','10000000-0000-4000-8000-000000000004','Restricted report','visible'),
-('city-test-telluride','10000000-0000-4000-8000-000000000002','Hidden report','hidden');
+insert into public.mfi_reports (stop_id,user_id,notes,moderation_status,delivery_type,truck_fit,back_in_required) values
+('city-test-telluride','10000000-0000-4000-8000-000000000002','Visible report','visible','Forklift','40''',false),
+('city-test-telluride','10000000-0000-4000-8000-000000000003','Blocked report','visible',null,null,null),
+('city-test-telluride','10000000-0000-4000-8000-000000000004','Restricted report','visible',null,null,null),
+('city-test-telluride','10000000-0000-4000-8000-000000000002','Hidden report','hidden',null,null,null),
+('city-test-mountain-village','10000000-0000-4000-8000-000000000003','Blocked Core Intel','visible','Dock','53''',true);
 
 insert into public.blocked_contributors (blocking_user_id,blocked_user_id)
 values ('10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000003');
@@ -47,6 +48,7 @@ select is((select stop_count from public.search_freightiq_cities('Mountain Villa
 select is((select count(*) from public.list_freightiq_city_stops('Telluride','CO','US',50,0)),2::bigint,'Telluride collection contains both factual localities');
 select is((select visible_report_count from public.list_freightiq_city_stops('Telluride','CO','US',50,0) where id='city-test-telluride'),1::bigint,'report counts exclude hidden blocked and restricted content');
 select is((select core_intel_count from public.list_freightiq_city_stops('Telluride','CO','US',50,0) where id='city-test-telluride'),4,'city collection returns four-field Core Intel completeness');
+select is((select core_intel_count from public.list_freightiq_city_stops('Telluride','CO','US',50,0) where id='city-test-mountain-village'),0,'blocked report values do not contribute to Core Intel completeness');
 select is((select count(*) from public.search_freightiq_drivers('Visible Driver',10)),1::bigint,'visible attributable driver is searchable');
 select is((select count(*) from public.search_freightiq_drivers('Blocked Driver',10)),0::bigint,'blocked contributor is excluded');
 select is((select count(*) from public.search_freightiq_drivers('Restricted Driver',10)),0::bigint,'restricted contributor is excluded');
