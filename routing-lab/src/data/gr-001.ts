@@ -67,3 +67,26 @@ export const gr001BaselineProposal = {
     gr001Fixture.routes.ai_proposed_before_driver_correction,
   ),
 }
+
+const correctionNames = new Set(
+  gr001Fixture.meaningful_ai_correction.ai_sequence,
+)
+const baselineNames = gr001Fixture.routes.ai_proposed_before_driver_correction
+const firstCorrectionIndex = baselineNames.findIndex((name) =>
+  correctionNames.has(name),
+)
+const learnedRouteNames = baselineNames.filter(
+  (name) => !correctionNames.has(name),
+)
+
+learnedRouteNames.splice(
+  firstCorrectionIndex,
+  0,
+  ...gr001Fixture.meaningful_ai_correction.driver_sequence,
+)
+
+export const gr001LearnedProposal = {
+  id: 'gr-001-approved-sandbox-lesson',
+  label: 'Approved lesson applied',
+  stops: stopsForRoute(learnedRouteNames),
+}

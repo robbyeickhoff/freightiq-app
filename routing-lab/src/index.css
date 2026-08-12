@@ -442,7 +442,8 @@ textarea:focus-visible {
 }
 
 .insight-card,
-.review-flag {
+.review-flag,
+.lesson-pass {
   border: 1px solid #233a46;
   border-radius: 15px;
   padding: 15px;
@@ -457,7 +458,8 @@ textarea:focus-visible {
 }
 
 .insight-card .insight-label,
-.review-flag .insight-label {
+.review-flag .insight-label,
+.lesson-pass .insight-label {
   margin-bottom: 7px;
   color: var(--accent-strong);
 }
@@ -477,17 +479,32 @@ textarea:focus-visible {
   background: rgba(118, 93, 38, 0.13);
 }
 
-.review-flag h3 {
+.lesson-pass {
+  border-color: #24644d;
+  background: rgba(19, 80, 59, 0.2);
+}
+
+.review-flag h3,
+.lesson-pass h3 {
   margin: 0 0 9px;
   color: #fff1cb;
   font-size: 1rem;
 }
 
-.review-flag > p {
+.lesson-pass h3 {
+  color: #cef1e3;
+}
+
+.review-flag > p,
+.lesson-pass > p {
   margin-bottom: 0;
   color: #d8caa8;
   font-size: 0.84rem;
   line-height: 1.5;
+}
+
+.lesson-pass > p {
+  color: #bfe8d8;
 }
 
 .route-facts {
@@ -572,6 +589,17 @@ textarea:focus-visible {
 
 .proposal-list__learning-stop .stop-index {
   box-shadow: 0 0 0 4px rgba(243, 179, 61, 0.13);
+}
+
+.proposal-list__learned-stop {
+  border-color: #24644d !important;
+  background: rgba(19, 80, 59, 0.2) !important;
+}
+
+.proposal-list__learned-stop .stop-index {
+  color: #bfe8d8;
+  background: #214c3e;
+  box-shadow: 0 0 0 4px rgba(79, 214, 163, 0.1);
 }
 
 .proposal-reorder-controls {
@@ -1228,6 +1256,8 @@ textarea:focus-visible {
 }
 
 .sandbox-lesson-status {
+  display: grid;
+  gap: 14px;
   margin: 16px 0 0;
   border: 1px solid #24644d;
   border-radius: 14px;
@@ -1236,6 +1266,15 @@ textarea:focus-visible {
   background: rgba(19, 80, 59, 0.2);
   font-size: 0.8rem;
   line-height: 1.5;
+}
+
+.sandbox-lesson-status h2 {
+  color: #eef4f8;
+  font-size: 1.35rem;
+}
+
+.sandbox-lesson-status > p:not(.eyebrow) {
+  margin: 0;
 }
 
 .reason-capture-status {

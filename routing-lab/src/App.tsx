@@ -4,7 +4,11 @@ import type { Session } from '@supabase/supabase-js'
 import EndOfRouteReview from './components/EndOfRouteReview'
 import type { SandboxLesson } from './components/EndOfRouteReview'
 import ReasonPrompt from './components/ReasonPrompt'
-import { gr001BaselineProposal, gr001Fixture } from './data/gr-001'
+import {
+  gr001BaselineProposal,
+  gr001Fixture,
+  gr001LearnedProposal,
+} from './data/gr-001'
 import type { GoldenRouteStop } from './data/gr-001'
 import { getRoutingLabConfig } from './lib/config'
 import { getSupabase } from './lib/supabase'
@@ -28,6 +32,8 @@ type ReasonRecord = PendingReason & {
   recordedAt: string
 }
 
+type ProposalSource = 'baseline' | 'learned'
+
 function formatRecordedTime(timestamp: string) {
   return new Intl.DateTimeFormat(undefined, {
     hour: 'numeric',
@@ -49,6 +55,8 @@ function App() {
   const [linkRequested, setLinkRequested] = useState(false)
   const [fixtureLoaded, setFixtureLoaded] = useState(false)
   const [proposalGenerated, setProposalGenerated] = useState(false)
+  const [proposalSource, setProposalSource] =
+    useState<ProposalSource>('baseline')
   const [draftRouteStops, setDraftRouteStops] = useState<GoldenRouteStop[]>([])
   const [activeRouteStops, setActiveRouteStops] = useState<GoldenRouteStop[]>([])
   const [remainingStopNames, setRemainingStopNames] = useState<string[]>([])
@@ -64,9 +72,15 @@ function App() {
   const config = getRoutingLabConfig()
   const routeStarted = routeStartedAt !== null
   const routeFinished = routeFinishedAt !== null
-  const proposalAdjusted = draftRouteStops.some(
-    (stop, index) => stop.name !== gr001BaselineProposal.stops[index]?.name,
-  )
+  const learnedRerun = proposalSource === 'learned'
+  const sourceProposal = learnedRerun
+    ? gr001LearnedProposal
+    : gr001BaselineProposal
+  const proposalAdjusted =
+    !learnedRerun &&
+    draftRouteStops.some(
+      (stop, index) => stop.name !== gr001BaselineProposal.stops[index]?.name,
+    )
   const remainingStops = remainingStopNames
     .map((stopName) =>
       activeRouteStops.find((stop) => stop.name === stopName),
@@ -99,6 +113,15 @@ function App() {
     ) ||
     sequencesMatch(
       actualCorrectionOrder,
+      gr001Fixture.meaningful_ai_correction.driver_sequence,
+    )
+  const proposedCorrectionOrder = draftRouteStops
+    .filter((stop) => correctionStopNames.has(stop.name))
+    .map((stop) => stop.name)
+  const learnedProposalPasses =
+    learnedRerun &&
+    sequencesMatch(
+      proposedCorrectionOrder,
       gr001Fixture.meaningful_ai_correction.driver_sequence,
     )
 
@@ -181,12 +204,31 @@ function App() {
     setStopEvents({})
     setRouteStartedAt(new Date().toISOString())
     setRouteFinishedAt(null)
-    setApprovedLesson(null)
   }
 
   function generateProposal() {
     setDraftRouteStops([...gr001BaselineProposal.stops])
+    setProposalSource('baseline')
     setProposalGenerated(true)
+  }
+
+  function rerunWithApprovedLesson() {
+    if (!approvedLesson) {
+      return
+    }
+
+    setProposalSource('learned')
+    setDraftRouteStops([...gr001LearnedProposal.stops])
+    setProposalGenerated(true)
+    setActiveRouteStops([])
+    setRemainingStopNames([])
+    setRouteStartedAt(null)
+    setRouteFinishedAt(null)
+    setStopEvents({})
+    setPendingReason(null)
+    setSelectedReasons([])
+    setReasonNote('')
+    setReasonRecords([])
   }
 
   function moveDraftStop(currentIndex: number, direction: -1 | 1) {
@@ -207,7 +249,7 @@ function App() {
 
       const stillAdjusted = reorderedStops.some(
         (stop, index) =>
-          stop.name !== gr001BaselineProposal.stops[index]?.name,
+          stop.name !== sourceProposal.stops[index]?.name,
       )
 
       setPendingReason(
@@ -447,7 +489,9 @@ function App() {
             onClick={generateProposal}
           >
             {proposalGenerated
-              ? 'Baseline proposal generated'
+              ? learnedRerun
+                ? 'Learned proposal generated'
+                : 'Baseline proposal generated'
               : 'Generate proposed route'}
           </button>
         </section>
@@ -460,18 +504,24 @@ function App() {
         >
           <div className="section-heading">
             <div>
-              <p className="eyebrow">Baseline replay</p>
+              <p className="eyebrow">
+                {learnedRerun ? 'Learned rerun' : 'Baseline replay'}
+              </p>
               <h2 id="proposed-route-title">Proposed route</h2>
             </div>
             <span className="baseline-badge">
-              {proposalAdjusted
+              {learnedRerun
+                ? gr001LearnedProposal.label
+                : proposalAdjusted
                 ? 'Driver-adjusted plan'
                 : gr001BaselineProposal.label}
             </span>
           </div>
 
           <p className="proposal-explanation">
-            {proposalAdjusted
+            {learnedRerun
+              ? 'This proposal was generated with your approved sandbox lesson. The original baseline remains preserved for comparison.'
+              : proposalAdjusted
               ? 'This is your adjusted starting plan. The original historical AI proposal remains preserved for comparison.'
               : 'This is the preserved historical AI proposal—not the correct driver route. Reorder it before starting if you want to make a planned correction.'}
           </p>
@@ -510,22 +560,30 @@ function App() {
               </ul>
             </article>
 
-            <article className="review-flag">
+            <article
+              className={learnedProposalPasses ? 'lesson-pass' : 'review-flag'}
+            >
               <div>
-                <p className="insight-label">Needs driver review</p>
+                <p className="insight-label">
+                  {learnedProposalPasses
+                    ? 'Lesson verification passed'
+                    : 'Needs driver review'}
+                </p>
                 <h3>{gr001Fixture.meaningful_ai_correction.area}</h3>
               </div>
               <p>
-                The frozen AI baseline ends with Brandon Quattrone. The
-                driver-validated order places that stop first in Downtown and
-                finishes with FCI Constructors.
+                {learnedProposalPasses
+                  ? 'The approved sandbox lesson moved Brandon Quattrone ahead of Idarado Mining, Tribe Interior Design, and FCI Constructors.'
+                  : 'The frozen AI baseline ends with Brandon Quattrone. The driver-validated order places that stop first in Downtown and finishes with FCI Constructors.'}
               </p>
             </article>
           </div>
 
           <div className="stop-list-heading">
             <h3>
-              {proposalAdjusted
+              {learnedRerun
+                ? 'Learned proposal order'
+                : proposalAdjusted
                 ? 'Driver-approved starting order'
                 : 'Baseline stop order'}
             </h3>
@@ -538,7 +596,9 @@ function App() {
                 key={`${stop.name}-${stop.address}`}
                 className={
                   stop.name === 'Brandon Quattrone'
-                    ? 'proposal-list__learning-stop'
+                    ? learnedProposalPasses
+                      ? 'proposal-list__learned-stop'
+                      : 'proposal-list__learning-stop'
                     : undefined
                 }
               >
@@ -579,8 +639,10 @@ function App() {
             {routeFinished
               ? 'Route complete. The starting plan remains locked for review.'
               : routeStarted
-              ? 'Route started. The baseline proposal is locked for later comparison.'
-              : 'Review the baseline proposal, then lock it as today’s active route.'}
+              ? 'Route started. The proposal is locked for later comparison.'
+              : learnedRerun
+                ? 'The approved lesson changed the proposal. Review it, then start the learned test route if desired.'
+                : 'Review the baseline proposal, then lock it as today’s active route.'}
           </p>
 
           <button
@@ -595,6 +657,8 @@ function App() {
                 : 'Route in progress'
               : pendingReason?.kind === 'planned'
                 ? 'Save reason before starting'
+              : learnedRerun
+                ? 'Start Learned Test Route'
               : proposalAdjusted
                 ? 'Start Driver-Adjusted Test Route'
                 : 'Start Baseline Test Route'}
@@ -809,11 +873,19 @@ function App() {
         />
       ) : null}
 
-      {approvedLesson ? (
-        <p className="sandbox-lesson-status" role="status">
-          Approved sandbox lesson ready for the next GR-001 test run: “
-          {approvedLesson.text}”
-        </p>
+      {approvedLesson && !learnedRerun ? (
+        <section className="sandbox-lesson-status" aria-labelledby="rerun-title">
+          <p className="eyebrow">Approved sandbox lesson</p>
+          <h2 id="rerun-title">Test what the Lab learned</h2>
+          <p>“{approvedLesson.text}”</p>
+          <button
+            className="primary-button"
+            type="button"
+            onClick={rerunWithApprovedLesson}
+          >
+            Rerun GR-001 with lesson
+          </button>
+        </section>
       ) : null}
 
       {fixtureLoaded ? (
