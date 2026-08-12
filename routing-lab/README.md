@@ -7,6 +7,11 @@ Routing Lab is isolated from the production FreightIQ mobile application. It has
 its own dependencies, environment configuration, backend project, build, and
 deployment.
 
+The deployed static build packages an exact snapshot of the canonical GR-001
+fixture because Vercel intentionally receives only this isolated application
+folder. The prebuild check compares that snapshot with the canonical repository
+fixture whenever both are available and fails if they differ.
+
 ## Local Commands
 
 ```bash

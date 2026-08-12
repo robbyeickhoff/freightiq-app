@@ -1,0 +1,195 @@
+{
+  "fixture_id": "GR-001",
+  "title": "Telluride Multi-Zone",
+  "route_date": "2026-07-13",
+  "status": "golden_fixture",
+  "start": "788 22 Rd, Grand Junction, CO",
+  "end": "788 22 Rd, Grand Junction, CO",
+  "route_type": "extended",
+  "return_to_terminal_affects_order": true,
+  "source_rule": "Office route is inferred from reverse manifest order: bottom of manifest is proposed first stop and top is proposed last stop.",
+  "stops": [
+    {
+      "name": "Chris Beierwaltes",
+      "address": "425 Whispering Pines",
+      "city": "Ouray",
+      "zone": "Ouray"
+    },
+    {
+      "name": "Ouray Public Library",
+      "address": "320 6th Ave",
+      "city": "Ouray",
+      "zone": "Ouray"
+    },
+    {
+      "name": "SavATree",
+      "address": "101 Campbell Ln",
+      "city": "Ridgway",
+      "zone": "Ridgway Proper"
+    },
+    {
+      "name": "Stacie Veatch",
+      "address": "287 Badger Trail S",
+      "city": "Ridgway",
+      "zone": "Log Hill"
+    },
+    {
+      "name": "Laura Fedie",
+      "address": "201 Woodchuck Pl, Unit D",
+      "city": "Ridgway",
+      "zone": "Log Hill"
+    },
+    {
+      "name": "Dallas Creek Water Co",
+      "address": "220 Ponderosa Dr",
+      "city": "Ridgway",
+      "zone": "Log Hill"
+    },
+    {
+      "name": "Mark Neyens",
+      "address": "162 Society Dr, Unit B",
+      "city": "Telluride",
+      "zone": "Lawson Hill / Society"
+    },
+    {
+      "name": "Joe Venable",
+      "address": "103 Cabins Ln",
+      "city": "Telluride",
+      "zone": "Mountain Village"
+    },
+    {
+      "name": "Telluride Ski Resort",
+      "address": "108 Prospect Creek Rd",
+      "city": "Telluride",
+      "zone": "Mountain Village"
+    },
+    {
+      "name": "Telluride Ski and Golf",
+      "address": "110 Prospect Dr",
+      "city": "Telluride",
+      "zone": "Mountain Village"
+    },
+    {
+      "name": "Brandon Quattrone",
+      "address": "400 Depot Ave",
+      "city": "Telluride",
+      "zone": "Downtown Telluride"
+    },
+    {
+      "name": "Idarado Mining",
+      "address": "5393 Highway 145 Spur",
+      "city": "Telluride",
+      "zone": "Downtown Telluride"
+    },
+    {
+      "name": "Tribe Interior Design",
+      "address": "135 W Colorado Ave",
+      "city": "Telluride",
+      "zone": "Downtown Telluride"
+    },
+    {
+      "name": "FCI Constructors",
+      "address": "447 W Columbia Ave",
+      "city": "Telluride",
+      "zone": "Downtown Telluride"
+    }
+  ],
+  "routes": {
+    "office_proposed": [
+      "Ouray Public Library",
+      "Chris Beierwaltes",
+      "SavATree",
+      "Stacie Veatch",
+      "Laura Fedie",
+      "Dallas Creek Water Co",
+      "Mark Neyens",
+      "Joe Venable",
+      "Tribe Interior Design",
+      "Brandon Quattrone",
+      "Idarado Mining",
+      "Telluride Ski and Golf",
+      "Telluride Ski Resort",
+      "FCI Constructors"
+    ],
+    "ai_proposed_before_driver_correction": [
+      "Chris Beierwaltes",
+      "Ouray Public Library",
+      "SavATree",
+      "Laura Fedie",
+      "Stacie Veatch",
+      "Dallas Creek Water Co",
+      "Mark Neyens",
+      "Telluride Ski Resort",
+      "Telluride Ski and Golf",
+      "Joe Venable",
+      "Idarado Mining",
+      "Tribe Interior Design",
+      "FCI Constructors",
+      "Brandon Quattrone"
+    ],
+    "driver_validated_actual": [
+      "Chris Beierwaltes",
+      "Ouray Public Library",
+      "SavATree",
+      "Stacie Veatch",
+      "Laura Fedie",
+      "Dallas Creek Water Co",
+      "Mark Neyens",
+      "Joe Venable",
+      "Telluride Ski Resort",
+      "Telluride Ski and Golf",
+      "Brandon Quattrone",
+      "Idarado Mining",
+      "Tribe Interior Design",
+      "FCI Constructors"
+    ]
+  },
+  "expected_macro_zone_order": [
+    "Ouray",
+    "Ridgway Proper",
+    "Log Hill",
+    "Lawson Hill / Society",
+    "Mountain Village",
+    "Downtown Telluride"
+  ],
+  "required_expectations": [
+    "Use only the 14 stops in this fixture.",
+    "Preserve the expected macro-zone order.",
+    "Complete Brandon Quattrone before Idarado Mining, Tribe Interior Design, and FCI Constructors.",
+    "Finish Downtown Telluride with FCI Constructors.",
+    "Do not re-enter a completed zone."
+  ],
+  "acceptable_variations": [
+    {
+      "stops": [
+        "Stacie Veatch",
+        "Laura Fedie"
+      ],
+      "reason": "Either sequence is acceptable for this fixture."
+    },
+    {
+      "stops": [
+        "Joe Venable",
+        "Telluride Ski Resort",
+        "Telluride Ski and Golf"
+      ],
+      "reason": "Their internal order is flexible for this fixture."
+    }
+  ],
+  "meaningful_ai_correction": {
+    "area": "Downtown Telluride",
+    "ai_sequence": [
+      "Idarado Mining",
+      "Tribe Interior Design",
+      "FCI Constructors",
+      "Brandon Quattrone"
+    ],
+    "driver_sequence": [
+      "Brandon Quattrone",
+      "Idarado Mining",
+      "Tribe Interior Design",
+      "FCI Constructors"
+    ],
+    "lesson": "Complete the Depot Avenue stop first because it sits on the southwest side of town and provides a right-turn exit back toward Idarado. Then work through Tribe and finish with FCI on the northwest side."
+  }
+}

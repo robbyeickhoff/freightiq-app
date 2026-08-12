@@ -1,4 +1,4 @@
-import fixture from '../../../docs/routing/golden-routes/GR-001-Telluride-Multi-Zone/fixture.json'
+import fixture from './gr-001.fixture.json'
 
 export type GoldenRouteStop = {
   address: string
