@@ -1,23 +1,24 @@
 # FreightIQ City & Driver Search V1 — Build Specification
 
-> **Status: Product specification and Phase 1 technical contract approved — 2026-08-10**
+> **Status: Implementation complete and accepted — 2026-08-11**
 >
 > The Product Owner approved the V1 interaction direction and this specification after reviewing an
 > interactive prototype. The Product Owner then separately authorized the Phase 1 read-only
-> investigation and approved the resulting Phase 1 technical contract. This approval does not
-> authorize implementation, database changes, migrations, provider changes, production data
-> changes, builds, deployments, distribution, or release.
+> investigation and approved the resulting Phase 1 technical contract. The database foundation,
+> reviewed locality backfill, mobile implementation, integrated acceptance, and Core Intel
+> correction are complete. The complete implementation was committed and pushed to `clean-main` in
+> `30a608f`. Candidate builds, distribution changes, and release remain separately approval-gated.
 
 ## Document Control
 
 - **Purpose:** Let drivers intentionally browse FreightIQ knowledge by city or contributing driver.
 - **Repository path:** `docs/build-specs/FreightIQCityDriverSearchV1BuildSpec.md`
-- **Operating mode:** Product Mode complete through Phase 1 technical-contract approval; Build Mode
-  has not been activated.
-- **Current-build relationship:** This work does not replace or alter the active release candidate
-  recorded in `docs/CurrentBuild.md`.
-- **Approval state:** Product experience, base specification, and Phase 1 technical contract
-  approved; implementation remains unapproved.
+- **Operating mode:** Product and Build Modes complete through integrated acceptance and canonical
+  commit; release operations remain separately controlled.
+- **Current-build relationship:** Implementation is complete and ready for inclusion in a future
+  production candidate recorded in `docs/CurrentBuild.md`.
+- **Approval state:** Product experience, technical contract, database work, mobile implementation,
+  and integrated acceptance approved; no candidate build, distribution change, or release approved.
 
 ## Phase 1 Read-Only Inspection Record
 
@@ -144,13 +145,13 @@ That artifact contains 223 approved locality rows from the original 237-stop sna
 completed exception and grouped review. The 14 approved cleanup candidates were deleted and
 production-verified on 2026-08-11. Production then contained 227 visible stops because four new
 stops had arrived after the mapping snapshot. The Product Owner reviewed and approved all four on
-2026-08-11, bringing the exact mapping to 227 approved locality rows. No locality backfill has been
-authorized or performed.
+2026-08-11, bringing the exact mapping to 227 approved locality rows. The separately approved
+guarded backfill was subsequently executed and production-verified for all 227 rows.
 
 The guarded, fixed-ID execution sequence is recorded in
 [City & Driver Search V1 — Production Locality Backfill Runbook](../operations/CityDriverSearchV1ProductionLocalityBackfillRunbook.md).
-That runbook is prepared for review only. Phase 2 is locally verified; production migration and
-backfill remain blocked on their separate operational approvals.
+That runbook preserves the reviewed procedure used for the separately approved and verified
+production backfill. Phase 2 is locally and production verified.
 
 The exact schema-deployment sequence and verified dry-run record are documented in
 [City & Driver Search V1 — Production Schema Migration Runbook](../operations/CityDriverSearchV1ProductionMigrationRunbook.md).
@@ -645,7 +646,8 @@ the managed Storage table. A full clean database reset now passes. Resetting to 
 Phase 2 proves the new columns and functions are absent; reapplying Phase 2 restores them; and the
 18-test suite plus schema lint pass again afterward. Phase 2 was production-migrated and the
 separately approved 227-stop locality backfill was executed and verified on 2026-08-11. Application
-implementation, deployment, distribution, and release remain separately approval-gated.
+implementation and integrated acceptance are complete in `30a608f`; candidate builds,
+distribution, and release remain separately approval-gated.
 
 1. Create a migration through the documented Supabase migration workflow.
 2. Add only the approved locality fields, normalization, indexes, and bounded search functions.
@@ -696,8 +698,8 @@ the saved Delivery Zone. Migration `20260812025503_align_city_core_intel_with_pr
 aligns the collection with the Preview Card, preserves blocking and restriction filtering, and adds
 a focused privacy regression check. All 19 pgTAP tests and public/private schema lint pass. The
 separately approved production migration was applied and verified: Alpine Lumber returns `4/4 Core
-Intel` and one visible Driver Report. Commit, push, candidate build, distribution, and release
-remain separately gated.
+Intel` and one visible Driver Report. The complete implementation was committed and pushed in
+`30a608f`. Candidate build creation, distribution, and release remain separately gated.
 
 1. Run TypeScript and focused lint.
 2. Run database tests, schema lint, and advisors.

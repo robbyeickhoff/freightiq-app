@@ -13,11 +13,12 @@ answer one question:
 
 ## Current Objective
 
-Implement the approved City & Driver Search V1 plan from
-`docs/build-specs/FreightIQCityDriverSearchV1BuildSpec.md`, beginning with the Phase 2 database
-foundation before any mobile search experience.
+City & Driver Search V1 is implementation-complete, accepted, committed, and pushed to
+`clean-main` in `30a608f`. It is ready to be included in a future production candidate build. No
+new TestFlight or Google Play build has been created or distributed for this feature; candidate
+creation, installed-build acceptance, distribution, and release remain separately approval-gated.
 
-The approved 227-stop locality mapping and guarded production backfill are complete. Local migration
+The approved 227-stop locality mapping and guarded production backfill are complete. Migration
 `20260811111436_add_city_driver_search_foundation.sql` now adds the approved locality contract,
 driver-confirmed write path, normalized indexes, Telluride–Mountain Village discovery relationship,
 and four authenticated, security-invoker city/driver search functions. The focused local pgTAP
@@ -27,7 +28,7 @@ fresh environments now skip admin provisioning only when the production admin ac
 and an optional Storage-policy comment no longer fails when the migration role does not own the
 managed Storage table. A full clean `supabase db reset` now passes. Resetting to the migration before
 Phase 2 removes the locality columns and functions, reapplying Phase 2 restores them, and all 18
-tests pass again afterward. Phase 2 is locally verified. Application implementation, deployment,
+tests pass again afterward. Phase 2 is locally and production verified. Candidate-build creation,
 distribution, and release remain separate approval gates.
 
 The Product Owner upgraded the organization to Pro, and a completed 2026-08-11 physical backup was
@@ -42,7 +43,7 @@ mapping fingerprint, Telluride and Mountain Village distinction, Saturday Test, 
 existing authenticated stop search, and new authenticated city search all passed. No application
 implementation or deployment was performed.
 
-City & Driver Search Phase 3 is now implemented locally in the existing map search surface. Engaging
+City & Driver Search Phase 3 is implemented in the existing map search surface. Engaging
 search reveals the approved **All**, **Stops**, **Cities**, and **Drivers** scopes; All queries the
 existing FreightIQ stop search, structured city search, privacy-safe driver search, and Mapbox
 Nearby Places independently and renders only populated groups in the approved order. City and
@@ -52,7 +53,7 @@ unneeded requests. The existing FreightIQ stop selection and Mapbox place-select
 unchanged. TypeScript and lint pass with zero errors; lint retains only the same 11 pre-existing
 warnings.
 
-City & Driver Search Phases 4 and 5 are also implemented locally through one shared, list-first
+City & Driver Search Phases 4 and 5 are implemented through one shared, list-first
 collection screen. City rows open authoritative stop collections with compact address, Core Intel,
 and visible Driver Report summaries. Driver rows open privacy-safe attributable collections with
 city and contribution-type summaries. Both start in List, switch to Map without changing the
@@ -60,8 +61,7 @@ result set, fit the collection rather than the driver's GPS position, and open a
 through the existing map Preview Card before returning to the same collection. Loading, empty,
 retry, large-list, and accessibility states are included. Representative authenticated production
 reads returned three valid Grand Junction rows and three valid driver-contribution rows. TypeScript,
-lint, and a local iOS Expo bundle pass; lint retains only the same 11 pre-existing warnings. No
-database write, commit, push, candidate build, deployment, distribution, or release was performed.
+lint, and a local iOS Expo bundle pass; lint retains only the same 11 pre-existing warnings.
 
 Focused physical-iPhone acceptance passed grouped All search, dedicated Stops, Cities, and Drivers
 scopes, Grand Junction list and Map collections, Driver list and Map collections, existing Preview
@@ -79,8 +79,9 @@ shared Driver Reports plus the saved Delivery Zone. The correction was implement
 to 19 passing tests, passed public/private schema lint, and was separately approved, applied, and
 verified in production. Alpine Lumber now returns `4/4 Core Intel` with its one visible Driver
 Report, matching the Preview Card; the function remains authenticated, security-invoker, bounded,
-and block/restriction aware. No stop, report, user, or photo data changed. No commit, push,
-candidate build, deployment, distribution, or release was performed.
+and block/restriction aware. No stop, report, user, or photo data changed. The complete application,
+database correction, test, and documentation scope was committed and pushed in `30a608f`. No
+candidate build, distribution, or release was performed.
 
 ---
 
@@ -579,9 +580,8 @@ special build is required solely for that check.
 
 ## Next Safe Step
 
-Complete focused installed-build acceptance of iOS build 37 from TestFlight, beginning with Refer a
-Driver and the **Open in FreightIQ** stop handoff, then smoke-test the new Trust & Safety surfaces and
-core app regressions. Obtain separate approval to create Android version code 21 from pushed
-correction `175264d`, then verify the installed cold-start referral handoff on physical Pixel.
-Replace version code 20 in Closed Testing — Alpha only after acceptance. Record both candidate
-outcomes before any broader distribution or public-store submission.
+Plan the next combined production candidate from current `clean-main`, including City & Driver
+Search V1 and the previously pushed release-ready corrections. Before creating any iOS or Android
+candidate, define the exact included commits and acceptance checklist and obtain separate Product
+Owner build approval. Candidate creation does not itself authorize TestFlight-group changes,
+Google Play audience changes, broader distribution, or public release.

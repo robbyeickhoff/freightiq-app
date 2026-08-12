@@ -395,7 +395,7 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 #### Near-Term Search Expansion
 
 - [x] Implement [City & Driver Search V1](build-specs/FreightIQCityDriverSearchV1BuildSpec.md)
-  locally:
+  and push it to canonical `clean-main` in `30a608f`:
   use the existing map-search entry point, grouped All results, and All / Stops / Cities / Drivers
   scope controls.
 - [x] Open city results as list-first FreightIQ stop collections with compact counts and an optional
@@ -445,6 +445,8 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 - [x] Separately approve, execute, and production-verify the exact guarded 227-stop locality
   backfill; all approved locality tuples match, no null or partial visible tuple remains, and both
   existing stop search and new city search pass authenticated smoke checks.
+- [ ] Include City & Driver Search V1 in the next separately approved production candidate build,
+  then complete installed-build acceptance before changing tester distribution or release state.
 - [ ] Recent Cities.
 - [ ] Save Today's Stops.
 
