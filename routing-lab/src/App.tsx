@@ -68,6 +68,7 @@ function App() {
   const [reasonNote, setReasonNote] = useState('')
   const [reasonRecords, setReasonRecords] = useState<ReasonRecord[]>([])
   const [approvedLesson, setApprovedLesson] = useState<SandboxLesson | null>(null)
+  const [resetConfirmationOpen, setResetConfirmationOpen] = useState(false)
   const [message, setMessage] = useState('')
   const config = getRoutingLabConfig()
   const routeStarted = routeStartedAt !== null
@@ -362,6 +363,25 @@ function App() {
     }
 
     setRouteFinishedAt(new Date().toISOString())
+  }
+
+  function resetFixture() {
+    setFixtureLoaded(false)
+    setProposalGenerated(false)
+    setProposalSource('baseline')
+    setDraftRouteStops([])
+    setActiveRouteStops([])
+    setRemainingStopNames([])
+    setRouteStartedAt(null)
+    setRouteFinishedAt(null)
+    setStopEvents({})
+    setPendingReason(null)
+    setSelectedReasons([])
+    setReasonNote('')
+    setReasonRecords([])
+    setApprovedLesson(null)
+    setResetConfirmationOpen(false)
+    setMessage('GR-001 test data reset. You remain signed in.')
   }
 
   if (isCheckingSession) {
@@ -954,6 +974,58 @@ function App() {
             </ol>
           </div>
         </details>
+      ) : null}
+
+      {fixtureLoaded ? (
+        <section className="reset-panel" aria-labelledby="reset-title">
+          {!resetConfirmationOpen ? (
+            <>
+              <div>
+                <p className="eyebrow">Test controls</p>
+                <h2 id="reset-title">Reset GR-001</h2>
+              </div>
+              <p>
+                Clear this fixture’s route progress, reasons, review, and
+                sandbox lesson while keeping your private sign-in active.
+              </p>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => setResetConfirmationOpen(true)}
+              >
+                Reset GR-001 test
+              </button>
+            </>
+          ) : (
+            <div className="reset-confirmation">
+              <div>
+                <p className="eyebrow">Confirm reset</p>
+                <h2 id="reset-title">Clear all GR-001 test data?</h2>
+              </div>
+              <p>
+                This removes the current route, captured reasons, review state,
+                and approved sandbox lesson from this browser session. It does
+                not affect production FreightIQ.
+              </p>
+              <div className="reset-actions">
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => setResetConfirmationOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="discard-button"
+                  type="button"
+                  onClick={resetFixture}
+                >
+                  Reset all test data
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
       ) : null}
 
       <p className="safety-note">

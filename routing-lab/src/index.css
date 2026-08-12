@@ -65,6 +65,7 @@ button {
 .end-review,
 .fixture-card,
 .reason-prompt,
+.reset-panel,
 .route-details,
 .proposal-card,
 .proposal-launch {
@@ -137,7 +138,8 @@ button {
 .proposal-card,
 .active-route,
 .end-review,
-.reason-prompt {
+.reason-prompt,
+.reset-panel {
   margin-top: 16px;
   padding: 24px;
 }
@@ -1277,6 +1279,37 @@ textarea:focus-visible {
   margin: 0;
 }
 
+.reset-panel,
+.reset-confirmation {
+  display: grid;
+  gap: 14px;
+}
+
+.reset-panel > p,
+.reset-confirmation > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.reset-panel h2,
+.reset-confirmation h2 {
+  font-size: 1.35rem;
+}
+
+.reset-confirmation {
+  border: 1px solid #69362a;
+  border-radius: 16px;
+  padding: 16px;
+  background: rgba(105, 54, 42, 0.16);
+}
+
+.reset-actions {
+  display: grid;
+  gap: 10px;
+}
+
 .reason-capture-status {
   margin: -8px 0 18px;
   border-radius: 12px;
@@ -1297,6 +1330,7 @@ textarea:focus-visible {
   .end-review,
   .fixture-card,
   .reason-prompt,
+  .reset-panel,
   .route-details,
   .proposal-card,
   .proposal-launch {
