@@ -16,14 +16,16 @@ type ReviewReason = {
 type EndOfRouteReviewProps = {
   actualOrder: string[]
   expectedLesson: string
+  initialStage?: ReviewStage
   meaningfulCorrectionDetected: boolean
-  onApproveLesson: (lesson: SandboxLesson) => void
+  onApproveLesson: (lesson: SandboxLesson) => Promise<boolean>
+  onStageChange?: (stage: ReviewStage) => void
   originalOrder: string[]
   reasons: ReviewReason[]
   startingOrder: string[]
 }
 
-type ReviewStage =
+export type ReviewStage =
   | 'approved'
   | 'choice'
   | 'deferred'
@@ -49,19 +51,26 @@ function RouteSequence({ label, stops }: { label: string; stops: string[] }) {
 function EndOfRouteReview({
   actualOrder,
   expectedLesson,
+  initialStage = 'choice',
   meaningfulCorrectionDetected,
   onApproveLesson,
+  onStageChange,
   originalOrder,
   reasons,
   startingOrder,
 }: EndOfRouteReviewProps) {
-  const [stage, setStage] = useState<ReviewStage>('choice')
+  const [stage, setStageState] = useState<ReviewStage>(initialStage)
   const [lessonText, setLessonText] = useState(expectedLesson)
   const [strength, setStrength] =
     useState<SandboxLesson['strength']>('Preferred')
   const [isEditing, setIsEditing] = useState(false)
 
-  function approveLesson() {
+  function setStage(nextStage: ReviewStage) {
+    setStageState(nextStage)
+    onStageChange?.(nextStage)
+  }
+
+  async function approveLesson() {
     const lesson = {
       category: 'Zone flow',
       scope: 'Downtown Telluride',
@@ -69,8 +78,9 @@ function EndOfRouteReview({
       text: lessonText.trim(),
     } satisfies SandboxLesson
 
-    onApproveLesson(lesson)
-    setStage('approved')
+    if (await onApproveLesson(lesson)) {
+      setStage('approved')
+    }
   }
 
   return (
@@ -112,7 +122,7 @@ function EndOfRouteReview({
         <div className="review-state-message">
           <h3>Review held for later</h3>
           <p>
-            This review remains available while this test session stays open.
+            This review is saved and remains available when you return.
           </p>
           <button
             className="primary-button"
@@ -251,7 +261,7 @@ function EndOfRouteReview({
               className="primary-button"
               type="button"
               disabled={lessonText.trim().length === 0}
-              onClick={approveLesson}
+              onClick={() => void approveLesson()}
             >
               {isEditing ? 'Save edited lesson' : 'Save as written'}
             </button>
@@ -279,8 +289,8 @@ function EndOfRouteReview({
         <div className="review-state-message review-state-message--success">
           <h3>Sandbox lesson approved</h3>
           <p>
-            The lesson is approved only inside this test session. Applying it
-            to a new GR-001 proposal is the next Slice 1 step.
+            The lesson is saved in the Routing Lab sandbox. Applying it to a
+            new GR-001 proposal is the next Slice 1 step.
           </p>
         </div>
       ) : null}

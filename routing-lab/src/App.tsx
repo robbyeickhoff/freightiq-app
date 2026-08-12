@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 
 import EndOfRouteReview from './components/EndOfRouteReview'
-import type { SandboxLesson } from './components/EndOfRouteReview'
+import type { ReviewStage, SandboxLesson } from './components/EndOfRouteReview'
 import ReasonPrompt from './components/ReasonPrompt'
 import {
   gr001BaselineProposal,
@@ -11,6 +11,7 @@ import {
 } from './data/gr-001'
 import type { GoldenRouteStop } from './data/gr-001'
 import { getRoutingLabConfig } from './lib/config'
+import type { Json } from './lib/database'
 import { getSupabase } from './lib/supabase'
 
 type StopOutcome = 'complete' | 'unable'
@@ -33,6 +34,23 @@ type ReasonRecord = PendingReason & {
 }
 
 type ProposalSource = 'baseline' | 'learned'
+
+type SavedFixtureState = {
+  activeRouteStopNames: string[]
+  draftRouteStopNames: string[]
+  fixtureLoaded: boolean
+  pendingReason: PendingReason | null
+  proposalGenerated: boolean
+  proposalSource: ProposalSource
+  reasonNote: string
+  reasonRecords: ReasonRecord[]
+  remainingStopNames: string[]
+  reviewStage: ReviewStage
+  routeFinishedAt: string | null
+  routeStartedAt: string | null
+  selectedReasons: string[]
+  stopEvents: Record<string, StopEvent>
+}
 
 function formatRecordedTime(timestamp: string) {
   return new Intl.DateTimeFormat(undefined, {
@@ -68,6 +86,8 @@ function App() {
   const [reasonNote, setReasonNote] = useState('')
   const [reasonRecords, setReasonRecords] = useState<ReasonRecord[]>([])
   const [approvedLesson, setApprovedLesson] = useState<SandboxLesson | null>(null)
+  const [reviewStage, setReviewStage] = useState<ReviewStage>('choice')
+  const [hasLoadedSavedState, setHasLoadedSavedState] = useState(false)
   const [resetConfirmationOpen, setResetConfirmationOpen] = useState(false)
   const [message, setMessage] = useState('')
   const config = getRoutingLabConfig()
@@ -161,6 +181,120 @@ function App() {
 
     return () => subscription.unsubscribe()
   }, [config.allowedEmail])
+
+  useEffect(() => {
+    if (!session) {
+      setHasLoadedSavedState(false)
+      return
+    }
+
+    const supabase = getSupabase()
+
+    async function loadSavedState() {
+      const [stateResult, lessonResult] = await Promise.all([
+        supabase
+          .from('routing_lab_fixture_state')
+          .select('state')
+          .eq('user_id', session!.user.id)
+          .eq('fixture_id', gr001Fixture.fixture_id)
+          .maybeSingle(),
+        supabase
+          .from('routing_lab_sandbox_lessons')
+          .select('category, scope, strength, lesson_text')
+          .eq('user_id', session!.user.id)
+          .eq('fixture_id', gr001Fixture.fixture_id)
+          .maybeSingle(),
+      ])
+
+      if (stateResult.error || lessonResult.error) {
+        setMessage(stateResult.error?.message ?? lessonResult.error?.message ?? '')
+        setHasLoadedSavedState(true)
+        return
+      }
+
+      const saved = stateResult.data?.state as SavedFixtureState | undefined
+      const findStops = (names: string[]) =>
+        names
+          .map((name) => gr001Fixture.stops.find((stop) => stop.name === name))
+          .filter((stop): stop is GoldenRouteStop => Boolean(stop))
+
+      if (saved) {
+        setFixtureLoaded(saved.fixtureLoaded)
+        setProposalGenerated(saved.proposalGenerated)
+        setProposalSource(saved.proposalSource)
+        setDraftRouteStops(findStops(saved.draftRouteStopNames))
+        setActiveRouteStops(findStops(saved.activeRouteStopNames))
+        setRemainingStopNames(saved.remainingStopNames)
+        setRouteStartedAt(saved.routeStartedAt)
+        setRouteFinishedAt(saved.routeFinishedAt)
+        setStopEvents(saved.stopEvents)
+        setPendingReason(saved.pendingReason)
+        setSelectedReasons(saved.selectedReasons)
+        setReasonNote(saved.reasonNote)
+        setReasonRecords(saved.reasonRecords)
+        setReviewStage(saved.reviewStage ?? 'choice')
+      }
+
+      if (lessonResult.data) {
+        setApprovedLesson({
+          category: lessonResult.data.category,
+          scope: lessonResult.data.scope,
+          strength: lessonResult.data.strength as SandboxLesson['strength'],
+          text: lessonResult.data.lesson_text,
+        })
+      }
+
+      setHasLoadedSavedState(true)
+    }
+
+    void loadSavedState()
+  }, [session])
+
+  useEffect(() => {
+    if (!session || !hasLoadedSavedState) {
+      return
+    }
+
+    const state: SavedFixtureState = {
+      activeRouteStopNames: activeRouteStops.map((stop) => stop.name),
+      draftRouteStopNames: draftRouteStops.map((stop) => stop.name),
+      fixtureLoaded,
+      pendingReason,
+      proposalGenerated,
+      proposalSource,
+      reasonNote,
+      reasonRecords,
+      remainingStopNames,
+      reviewStage,
+      routeFinishedAt,
+      routeStartedAt,
+      selectedReasons,
+      stopEvents,
+    }
+
+    const saveTimer = window.setTimeout(() => {
+      void getSupabase()
+        .from('routing_lab_fixture_state')
+        .upsert({
+          fixture_id: gr001Fixture.fixture_id,
+          state: state as unknown as Json,
+          updated_at: new Date().toISOString(),
+          user_id: session.user.id,
+        })
+        .then(({ error }) => {
+          if (error) {
+            setMessage(`Could not save test progress: ${error.message}`)
+          }
+        })
+    }, 250)
+
+    return () => window.clearTimeout(saveTimer)
+  }, [
+    activeRouteStops, draftRouteStops, fixtureLoaded, hasLoadedSavedState,
+    pendingReason, proposalGenerated, proposalSource, reasonNote, reasonRecords,
+    remainingStopNames, reviewStage, routeFinishedAt, routeStartedAt,
+    selectedReasons, session, stopEvents,
+  ])
 
   async function requestMagicLink() {
     setIsSubmitting(true)
@@ -365,7 +499,48 @@ function App() {
     setRouteFinishedAt(new Date().toISOString())
   }
 
-  function resetFixture() {
+  async function approveSandboxLesson(lesson: SandboxLesson) {
+    if (!session) return false
+
+    const { error } = await getSupabase()
+      .from('routing_lab_sandbox_lessons')
+      .upsert({
+        approved_at: new Date().toISOString(),
+        category: lesson.category,
+        fixture_id: gr001Fixture.fixture_id,
+        lesson_text: lesson.text,
+        scope: lesson.scope,
+        strength: lesson.strength,
+        user_id: session.user.id,
+      })
+
+    if (error) {
+      setMessage(`Could not save sandbox lesson: ${error.message}`)
+      return false
+    }
+
+    setApprovedLesson(lesson)
+    setReviewStage('approved')
+    return true
+  }
+
+  async function resetFixture() {
+    if (!session) return
+
+    const supabase = getSupabase()
+    const [stateResult, lessonResult] = await Promise.all([
+      supabase.from('routing_lab_fixture_state').delete()
+        .eq('user_id', session.user.id).eq('fixture_id', gr001Fixture.fixture_id),
+      supabase.from('routing_lab_sandbox_lessons').delete()
+        .eq('user_id', session.user.id).eq('fixture_id', gr001Fixture.fixture_id),
+    ])
+
+    if (stateResult.error || lessonResult.error) {
+      setMessage(`Could not reset saved test data: ${stateResult.error?.message ?? lessonResult.error?.message}`)
+      return
+    }
+
+    setHasLoadedSavedState(false)
     setFixtureLoaded(false)
     setProposalGenerated(false)
     setProposalSource('baseline')
@@ -380,11 +555,13 @@ function App() {
     setReasonNote('')
     setReasonRecords([])
     setApprovedLesson(null)
+    setReviewStage('choice')
     setResetConfirmationOpen(false)
     setMessage('GR-001 test data reset. You remain signed in.')
+    window.setTimeout(() => setHasLoadedSavedState(true), 0)
   }
 
-  if (isCheckingSession) {
+  if (isCheckingSession || (session && !hasLoadedSavedState)) {
     return (
       <main className="app-shell app-shell--centered">
         <p className="eyebrow">FreightIQ</p>
@@ -885,11 +1062,13 @@ function App() {
         <EndOfRouteReview
           actualOrder={actualCorrectionOrder}
           expectedLesson={gr001Fixture.meaningful_ai_correction.lesson}
+          initialStage={reviewStage}
           meaningfulCorrectionDetected={meaningfulCorrectionDetected}
           originalOrder={gr001Fixture.meaningful_ai_correction.ai_sequence}
           reasons={reasonRecords}
           startingOrder={startingCorrectionOrder}
-          onApproveLesson={setApprovedLesson}
+          onApproveLesson={approveSandboxLesson}
+          onStageChange={setReviewStage}
         />
       ) : null}
 
@@ -1004,7 +1183,7 @@ function App() {
               </div>
               <p>
                 This removes the current route, captured reasons, review state,
-                and approved sandbox lesson from this browser session. It does
+                and approved sandbox lesson from the Routing Lab sandbox. It does
                 not affect production FreightIQ.
               </p>
               <div className="reset-actions">
@@ -1018,7 +1197,7 @@ function App() {
                 <button
                   className="discard-button"
                   type="button"
-                  onClick={resetFixture}
+                  onClick={() => void resetFixture()}
                 >
                   Reset all test data
                 </button>
