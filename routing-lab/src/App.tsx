@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 
+import EndOfRouteReview from './components/EndOfRouteReview'
+import type { SandboxLesson } from './components/EndOfRouteReview'
 import ReasonPrompt from './components/ReasonPrompt'
 import { gr001BaselineProposal, gr001Fixture } from './data/gr-001'
 import type { GoldenRouteStop } from './data/gr-001'
@@ -33,6 +35,13 @@ function formatRecordedTime(timestamp: string) {
   }).format(new Date(timestamp))
 }
 
+function sequencesMatch(first: string[], second: string[]) {
+  return (
+    first.length === second.length &&
+    first.every((stopName, index) => stopName === second[index])
+  )
+}
+
 function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
@@ -44,14 +53,17 @@ function App() {
   const [activeRouteStops, setActiveRouteStops] = useState<GoldenRouteStop[]>([])
   const [remainingStopNames, setRemainingStopNames] = useState<string[]>([])
   const [routeStartedAt, setRouteStartedAt] = useState<string | null>(null)
+  const [routeFinishedAt, setRouteFinishedAt] = useState<string | null>(null)
   const [stopEvents, setStopEvents] = useState<Record<string, StopEvent>>({})
   const [pendingReason, setPendingReason] = useState<PendingReason | null>(null)
   const [selectedReasons, setSelectedReasons] = useState<string[]>([])
   const [reasonNote, setReasonNote] = useState('')
   const [reasonRecords, setReasonRecords] = useState<ReasonRecord[]>([])
+  const [approvedLesson, setApprovedLesson] = useState<SandboxLesson | null>(null)
   const [message, setMessage] = useState('')
   const config = getRoutingLabConfig()
   const routeStarted = routeStartedAt !== null
+  const routeFinished = routeFinishedAt !== null
   const proposalAdjusted = draftRouteStops.some(
     (stop, index) => stop.name !== gr001BaselineProposal.stops[index]?.name,
   )
@@ -66,6 +78,28 @@ function App() {
       (first, second) =>
         stopEvents[first.name].actionOrder -
         stopEvents[second.name].actionOrder,
+    )
+  const correctionStopNames = new Set(
+    gr001Fixture.meaningful_ai_correction.ai_sequence,
+  )
+  const startingCorrectionOrder = activeRouteStops
+    .filter((stop) => correctionStopNames.has(stop.name))
+    .map((stop) => stop.name)
+  const actualCorrectionOrder = resolvedStops
+    .filter(
+      (stop) =>
+        correctionStopNames.has(stop.name) &&
+        stopEvents[stop.name].status === 'complete',
+    )
+    .map((stop) => stop.name)
+  const meaningfulCorrectionDetected =
+    sequencesMatch(
+      startingCorrectionOrder,
+      gr001Fixture.meaningful_ai_correction.driver_sequence,
+    ) ||
+    sequencesMatch(
+      actualCorrectionOrder,
+      gr001Fixture.meaningful_ai_correction.driver_sequence,
     )
 
   useEffect(() => {
@@ -146,6 +180,8 @@ function App() {
     setRemainingStopNames(draftRouteStops.map((stop) => stop.name))
     setStopEvents({})
     setRouteStartedAt(new Date().toISOString())
+    setRouteFinishedAt(null)
+    setApprovedLesson(null)
   }
 
   function generateProposal() {
@@ -271,6 +307,19 @@ function App() {
     setPendingReason(null)
     setSelectedReasons([])
     setReasonNote('')
+  }
+
+  function finishRoute() {
+    if (
+      remainingStops.length > 0 ||
+      pendingReason ||
+      !routeStarted ||
+      routeFinished
+    ) {
+      return
+    }
+
+    setRouteFinishedAt(new Date().toISOString())
   }
 
   if (isCheckingSession) {
@@ -527,7 +576,9 @@ function App() {
           </ol>
 
           <p className="next-step-note">
-            {routeStarted
+            {routeFinished
+              ? 'Route complete. The starting plan remains locked for review.'
+              : routeStarted
               ? 'Route started. The baseline proposal is locked for later comparison.'
               : 'Review the baseline proposal, then lock it as today’s active route.'}
           </p>
@@ -539,7 +590,9 @@ function App() {
             onClick={startRoute}
           >
             {routeStarted
-              ? 'Route in progress'
+              ? routeFinished
+                ? 'Route complete'
+                : 'Route in progress'
               : pendingReason?.kind === 'planned'
                 ? 'Save reason before starting'
               : proposalAdjusted
@@ -568,7 +621,9 @@ function App() {
               <p className="eyebrow">Active test route</p>
               <h2 id="active-route-title">Track the run</h2>
             </div>
-            <span className="active-badge">In progress</span>
+            <span className="active-badge">
+              {routeFinished ? 'Complete' : 'In progress'}
+            </span>
           </div>
 
           <div className="active-route-summary" aria-label="Active route summary">
@@ -583,8 +638,12 @@ function App() {
               </strong>
             </div>
             <div>
-              <span>Remaining</span>
-              <strong>{remainingStops.length}</strong>
+              <span>{routeFinished ? 'Finished' : 'Remaining'}</span>
+              <strong>
+                {routeFinishedAt
+                  ? formatRecordedTime(routeFinishedAt)
+                  : remainingStops.length}
+              </strong>
             </div>
           </div>
 
@@ -689,10 +748,20 @@ function App() {
               </ol>
             </>
           ) : (
-            <p className="route-resolved-message">
-              Every stop has been resolved. Finishing and reviewing the route
-              comes in the next Slice 1 step.
-            </p>
+            <div className="route-finish-panel">
+              <p className="route-resolved-message">
+                Every stop has been resolved. Finish the route to begin the
+                learning review.
+              </p>
+              <button
+                className="primary-button"
+                type="button"
+                disabled={routeFinished || Boolean(pendingReason)}
+                onClick={finishRoute}
+              >
+                {routeFinished ? 'Route finished' : 'Finish Route'}
+              </button>
+            </div>
           )}
 
           {resolvedStops.length > 0 ? (
@@ -726,6 +795,25 @@ function App() {
             </details>
           ) : null}
         </section>
+      ) : null}
+
+      {routeFinished ? (
+        <EndOfRouteReview
+          actualOrder={actualCorrectionOrder}
+          expectedLesson={gr001Fixture.meaningful_ai_correction.lesson}
+          meaningfulCorrectionDetected={meaningfulCorrectionDetected}
+          originalOrder={gr001Fixture.meaningful_ai_correction.ai_sequence}
+          reasons={reasonRecords}
+          startingOrder={startingCorrectionOrder}
+          onApproveLesson={setApprovedLesson}
+        />
+      ) : null}
+
+      {approvedLesson ? (
+        <p className="sandbox-lesson-status" role="status">
+          Approved sandbox lesson ready for the next GR-001 test run: “
+          {approvedLesson.text}”
+        </p>
       ) : null}
 
       {fixtureLoaded ? (
