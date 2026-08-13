@@ -369,9 +369,9 @@ Maintain a reliable, maintainable, and well-engineered codebase while continuing
 
 ### Goals
 
-Complete the isolated Routing Lab Slice 1 learning loop without allowing it to displace higher-
-priority adoption, reliability, tester, or release work. Routing Lab is an important long-term
-FreightIQ capability and remains active when time allows.
+Advance the isolated Routing Lab in approved vertical slices without allowing it to displace
+higher-priority adoption, reliability, tester, or release work. Routing Lab is an important
+long-term FreightIQ capability and remains active when time allows. Slices 1 and 2 are complete.
 
 ### Active Tasks
 
@@ -384,6 +384,15 @@ FreightIQ capability and remains active when time allows.
 - [x] Rerun GR-001 and verify the approved lesson changes the next proposal.
 - [x] Verify fixture reset behavior and complete the Slice 1 acceptance matrix on the private
   deployed phone experience.
+- [x] Add ordered multi-photograph manifest intake with HEIC preparation and previews.
+- [x] Extract only the approved business or consignee, address, and optional PRO fields through the
+  server-only Routing Lab boundary.
+- [x] Propose driver-reviewed physical-stop groupings with uncertainty, editing, merging,
+  separation, removal, and manual addition.
+- [x] Save private manifest photographs, extraction evidence, corrections, and confirmed stops;
+  restore unfinished work after refresh or sign-in and delete only the selected import.
+- [x] Complete the controlled two-photograph Slice 2 acceptance matrix and verify that production
+  FreightIQ, GR-001, and sandbox lessons remain unaffected.
 
 ## Feature Backlog
 

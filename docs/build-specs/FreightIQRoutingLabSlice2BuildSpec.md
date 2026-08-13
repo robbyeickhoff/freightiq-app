@@ -2,7 +2,23 @@
 
 ## Status
 
-Approved for implementation on August 13, 2026.
+Implemented and accepted on August 13, 2026.
+
+All 14 Slice 2 acceptance criteria passed in the private Routing Lab. The
+controlled two-photograph test captured all 11 visible shipment records,
+grouped the two Town of Mountain Village shipments at `317 Adams Ranch Road`,
+presented Builders First Source and Builders FirstChoice at `140 Society Drive`
+for driver-controlled merge review, and kept the handwritten Home Evolution
+address visibly reviewable. Product Owner acceptance also confirmed editing,
+removal, manual correction, duplicate merging, private persistence across
+refresh, confirmed-stop restoration, and deletion scoped to the selected
+import.
+
+Routing Lab lint, TypeScript validation, production build, canonical GR-001
+fixture verification, dependency audit, private-storage verification, and
+Supabase row-level-security review passed. Slice 2 remains isolated from the
+production FreightIQ runtime, data, deployment, and release state. The accepted
+implementation is committed on canonical `clean-main` in `7364eaa`.
 
 This specification defines the second Routing Lab vertical slice. Slice 1
 remains complete and independently controlled by:
