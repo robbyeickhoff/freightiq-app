@@ -1,18 +1,22 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import type { ManifestPhoto } from './ManifestIntake'
 import {
   createManualStop,
-  groupExtractedShipments,
+  type GroupingResult,
   type MergeProposal,
   type ProposedStop,
 } from '../lib/manifest-grouping'
-import type { ManifestExtraction, ReviewState } from '../lib/manifest-extraction'
+import type { ReviewState } from '../lib/manifest-extraction'
 
 type ManifestConfirmationProps = {
-  extraction: ManifestExtraction
   photos: ManifestPhoto[]
-  onBack: () => void
+  initialState: GroupingResult
+  initiallyConfirmed: boolean
+  onSave: (workingState: GroupingResult) => Promise<void>
+  onConfirm: (stops: ProposedStop[]) => Promise<void>
+  onReset: () => Promise<void>
+  onStartAnother: () => void
 }
 
 function reviewLabel(state: ReviewState) {
@@ -24,16 +28,30 @@ function reviewLabel(state: ReviewState) {
   }[state]
 }
 
-function ManifestConfirmation({ extraction, photos, onBack }: ManifestConfirmationProps) {
-  const initialGrouping = useMemo(() => groupExtractedShipments(extraction), [extraction])
-  const [stops, setStops] = useState(initialGrouping.stops)
-  const [proposals, setProposals] = useState(initialGrouping.proposals)
+function ManifestConfirmation({
+  photos,
+  initialState,
+  initiallyConfirmed,
+  onSave,
+  onConfirm,
+  onReset,
+  onStartAnother,
+}: ManifestConfirmationProps) {
+  const [stops, setStops] = useState(initialState.stops)
+  const [proposals, setProposals] = useState(initialState.proposals)
   const [expandedStopIds, setExpandedStopIds] = useState(() => new Set(
-    initialGrouping.stops
+    initialState.stops
       .filter((stop) => stop.consigneeReviewState !== 'confident' || stop.addressReviewState !== 'confident')
       .map((stop) => stop.id),
   ))
-  const [confirmed, setConfirmed] = useState(false)
+  const [confirmed, setConfirmed] = useState(initiallyConfirmed)
+  const [saveState, setSaveState] = useState<'saved' | 'saving' | 'error'>('saved')
+  const [actionError, setActionError] = useState('')
+  const [isConfirming, setIsConfirming] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
+  const [showResetConfirmation, setShowResetConfirmation] = useState(false)
+  const initialRender = useRef(true)
+  const saveQueue = useRef<Promise<void>>(Promise.resolve())
 
   useEffect(() => {
     const flaggedIds = stops
@@ -43,6 +61,30 @@ function ManifestConfirmation({ extraction, photos, onBack }: ManifestConfirmati
     if (!flaggedIds.length) return
     setExpandedStopIds((current) => new Set([...current, ...flaggedIds]))
   }, [stops])
+
+  useEffect(() => {
+    if (confirmed || initialRender.current) {
+      initialRender.current = false
+      return
+    }
+
+    setSaveState('saving')
+    const timeout = window.setTimeout(() => {
+      setActionError('')
+      saveQueue.current = saveQueue.current
+        .catch(() => undefined)
+        .then(() => onSave({ stops, proposals }))
+
+      void saveQueue.current
+        .then(() => setSaveState('saved'))
+        .catch((error: unknown) => {
+          setSaveState('error')
+          setActionError(error instanceof Error ? error.message : 'Changes could not be saved.')
+        })
+    }, 450)
+
+    return () => window.clearTimeout(timeout)
+  }, [confirmed, initialRender, onSave, proposals, stops])
 
   const unresolvedStops = stops.filter((stop) =>
     !stop.consigneeName.trim() ||
@@ -159,18 +201,58 @@ function ManifestConfirmation({ extraction, photos, onBack }: ManifestConfirmati
       return Number(rightFlagged) - Number(leftFlagged) || left.originalIndex - right.originalIndex
     })
 
+  async function confirmStops() {
+    setIsConfirming(true)
+    setActionError('')
+    try {
+      await saveQueue.current.catch(() => undefined)
+      await onConfirm(stops)
+      setSaveState('saved')
+      setConfirmed(true)
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'The confirmed stops could not be saved.')
+    } finally {
+      setIsConfirming(false)
+    }
+  }
+
+  async function resetImport() {
+    setIsResetting(true)
+    setActionError('')
+    try {
+      await onReset()
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'This manifest could not be deleted.')
+      setIsResetting(false)
+    }
+  }
+
   if (confirmed) {
     return (
       <section className="manifest-intake manifest-confirmed" aria-labelledby="confirmed-title">
         <p className="eyebrow">Driver confirmed</p>
         <h2 id="confirmed-title">{stops.length} verified stops ready</h2>
         <p>
-          This confirmed result remains temporary in Unit 3. It has not been saved
-          or sent to routing; persistence and reset arrive in Unit 4.
+          The photos, original extraction, corrections, and verified stops are saved
+          privately. They have not been sent to routing or production FreightIQ.
         </p>
-        <button className="secondary-button" type="button" onClick={() => setConfirmed(false)}>
-          Return to confirmed stops
+        <button className="secondary-button" type="button" onClick={onStartAnother}>
+          Start another manifest
         </button>
+        <button className="text-button" type="button" onClick={() => setShowResetConfirmation(true)}>
+          Delete this saved manifest
+        </button>
+        {showResetConfirmation ? (
+          <div className="manifest-reset-confirmation">
+            <strong>Delete only this manifest?</strong>
+            <p>This removes its photos, extraction, corrections, and confirmed stops. GR-001 and other imports remain unchanged.</p>
+            <button className="danger-button" type="button" disabled={isResetting} onClick={() => void resetImport()}>
+              {isResetting ? 'Deleting…' : 'Yes, delete this manifest'}
+            </button>
+            <button type="button" disabled={isResetting} onClick={() => setShowResetConfirmation(false)}>Keep it</button>
+          </div>
+        ) : null}
+        {actionError ? <p className="photo-error" role="alert">{actionError}</p> : null}
       </section>
     )
   }
@@ -179,10 +261,12 @@ function ManifestConfirmation({ extraction, photos, onBack }: ManifestConfirmati
     <section className="manifest-intake" aria-labelledby="confirmation-title">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">Slice 2 · Unit 3</p>
+          <p className="eyebrow">Slice 2 · Unit 4</p>
           <h2 id="confirmation-title">Confirm proposed stops</h2>
         </div>
-        <span className="verified-badge">Driver review</span>
+        <span className={`verified-badge save-state save-state--${saveState}`}>
+          {saveState === 'saving' ? 'Saving…' : saveState === 'error' ? 'Save failed' : 'Saved privately'}
+        </span>
       </div>
 
       <div className="confirmation-summary">
@@ -305,18 +389,31 @@ function ManifestConfirmation({ extraction, photos, onBack }: ManifestConfirmati
       <button
         className="primary-button"
         type="button"
-        disabled={unresolvedStops.length > 0 || activeProposals.length > 0 || stops.length === 0}
-        onClick={() => setConfirmed(true)}
+        disabled={unresolvedStops.length > 0 || activeProposals.length > 0 || stops.length === 0 || isConfirming}
+        onClick={() => void confirmStops()}
       >
-        Confirm Stops
+        {isConfirming ? 'Saving confirmed stops…' : 'Confirm Stops'}
       </button>
       {unresolvedStops.length || activeProposals.length ? (
         <p className="next-step-note">
           Resolve {unresolvedStops.length} flagged stops and {activeProposals.length} possible merges before confirming.
         </p>
       ) : null}
-      <button className="secondary-button" type="button" onClick={onBack}>Back to manifest photos</button>
-      <p className="safety-note">Unit 3 output remains temporary and cannot affect production FreightIQ.</p>
+      {actionError ? <p className="photo-error" role="alert">{actionError}</p> : null}
+      <button className="text-button" type="button" onClick={() => setShowResetConfirmation(true)}>
+        Reset and delete this import
+      </button>
+      {showResetConfirmation ? (
+        <div className="manifest-reset-confirmation">
+          <strong>Delete only this manifest?</strong>
+          <p>This removes its saved photos and review work. GR-001, sandbox lessons, and other imports remain unchanged.</p>
+          <button className="danger-button" type="button" disabled={isResetting} onClick={() => void resetImport()}>
+            {isResetting ? 'Deleting…' : 'Yes, delete this manifest'}
+          </button>
+          <button type="button" disabled={isResetting} onClick={() => setShowResetConfirmation(false)}>Keep working</button>
+        </div>
+      ) : null}
+      <p className="safety-note">Unit 4 saves only to the private Routing Lab and cannot affect production FreightIQ.</p>
     </section>
   )
 }

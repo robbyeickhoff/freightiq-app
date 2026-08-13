@@ -4,6 +4,16 @@ import {
   extractManifestPhotos,
   type ManifestExtraction,
 } from '../lib/manifest-extraction'
+import { groupExtractedShipments, type GroupingResult } from '../lib/manifest-grouping'
+import {
+  confirmSavedManifest,
+  createSavedManifestImport,
+  deleteSavedManifest,
+  downloadSavedPhotos,
+  loadLatestSavedManifest,
+  saveManifestWorkingState,
+  type StoredPhoto,
+} from '../lib/manifest-persistence'
 import ManifestConfirmation from './ManifestConfirmation'
 
 type IntakeStage = 'confirmation' | 'photos'
@@ -92,6 +102,11 @@ function ManifestIntake() {
   const [isExtracting, setIsExtracting] = useState(false)
   const [photoError, setPhotoError] = useState('')
   const [extraction, setExtraction] = useState<ManifestExtraction | null>(null)
+  const [savedImportId, setSavedImportId] = useState<string | null>(null)
+  const [storedPhotos, setStoredPhotos] = useState<StoredPhoto[]>([])
+  const [restoredState, setRestoredState] = useState<GroupingResult | null>(null)
+  const [isConfirmed, setIsConfirmed] = useState(false)
+  const [isRestoring, setIsRestoring] = useState(true)
   const addInputRef = useRef<HTMLInputElement>(null)
   const replaceInputRef = useRef<HTMLInputElement>(null)
   const replacementPhotoId = useRef<string | null>(null)
@@ -107,6 +122,52 @@ function ManifestIntake() {
     },
     [],
   )
+
+  useEffect(() => {
+    let active = true
+
+    async function restoreLatestImport() {
+      try {
+        const savedImport = await loadLatestSavedManifest()
+        if (!active || !savedImport) return
+
+        const restoredPhotos = await downloadSavedPhotos(savedImport.photos)
+        if (!active) {
+          restoredPhotos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl))
+          return
+        }
+
+        setPhotos(restoredPhotos)
+        setExtraction(savedImport.extraction)
+        setSavedImportId(savedImport.id)
+        setStoredPhotos(savedImport.photos)
+        setRestoredState(savedImport.workingState)
+        setIsConfirmed(savedImport.status === 'confirmed')
+        setStage('confirmation')
+      } catch (error) {
+        if (active) {
+          setPhotoError(error instanceof Error ? error.message : 'Saved manifest work could not be restored.')
+        }
+      } finally {
+        if (active) setIsRestoring(false)
+      }
+    }
+
+    void restoreLatestImport()
+    return () => { active = false }
+  }, [])
+
+  function clearCurrentImport() {
+    photos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl))
+    setPhotos([])
+    setExtraction(null)
+    setSavedImportId(null)
+    setStoredPhotos([])
+    setRestoredState(null)
+    setIsConfirmed(false)
+    setPhotoError('')
+    setStage('photos')
+  }
 
   async function addPhotos(files: FileList | null) {
     if (!files?.length) return
@@ -199,7 +260,13 @@ function ManifestIntake() {
           blob: photo.preparedBlob,
         })),
       )
+      const groupedState = groupExtractedShipments(result)
+      const savedImport = await createSavedManifestImport(photos, result, groupedState)
       setExtraction(result)
+      setSavedImportId(savedImport.importId)
+      setStoredPhotos(savedImport.storedPhotos)
+      setRestoredState(groupedState)
+      setIsConfirmed(false)
       setStage('confirmation')
     } catch (error) {
       setPhotoError(
@@ -210,23 +277,44 @@ function ManifestIntake() {
     }
   }
 
-  if (stage === 'confirmation') {
-    if (!extraction) return null
+  if (isRestoring) {
+    return (
+      <section className="manifest-intake manifest-loading" aria-live="polite">
+        <p className="eyebrow">Manifest Intake</p>
+        <h2>Restoring saved work…</h2>
+        <p>Your latest private Routing Lab import is being checked.</p>
+      </section>
+    )
+  }
 
-    return <ManifestConfirmation extraction={extraction} photos={photos} onBack={() => {
-      setExtraction(null)
-      setStage('photos')
-    }} />
+  if (stage === 'confirmation') {
+    if (!extraction || !savedImportId || !restoredState) return null
+
+    return (
+      <ManifestConfirmation
+        key={savedImportId}
+        photos={photos}
+        initialState={restoredState}
+        initiallyConfirmed={isConfirmed}
+        onSave={(workingState) => saveManifestWorkingState(savedImportId, workingState)}
+        onConfirm={(stops) => confirmSavedManifest(savedImportId, stops)}
+        onReset={async () => {
+          await deleteSavedManifest(savedImportId, storedPhotos)
+          clearCurrentImport()
+        }}
+        onStartAnother={clearCurrentImport}
+      />
+    )
   }
 
   return (
     <section className="manifest-intake" aria-labelledby="manifest-intake-title">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">Slice 2 · Unit 3</p>
+          <p className="eyebrow">Slice 2 · Unit 4</p>
           <h2 id="manifest-intake-title">Manifest Intake</h2>
         </div>
-        <span className="baseline-badge">Temporary extraction only</span>
+        <span className="verified-badge">Private saved intake</span>
       </div>
 
       <p className="manifest-intake__lede">
@@ -329,7 +417,7 @@ function ManifestIntake() {
       ) : null}
 
       <p className="safety-note">
-        Photos are sent only for temporary extraction. Unit 3 does not save or route manifest data.
+        Photos and review work save only inside the private Routing Lab. Nothing is sent to production FreightIQ or routing.
       </p>
     </section>
   )

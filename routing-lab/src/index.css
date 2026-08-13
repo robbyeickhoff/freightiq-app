@@ -992,6 +992,73 @@ details[open] > .proposed-stop-list__heading::after {
   line-height: 1.55;
 }
 
+.manifest-loading {
+  min-height: 220px;
+  align-content: center;
+  text-align: center;
+}
+
+.manifest-loading h2,
+.manifest-loading p {
+  margin: 0;
+}
+
+.manifest-loading p:last-child {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.save-state--saving {
+  border-color: #765d26;
+  color: #f4d99f;
+}
+
+.save-state--error {
+  border-color: #69362a;
+  color: #f0d3c9;
+  background: rgba(105, 54, 42, 0.2);
+}
+
+.text-button {
+  min-height: 42px;
+  border: 0;
+  color: #b9c9d1;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.manifest-reset-confirmation {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #69362a;
+  border-radius: 14px;
+  padding: 14px;
+  color: #f0d3c9;
+  background: rgba(105, 54, 42, 0.16);
+  text-align: left;
+}
+
+.manifest-reset-confirmation p {
+  margin: 0;
+}
+
+.manifest-reset-confirmation button {
+  min-height: 42px;
+  border: 1px solid #405866;
+  border-radius: 10px;
+  color: #dce7ec;
+  background: #101d26;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.manifest-reset-confirmation .danger-button {
+  border-color: #8a4939;
+  color: #fff1ec;
+  background: #69362a;
+}
+
 .status-dot {
   width: 9px;
   height: 9px;
