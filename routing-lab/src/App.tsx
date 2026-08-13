@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 
 import EndOfRouteReview from './components/EndOfRouteReview'
 import type { ReviewStage, SandboxLesson } from './components/EndOfRouteReview'
+import ManifestIntake from './components/ManifestIntake'
 import ReasonPrompt from './components/ReasonPrompt'
 import {
   gr001BaselineProposal,
@@ -34,6 +35,7 @@ type ReasonRecord = PendingReason & {
 }
 
 type ProposalSource = 'baseline' | 'learned'
+type Workspace = 'manifest-intake' | 'test-route'
 
 type SavedFixtureState = {
   activeRouteStopNames: string[]
@@ -67,6 +69,7 @@ function sequencesMatch(first: string[], second: string[]) {
 }
 
 function App() {
+  const [workspace, setWorkspace] = useState<Workspace>('test-route')
   const [session, setSession] = useState<Session | null>(null)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -641,8 +644,30 @@ function App() {
 
       <section className="mode-banner" aria-label="Current environment">
         <span className="status-dot" aria-hidden="true" />
-        Test Route sandbox
+        Private Routing Lab sandbox
       </section>
+
+      <nav className="workspace-switcher" aria-label="Routing Lab workspace">
+        <button
+          type="button"
+          aria-current={workspace === 'test-route' ? 'page' : undefined}
+          onClick={() => setWorkspace('test-route')}
+        >
+          Test Route
+        </button>
+        <button
+          type="button"
+          aria-current={workspace === 'manifest-intake' ? 'page' : undefined}
+          onClick={() => setWorkspace('manifest-intake')}
+        >
+          Manifest Intake
+        </button>
+      </nav>
+
+      {workspace === 'manifest-intake' ? (
+        <ManifestIntake />
+      ) : (
+        <>
 
       <section className="fixture-card" aria-labelledby="fixture-title">
         <div className="fixture-card__heading">
@@ -1206,6 +1231,9 @@ function App() {
           )}
         </section>
       ) : null}
+
+        </>
+      )}
 
       <p className="safety-note">
         Sandbox routes and lessons cannot affect production FreightIQ.
