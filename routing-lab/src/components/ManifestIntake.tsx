@@ -3,12 +3,12 @@ import { useEffect, useRef, useState } from 'react'
 import {
   extractManifestPhotos,
   type ManifestExtraction,
-  type ReviewState,
 } from '../lib/manifest-extraction'
+import ManifestConfirmation from './ManifestConfirmation'
 
 type IntakeStage = 'confirmation' | 'photos'
 
-type ManifestPhoto = {
+export type ManifestPhoto = {
   id: string
   name: string
   previewUrl: string
@@ -83,28 +83,6 @@ async function normalizeManifestPhoto(source: Blob) {
       0.84,
     )
   })
-}
-
-function formatAddress(shipment: {
-  streetAddress: string | null
-  city: string | null
-  state: string | null
-  postalCode: string | null
-}) {
-  const locality = [shipment.city, shipment.state, shipment.postalCode]
-    .filter(Boolean)
-    .join(' ')
-
-  return [shipment.streetAddress, locality].filter(Boolean).join(', ') || 'Address unreadable'
-}
-
-function reviewStateLabel(state: ReviewState) {
-  return {
-    confident: 'Confident',
-    handwritten_correction: 'Handwritten correction',
-    needs_review: 'Needs review',
-    unreadable: 'Unreadable',
-  }[state]
 }
 
 function ManifestIntake() {
@@ -233,116 +211,19 @@ function ManifestIntake() {
   }
 
   if (stage === 'confirmation') {
-    const shipmentCount = extraction?.photos.reduce(
-      (total, photo) => total + photo.shipments.length,
-      0,
-    ) ?? 0
+    if (!extraction) return null
 
-    return (
-      <section className="manifest-intake" aria-labelledby="confirmation-title">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Manifest intake</p>
-            <h2 id="confirmation-title">Confirm extracted stops</h2>
-          </div>
-          <span className="verified-badge">Unit 2 extraction</span>
-        </div>
-
-        <div className="empty-confirmation">
-          <div className="empty-confirmation__mark" aria-hidden="true">✓</div>
-          <h3>{shipmentCount} shipment {shipmentCount === 1 ? 'record' : 'records'} found</h3>
-          <p>
-            Review what the extractor read from each photo. No stops have been
-            grouped, confirmed, saved, or sent to routing.
-          </p>
-        </div>
-
-        <div className="extraction-results">
-          {photos.map((photo, index) => {
-            const photoResult = extraction?.photos.find(
-              (result) => result.sourcePhotoId === photo.id,
-            )
-
-            return (
-              <section className="extraction-page" key={photo.id}>
-                <div className="extraction-page__heading">
-                  <img src={photo.previewUrl} alt={`Manifest page ${index + 1}`} />
-                  <div>
-                    <span>Page {index + 1}</span>
-                    <strong>{photo.name}</strong>
-                    <small className={`extraction-status extraction-status--${photoResult?.status ?? 'unreadable'}`}>
-                      {photoResult?.status ?? 'No result'}
-                    </small>
-                  </div>
-                </div>
-
-                {photoResult?.message ? (
-                  <p className="extraction-message">{photoResult.message}</p>
-                ) : null}
-
-                {photoResult?.shipments.length ? (
-                  <ol className="shipment-extraction-list">
-                    {photoResult.shipments.map((shipment) => (
-                      <li key={`${photo.id}-${shipment.sourceRecordIndex}`}>
-                        <div className="shipment-extraction-list__heading">
-                          <span>Record {shipment.sourceRecordIndex}</span>
-                          <strong>{shipment.consigneeName || 'Consignee unreadable'}</strong>
-                        </div>
-                        <p>{formatAddress(shipment)}</p>
-                        <p>PRO: {shipment.proNumber || 'Not readable / not shown'}</p>
-                        <div className="review-state-row">
-                          <span className={`review-state review-state--${shipment.consigneeReviewState}`}>
-                            Name: {reviewStateLabel(shipment.consigneeReviewState)}
-                          </span>
-                          <span className={`review-state review-state--${shipment.addressReviewState}`}>
-                            Address: {reviewStateLabel(shipment.addressReviewState)}
-                          </span>
-                          <span className={`review-state review-state--${shipment.proReviewState}`}>
-                            PRO: {reviewStateLabel(shipment.proReviewState)}
-                          </span>
-                        </div>
-                        {shipment.evidenceNote ? <small>{shipment.evidenceNote}</small> : null}
-                      </li>
-                    ))}
-                  </ol>
-                ) : (
-                  <p className="extraction-message">No shipment records were readable on this photo.</p>
-                )}
-              </section>
-            )
-          })}
-        </div>
-
-        <button
-          className="primary-button"
-          type="button"
-          disabled
-          aria-describedby="confirmation-boundary-note"
-        >
-          Confirm Stops — available in Unit 3
-        </button>
-        <p id="confirmation-boundary-note" className="next-step-note">
-          Unit 2 stops here intentionally. Editing and stop grouping come next.
-        </p>
-        <button
-          className="secondary-button"
-          type="button"
-          onClick={() => {
-            setExtraction(null)
-            setStage('photos')
-          }}
-        >
-          Back to manifest photos
-        </button>
-      </section>
-    )
+    return <ManifestConfirmation extraction={extraction} photos={photos} onBack={() => {
+      setExtraction(null)
+      setStage('photos')
+    }} />
   }
 
   return (
     <section className="manifest-intake" aria-labelledby="manifest-intake-title">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">Slice 2 · Unit 2</p>
+          <p className="eyebrow">Slice 2 · Unit 3</p>
           <h2 id="manifest-intake-title">Manifest Intake</h2>
         </div>
         <span className="baseline-badge">Temporary extraction only</span>
@@ -448,7 +329,7 @@ function ManifestIntake() {
       ) : null}
 
       <p className="safety-note">
-        Photos are sent only for temporary extraction. Unit 2 does not save or route manifest data.
+        Photos are sent only for temporary extraction. Unit 3 does not save or route manifest data.
       </p>
     </section>
   )
