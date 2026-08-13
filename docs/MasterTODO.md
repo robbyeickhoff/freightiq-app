@@ -379,10 +379,11 @@ FreightIQ capability and remains active when time allows.
 - [x] Load and replay the frozen GR-001 baseline proposal.
 - [x] Track the active route and stop outcomes.
 - [x] Capture out-of-order route corrections and driver reasons.
-- [ ] Implement end-of-day lesson review and approval.
-- [ ] Approve the expected GR-001 sandbox lesson.
-- [ ] Rerun GR-001 and verify the approved lesson changes the next proposal.
-- [ ] Verify fixture reset behavior and complete the Slice 1 acceptance matrix.
+- [x] Implement end-of-day lesson review and approval.
+- [x] Approve the expected GR-001 sandbox lesson.
+- [x] Rerun GR-001 and verify the approved lesson changes the next proposal.
+- [x] Verify fixture reset behavior and complete the Slice 1 acceptance matrix on the private
+  deployed phone experience.
 
 ## Feature Backlog
 
