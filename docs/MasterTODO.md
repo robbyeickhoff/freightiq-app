@@ -18,7 +18,7 @@
 
 ---
 
-Last Updated: 2026-08-10
+Last Updated: 2026-08-13
 
 ---
 
@@ -512,6 +512,26 @@ Ideas in the Parking Lot are intentionally unscheduled. They may eventually move
 - [ ] Manifest Scan / Route Intel Lookup.
 - [ ] Operational Analytics.
 - [ ] Route Knowledge Extraction.
+
+---
+
+### FreightIQ Widgets
+
+- [ ] Explore home-screen and Lock Screen widgets after Route Builder is functional.
+- [ ] Start with a small and medium **Next Stop Widget** showing the consignee, shortened address,
+  key non-sensitive notes or hazard flags, ETA or stop number, and a deep link to that stop in
+  FreightIQ.
+- [ ] Consider a medium or large **Today's Route Snapshot** with completed and remaining stop
+  counts, the next two or three stops, and a rough time-remaining estimate.
+- [ ] Consider **Stop Notes / Hazards**, **Daily Progress**, and **Quick Actions** widgets for
+  glanceable stop guidance, route progress, opening the next stop, adding a note, marking a stop
+  complete, and viewing the full route.
+- [ ] Consider Lock Screen accessory formats: circular stop count or initials, rectangular next
+  consignee plus a short note, and inline next-stop text.
+- [ ] Keep private information such as gate codes off widgets while the device is locked. Show only
+  non-sensitive notes or a generic private-note indicator until the device is unlocked.
+- [ ] Use the Sunrise System visual language: charcoal background with restrained copper and
+  sunrise-orange highlights.
 
 ---
 
