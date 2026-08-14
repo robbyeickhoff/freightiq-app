@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      routing_lab_routes: {
+        Row: {
+          created_at: string
+          id: string
+          manifest_import_id: string
+          route_kind: string
+          setup: Json
+          source_stops: Json
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          manifest_import_id: string
+          route_kind?: string
+          setup: Json
+          source_stops: Json
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          manifest_import_id?: string
+          route_kind?: string
+          setup?: Json
+          source_stops?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       routing_lab_manifest_imports: {
         Row: {
           confirmed_stops: Json | null

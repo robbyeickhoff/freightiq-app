@@ -15,6 +15,7 @@ type ManifestConfirmationProps = {
   initiallyConfirmed: boolean
   onSave: (workingState: GroupingResult) => Promise<void>
   onConfirm: (stops: ProposedStop[]) => Promise<void>
+  onBuildTestRoute: (stops: ProposedStop[]) => Promise<void>
   onReset: () => Promise<void>
   onStartAnother: () => void
 }
@@ -34,6 +35,7 @@ function ManifestConfirmation({
   initiallyConfirmed,
   onSave,
   onConfirm,
+  onBuildTestRoute,
   onReset,
   onStartAnother,
 }: ManifestConfirmationProps) {
@@ -48,6 +50,7 @@ function ManifestConfirmation({
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'error'>('saved')
   const [actionError, setActionError] = useState('')
   const [isConfirming, setIsConfirming] = useState(false)
+  const [isBuildingRoute, setIsBuildingRoute] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
   const [showResetConfirmation, setShowResetConfirmation] = useState(false)
   const initialRender = useRef(true)
@@ -227,6 +230,17 @@ function ManifestConfirmation({
     }
   }
 
+  async function buildTestRoute() {
+    setIsBuildingRoute(true)
+    setActionError('')
+    try {
+      await onBuildTestRoute(stops)
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'The Test Route could not be created.')
+      setIsBuildingRoute(false)
+    }
+  }
+
   if (confirmed) {
     return (
       <section className="manifest-intake manifest-confirmed" aria-labelledby="confirmed-title">
@@ -236,6 +250,14 @@ function ManifestConfirmation({
           The photos, original extraction, corrections, and verified stops are saved
           privately. They have not been sent to routing or production FreightIQ.
         </p>
+        <button
+          className="primary-button"
+          type="button"
+          disabled={isBuildingRoute}
+          onClick={() => void buildTestRoute()}
+        >
+          {isBuildingRoute ? 'Building Test Route…' : 'Build Test Route'}
+        </button>
         <button className="secondary-button" type="button" onClick={onStartAnother}>
           Start another manifest
         </button>

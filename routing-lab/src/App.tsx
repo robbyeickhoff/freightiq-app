@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js'
 import EndOfRouteReview from './components/EndOfRouteReview'
 import type { ReviewStage, SandboxLesson } from './components/EndOfRouteReview'
 import ManifestIntake from './components/ManifestIntake'
+import ManifestRouteSetup from './components/ManifestRouteSetup'
 import ReasonPrompt from './components/ReasonPrompt'
 import {
   gr001BaselineProposal,
@@ -27,9 +28,15 @@ import type {
   StopOutcome,
 } from './lib/route-domain'
 import { getSupabase } from './lib/supabase'
+import {
+  loadLatestManifestDraftRoute,
+  saveManifestRouteSetup,
+} from './lib/route-persistence'
+import type { ManifestDraftRoute, RouteSetup } from './lib/route-persistence'
 
 type ProposalSource = 'baseline' | 'learned'
 type Workspace = 'manifest-intake' | 'test-route'
+type TestRouteMode = 'fixture' | 'manifest-draft'
 
 type SavedFixtureState = {
   activeRouteStopIds?: string[]
@@ -60,6 +67,8 @@ function formatRecordedTime(timestamp: string) {
 
 function App() {
   const [workspace, setWorkspace] = useState<Workspace>('test-route')
+  const [testRouteMode, setTestRouteMode] = useState<TestRouteMode>('fixture')
+  const [manifestDraftRoute, setManifestDraftRoute] = useState<ManifestDraftRoute | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -259,6 +268,41 @@ function App() {
 
     void loadSavedState()
   }, [session])
+
+  useEffect(() => {
+    if (!session) {
+      setManifestDraftRoute(null)
+      setTestRouteMode('fixture')
+      return
+    }
+
+    let active = true
+    void loadLatestManifestDraftRoute()
+      .then((route) => {
+        if (!active || !route) return
+        setManifestDraftRoute(route)
+        setTestRouteMode('manifest-draft')
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setMessage(error instanceof Error ? error.message : 'Saved draft route could not be restored.')
+        }
+      })
+
+    return () => { active = false }
+  }, [session])
+
+  function openManifestDraftRoute(route: ManifestDraftRoute) {
+    setManifestDraftRoute(route)
+    setTestRouteMode('manifest-draft')
+    setWorkspace('test-route')
+  }
+
+  async function saveDraftRouteSetup(setup: RouteSetup) {
+    if (!manifestDraftRoute) return
+    await saveManifestRouteSetup(manifestDraftRoute.id, setup)
+    setManifestDraftRoute({ ...manifestDraftRoute, setup })
+  }
 
   useEffect(() => {
     if (!session || !hasLoadedSavedState) {
@@ -668,9 +712,25 @@ function App() {
       </nav>
 
       {workspace === 'manifest-intake' ? (
-        <ManifestIntake />
+        <ManifestIntake onOpenDraftRoute={openManifestDraftRoute} />
+      ) : testRouteMode === 'manifest-draft' && manifestDraftRoute ? (
+        <ManifestRouteSetup
+          route={manifestDraftRoute}
+          onBackToFixture={() => setTestRouteMode('fixture')}
+          onSave={saveDraftRouteSetup}
+        />
       ) : (
         <>
+
+      {manifestDraftRoute ? (
+        <button
+          className="secondary-button resume-manifest-route"
+          type="button"
+          onClick={() => setTestRouteMode('manifest-draft')}
+        >
+          Resume manifest Test Route setup
+        </button>
+      ) : null}
 
       <section className="fixture-card" aria-labelledby="fixture-title">
         <div className="fixture-card__heading">

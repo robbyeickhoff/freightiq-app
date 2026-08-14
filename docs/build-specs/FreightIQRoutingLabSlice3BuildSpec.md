@@ -16,6 +16,17 @@ route start, out-of-order completion and reason capture, and restoration after
 refresh. TypeScript validation, lint, production build, canonical fixture
 verification, and dependency audit passed.
 
+Unit 2 was implemented and accepted on August 13, 2026. A confirmed manifest
+can now create or reopen an isolated draft Test Route, copy every confirmed
+physical stop without changing its source evidence, collect the minimum route
+setup, and restore the saved draft after refresh or sign-in. Product Owner
+acceptance confirmed the manifest handoff, correct stop count and stop details,
+route-setup editing and saving, refresh restoration, GR-001 return, and draft
+resumption. The separate Routing Lab database migration is applied and
+synchronized. TypeScript validation, lint, production build, canonical fixture
+verification, dependency audit, migration verification, and Supabase database
+advisors passed with no applicable database error.
+
 This specification defines the third Routing Lab vertical slice. Slice 1 and
 Slice 2 remain complete and independently controlled by:
 
@@ -375,10 +386,11 @@ Slice 3 does not include:
 
 ### Unit 2 — Manifest Handoff and Route Setup
 
-- Add **Build Test Route** after manifest confirmation.
-- Copy confirmed stops into a new sandbox route without changing the manifest.
-- Add the minimum route-setup screen.
-- Persist and restore the new draft route.
+- [x] Add **Build Test Route** after manifest confirmation.
+- [x] Copy confirmed stops into a new sandbox route without changing the
+  manifest.
+- [x] Add the minimum route-setup screen.
+- [x] Persist and restore the new draft route.
 
 ### Unit 3 — Zone Classification and Approval
 

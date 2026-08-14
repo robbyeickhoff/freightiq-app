@@ -397,7 +397,7 @@ The Slice 3 manifest-to-Test-Route bridge is approved for implementation in cont
 - [x] Complete Slice 3 Unit 1: separate reusable Test Route behavior from the frozen `GR-001`
   fixture, introduce stable identifier-based domain types, and prove the accepted fixture remains
   unchanged.
-- [ ] Complete Slice 3 Unit 2: hand confirmed manifest stops into a separate draft Test Route and
+- [x] Complete Slice 3 Unit 2: hand confirmed manifest stops into a separate draft Test Route and
   add persistent route setup.
 - [ ] Complete Slice 3 Unit 3: propose operational zones, expose uncertainty, and require driver
   approval of every classification before sequencing.

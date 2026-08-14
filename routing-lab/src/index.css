@@ -65,6 +65,7 @@ button {
 .end-review,
 .fixture-card,
 .manifest-intake,
+.manifest-route-setup,
 .reason-prompt,
 .reset-panel,
 .route-details,
@@ -140,6 +141,7 @@ button {
 .active-route,
 .end-review,
 .manifest-intake,
+.manifest-route-setup,
 .reason-prompt,
 .reset-panel {
   margin-top: 16px;
@@ -360,6 +362,102 @@ textarea:focus-visible {
   display: grid;
   gap: 20px;
   padding: 24px;
+}
+
+.manifest-route-setup {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+}
+
+.manifest-route-setup__lede {
+  margin: -2px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.route-setup-fields {
+  display: grid;
+  gap: 14px;
+}
+
+.route-setup-fields label {
+  display: grid;
+  gap: 7px;
+  color: #dce8ed;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.route-setup-fields label > span {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.route-setup-fields input,
+.route-setup-fields textarea {
+  width: 100%;
+  border: 1px solid #304956;
+  border-radius: 12px;
+  padding: 12px;
+  color: #eef4f8;
+  background: #0b161d;
+  font: inherit;
+  font-weight: 600;
+}
+
+.route-setup-fields textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.route-setup-fields .route-setup-checkbox {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  border: 1px solid #304956;
+  border-radius: 12px;
+  padding: 12px;
+  background: #0b161d;
+}
+
+.route-setup-fields .route-setup-checkbox input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+.manifest-route-stops {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #0b161d;
+}
+
+.manifest-route-stops summary {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  cursor: pointer;
+  color: #e7eef1;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.manifest-route-stops summary span {
+  color: var(--muted);
+}
+
+.manifest-route-stops .stop-list {
+  border-top: 1px solid var(--border);
+  padding: 12px;
+}
+
+.resume-manifest-route {
+  margin-bottom: 16px;
 }
 
 .manifest-intake__lede {
@@ -2068,6 +2166,7 @@ details[open] > .proposed-stop-list__heading::after {
   .end-review,
   .fixture-card,
   .manifest-intake,
+  .manifest-route-setup,
   .reason-prompt,
   .reset-panel,
   .route-details,

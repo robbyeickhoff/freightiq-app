@@ -15,6 +15,8 @@ import {
   type StoredPhoto,
 } from '../lib/manifest-persistence'
 import ManifestConfirmation from './ManifestConfirmation'
+import type { ManifestDraftRoute } from '../lib/route-persistence'
+import { buildManifestDraftRoute } from '../lib/route-persistence'
 
 type IntakeStage = 'confirmation' | 'photos'
 
@@ -95,7 +97,11 @@ async function normalizeManifestPhoto(source: Blob) {
   })
 }
 
-function ManifestIntake() {
+type ManifestIntakeProps = {
+  onOpenDraftRoute: (route: ManifestDraftRoute) => void
+}
+
+function ManifestIntake({ onOpenDraftRoute }: ManifestIntakeProps) {
   const [photos, setPhotos] = useState<ManifestPhoto[]>([])
   const [stage, setStage] = useState<IntakeStage>('photos')
   const [isPreparingPhotos, setIsPreparingPhotos] = useState(false)
@@ -298,6 +304,10 @@ function ManifestIntake() {
         initiallyConfirmed={isConfirmed}
         onSave={(workingState) => saveManifestWorkingState(savedImportId, workingState)}
         onConfirm={(stops) => confirmSavedManifest(savedImportId, stops)}
+        onBuildTestRoute={async (stops) => {
+          const route = await buildManifestDraftRoute(savedImportId, stops)
+          onOpenDraftRoute(route)
+        }}
         onReset={async () => {
           await deleteSavedManifest(savedImportId, storedPhotos)
           clearCurrentImport()
