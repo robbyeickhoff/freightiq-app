@@ -13,40 +13,37 @@ import {
 import type { GoldenRouteStop } from './data/gr-001'
 import { getRoutingLabConfig } from './lib/config'
 import type { Json } from './lib/database'
+import {
+  reorderItem,
+  recordRouteStopOutcome,
+  resolveStopsById,
+  sequencesMatch,
+  startRouteRun,
+} from './lib/route-domain'
+import type {
+  PendingReason,
+  ReasonRecord,
+  StopEvent,
+  StopOutcome,
+} from './lib/route-domain'
 import { getSupabase } from './lib/supabase'
-
-type StopOutcome = 'complete' | 'unable'
-
-type StopEvent = {
-  actionOrder: number
-  recordedAt: string
-  status: StopOutcome
-}
-
-type PendingReason = {
-  description: string
-  kind: 'active' | 'planned'
-}
-
-type ReasonRecord = PendingReason & {
-  note: string
-  reasons: string[]
-  recordedAt: string
-}
 
 type ProposalSource = 'baseline' | 'learned'
 type Workspace = 'manifest-intake' | 'test-route'
 
 type SavedFixtureState = {
-  activeRouteStopNames: string[]
-  draftRouteStopNames: string[]
+  activeRouteStopIds?: string[]
+  activeRouteStopNames?: string[]
+  draftRouteStopIds?: string[]
+  draftRouteStopNames?: string[]
   fixtureLoaded: boolean
   pendingReason: PendingReason | null
   proposalGenerated: boolean
   proposalSource: ProposalSource
   reasonNote: string
   reasonRecords: ReasonRecord[]
-  remainingStopNames: string[]
+  remainingStopIds?: string[]
+  remainingStopNames?: string[]
   reviewStage: ReviewStage
   routeFinishedAt: string | null
   routeStartedAt: string | null
@@ -61,13 +58,6 @@ function formatRecordedTime(timestamp: string) {
   }).format(new Date(timestamp))
 }
 
-function sequencesMatch(first: string[], second: string[]) {
-  return (
-    first.length === second.length &&
-    first.every((stopName, index) => stopName === second[index])
-  )
-}
-
 function App() {
   const [workspace, setWorkspace] = useState<Workspace>('test-route')
   const [session, setSession] = useState<Session | null>(null)
@@ -80,7 +70,7 @@ function App() {
     useState<ProposalSource>('baseline')
   const [draftRouteStops, setDraftRouteStops] = useState<GoldenRouteStop[]>([])
   const [activeRouteStops, setActiveRouteStops] = useState<GoldenRouteStop[]>([])
-  const [remainingStopNames, setRemainingStopNames] = useState<string[]>([])
+  const [remainingStopIds, setRemainingStopIds] = useState<string[]>([])
   const [routeStartedAt, setRouteStartedAt] = useState<string | null>(null)
   const [routeFinishedAt, setRouteFinishedAt] = useState<string | null>(null)
   const [stopEvents, setStopEvents] = useState<Record<string, StopEvent>>({})
@@ -103,19 +93,15 @@ function App() {
   const proposalAdjusted =
     !learnedRerun &&
     draftRouteStops.some(
-      (stop, index) => stop.name !== gr001BaselineProposal.stops[index]?.name,
+      (stop, index) => stop.id !== gr001BaselineProposal.stops[index]?.id,
     )
-  const remainingStops = remainingStopNames
-    .map((stopName) =>
-      activeRouteStops.find((stop) => stop.name === stopName),
-    )
-    .filter((stop): stop is GoldenRouteStop => Boolean(stop))
+  const remainingStops = resolveStopsById(remainingStopIds, activeRouteStops)
   const resolvedStops = activeRouteStops
-    .filter((stop) => stopEvents[stop.name])
+    .filter((stop) => stopEvents[stop.id])
     .sort(
       (first, second) =>
-        stopEvents[first.name].actionOrder -
-        stopEvents[second.name].actionOrder,
+        stopEvents[first.id].actionOrder -
+        stopEvents[second.id].actionOrder,
     )
   const correctionStopNames = new Set(
     gr001Fixture.meaningful_ai_correction.ai_sequence,
@@ -127,7 +113,7 @@ function App() {
     .filter(
       (stop) =>
         correctionStopNames.has(stop.name) &&
-        stopEvents[stop.name].status === 'complete',
+        stopEvents[stop.id].status === 'complete',
     )
     .map((stop) => stop.name)
   const meaningfulCorrectionDetected =
@@ -216,21 +202,42 @@ function App() {
       }
 
       const saved = stateResult.data?.state as SavedFixtureState | undefined
-      const findStops = (names: string[]) =>
-        names
-          .map((name) => gr001Fixture.stops.find((stop) => stop.name === name))
-          .filter((stop): stop is GoldenRouteStop => Boolean(stop))
+      const stopIdForLegacyName = (name: string) =>
+        gr001Fixture.stops.find((stop) => stop.name === name)?.id
+      const migrateStopIds = (ids?: string[], names?: string[]) =>
+        ids ?? names?.map(stopIdForLegacyName).filter((id): id is string => Boolean(id)) ?? []
+      const migrateStopEvents = (events: Record<string, StopEvent>) =>
+        Object.fromEntries(
+          Object.entries(events).flatMap(([key, event]) => {
+            const stopId = gr001Fixture.stops.some((stop) => stop.id === key)
+              ? key
+              : stopIdForLegacyName(key)
+
+            return stopId ? [[stopId, event]] : []
+          }),
+        )
 
       if (saved) {
+        const draftStopIds = migrateStopIds(
+          saved.draftRouteStopIds,
+          saved.draftRouteStopNames,
+        )
+        const activeStopIds = migrateStopIds(
+          saved.activeRouteStopIds,
+          saved.activeRouteStopNames,
+        )
+
         setFixtureLoaded(saved.fixtureLoaded)
         setProposalGenerated(saved.proposalGenerated)
         setProposalSource(saved.proposalSource)
-        setDraftRouteStops(findStops(saved.draftRouteStopNames))
-        setActiveRouteStops(findStops(saved.activeRouteStopNames))
-        setRemainingStopNames(saved.remainingStopNames)
+        setDraftRouteStops(resolveStopsById(draftStopIds, gr001Fixture.stops))
+        setActiveRouteStops(resolveStopsById(activeStopIds, gr001Fixture.stops))
+        setRemainingStopIds(
+          migrateStopIds(saved.remainingStopIds, saved.remainingStopNames),
+        )
         setRouteStartedAt(saved.routeStartedAt)
         setRouteFinishedAt(saved.routeFinishedAt)
-        setStopEvents(saved.stopEvents)
+        setStopEvents(migrateStopEvents(saved.stopEvents))
         setPendingReason(saved.pendingReason)
         setSelectedReasons(saved.selectedReasons)
         setReasonNote(saved.reasonNote)
@@ -259,15 +266,15 @@ function App() {
     }
 
     const state: SavedFixtureState = {
-      activeRouteStopNames: activeRouteStops.map((stop) => stop.name),
-      draftRouteStopNames: draftRouteStops.map((stop) => stop.name),
+      activeRouteStopIds: activeRouteStops.map((stop) => stop.id),
+      draftRouteStopIds: draftRouteStops.map((stop) => stop.id),
       fixtureLoaded,
       pendingReason,
       proposalGenerated,
       proposalSource,
       reasonNote,
       reasonRecords,
-      remainingStopNames,
+      remainingStopIds,
       reviewStage,
       routeFinishedAt,
       routeStartedAt,
@@ -295,7 +302,7 @@ function App() {
   }, [
     activeRouteStops, draftRouteStops, fixtureLoaded, hasLoadedSavedState,
     pendingReason, proposalGenerated, proposalSource, reasonNote, reasonRecords,
-    remainingStopNames, reviewStage, routeFinishedAt, routeStartedAt,
+    remainingStopIds, reviewStage, routeFinishedAt, routeStartedAt,
     selectedReasons, session, stopEvents,
   ])
 
@@ -337,11 +344,16 @@ function App() {
   }
 
   function startRoute() {
+    const routeRun = startRouteRun(
+      draftRouteStops.map((stop) => stop.id),
+      new Date().toISOString(),
+    )
+
     setActiveRouteStops([...draftRouteStops])
-    setRemainingStopNames(draftRouteStops.map((stop) => stop.name))
-    setStopEvents({})
-    setRouteStartedAt(new Date().toISOString())
-    setRouteFinishedAt(null)
+    setRemainingStopIds(routeRun.remainingStopIds)
+    setStopEvents(routeRun.stopEvents)
+    setRouteStartedAt(routeRun.routeStartedAt)
+    setRouteFinishedAt(routeRun.routeFinishedAt)
   }
 
   function generateProposal() {
@@ -359,7 +371,7 @@ function App() {
     setDraftRouteStops([...gr001LearnedProposal.stops])
     setProposalGenerated(true)
     setActiveRouteStops([])
-    setRemainingStopNames([])
+    setRemainingStopIds([])
     setRouteStartedAt(null)
     setRouteFinishedAt(null)
     setStopEvents({})
@@ -381,13 +393,11 @@ function App() {
         return currentStops
       }
 
-      const reorderedStops = [...currentStops]
-      const [movedStop] = reorderedStops.splice(currentIndex, 1)
-      reorderedStops.splice(nextIndex, 0, movedStop)
+      const reorderedStops = reorderItem(currentStops, currentIndex, direction)
 
       const stillAdjusted = reorderedStops.some(
         (stop, index) =>
-          stop.name !== sourceProposal.stops[index]?.name,
+          stop.id !== sourceProposal.stops[index]?.id,
       )
 
       setPendingReason(
@@ -410,16 +420,16 @@ function App() {
   }
 
   function moveRemainingStop(currentIndex: number, direction: -1 | 1) {
-    setRemainingStopNames((currentStopNames) => {
-      const nextIndex = currentIndex + direction
+    setRemainingStopIds((currentStopIds) => {
+      const reorderedStopIds = reorderItem(
+        currentStopIds,
+        currentIndex,
+        direction,
+      )
 
-      if (nextIndex < 0 || nextIndex >= currentStopNames.length) {
-        return currentStopNames
+      if (reorderedStopIds === currentStopIds) {
+        return currentStopIds
       }
-
-      const reorderedStopNames = [...currentStopNames]
-      const [movedStopName] = reorderedStopNames.splice(currentIndex, 1)
-      reorderedStopNames.splice(nextIndex, 0, movedStopName)
 
       setPendingReason({
         description:
@@ -427,36 +437,29 @@ function App() {
         kind: 'active',
       })
 
-      return reorderedStopNames
+      return reorderedStopIds
     })
   }
 
-  function recordStopOutcome(stopName: string, status: StopOutcome) {
-    const currentPosition = remainingStopNames.indexOf(stopName)
-    const expectedStopName = remainingStopNames[0]
-
-    setStopEvents((currentEvents) => {
-      if (currentEvents[stopName]) {
-        return currentEvents
-      }
-
-      return {
-        ...currentEvents,
-        [stopName]: {
-          actionOrder: Object.keys(currentEvents).length + 1,
-          recordedAt: new Date().toISOString(),
-          status,
-        },
-      }
-    })
-
-    setRemainingStopNames((currentStopNames) =>
-      currentStopNames.filter((name) => name !== stopName),
+  function recordStopOutcome(stopId: string, status: StopOutcome) {
+    const result = recordRouteStopOutcome(
+      remainingStopIds,
+      stopEvents,
+      stopId,
+      status,
+      new Date().toISOString(),
+    )
+    const stop = activeRouteStops.find((routeStop) => routeStop.id === stopId)
+    const expectedStop = activeRouteStops.find(
+      (routeStop) => routeStop.id === result.expectedStopId,
     )
 
-    if (status === 'complete' && currentPosition > 0) {
+    setStopEvents(result.stopEvents)
+    setRemainingStopIds(result.remainingStopIds)
+
+    if (result.outOfOrder) {
       setPendingReason({
-        description: `${stopName} was completed while ${expectedStopName} was next in the active plan. Tell Routing Lab why the stop was completed out of order.`,
+        description: `${stop?.name ?? 'This stop'} was completed while ${expectedStop?.name ?? 'another stop'} was next in the active plan. Tell Routing Lab why the stop was completed out of order.`,
         kind: 'active',
       })
     }
@@ -549,7 +552,7 @@ function App() {
     setProposalSource('baseline')
     setDraftRouteStops([])
     setActiveRouteStops([])
-    setRemainingStopNames([])
+    setRemainingStopIds([])
     setRouteStartedAt(null)
     setRouteFinishedAt(null)
     setStopEvents({})
@@ -815,7 +818,7 @@ function App() {
           <ol className="stop-list proposal-list">
             {draftRouteStops.map((stop, index) => (
               <li
-                key={`${stop.name}-${stop.address}`}
+                key={stop.id}
                 className={
                   stop.name === 'Brandon Quattrone'
                     ? learnedProposalPasses
@@ -970,11 +973,11 @@ function App() {
                 {remainingStops.map((stop, index) => {
                   const proposedPosition =
                     activeRouteStops.findIndex(
-                      (activeStop) => activeStop.name === stop.name,
+                      (activeStop) => activeStop.id === stop.id,
                     ) + 1
 
                   return (
-                    <li key={`${stop.name}-${stop.address}`}>
+                    <li key={stop.id}>
                       <div className="active-stop-heading">
                         <span className="proposed-position">
                           {proposedPosition}
@@ -993,7 +996,7 @@ function App() {
                           type="button"
                           disabled={pendingReason?.kind === 'active'}
                           onClick={() =>
-                            recordStopOutcome(stop.name, 'complete')
+                            recordStopOutcome(stop.id, 'complete')
                           }
                         >
                           Complete
@@ -1003,7 +1006,7 @@ function App() {
                           type="button"
                           disabled={pendingReason?.kind === 'active'}
                           onClick={() =>
-                            recordStopOutcome(stop.name, 'unable')
+                            recordStopOutcome(stop.id, 'unable')
                           }
                         >
                           Unable
@@ -1058,10 +1061,10 @@ function App() {
               </summary>
               <ol>
                 {resolvedStops.map((stop) => {
-                  const stopEvent = stopEvents[stop.name]
+                  const stopEvent = stopEvents[stop.id]
 
                   return (
-                    <li key={`${stop.name}-${stopEvent.recordedAt}`}>
+                    <li key={`${stop.id}-${stopEvent.recordedAt}`}>
                       <span className="actual-position">
                         {stopEvent.actionOrder}
                       </span>
@@ -1164,7 +1167,7 @@ function App() {
 
             <ol className="stop-list">
               {gr001Fixture.stops.map((stop) => (
-                <li key={`${stop.name}-${stop.address}`}>
+                <li key={stop.id}>
                   <div className="stop-index" aria-hidden="true" />
                   <div className="stop-copy">
                     <strong>{stop.name}</strong>

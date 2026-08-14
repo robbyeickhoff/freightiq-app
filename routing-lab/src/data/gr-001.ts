@@ -1,11 +1,9 @@
 import fixture from './gr-001.fixture.json'
+import type { RouteProposal, RouteStop } from '../lib/route-domain'
 
-export type GoldenRouteStop = {
-  address: string
-  city: string
-  name: string
-  zone: string
-}
+export type GoldenRouteStop = RouteStop
+
+type GoldenRouteStopInput = Omit<GoldenRouteStop, 'id'>
 
 type AcceptableVariation = {
   reason: string
@@ -37,11 +35,23 @@ type GoldenRouteFixture = {
   route_type: string
   routes: GoldenRouteRoutes
   start: string
-  stops: GoldenRouteStop[]
+  stops: GoldenRouteStopInput[]
   title: string
 }
 
-export const gr001Fixture = fixture satisfies GoldenRouteFixture
+const rawFixture = fixture satisfies GoldenRouteFixture
+
+function stopId(name: string) {
+  return `gr-001:${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
+}
+
+export const gr001Fixture = {
+  ...rawFixture,
+  stops: rawFixture.stops.map((stop) => ({
+    ...stop,
+    id: stopId(stop.name),
+  })),
+}
 
 function stopsForRoute(routeNames: string[]) {
   const stopsByName = new Map(
@@ -60,7 +70,7 @@ function stopsForRoute(routeNames: string[]) {
   return routeStops as GoldenRouteStop[]
 }
 
-export const gr001BaselineProposal = {
+export const gr001BaselineProposal: RouteProposal<GoldenRouteStop> = {
   id: 'gr-001-historical-ai-baseline',
   label: 'Historical AI baseline',
   stops: stopsForRoute(
@@ -85,7 +95,7 @@ learnedRouteNames.splice(
   ...gr001Fixture.meaningful_ai_correction.driver_sequence,
 )
 
-export const gr001LearnedProposal = {
+export const gr001LearnedProposal: RouteProposal<GoldenRouteStop> = {
   id: 'gr-001-approved-sandbox-lesson',
   label: 'Approved lesson applied',
   stops: stopsForRoute(learnedRouteNames),

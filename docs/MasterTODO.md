@@ -372,6 +372,7 @@ Maintain a reliable, maintainable, and well-engineered codebase while continuing
 Advance the isolated Routing Lab in approved vertical slices without allowing it to displace
 higher-priority adoption, reliability, tester, or release work. Routing Lab is an important
 long-term FreightIQ capability and remains active when time allows. Slices 1 and 2 are complete.
+The Slice 3 manifest-to-Test-Route bridge is approved for implementation in controlled units.
 
 ### Active Tasks
 
@@ -393,6 +394,21 @@ long-term FreightIQ capability and remains active when time allows. Slices 1 and
   restore unfinished work after refresh or sign-in and delete only the selected import.
 - [x] Complete the controlled two-photograph Slice 2 acceptance matrix and verify that production
   FreightIQ, GR-001, and sandbox lessons remain unaffected.
+- [x] Complete Slice 3 Unit 1: separate reusable Test Route behavior from the frozen `GR-001`
+  fixture, introduce stable identifier-based domain types, and prove the accepted fixture remains
+  unchanged.
+- [ ] Complete Slice 3 Unit 2: hand confirmed manifest stops into a separate draft Test Route and
+  add persistent route setup.
+- [ ] Complete Slice 3 Unit 3: propose operational zones, expose uncertainty, and require driver
+  approval of every classification before sequencing.
+- [ ] Complete Slice 3 Unit 4: generate and validate the structured route proposal, then support
+  driver review and planned-correction reasons.
+- [ ] Complete Slice 3 Unit 5: run manifest-derived routes through the reusable execution and
+  correction loop with refresh recovery.
+- [ ] Complete Slice 3 Unit 6: review real-route lessons, record driver-approved correction impact
+  and vehicle positioning, and verify scoped lesson replay.
+- [ ] Complete the controlled Slice 3 acceptance matrix while preserving `GR-001`, manifest
+  evidence, and production FreightIQ isolation.
 
 ## Feature Backlog
 
