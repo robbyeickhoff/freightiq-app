@@ -405,7 +405,7 @@ The Slice 3 manifest-to-Test-Route bridge is approved for implementation in cont
   driver review and planned-correction reasons.
 - [x] Complete Slice 3 Unit 5: run manifest-derived routes through the reusable execution and
   correction loop with refresh recovery.
-- [ ] Complete Slice 3 Unit 6: review real-route lessons, record driver-approved correction impact
+- [x] Complete Slice 3 Unit 6: review real-route lessons, record driver-approved correction impact
   and vehicle positioning, and verify scoped lesson replay.
 - [ ] Complete the controlled Slice 3 acceptance matrix while preserving `GR-001`, manifest
   evidence, and production FreightIQ isolation.

@@ -1,0 +1,2 @@
+create index routing_lab_manifest_lessons_source_route_idx
+on public.routing_lab_manifest_lessons (source_route_id);

@@ -9,6 +9,12 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      routing_lab_manifest_lessons: {
+        Row: { approved_at: string; category: string; evidence: Json; id: string; impact: string; known_exceptions: string; lesson_text: string; operational_reason: string; scope_type: string; scope_value: string; source_route_id: string; status: string; strength: string; user_id: string }
+        Insert: { approved_at?: string; category: string; evidence: Json; id: string; impact: string; known_exceptions?: string; lesson_text: string; operational_reason: string; scope_type: string; scope_value: string; source_route_id: string; status?: string; strength: string; user_id: string }
+        Update: { approved_at?: string; category?: string; evidence?: Json; id?: string; impact?: string; known_exceptions?: string; lesson_text?: string; operational_reason?: string; scope_type?: string; scope_value?: string; source_route_id?: string; status?: string; strength?: string; user_id?: string }
+        Relationships: []
+      }
       routing_lab_routes: {
         Row: {
           adjusted_stop_ids: Json

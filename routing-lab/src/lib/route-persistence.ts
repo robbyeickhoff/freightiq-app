@@ -269,3 +269,13 @@ export async function saveManifestRouteRun(
   if (error) throw error
   if (!data) throw new Error('The active route could not be saved.')
 }
+
+export async function prepareManifestRouteReplay(routeId: string) {
+  const userId = await currentUserId()
+  const { error } = await getSupabase().from('routing_lab_routes').update({
+    adjusted_stop_ids: [] as unknown as Json, planned_corrections: [] as unknown as Json,
+    route_proposal: {} as Json, run_state: {} as Json, status: 'zone_approved',
+    updated_at: new Date().toISOString(),
+  }).eq('id', routeId).eq('user_id', userId).eq('status', 'route_completed')
+  if (error) throw error
+}

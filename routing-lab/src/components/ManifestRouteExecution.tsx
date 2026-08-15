@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 
 import ReasonPrompt from './ReasonPrompt'
+import ManifestLessonReview from './ManifestLessonReview'
+import type { ManifestLesson } from '../lib/manifest-lessons'
 import {
   recordRouteStopOutcome,
   reorderItem,
@@ -14,6 +16,8 @@ import type {
 
 type ManifestRouteExecutionProps = {
   route: ManifestDraftRoute
+  onApproveLesson: (lesson: ManifestLesson) => Promise<void>
+  onReplay: () => Promise<void>
   onSave: (runState: ManifestRouteRunState) => Promise<void>
 }
 
@@ -24,7 +28,7 @@ function formatRecordedTime(timestamp: string) {
   }).format(new Date(timestamp))
 }
 
-function ManifestRouteExecution({ route, onSave }: ManifestRouteExecutionProps) {
+function ManifestRouteExecution({ route, onApproveLesson, onReplay, onSave }: ManifestRouteExecutionProps) {
   if (!route.runState) throw new Error('The manifest route has not been started.')
 
   const [runState, setRunState] = useState(route.runState)
@@ -230,6 +234,7 @@ function ManifestRouteExecution({ route, onSave }: ManifestRouteExecutionProps) 
 
       {error ? <p className="photo-error" role="alert">{error}</p> : null}
       <p className="safety-note">This run remains in the private Routing Lab and cannot affect production FreightIQ.</p>
+      {runState.routeFinishedAt ? <ManifestLessonReview route={{ ...route, runState }} onApprove={onApproveLesson} onReplay={onReplay} /> : null}
     </section>
   )
 }

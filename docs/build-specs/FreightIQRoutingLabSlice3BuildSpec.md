@@ -415,10 +415,10 @@ Slice 3 does not include:
 
 ### Unit 6 — Lesson Review and Replay
 
-- Add real-route lesson evidence and approval.
-- Add driver-approved correction impact.
-- Add vehicle positioning as a reason and lesson category.
-- Replay the controlled manifest and verify an applicable approved lesson changes
+- [x] Add real-route lesson evidence and approval.
+- [x] Add driver-approved correction impact.
+- [x] Add vehicle positioning as a reason and lesson category.
+- [x] Replay the controlled manifest and verify an applicable approved lesson changes
   the later proposal.
 
 ### Unit 7 — Controlled Acceptance Test

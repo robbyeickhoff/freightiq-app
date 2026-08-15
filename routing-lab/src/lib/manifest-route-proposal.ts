@@ -2,6 +2,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js'
 
 import type { ManifestDraftRoute } from './route-persistence'
 import { getSupabase } from './supabase'
+import { loadManifestLessons } from './manifest-lessons'
 
 export type RouteTransition = {
   fromZone: string
@@ -31,6 +32,7 @@ export type PlannedRouteCorrection = {
   note: string
   reasons: string[]
   recordedAt: string
+  stopId?: string
 }
 
 type RouteProposalResponse = ManifestRouteProposal & { model: string }
@@ -55,11 +57,13 @@ export async function proposeManifestRoute(route: ManifestDraftRoute) {
     throw new Error('Every current stop must have one driver-approved zone.')
   }
 
+  const lessons = await loadManifestLessons()
   const { data, error } = await getSupabase().functions.invoke<RouteProposalResponse>(
     'propose-manifest-route',
     {
       body: {
         setup: route.setup,
+        lessons,
         stops: route.sourceStops.map((stop) => ({
           address: stop.address,
           city: stop.city,

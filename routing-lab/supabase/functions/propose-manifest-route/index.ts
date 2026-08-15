@@ -65,6 +65,22 @@ type RouteSetup = {
   wholeRouteConstraint: string
 }
 
+type Lesson = { id: string; sourceRouteId: string; text: string; scopeType: string; scopeValue: string; evidence: { sourceStopIds: string[]; afterStopIds: string[] } }
+
+function parseLessons(value: unknown): Lesson[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((candidate) => {
+    if (!candidate || typeof candidate !== "object") return []
+    const item = candidate as Record<string, unknown>
+    const evidence = item.evidence as Record<string, unknown> | undefined
+    if (typeof item.id !== "string" || typeof item.sourceRouteId !== "string" || typeof item.text !== "string" ||
+      typeof item.scopeType !== "string" || typeof item.scopeValue !== "string" ||
+      !Array.isArray(evidence?.sourceStopIds) || !Array.isArray(evidence?.afterStopIds)) return []
+    return [{ id: item.id, sourceRouteId: item.sourceRouteId, text: item.text, scopeType: item.scopeType, scopeValue: item.scopeValue,
+      evidence: { sourceStopIds: evidence.sourceStopIds.map(String), afterStopIds: evidence.afterStopIds.map(String) } }]
+  })
+}
+
 function jsonError(message: string, status: number) {
   return Response.json({ error: message }, { status })
 }
@@ -196,6 +212,7 @@ export default {
     try { body = await req.json() } catch { return jsonError("The request body is invalid.", 400) }
     const stops = parseStops(body.stops)
     const setup = parseSetup(body.setup)
+    const lessons = parseLessons(body.lessons)
     if (!stops || !setup) return jsonError("Provide a valid approved route and setup.", 400)
 
     let provider: Response
@@ -228,7 +245,7 @@ export default {
         orderedStopIds?: string[]
         transitions?: Array<{ fromZone?: string; toZone?: string }>
       }
-      const ordered = result.orderedStopIds ?? []
+      let ordered = result.orderedStopIds ?? []
       const sourceIds = stops.map((stop) => stop.id)
       const expectedFlow = activeMacroFlow(stops)
       const proposalFlow = result.macroZoneFlow ?? []
@@ -245,7 +262,30 @@ export default {
         JSON.stringify(result.documentsUsed) !== JSON.stringify(requiredDocuments(stops)) ||
         (result.appliedLessonIds?.length ?? 0) !== 0
       ) return jsonError("The proposal failed stop or macro-flow validation. Try again.", 502)
-      return Response.json({ model: MODEL, ...result })
+      const applicable = lessons.filter((lesson) =>
+        lesson.evidence.sourceStopIds.length === sourceIds.length &&
+        lesson.evidence.sourceStopIds.every((id) => sourceIds.includes(id)) &&
+        lesson.evidence.afterStopIds.length === sourceIds.length &&
+        lesson.evidence.afterStopIds.every((id) => sourceIds.includes(id)))
+      const routeGroups = new Map<string, Lesson[]>()
+      for (const lesson of applicable) routeGroups.set(lesson.sourceRouteId, [...(routeGroups.get(lesson.sourceRouteId) ?? []), lesson])
+      const finalLessons = [...routeGroups.values()].map((group) => group.at(-1) as Lesson)
+      const distinctOrders = new Set(finalLessons.map((lesson) => JSON.stringify(lesson.evidence.afterStopIds)))
+      if (distinctOrders.size > 1) {
+        return Response.json({ model: MODEL, ...result, appliedLessonIds: [],
+          operationalExceptions: [...(result.operationalExceptions ?? []),
+            `Conflicting approved lessons need driver review: ${applicable.map((lesson) => lesson.id).join(", ")}`] })
+      }
+      if (applicable.length > 0) {
+        ordered = finalLessons[0].evidence.afterStopIds
+        if (JSON.stringify(flowFromOrderedStops(ordered, stops)) !== JSON.stringify(expectedFlow))
+          return jsonError("An approved lesson conflicts with the verified macro flow and needs driver review.", 409)
+      }
+      return Response.json({ model: MODEL, ...result, orderedStopIds: ordered,
+        appliedLessonIds: applicable.map((lesson) => lesson.id),
+        operationalExceptions: applicable.length > 0
+          ? [...(result.operationalExceptions ?? []), `Applied approved ${applicable[0].scopeType} lesson for ${applicable[0].scopeValue}: ${applicable[0].text}`]
+          : result.operationalExceptions })
     } catch { return jsonError("The structured route proposal could not be read. Try again.", 502) }
   }),
 }

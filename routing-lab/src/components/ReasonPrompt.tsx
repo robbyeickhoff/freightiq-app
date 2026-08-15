@@ -6,6 +6,7 @@ const reasonOptions = [
   'Time constraint',
   'Pickup',
   'Customer-specific reason',
+  'Vehicle positioning',
   'Other',
 ] as const
 

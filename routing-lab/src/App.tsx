@@ -7,6 +7,8 @@ import ManifestIntake from './components/ManifestIntake'
 import ManifestRouteSetup from './components/ManifestRouteSetup'
 import ManifestRouteProposalReview from './components/ManifestRouteProposalReview'
 import ManifestRouteExecution from './components/ManifestRouteExecution'
+import { approveManifestLesson } from './lib/manifest-lessons'
+import type { ManifestLesson } from './lib/manifest-lessons'
 import ManifestZoneReview from './components/ManifestZoneReview'
 import ReasonPrompt from './components/ReasonPrompt'
 import {
@@ -33,6 +35,7 @@ import type {
 import { getSupabase } from './lib/supabase'
 import {
   loadLatestManifestDraftRoute,
+  prepareManifestRouteReplay,
   saveManifestProposalReview,
   saveManifestRouteRun,
   saveManifestRouteProposal,
@@ -452,6 +455,20 @@ function App() {
       runState,
       status: runState.routeFinishedAt ? 'route_completed' : 'route_active',
     })
+  }
+
+  async function approveRealRouteLesson(lesson: ManifestLesson) {
+    if (!manifestDraftRoute) return
+    await approveManifestLesson(manifestDraftRoute, lesson)
+  }
+
+  async function replayManifestRoute() {
+    if (!manifestDraftRoute) return
+    await prepareManifestRouteReplay(manifestDraftRoute.id)
+    const resetRoute = { ...manifestDraftRoute, adjustedStopIds: [], plannedCorrections: [],
+      routeProposal: null, runState: null, status: 'zone_approved' as const }
+    setManifestDraftRoute(resetRoute)
+    setManifestRouteStage('zone-review')
   }
 
   useEffect(() => {
@@ -972,7 +989,7 @@ function App() {
       {workspace === 'manifest-intake' ? (
         <ManifestIntake onOpenDraftRoute={openManifestDraftRoute} />
       ) : testRouteMode === 'manifest-draft' && manifestDraftRoute && manifestRouteStage === 'execution' ? (
-        <ManifestRouteExecution route={manifestDraftRoute} onSave={saveActiveManifestRoute} />
+        <ManifestRouteExecution route={manifestDraftRoute} onApproveLesson={approveRealRouteLesson} onReplay={replayManifestRoute} onSave={saveActiveManifestRoute} />
       ) : testRouteMode === 'manifest-draft' && manifestDraftRoute && manifestRouteStage === 'proposal-review' ? (
         <ManifestRouteProposalReview
           route={manifestDraftRoute}
