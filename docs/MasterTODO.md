@@ -399,7 +399,7 @@ The Slice 3 manifest-to-Test-Route bridge is approved for implementation in cont
   unchanged.
 - [x] Complete Slice 3 Unit 2: hand confirmed manifest stops into a separate draft Test Route and
   add persistent route setup.
-- [ ] Complete Slice 3 Unit 3: propose operational zones, expose uncertainty, and require driver
+- [x] Complete Slice 3 Unit 3: propose operational zones, expose uncertainty, and require driver
   approval of every classification before sequencing.
 - [ ] Complete Slice 3 Unit 4: generate and validate the structured route proposal, then support
   driver review and planned-correction reasons.

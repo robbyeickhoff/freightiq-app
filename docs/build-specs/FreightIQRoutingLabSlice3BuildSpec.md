@@ -394,10 +394,10 @@ Slice 3 does not include:
 
 ### Unit 3 — Zone Classification and Approval
 
-- Add the server-side classification proposal.
-- Present confidence and uncertainty for every stop.
-- Support driver correction and approval.
-- Enforce the mandatory stop before route sequencing.
+- [x] Add the server-side classification proposal.
+- [x] Present confidence and uncertainty for every stop.
+- [x] Support driver correction and approval.
+- [x] Enforce the mandatory stop before route sequencing.
 
 ### Unit 4 — Route Proposal and Driver Review
 

@@ -66,6 +66,7 @@ button {
 .fixture-card,
 .manifest-intake,
 .manifest-route-setup,
+.manifest-zone-review,
 .password-editor,
 .reason-prompt,
 .reset-panel,
@@ -211,6 +212,7 @@ button {
 .end-review,
 .manifest-intake,
 .manifest-route-setup,
+.manifest-zone-review,
 .reason-prompt,
 .reset-panel {
   margin-top: 16px;
@@ -437,6 +439,144 @@ textarea:focus-visible {
   display: grid;
   gap: 20px;
   padding: 24px;
+}
+
+.manifest-zone-review {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+}
+
+.zone-review-alert {
+  margin: 0;
+  border: 1px solid #8f6a25;
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #f4ce7b;
+  background: #2a2418;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.zone-review-list {
+  display: grid;
+  gap: 14px;
+}
+
+.zone-review-card {
+  overflow: hidden;
+  border: 1px solid #294451;
+  border-radius: 16px;
+  background: #0b171e;
+}
+
+.zone-review-card--approved {
+  border-color: #2c765e;
+  background: #0d211c;
+}
+
+.zone-review-card--unresolved {
+  border-color: #8f6a25;
+}
+
+.zone-review-card__heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.zone-review-card__heading::-webkit-details-marker {
+  display: none;
+}
+
+.zone-review-card__heading .stop-copy small {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.zone-review-card__status {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+}
+
+.zone-review-card__status::after {
+  content: 'Expand';
+  color: #8fa3ad;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.zone-review-card[open] .zone-review-card__status::after {
+  content: 'Collapse';
+}
+
+.zone-review-card__body {
+  display: grid;
+  gap: 14px;
+  border-top: 1px solid #294451;
+  padding: 16px;
+}
+
+.zone-confidence {
+  border: 1px solid #3a5663;
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: #b6c8cf;
+  font-size: 0.67rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.zone-confidence--high,
+.zone-confidence--medium {
+  border-color: #2c765e;
+  color: #8de0bf;
+}
+
+.zone-confidence--low,
+.zone-confidence--uncertain {
+  border-color: #8f6a25;
+  color: #f4ce7b;
+}
+
+.zone-evidence {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.zone-review-card label {
+  display: grid;
+  gap: 7px;
+  color: #dce8ed;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.zone-review-card select {
+  width: 100%;
+  border: 1px solid #304956;
+  border-radius: 12px;
+  padding: 12px;
+  color: #eef4f8;
+  background: #071219;
+  font: inherit;
+  font-weight: 700;
+}
+
+.zone-review-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
 }
 
 .manifest-route-setup__lede {
@@ -2236,6 +2376,7 @@ details[open] > .proposed-stop-list__heading::after {
   .fixture-card,
   .manifest-intake,
   .manifest-route-setup,
+  .manifest-zone-review,
   .password-editor,
   .reason-prompt,
   .reset-panel,

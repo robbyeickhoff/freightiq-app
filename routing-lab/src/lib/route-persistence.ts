@@ -2,6 +2,7 @@ import type { ProposedStop } from './manifest-grouping'
 import type { Json } from './database'
 import type { RouteStop } from './route-domain'
 import { getSupabase } from './supabase'
+import type { ZoneClassification } from './zone-classification'
 
 export type ManifestRouteStop = RouteStop & {
   postalCode: string
@@ -21,7 +22,8 @@ export type ManifestDraftRoute = {
   manifestImportId: string
   setup: RouteSetup
   sourceStops: ManifestRouteStop[]
-  status: 'draft_setup'
+  status: 'draft_setup' | 'zone_review' | 'zone_approved'
+  zoneReview: ZoneClassification[]
 }
 
 function defaultRouteDate() {
@@ -58,6 +60,7 @@ function fromRow(row: {
   setup: Json
   source_stops: Json
   status: string
+  zone_review: Json
 }): ManifestDraftRoute {
   return {
     id: row.id,
@@ -65,6 +68,7 @@ function fromRow(row: {
     setup: row.setup as unknown as RouteSetup,
     sourceStops: row.source_stops as unknown as ManifestRouteStop[],
     status: row.status as ManifestDraftRoute['status'],
+    zoneReview: row.zone_review as unknown as ZoneClassification[],
   }
 }
 
@@ -83,7 +87,7 @@ export async function buildManifestDraftRoute(
   const supabase = getSupabase()
   const existing = await supabase
     .from('routing_lab_routes')
-    .select('id,manifest_import_id,status,source_stops,setup')
+    .select('id,manifest_import_id,status,source_stops,setup,zone_review')
     .eq('user_id', userId)
     .eq('manifest_import_id', manifestImportId)
     .maybeSingle()
@@ -101,7 +105,7 @@ export async function buildManifestDraftRoute(
   const { data, error } = await supabase
     .from('routing_lab_routes')
     .insert(route)
-    .select('id,manifest_import_id,status,source_stops,setup')
+    .select('id,manifest_import_id,status,source_stops,setup,zone_review')
     .single()
 
   if (error) throw error
@@ -112,9 +116,9 @@ export async function loadLatestManifestDraftRoute() {
   const userId = await currentUserId()
   const { data, error } = await getSupabase()
     .from('routing_lab_routes')
-    .select('id,manifest_import_id,status,source_stops,setup')
+    .select('id,manifest_import_id,status,source_stops,setup,zone_review')
     .eq('user_id', userId)
-    .eq('status', 'draft_setup')
+    .in('status', ['draft_setup', 'zone_review', 'zone_approved'])
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -135,4 +139,26 @@ export async function saveManifestRouteSetup(routeId: string, setup: RouteSetup)
 
   if (error) throw error
   if (!data) throw new Error('The draft route could not be saved.')
+}
+
+export async function saveManifestZoneReview(
+  routeId: string,
+  zoneReview: ZoneClassification[],
+  complete: boolean,
+) {
+  const userId = await currentUserId()
+  const { data, error } = await getSupabase()
+    .from('routing_lab_routes')
+    .update({
+      status: complete ? 'zone_approved' : 'zone_review',
+      updated_at: new Date().toISOString(),
+      zone_review: zoneReview as unknown as Json,
+    })
+    .eq('id', routeId)
+    .eq('user_id', userId)
+    .select('id')
+    .single()
+
+  if (error) throw error
+  if (!data) throw new Error('The zone review could not be saved.')
 }

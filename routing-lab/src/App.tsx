@@ -5,6 +5,7 @@ import EndOfRouteReview from './components/EndOfRouteReview'
 import type { ReviewStage, SandboxLesson } from './components/EndOfRouteReview'
 import ManifestIntake from './components/ManifestIntake'
 import ManifestRouteSetup from './components/ManifestRouteSetup'
+import ManifestZoneReview from './components/ManifestZoneReview'
 import ReasonPrompt from './components/ReasonPrompt'
 import {
   gr001BaselineProposal,
@@ -31,8 +32,11 @@ import { getSupabase } from './lib/supabase'
 import {
   loadLatestManifestDraftRoute,
   saveManifestRouteSetup,
+  saveManifestZoneReview,
 } from './lib/route-persistence'
 import type { ManifestDraftRoute, RouteSetup } from './lib/route-persistence'
+import { proposeZoneClassifications } from './lib/zone-classification'
+import type { ZoneClassification } from './lib/zone-classification'
 
 type ProposalSource = 'baseline' | 'learned'
 type Workspace = 'manifest-intake' | 'test-route'
@@ -79,6 +83,8 @@ function App() {
   const [workspace, setWorkspace] = useState<Workspace>('test-route')
   const [testRouteMode, setTestRouteMode] = useState<TestRouteMode>('fixture')
   const [manifestDraftRoute, setManifestDraftRoute] = useState<ManifestDraftRoute | null>(null)
+  const [manifestRouteStage, setManifestRouteStage] = useState<'setup' | 'zone-review'>('setup')
+  const [isClassifyingZones, setIsClassifyingZones] = useState(false)
   const [session, setSession] = useState<Session | null>(null)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -300,6 +306,7 @@ function App() {
         if (!active || !route) return
         setManifestDraftRoute(route)
         setTestRouteMode('manifest-draft')
+        setManifestRouteStage(route.zoneReview.length > 0 ? 'zone-review' : 'setup')
       })
       .catch((error: unknown) => {
         if (active) {
@@ -313,6 +320,7 @@ function App() {
   function openManifestDraftRoute(route: ManifestDraftRoute) {
     setManifestDraftRoute(route)
     setTestRouteMode('manifest-draft')
+    setManifestRouteStage(route.zoneReview.length > 0 ? 'zone-review' : 'setup')
     setWorkspace('test-route')
   }
 
@@ -320,6 +328,48 @@ function App() {
     if (!manifestDraftRoute) return
     await saveManifestRouteSetup(manifestDraftRoute.id, setup)
     setManifestDraftRoute({ ...manifestDraftRoute, setup })
+  }
+
+  async function beginManifestZoneReview(setup: RouteSetup) {
+    if (!manifestDraftRoute) return
+    setIsClassifyingZones(true)
+    setMessage('')
+
+    try {
+      await saveManifestRouteSetup(manifestDraftRoute.id, setup)
+      if (manifestDraftRoute.zoneReview.length > 0) {
+        setManifestDraftRoute({ ...manifestDraftRoute, setup })
+        setManifestRouteStage('zone-review')
+        return
+      }
+
+      const zoneReview = await proposeZoneClassifications(manifestDraftRoute.sourceStops)
+      await saveManifestZoneReview(manifestDraftRoute.id, zoneReview, false)
+      setManifestDraftRoute({
+        ...manifestDraftRoute,
+        setup,
+        status: 'zone_review',
+        zoneReview,
+      })
+      setManifestRouteStage('zone-review')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Zone review could not be started.')
+    } finally {
+      setIsClassifyingZones(false)
+    }
+  }
+
+  async function saveDraftZoneReview(
+    zoneReview: ZoneClassification[],
+    complete: boolean,
+  ) {
+    if (!manifestDraftRoute) return
+    await saveManifestZoneReview(manifestDraftRoute.id, zoneReview, complete)
+    setManifestDraftRoute({
+      ...manifestDraftRoute,
+      status: complete ? 'zone_approved' : 'zone_review',
+      zoneReview,
+    })
   }
 
   useEffect(() => {
@@ -839,10 +889,18 @@ function App() {
 
       {workspace === 'manifest-intake' ? (
         <ManifestIntake onOpenDraftRoute={openManifestDraftRoute} />
+      ) : testRouteMode === 'manifest-draft' && manifestDraftRoute && manifestRouteStage === 'zone-review' ? (
+        <ManifestZoneReview
+          route={manifestDraftRoute}
+          onBackToSetup={() => setManifestRouteStage('setup')}
+          onSave={saveDraftZoneReview}
+        />
       ) : testRouteMode === 'manifest-draft' && manifestDraftRoute ? (
         <ManifestRouteSetup
           route={manifestDraftRoute}
+          isClassifying={isClassifyingZones}
           onBackToFixture={() => setTestRouteMode('fixture')}
+          onBeginZoneReview={beginManifestZoneReview}
           onSave={saveDraftRouteSetup}
         />
       ) : (

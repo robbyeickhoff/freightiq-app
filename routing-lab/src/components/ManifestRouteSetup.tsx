@@ -4,11 +4,19 @@ import type { ManifestDraftRoute, RouteSetup } from '../lib/route-persistence'
 
 type ManifestRouteSetupProps = {
   route: ManifestDraftRoute
+  isClassifying: boolean
   onBackToFixture: () => void
+  onBeginZoneReview: (setup: RouteSetup) => Promise<void>
   onSave: (setup: RouteSetup) => Promise<void>
 }
 
-function ManifestRouteSetup({ route, onBackToFixture, onSave }: ManifestRouteSetupProps) {
+function ManifestRouteSetup({
+  route,
+  isClassifying,
+  onBackToFixture,
+  onBeginZoneReview,
+  onSave,
+}: ManifestRouteSetupProps) {
   const [setup, setSetup] = useState(route.setup)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [error, setError] = useState('')
@@ -106,9 +114,21 @@ function ManifestRouteSetup({ route, onBackToFixture, onSave }: ManifestRouteSet
         <p className="next-step-note">Enter the date, start, and return location to save this draft.</p>
       ) : null}
       {saveState === 'saved' ? (
-        <p className="reason-capture-status">Route setup saved privately. Zone review is the next Slice 3 unit.</p>
+        <p className="reason-capture-status">Route setup saved privately.</p>
       ) : null}
       {error ? <p className="photo-error" role="alert">{error}</p> : null}
+
+      <button
+        className="secondary-button"
+        type="button"
+        disabled={!setupComplete || saveState === 'saving' || isClassifying}
+        onClick={() => void onBeginZoneReview(setup)}
+      >
+        {isClassifying ? 'Proposing operational zones…' : 'Start Zone Review'}
+      </button>
+      <p className="next-step-note">
+        Routing Lab will propose classifications only. It will not sequence stops before your approval.
+      </p>
 
       <details className="manifest-route-stops">
         <summary>
