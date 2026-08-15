@@ -15,6 +15,15 @@ corrections with reasons, route execution, individual correction review,
 lesson approval and rejection, route completion, and learned-route replay. The
 replayed proposal returned with the approved learning applied correctly.
 
+The accepted Slice 3 application was deployed to the independent Routing Lab
+Vercel production project on August 15, 2026 as deployment
+`dpl_H3yyFXri9mFJgMqZfaLEJBHgvioS`. The production alias remains
+`https://freightiq-routing-lab.vercel.app`. Physical-phone production
+acceptance confirmed password sign-in, access to Manifest Intake, and session
+persistence after refresh. The deployment did not change the production
+FreightIQ mobile application, Supabase project, website, release state, or
+distribution.
+
 Unit 1 was implemented and accepted on August 13, 2026. The reusable Test
 Route domain now uses stable stop identifiers for proposal comparison, active
 route state, outcomes, ordering, and persistence while preserving backward
