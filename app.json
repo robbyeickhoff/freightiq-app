@@ -35,6 +35,12 @@
           }
         }
       ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow FreightIQ to use Face ID to unlock your signed-in app on this device."
+        }
+      ],
       "./plugins/withNavigationAppQueries.js"
     ],
     "android": {

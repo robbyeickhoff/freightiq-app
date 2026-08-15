@@ -25,6 +25,7 @@ export default function ProfileLayout() {
         options={{ headerShown: true, title: "Refer a Driver" }}
       />
       <Stack.Screen name="appearance" options={{ headerShown: true, title: "Appearance" }} />
+      <Stack.Screen name="app-lock" options={{ headerShown: true, title: "App Lock" }} />
       <Stack.Screen
         name="navigation-app"
         options={{ headerShown: true, title: "Navigation Preference" }}

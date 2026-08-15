@@ -4,15 +4,24 @@ import * as Linking from "expo-linking";
 import { Stack, usePathname, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { AppState, Platform, StyleSheet, View } from "react-native";
 import "react-native-reanimated";
 
+import { AppLockGate } from "@/components/app-lock-gate";
 import {
   NavigationPreferenceProvider,
   useNavigationPreference,
 } from "@/context/navigation-preference-context";
 import { AppThemeProvider, useAppTheme } from "@/context/theme-context";
 import { clearInvalidStoredSession, isInvalidStoredSessionError } from "@/utils/auth-session";
+import {
+  DEFAULT_APP_LOCK_BACKGROUND_TIMEOUT_MS,
+  getAppLockBackgroundTimeout,
+  getAppLockEnabled,
+  subscribeToAppLockBackgroundTimeout,
+  subscribeToAppLockPreference,
+  type AppLockBackgroundTimeout,
+} from "@/utils/app-lock";
 import { supabase } from "@/utils/supabase";
 
 const ONBOARDING_SEEN_KEY = "freightiq:onboarding-seen:v1";
@@ -31,6 +40,16 @@ function RootNavigator() {
   const [initialAndroidReferralCode, setInitialAndroidReferralCode] = useState<string | null>(null);
   const [startupRouteApplied, setStartupRouteApplied] = useState(false);
   const [startupRouteRequested, setStartupRouteRequested] = useState(false);
+  const [appLockUserId, setAppLockUserId] = useState<string | null>(null);
+  const [isAppLockEnabled, setIsAppLockEnabled] = useState(false);
+  const [isAppLocked, setIsAppLocked] = useState(false);
+  const [isAppContentCovered, setIsAppContentCovered] = useState(false);
+  const appLockUserIdRef = useRef<string | null>(null);
+  const isAppLockEnabledRef = useRef(false);
+  const appLockBackgroundTimeoutRef = useRef<AppLockBackgroundTimeout>(
+    DEFAULT_APP_LOCK_BACKGROUND_TIMEOUT_MS,
+  );
+  const backgroundStartedAtRef = useRef<number | null>(null);
   const navigationTheme = useMemo(() => {
     const baseTheme = colorScheme === "dark" ? DarkTheme : DefaultTheme;
 
@@ -58,7 +77,9 @@ function RootNavigator() {
 
       if (error) throw error;
 
-      const hasCompleteProfile = Boolean(profile?.username?.trim() && profile?.tractor_type?.trim());
+      const hasCompleteProfile = Boolean(
+        profile?.username?.trim() && profile?.tractor_type?.trim(),
+      );
       const route = hasCompleteProfile ? "(tabs)" : "setup-profile";
 
       if (replace) {
@@ -126,7 +147,19 @@ function RootNavigator() {
         }
 
         const signedInRoute = await routeSignedInUser(userResult.data.user.id, false);
-        if (mounted) setInitialRouteName(signedInRoute);
+        const [appLockEnabled, appLockBackgroundTimeout] = await Promise.all([
+          getAppLockEnabled(userResult.data.user.id),
+          getAppLockBackgroundTimeout(userResult.data.user.id),
+        ]);
+        if (mounted) {
+          appLockUserIdRef.current = userResult.data.user.id;
+          isAppLockEnabledRef.current = appLockEnabled;
+          appLockBackgroundTimeoutRef.current = appLockBackgroundTimeout;
+          setAppLockUserId(userResult.data.user.id);
+          setIsAppLockEnabled(appLockEnabled);
+          setIsAppLocked(appLockEnabled);
+          setInitialRouteName(signedInRoute);
+        }
       } catch {
         if (mounted) {
           setInitialRouteName("auth");
@@ -140,6 +173,49 @@ function RootNavigator() {
       mounted = false;
     };
   }, [routeSignedInUser]);
+
+  useEffect(() => {
+    return subscribeToAppLockPreference((userId, enabled) => {
+      if (userId !== appLockUserIdRef.current) return;
+      isAppLockEnabledRef.current = enabled;
+      setIsAppLockEnabled(enabled);
+      if (!enabled) setIsAppLocked(false);
+    });
+  }, []);
+
+  useEffect(() => {
+    return subscribeToAppLockBackgroundTimeout((userId, timeout) => {
+      if (userId !== appLockUserIdRef.current) return;
+      appLockBackgroundTimeoutRef.current = timeout;
+    });
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        const backgroundStartedAt = backgroundStartedAtRef.current;
+        backgroundStartedAtRef.current = null;
+        const backgroundTimeout = appLockBackgroundTimeoutRef.current;
+        if (
+          backgroundStartedAt !== null &&
+          isAppLockEnabledRef.current &&
+          backgroundTimeout !== "restart-only" &&
+          Date.now() - backgroundStartedAt >= backgroundTimeout
+        ) {
+          setIsAppLocked(true);
+        }
+        setIsAppContentCovered(false);
+        return;
+      }
+
+      if (isAppLockEnabledRef.current) setIsAppContentCovered(true);
+      if (backgroundStartedAtRef.current === null) {
+        backgroundStartedAtRef.current = Date.now();
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     if (!initialRouteName) return;
@@ -160,7 +236,8 @@ function RootNavigator() {
     const preserveCreateAccountLink =
       startupPathnameRef.current === "/create-account" &&
       (initialRouteName === "auth" || initialRouteName === "onboarding");
-    const preserveStopLink = startupPathnameRef.current === "/stop" && initialRouteName === "(tabs)";
+    const preserveStopLink =
+      startupPathnameRef.current === "/stop" && initialRouteName === "(tabs)";
 
     if (preserveCreateAccountLink || preserveStopLink) {
       setStartupRouteRequested(true);
@@ -199,6 +276,13 @@ function RootNavigator() {
 
     const { data: authSubscription } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
+        appLockUserIdRef.current = null;
+        isAppLockEnabledRef.current = false;
+        appLockBackgroundTimeoutRef.current = DEFAULT_APP_LOCK_BACKGROUND_TIMEOUT_MS;
+        setAppLockUserId(null);
+        setIsAppLockEnabled(false);
+        setIsAppLocked(false);
+        setIsAppContentCovered(false);
         router.replace("/auth");
         return;
       }
@@ -209,9 +293,19 @@ function RootNavigator() {
         pathname !== "/update-password"
       ) {
         setTimeout(() => {
-          void routeSignedInUser(session.user.id).catch(() => {
-            router.replace("/auth");
-          });
+          void (async () => {
+            const [enabled, backgroundTimeout] = await Promise.all([
+              getAppLockEnabled(session.user.id),
+              getAppLockBackgroundTimeout(session.user.id),
+            ]);
+            appLockUserIdRef.current = session.user.id;
+            isAppLockEnabledRef.current = enabled;
+            appLockBackgroundTimeoutRef.current = backgroundTimeout;
+            setAppLockUserId(session.user.id);
+            setIsAppLockEnabled(enabled);
+            setIsAppLocked(false);
+            await routeSignedInUser(session.user.id);
+          })().catch(() => router.replace("/auth"));
         }, 0);
       }
     });
@@ -265,9 +359,26 @@ function RootNavigator() {
           style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]}
         />
       ) : null}
+      {isAppLockEnabled && isAppContentCovered && !isAppLocked ? (
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={[styles.privacyCover, { backgroundColor: colors.background }]}
+        />
+      ) : null}
+      {isAppLockEnabled && isAppLocked && appLockUserId ? (
+        <AppLockGate onUnlock={() => setIsAppLocked(false)} userId={appLockUserId} />
+      ) : null}
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  privacyCover: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 999,
+  },
+});
 
 export default function RootLayout() {
   return (

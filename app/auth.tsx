@@ -1,11 +1,13 @@
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
@@ -17,6 +19,12 @@ import { AppTextField } from "@/components/ui/app-text-field";
 import { Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { friendlyAuthError } from "@/utils/auth-errors";
+import {
+  authenticateForAppLock,
+  getAppLockCapability,
+  setAppLockEnabled,
+  type AppLockCapability,
+} from "@/utils/app-lock";
 import { supabase } from "@/utils/supabase";
 
 type AuthMode = "password" | "code-request" | "code-verify";
@@ -34,6 +42,8 @@ export default function AuthScreen() {
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [biometricCapability, setBiometricCapability] = useState<AppLockCapability | null>(null);
+  const [useBiometrics, setUseBiometrics] = useState(false);
 
   const revealFormActions = useCallback(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -43,6 +53,10 @@ export default function AuthScreen() {
     const keyboardSubscription = Keyboard.addListener("keyboardDidShow", revealFormActions);
     return () => keyboardSubscription.remove();
   }, [revealFormActions]);
+
+  useEffect(() => {
+    void getAppLockCapability().then(setBiometricCapability);
+  }, []);
 
   function validateEmail(): string | null {
     const normalizedEmail = email.trim().toLowerCase();
@@ -71,11 +85,35 @@ export default function AuthScreen() {
       setError("");
       setMessage("");
       Keyboard.dismiss();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: normalizedEmail,
         password,
       });
-      if (signInError) setError(friendlyAuthError(signInError));
+      if (signInError) {
+        setError(friendlyAuthError(signInError));
+        return;
+      }
+
+      if (useBiometrics && data.user) {
+        const capability = biometricCapability ?? (await getAppLockCapability());
+        if (!capability.available) {
+          Alert.alert(
+            "Signed in",
+            `${capability.label} is not available on this device, so App Lock was not enabled.`,
+          );
+          return;
+        }
+
+        const authentication = await authenticateForAppLock(capability.label);
+        if (authentication.success) {
+          await setAppLockEnabled(data.user.id, true);
+        } else {
+          Alert.alert(
+            "Signed in",
+            `${capability.label} was not confirmed, so App Lock was not enabled. You can turn it on later in Profile settings.`,
+          );
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -149,7 +187,11 @@ export default function AuthScreen() {
           <AppCard contentStyle={styles.card} surface="surface">
             <Text style={[styles.eyebrow, { color: colors.accentStrong }]}>FreightIQ account</Text>
             <Text style={[styles.title, { color: colors.textPrimary }]}>
-              {isPasswordMode ? "Welcome back" : isCodeVerifyMode ? "Check your email" : "Use a login code"}
+              {isPasswordMode
+                ? "Welcome back"
+                : isCodeVerifyMode
+                  ? "Check your email"
+                  : "Use a login code"}
             </Text>
             <Text style={[styles.body, { color: colors.textSecondary }]}>
               {isPasswordMode
@@ -164,7 +206,11 @@ export default function AuthScreen() {
               autoComplete="email"
               keyboardType="email-address"
               label="Email"
-              onChangeText={(value) => { setEmail(value); setError(""); setHasAttemptedSubmit(false); }}
+              onChangeText={(value) => {
+                setEmail(value);
+                setError("");
+                setHasAttemptedSubmit(false);
+              }}
               placeholder="you@example.com"
               returnKeyType="next"
               textContentType="emailAddress"
@@ -177,7 +223,11 @@ export default function AuthScreen() {
                   autoCapitalize="none"
                   autoComplete="current-password"
                   label="Password"
-                  onChangeText={(value) => { setPassword(value); setError(""); setHasAttemptedSubmit(false); }}
+                  onChangeText={(value) => {
+                    setPassword(value);
+                    setError("");
+                    setHasAttemptedSubmit(false);
+                  }}
                   onSubmitEditing={() => void signIn()}
                   returnKeyType="go"
                   secureTextEntry={!showPassword}
@@ -195,7 +245,11 @@ export default function AuthScreen() {
                 autoComplete="one-time-code"
                 keyboardType="number-pad"
                 label="Login code"
-                onChangeText={(value) => { setCode(value); setError(""); setHasAttemptedSubmit(false); }}
+                onChangeText={(value) => {
+                  setCode(value);
+                  setError("");
+                  setHasAttemptedSubmit(false);
+                }}
                 onSubmitEditing={() => void verifyCode()}
                 returnKeyType="go"
                 textContentType="oneTimeCode"
@@ -203,39 +257,92 @@ export default function AuthScreen() {
               />
             ) : null}
 
-            {hasAttemptedSubmit && error ? <Text accessibilityLiveRegion="polite" style={[styles.status, { color: colors.danger }]}>{error}</Text> : null}
-            {message ? <Text accessibilityLiveRegion="polite" style={[styles.status, { color: colors.textSecondary }]}>{message}</Text> : null}
+            {hasAttemptedSubmit && error ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                style={[styles.status, { color: colors.danger }]}
+              >
+                {error}
+              </Text>
+            ) : null}
+            {message ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                style={[styles.status, { color: colors.textSecondary }]}
+              >
+                {message}
+              </Text>
+            ) : null}
 
-            <AppButton fullWidth loading={loading} onPress={() => void (isPasswordMode ? signIn() : isCodeVerifyMode ? verifyCode() : sendCode())}>
+            <AppButton
+              fullWidth
+              loading={loading}
+              onPress={() =>
+                void (isPasswordMode ? signIn() : isCodeVerifyMode ? verifyCode() : sendCode())
+              }
+            >
               {isPasswordMode ? "Sign In" : isCodeVerifyMode ? "Verify Code" : "Send Login Code"}
             </AppButton>
 
             {isPasswordMode ? (
               <View style={styles.accountActions}>
-                <AppButton onPress={() => router.push("./forgot-password")} size="compact" variant="tertiary">
+                <View style={[styles.biometricRow, { borderColor: colors.border }]}>
+                  <View style={styles.biometricCopy}>
+                    <Text style={[styles.biometricLabel, { color: colors.textPrimary }]}>
+                      Use{" "}
+                      {biometricCapability?.label ??
+                        (Platform.OS === "ios" ? "Face ID" : "biometrics")}{" "}
+                      after signing in
+                    </Text>
+                    <Text style={[styles.biometricHint, { color: colors.textSecondary }]}>
+                      Unlock FreightIQ without entering your password again.
+                    </Text>
+                  </View>
+                  <Switch
+                    accessibilityLabel={`Use ${biometricCapability?.label ?? "biometrics"} after signing in`}
+                    accessibilityState={{
+                      checked: useBiometrics,
+                      disabled: biometricCapability ? !biometricCapability.available : true,
+                    }}
+                    disabled={!biometricCapability?.available}
+                    ios_backgroundColor={colors.border}
+                    onValueChange={setUseBiometrics}
+                    thumbColor={Platform.OS === "android" ? colors.surfaceElevated : undefined}
+                    trackColor={{ false: colors.border, true: colors.accent }}
+                    value={useBiometrics}
+                  />
+                </View>
+                <AppButton
+                  onPress={() => router.push("./forgot-password")}
+                  size="compact"
+                  variant="tertiary"
+                >
                   Forgot Password?
                 </AppButton>
-                <AppButton fullWidth onPress={() => router.push("./create-account")} variant="secondary">
+                <AppButton
+                  fullWidth
+                  onPress={() => router.push("./create-account")}
+                  variant="secondary"
+                >
                   Create Account
                 </AppButton>
-                <View style={[styles.actionDivider, { backgroundColor: colors.border }]} />
                 <AppButton
+                  fullWidth
                   onPress={() => {
                     setMode("code-request");
                     setError("");
                     setHasAttemptedSubmit(false);
                     setMessage("");
                   }}
-                  size="compact"
-                  variant="tertiary"
+                  variant="secondary"
                 >
                   Use a Login Code
                 </AppButton>
               </View>
             ) : (
               <View style={styles.accountActions}>
-                <View style={[styles.actionDivider, { backgroundColor: colors.border }]} />
                 <AppButton
+                  fullWidth
                   onPress={() => {
                     setMode("password");
                     setCode("");
@@ -243,8 +350,7 @@ export default function AuthScreen() {
                     setHasAttemptedSubmit(false);
                     setMessage("");
                   }}
-                  size="compact"
-                  variant="tertiary"
+                  variant="secondary"
                 >
                   Back to Sign In
                 </AppButton>
@@ -259,12 +365,33 @@ export default function AuthScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  container: { flexGrow: 1, justifyContent: "center", paddingHorizontal: Spacing.md, paddingVertical: Spacing.xl },
+  container: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xl,
+  },
   card: { padding: Spacing.lg, gap: Spacing.md },
-  eyebrow: { ...Typography.operationalLabel, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.8 },
+  eyebrow: {
+    ...Typography.operationalLabel,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
   title: { ...Typography.screenTitle },
   body: { ...Typography.body },
   status: { ...Typography.supporting },
   accountActions: { gap: Spacing.sm },
-  actionDivider: { alignSelf: "stretch", height: 1, marginVertical: Spacing.xs },
+  biometricRow: {
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    gap: Spacing.md,
+    justifyContent: "space-between",
+    paddingVertical: Spacing.md,
+  },
+  biometricCopy: { flex: 1, gap: Spacing.xs },
+  biometricLabel: { ...Typography.buttonLabel },
+  biometricHint: { ...Typography.supporting },
 });

@@ -28,6 +28,7 @@ const ICONS = {
   passwordHidden: { default: "visibility-off" },
   passwordVisible: { default: "visibility" },
   location: { default: "location-searching", active: "my-location" },
+  lock: { default: "lock-outline", active: "lock" },
   logout: { default: "logout" },
   map: { default: "map" },
   navigation: { default: "navigation" },

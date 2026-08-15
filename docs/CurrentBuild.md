@@ -13,6 +13,26 @@ answer one question:
 
 ## Current Objective
 
+Biometric Access V1 is implementation-complete and accepted in internal development builds on
+physical iPhone and Pixel. The governing contract is
+`docs/build-specs/FreightIQBiometricAccessV1BuildSpec.md`. Drivers can discover and enable the
+account-scoped device lock during sign-in or in Settings, unlock with Face ID, Touch ID, or a strong
+Android biometric, and choose a ten-, thirty-, or sixty-minute background interval or restart-only
+locking. Thirty minutes remains the default. Shorter intervals apply immediately; extending the
+unlocked window or turning App Lock off requires another biometric confirmation. Cold application
+launches always lock when enabled.
+
+Core opt-in, sign-in enrollment, cold-launch unlock, Settings controls, timing selection, and
+disable behavior passed on iPhone and Pixel. TypeScript, lint, dependency checks, diff checks, and
+local iOS and Android production bundles pass. Existing Supabase authentication remains
+authoritative; no database, Auth setting, production data, tester audience, or public-release state
+changed. System-fallback, biometric-lockout, maximum-text, VoiceOver, and TalkBack checks remain
+release acceptance gates rather than blockers to the completed implementation.
+
+---
+
+## Previously Completed Objective
+
 City & Driver Search V1 is implementation-complete, accepted, committed, and pushed to
 `clean-main` in `30a608f`. It is ready to be included in a future production candidate build. No
 new TestFlight or Google Play build has been created or distributed for this feature; candidate
@@ -580,8 +600,9 @@ special build is required solely for that check.
 
 ## Next Safe Step
 
-Plan the next combined production candidate from current `clean-main`, including City & Driver
-Search V1 and the previously pushed release-ready corrections. Before creating any iOS or Android
-candidate, define the exact included commits and acceptance checklist and obtain separate Product
-Owner build approval. Candidate creation does not itself authorize TestFlight-group changes,
-Google Play audience changes, broader distribution, or public release.
+Pressure-test City & Driver Search as planned, then define the next combined production candidate
+from current `clean-main`, including City & Driver Search V1, Biometric Access V1, and the previously
+pushed release-ready corrections. Before creating any iOS or Android candidate, define the exact
+included commits and acceptance checklist and obtain separate Product Owner build approval.
+Candidate creation does not itself authorize TestFlight-group changes, Google Play audience
+changes, broader distribution, or public release.

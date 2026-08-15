@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { type Href, useRouter } from "expo-router";
 import {
   Alert,
   Linking,
@@ -18,6 +18,7 @@ import { AppCard } from "@/components/ui/app-card";
 import { AppIcon, type AppIconName } from "@/components/ui/app-icon";
 import { supabase } from "@/utils/supabase";
 import { navigationPreferenceLabel } from "@/utils/navigation-apps";
+import { clearAppLockPreference } from "@/utils/app-lock";
 
 type SettingsRowProps = {
   accessibilityHint?: string;
@@ -91,12 +92,16 @@ export default function SettingsScreen() {
     themeMode === "system" ? "System" : themeMode === "light" ? "Light" : "Dark";
 
   async function logOut() {
+    const { data } = await supabase.auth.getSession();
+    const userId = data.session?.user.id;
     const { error } = await supabase.auth.signOut();
 
     if (error) {
       Alert.alert("Logout failed", error.message);
       return;
     }
+
+    if (userId) await clearAppLockPreference(userId).catch(() => undefined);
 
     Alert.alert("Logged out", "You have been logged out.");
     router.replace("/auth");
@@ -162,6 +167,13 @@ export default function SettingsScreen() {
 
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Privacy & Safety</Text>
         <AppCard clipContent>
+          <SettingsRow
+            accessibilityHint="Opens biometric App Lock settings"
+            icon="lock"
+            label="App Lock"
+            onPress={() => router.push("/(tabs)/profile/app-lock" as Href)}
+          />
+          <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
           <SettingsRow
             accessibilityHint="Opens the FreightIQ Privacy Policy in your browser"
             icon="privacy"

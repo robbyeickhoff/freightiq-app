@@ -21,6 +21,7 @@ import { AppCard } from "@/components/ui/app-card";
 import { Radius, Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { supabase } from "@/utils/supabase";
+import { clearAppLockPreference } from "@/utils/app-lock";
 
 const DELETE_INPUT_ACCESSORY_ID = "delete-account-keyboard-toolbar";
 
@@ -49,6 +50,8 @@ export default function DeleteAccountScreen() {
     if (confirmationText !== "DELETE") return;
     setDeleting(true);
 
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user.id;
     const { data, error } = await supabase.functions.invoke("delete-account", { body: {} });
     if (error || data?.success !== true) {
       setDeleting(false);
@@ -60,6 +63,7 @@ export default function DeleteAccountScreen() {
     }
 
     await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+    if (userId) await clearAppLockPreference(userId).catch(() => undefined);
     await AsyncStorage.clear();
     setDeleting(false);
     Alert.alert("Account deleted", "Your FreightIQ account has been permanently deleted.", [
