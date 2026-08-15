@@ -65,6 +65,16 @@ function formatRecordedTime(timestamp: string) {
   }).format(new Date(timestamp))
 }
 
+function passwordMeetsRequirements(password: string) {
+  return (
+    password.length >= 16 &&
+    /[a-z]/.test(password) &&
+    /[A-Z]/.test(password) &&
+    /[0-9]/.test(password) &&
+    /[^A-Za-z0-9]/.test(password)
+  )
+}
+
 function App() {
   const [workspace, setWorkspace] = useState<Workspace>('test-route')
   const [testRouteMode, setTestRouteMode] = useState<TestRouteMode>('fixture')
@@ -72,7 +82,11 @@ function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [linkRequested, setLinkRequested] = useState(false)
+  const [password, setPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmedPassword, setConfirmedPassword] = useState('')
+  const [passwordRecoveryRequested, setPasswordRecoveryRequested] = useState(false)
+  const [passwordEditorOpen, setPasswordEditorOpen] = useState(false)
   const [fixtureLoaded, setFixtureLoaded] = useState(false)
   const [proposalGenerated, setProposalGenerated] = useState(false)
   const [proposalSource, setProposalSource] =
@@ -172,7 +186,11 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setPasswordEditorOpen(true)
+        setMessage('Create a new Routing Lab password to finish recovery.')
+      }
       void acceptAuthorizedSession(nextSession)
       setIsCheckingSession(false)
     })
@@ -350,23 +368,67 @@ function App() {
     selectedReasons, session, stopEvents,
   ])
 
-  async function requestMagicLink() {
+  async function signInWithPassword() {
     setIsSubmitting(true)
     setMessage('')
 
-    const { error } = await getSupabase().auth.signInWithOtp({
+    const { error } = await getSupabase().auth.signInWithPassword({
       email: config.allowedEmail,
-      options: {
-        emailRedirectTo: window.location.origin,
-        shouldCreateUser: false,
-      },
+      password,
     })
+
+    if (error) {
+      setMessage('The email or password is incorrect.')
+    } else {
+      setPassword('')
+    }
+
+    setIsSubmitting(false)
+  }
+
+  async function requestPasswordRecovery() {
+    setIsSubmitting(true)
+    setMessage('')
+
+    const { error } = await getSupabase().auth.resetPasswordForEmail(
+      config.allowedEmail,
+      { redirectTo: window.location.origin },
+    )
 
     if (error) {
       setMessage(error.message)
     } else {
-      setLinkRequested(true)
-      setMessage('Check your email and tap the private sign-in link.')
+      setPasswordRecoveryRequested(true)
+      setMessage('Check your email for the private password-recovery link.')
+    }
+
+    setIsSubmitting(false)
+  }
+
+  async function saveNewPassword() {
+    if (!passwordMeetsRequirements(newPassword)) {
+      setMessage(
+        'Use at least 16 characters with uppercase, lowercase, a number, and a symbol.',
+      )
+      return
+    }
+
+    if (newPassword !== confirmedPassword) {
+      setMessage('The two password entries do not match.')
+      return
+    }
+
+    setIsSubmitting(true)
+    setMessage('')
+    const { error } = await getSupabase().auth.updateUser({ password: newPassword })
+
+    if (error) {
+      setMessage(error.message)
+    } else {
+      setNewPassword('')
+      setConfirmedPassword('')
+      setPasswordEditorOpen(false)
+      setMessage('Routing Lab password saved.')
     }
 
     setIsSubmitting(false)
@@ -381,7 +443,8 @@ function App() {
     if (error) {
       setMessage(error.message)
     } else {
-      setLinkRequested(false)
+      setPassword('')
+      setPasswordEditorOpen(false)
     }
 
     setIsSubmitting(false)
@@ -636,31 +699,40 @@ function App() {
             Learn from route corrections without touching production FreightIQ.
           </p>
 
-          {!linkRequested ? (
-            <button
-              className="primary-button"
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => void requestMagicLink()}
-            >
-              {isSubmitting ? 'Sending link…' : 'Email my sign-in link'}
+          <form
+            className="password-sign-in"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void signInWithPassword()
+            }}
+          >
+            <label>
+              Email
+              <input value={config.allowedEmail} type="email" disabled />
+            </label>
+            <label>
+              Password
+              <input
+                value={password}
+                type="password"
+                autoComplete="current-password"
+                required
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
+            <button className="primary-button" type="submit" disabled={isSubmitting || !password}>
+              {isSubmitting ? 'Signing in…' : 'Sign in'}
             </button>
-          ) : (
-            <div className="link-sent">
-              <p>
-                The link opens this private Routing Lab and signs you in. It can
-                only be requested for the approved account.
-              </p>
-              <button
-                className="text-button"
-                type="button"
-                disabled={isSubmitting}
-                onClick={() => void requestMagicLink()}
-              >
-                {isSubmitting ? 'Sending…' : 'Send another link'}
-              </button>
-            </div>
-          )}
+          </form>
+
+          <button
+            className="text-button password-recovery-button"
+            type="button"
+            disabled={isSubmitting}
+            onClick={() => void requestPasswordRecovery()}
+          >
+            {passwordRecoveryRequested ? 'Send recovery email again' : 'Set or reset password'}
+          </button>
 
           {message ? (
             <p className="status-message" role="status" aria-live="polite">
@@ -679,15 +751,69 @@ function App() {
           <p className="eyebrow">FreightIQ</p>
           <h1>Routing Lab</h1>
         </div>
-        <button
-          className="text-button"
-          type="button"
-          disabled={isSubmitting}
-          onClick={() => void signOut()}
-        >
-          Sign out
-        </button>
+        <div className="account-actions">
+          <button
+            className="text-button"
+            type="button"
+            disabled={isSubmitting}
+            onClick={() => {
+              setPasswordEditorOpen((current) => !current)
+              setMessage('')
+            }}
+          >
+            {passwordEditorOpen ? 'Close password setup' : 'Set or change password'}
+          </button>
+          <button
+            className="text-button"
+            type="button"
+            disabled={isSubmitting}
+            onClick={() => void signOut()}
+          >
+            Sign out
+          </button>
+        </div>
       </header>
+
+      {passwordEditorOpen ? (
+        <section className="password-editor" aria-labelledby="password-editor-title">
+          <div>
+            <p className="eyebrow">Private account</p>
+            <h2 id="password-editor-title">Set Routing Lab password</h2>
+          </div>
+          <p>
+            Use at least 16 characters with uppercase, lowercase, a number, and
+            a symbol. A password manager is recommended.
+          </p>
+          <label>
+            New password
+            <input
+              value={newPassword}
+              type="password"
+              autoComplete="new-password"
+              minLength={16}
+              onChange={(event) => setNewPassword(event.target.value)}
+            />
+          </label>
+          <label>
+            Confirm new password
+            <input
+              value={confirmedPassword}
+              type="password"
+              autoComplete="new-password"
+              minLength={16}
+              onChange={(event) => setConfirmedPassword(event.target.value)}
+            />
+          </label>
+          <button
+            className="primary-button"
+            type="button"
+            disabled={isSubmitting || !newPassword || !confirmedPassword}
+            onClick={() => void saveNewPassword()}
+          >
+            {isSubmitting ? 'Saving password…' : 'Save password'}
+          </button>
+        </section>
+      ) : null}
 
       <section className="mode-banner" aria-label="Current environment">
         <span className="status-dot" aria-hidden="true" />

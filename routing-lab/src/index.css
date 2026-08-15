@@ -66,6 +66,7 @@ button {
 .fixture-card,
 .manifest-intake,
 .manifest-route-setup,
+.password-editor,
 .reason-prompt,
 .reset-panel,
 .route-details,
@@ -80,6 +81,74 @@ button {
 
 .auth-card {
   padding: 32px 24px;
+}
+
+.password-sign-in,
+.password-editor {
+  display: grid;
+  gap: 14px;
+}
+
+.password-sign-in {
+  margin-top: 20px;
+}
+
+.password-sign-in label,
+.password-editor label {
+  display: grid;
+  gap: 7px;
+  color: #dce8ed;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.password-sign-in input,
+.password-editor input {
+  width: 100%;
+  border: 1px solid #304956;
+  border-radius: 12px;
+  padding: 12px;
+  color: #eef4f8;
+  background: #0b161d;
+  font: inherit;
+  font-weight: 600;
+}
+
+.password-sign-in input:disabled {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.password-recovery-button {
+  justify-self: start;
+  margin-top: 10px;
+}
+
+.account-actions {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.account-actions .text-button {
+  padding-block: 4px;
+  font-size: 0.75rem;
+}
+
+.password-editor {
+  margin-bottom: 16px;
+  padding: 24px;
+}
+
+.password-editor h2 {
+  font-size: 1.35rem;
+}
+
+.password-editor > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 .fixture-card {
@@ -2167,6 +2236,7 @@ details[open] > .proposed-stop-list__heading::after {
   .fixture-card,
   .manifest-intake,
   .manifest-route-setup,
+  .password-editor,
   .reason-prompt,
   .reset-panel,
   .route-details,

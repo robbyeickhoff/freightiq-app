@@ -6,7 +6,7 @@ Implemented and accepted on August 12, 2026.
 
 All 13 Slice 1 acceptance criteria passed in the private deployed Test Route
 environment at `https://freightiq-routing-lab.vercel.app`. Physical-phone
-acceptance confirmed passwordless sign-in, Safari session persistence, saved
+acceptance confirmed sign-in, Safari session persistence, saved
 route progress, the approved Downtown Telluride sandbox lesson, the learned
 GR-001 rerun, and safe fixture reset. Routing Lab lint, TypeScript validation,
 production build, canonical fixture consistency, and the high-severity
@@ -130,8 +130,24 @@ Slice 1 requires:
 - No team accounts
 - No roles system
 - Access restricted to Robby's approved email address
-- Passwordless email magic link
+- Email-and-password sign-in for the existing approved Supabase user
+- Emergency password recovery by email only
 - A private deployed URL
+
+The Product Owner approved replacing routine passwordless magic-link sign-in
+with email-and-password sign-in on August 14, 2026. This authentication revision
+must preserve the existing Supabase user ID and all private Routing Lab data.
+The Lab must not expose account creation, and password recovery must never
+create a new user.
+
+The Product Owner accepted the revised authentication flow on August 14, 2026.
+Password creation, sign-out, password sign-in, refresh persistence, and access
+to existing private Lab data all passed. The separate hosted Routing Lab
+Supabase project blocks new signups, keeps email authentication and recovery
+available, requires passwords of at least 16 characters containing lowercase
+letters, uppercase letters, digits, and symbols, and requires recent
+authentication for password changes. The production FreightIQ Supabase project
+was not changed.
 
 No reusable lesson becomes active without Robby's explicit approval.
 
