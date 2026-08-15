@@ -13,25 +13,47 @@ answer one question:
 
 ## Current Objective
 
-Biometric Access V1 is implementation-complete and accepted in internal development builds on
-physical iPhone and Pixel. The governing contract is
-`docs/build-specs/FreightIQBiometricAccessV1BuildSpec.md`. Drivers can discover and enable the
-account-scoped device lock during sign-in or in Settings, unlock with Face ID, Touch ID, or a strong
-Android biometric, and choose a ten-, thirty-, or sixty-minute background interval or restart-only
-locking. Thirty minutes remains the default. Shorter intervals apply immediately; extending the
-unlocked window or turning App Lock off requires another biometric confirmation. Cold application
-launches always lock when enabled.
+Locked Personal Intel V1 is implementation-complete and accepted on physical iPhone and Pixel. The governing contract is
+`docs/build-specs/FreightIQLockedPersonalIntelV1BuildSpec.md`. It adds one owner-only, stop-specific
+note for information such as gate codes, kept completely separate from shared Driver Reports and
+all search, attribution, moderation, Founding Driver, recognition, and analytics surfaces.
 
-Core opt-in, sign-in enrollment, cold-launch unlock, Settings controls, timing selection, and
-disable behavior passed on iPhone and Pixel. TypeScript, lint, dependency checks, diff checks, and
-local iOS and Android production bundles pass. Existing Supabase authentication remains
-authoritative; no database, Auth setting, production data, tester audience, or public-release state
-changed. System-fallback, biometric-lockout, maximum-text, VoiceOver, and TalkBack checks remain
-release acceptance gates rather than blockers to the completed implementation.
+The approved design uses a dedicated Supabase table with strict owner-only Row Level Security and
+requires the accepted native App Lock authentication every time note content is opened. Plaintext
+is concealed on exit or backgrounding and is not stored in durable client state. Account deletion
+must remove owned notes, and duplicate-stop merging must move an unambiguous owner note or block a
+conflict without overwriting or silently deleting content. Client-side encryption and claims of
+end-to-end or zero-knowledge protection are excluded from V1. Physical-device acceptance,
+candidate builds, distribution, and release remain separate approval gates.
+
+Local implementation is complete. The full database migration chain replays successfully; all 21
+focused Locked Personal Intel tests and all 19 existing City & Driver Search regression tests pass;
+public/private schema lint reports no errors; TypeScript and lint have no errors and only the same
+11 pre-existing warnings; and local iOS and Android production bundles pass. The migration is
+applied to production and verified with zero private-note rows, all owner-only policies and
+least-privilege grants present, anonymous access denied, authenticated-only merge execution, no
+error-level database-advisor findings, and synchronized migration history. The previously
+mislabeled City Search migration was reconciled locally to production's existing
+`20260812031045` version after its SQL content matched exactly. No stop, report, account, or user
+note data changed. Physical iPhone and Pixel acceptance passed note creation, save, concealed
+closed state, native biometric reopening, content display, and the protected editor. The Product
+Owner accepted the visual presentation and core behavior on both platforms. Candidate builds,
+distribution, and release remain separate approval gates.
 
 ---
 
 ## Previously Completed Objective
+
+Biometric Access V1 is implementation-complete and accepted in internal development builds on
+physical iPhone and Pixel. Its governing contract is
+`docs/build-specs/FreightIQBiometricAccessV1BuildSpec.md`. Core opt-in, sign-in enrollment,
+cold-launch unlock, Settings controls, timing selection, and disable behavior passed on both
+platforms. Existing Supabase authentication remains authoritative; no database, Auth setting,
+production data, tester audience, or public-release state changed.
+
+---
+
+## Earlier Completed Objective
 
 City & Driver Search V1 is implementation-complete, accepted, committed, and pushed to
 `clean-main` in `30a608f`. It is ready to be included in a future production candidate build. No
@@ -95,7 +117,7 @@ acceptance subsequently passed on the physical Pixel. Large-text, VoiceOver, Tal
 motion, and representative regression checks also passed. Regression review then found that City
 collection Core Intel counts used legacy stop fields while the existing Preview Card used visible
 shared Driver Reports plus the saved Delivery Zone. The correction was implemented through
-`20260812025503_align_city_core_intel_with_preview.sql`, expanded the focused pgTAP suite from 18
+`20260812031045_align_city_core_intel_with_preview.sql`, expanded the focused pgTAP suite from 18
 to 19 passing tests, passed public/private schema lint, and was separately approved, applied, and
 verified in production. Alpine Lumber now returns `4/4 Core Intel` with its one visible Driver
 Report, matching the Preview Card; the function remains authenticated, security-invoker, bounded,

@@ -694,7 +694,7 @@ new warnings. The same focused search, collection, List/Map, Preview Card, and r
 subsequently passed on the physical Pixel. Large-text, VoiceOver, TalkBack, reduced-motion, and
 representative regression checks passed. Regression review found that the City collection counted
 legacy stop-level Core Intel while the Preview Card counted visible shared Driver Report values plus
-the saved Delivery Zone. Migration `20260812025503_align_city_core_intel_with_preview.sql` now
+the saved Delivery Zone. Migration `20260812031045_align_city_core_intel_with_preview.sql` now
 aligns the collection with the Preview Card, preserves blocking and restriction filtering, and adds
 a focused privacy regression check. All 19 pgTAP tests and public/private schema lint pass. The
 separately approved production migration was applied and verified: Alpine Lumber returns `4/4 Core

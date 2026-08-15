@@ -7,6 +7,7 @@ import type { StyleProp, ViewStyle } from "react-native";
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   Keyboard,
   KeyboardAvoidingView,
   Linking,
@@ -32,6 +33,11 @@ import { Spacing, Typography } from "../../constants/theme";
 import { useAppTheme } from "../../context/theme-context";
 import { useReducedMotion } from "../../hooks/use-reduced-motion";
 import { recordFoundingDriverActivity } from "../../utils/founding-driver-activity";
+import {
+  authenticateForAppLock,
+  getAppLockCapability,
+  getAppLockEnabled,
+} from "../../utils/app-lock";
 import {
   canMessagePhoneType,
   composeLegacyContact,
@@ -342,6 +348,10 @@ export default function StopScreen() {
   const [contactPeople, setContactPeople] = useState<ContactPerson[]>([]);
   const [checkInNotes, setCheckInNotes] = useState("");
   const [notes, setNotes] = useState("");
+  const [privateNoteExists, setPrivateNoteExists] = useState(false);
+  const [privateNoteOpen, setPrivateNoteOpen] = useState(false);
+  const [privateNoteDraft, setPrivateNoteDraft] = useState("");
+  const [privateNoteBusy, setPrivateNoteBusy] = useState(false);
 
   const currentReportSnapshot = useMemo(
     () =>
@@ -633,6 +643,46 @@ export default function StopScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFocused]);
 
+  useEffect(() => {
+    if (!isFocused || !stopId || !sessionUserId) {
+      setPrivateNoteExists(false);
+      return;
+    }
+
+    let active = true;
+    void supabase
+      .from("mfi_private_stop_notes")
+      .select("id")
+      .eq("stop_id", stopId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active) setPrivateNoteExists(Boolean(data?.id));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isFocused, sessionUserId, stopId]);
+
+  useEffect(() => {
+    if (isFocused || !privateNoteOpen) return;
+    setPrivateNoteOpen(false);
+    setPrivateNoteDraft("");
+  }, [isFocused, privateNoteOpen]);
+
+  useEffect(() => {
+    if (!privateNoteOpen) return;
+
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") return;
+      setPrivateNoteOpen(false);
+      setPrivateNoteDraft("");
+      Keyboard.dismiss();
+    });
+
+    return () => subscription.remove();
+  }, [privateNoteOpen]);
+
   async function requireSignedIn() {
     if (sessionUserId) {
       return sessionUserId;
@@ -652,6 +702,131 @@ export default function StopScreen() {
     ]);
 
     return null;
+  }
+
+  function closePrivateNote() {
+    Keyboard.dismiss();
+    setPrivateNoteOpen(false);
+    setPrivateNoteDraft("");
+  }
+
+  async function openPrivateNote() {
+    const userId = await requireSignedIn();
+    if (!userId || privateNoteBusy) return;
+
+    setPrivateNoteBusy(true);
+    try {
+      if (!(await getAppLockEnabled(userId))) {
+        Alert.alert(
+          "Turn on App Lock first",
+          "Locked Personal Intel requires Face ID, Touch ID, or a strong device biometric.",
+          [
+            { text: "Not Now", style: "cancel" },
+            {
+              text: "Open App Lock",
+              onPress: () => router.push("/(tabs)/profile/app-lock"),
+            },
+          ],
+        );
+        return;
+      }
+
+      const capability = await getAppLockCapability();
+      if (!capability.available) {
+        Alert.alert(
+          "Device unlock unavailable",
+          "Check this device's biometric settings before opening Locked Personal Intel.",
+        );
+        return;
+      }
+
+      const authentication = await authenticateForAppLock(capability.label, {
+        promptMessage: `Open Locked Personal Intel with ${capability.label}`,
+        promptSubtitle: title,
+        promptDescription: "Confirm it’s you to view or edit this private note.",
+      });
+      if (!authentication.success) return;
+
+      const { data, error } = await supabase
+        .from("mfi_private_stop_notes")
+        .select("note")
+        .eq("stop_id", stopId)
+        .maybeSingle();
+      if (error) {
+        Alert.alert("Unable to open note", error.message);
+        return;
+      }
+
+      setPrivateNoteDraft(data?.note ?? "");
+      setPrivateNoteExists(Boolean(data));
+      setPrivateNoteOpen(true);
+    } catch {
+      Alert.alert("Unable to open note", "Please try again.");
+    } finally {
+      setPrivateNoteBusy(false);
+    }
+  }
+
+  async function savePrivateNote() {
+    const trimmedNote = privateNoteDraft.trim();
+    if (!sessionUserId || !trimmedNote || trimmedNote.length > 2000 || privateNoteBusy) return;
+
+    setPrivateNoteBusy(true);
+    try {
+      const request = privateNoteExists
+        ? supabase
+            .from("mfi_private_stop_notes")
+            .update({ note: trimmedNote, updated_at: new Date().toISOString() })
+            .eq("stop_id", stopId)
+        : supabase.from("mfi_private_stop_notes").insert({ stop_id: stopId, note: trimmedNote });
+      const { error } = await request;
+      if (error) {
+        Alert.alert("Note not saved", error.message);
+        return;
+      }
+
+      setPrivateNoteExists(true);
+      closePrivateNote();
+      Alert.alert("Locked note saved", "Your private note is protected behind device unlock.");
+    } catch {
+      Alert.alert("Note not saved", "Please try again.");
+    } finally {
+      setPrivateNoteBusy(false);
+    }
+  }
+
+  function confirmDeletePrivateNote() {
+    Alert.alert("Delete locked note?", "This permanently removes this private note.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => void deletePrivateNote(),
+      },
+    ]);
+  }
+
+  async function deletePrivateNote() {
+    if (!sessionUserId || privateNoteBusy) return;
+    setPrivateNoteBusy(true);
+    try {
+      const { error } = await supabase
+        .from("mfi_private_stop_notes")
+        .delete()
+        .eq("stop_id", stopId);
+      if (error) {
+        Alert.alert("Note not deleted", error.message);
+        return;
+      }
+
+      setPrivateNoteExists(false);
+      closePrivateNote();
+      Alert.alert("Locked note deleted");
+    } catch {
+      Alert.alert("Note not deleted", "Please try again.");
+    } finally {
+      setPrivateNoteBusy(false);
+    }
   }
 
   async function loadEntrance() {
@@ -1677,7 +1852,7 @@ export default function StopScreen() {
 
     Alert.alert(
       "Delete this stop?",
-      "This will permanently delete the stop, its reports, its votes, and its Delivery Zone.",
+      "This permanently deletes the stop, its reports, votes, Delivery Zone, and any Locked Personal Intel saved here by any driver.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -2070,6 +2245,32 @@ export default function StopScreen() {
                   </AppButton>
                 </>
               ) : null}
+            </AppCard>
+
+            <AppCard contentStyle={styles.v2SectionCard}>
+              <View style={styles.v2DisclosureCopy}>
+                <Text style={[styles.v2Eyebrow, { color: colors.textSecondary }]}>PRIVATE</Text>
+                <Text style={[styles.v2SectionTitle, { color: colors.textPrimary }]}>
+                  Locked Personal Intel
+                </Text>
+                <Text style={[styles.v2SectionSubtitle, { color: colors.textSecondary }]}>
+                  {privateNoteExists
+                    ? "Locked note saved — content stays concealed"
+                    : "Save a gate code or personal stop note"}
+                </Text>
+              </View>
+
+              <AppButton
+                fullWidth
+                loading={privateNoteBusy}
+                onPress={() => void openPrivateNote()}
+                variant="secondary"
+              >
+                {privateNoteExists ? "Unlock Personal Intel" : "Create Locked Note"}
+              </AppButton>
+              <Text style={[styles.privateIntelPrivacyCopy, { color: colors.textSecondary }]}>
+                Private from other drivers. Requires your FreightIQ account and device unlock.
+              </Text>
             </AppCard>
 
             <AppCard
@@ -2969,6 +3170,76 @@ export default function StopScreen() {
             </ModalSafeAreaScreen>
           </Modal>
 
+          <Modal
+            animationType={reduceMotionEnabled ? "none" : "slide"}
+            onRequestClose={closePrivateNote}
+            visible={privateNoteOpen}
+          >
+            <ModalSafeAreaScreen>
+              <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={styles.additionalIntelScreen}
+              >
+                <ScrollView
+                  contentContainerStyle={styles.privateIntelEditorContent}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  <View style={styles.additionalIntelHeader}>
+                    <Text style={styles.additionalIntelTitle}>Locked Personal Intel</Text>
+                    <Text style={styles.additionalIntelStopName}>{title}</Text>
+                    <Text style={styles.additionalIntelAddress}>
+                      Private from other FreightIQ drivers
+                    </Text>
+                  </View>
+
+                  <View style={styles.card}>
+                    <Text style={styles.sectionLabel}>Personal note</Text>
+                    <TextInput
+                      autoCapitalize="sentences"
+                      autoCorrect
+                      maxLength={2000}
+                      multiline
+                      onChangeText={setPrivateNoteDraft}
+                      placeholder="Gate code, where to check in, or another detail just for you"
+                      style={[styles.input, styles.privateIntelInput]}
+                      textAlignVertical="top"
+                      value={privateNoteDraft}
+                    />
+                    <Text style={styles.cardHelp}>{privateNoteDraft.length}/2000</Text>
+                    <Text style={styles.cardHelp}>
+                      This note is stored privately for your account. It is not end-to-end encrypted
+                      and is never added to shared Driver Intel.
+                    </Text>
+
+                    <AppButton
+                      disabled={!privateNoteDraft.trim() || privateNoteBusy}
+                      fullWidth
+                      loading={privateNoteBusy}
+                      onPress={() => void savePrivateNote()}
+                    >
+                      Save Locked Note
+                    </AppButton>
+
+                    {privateNoteExists ? (
+                      <AppButton
+                        disabled={privateNoteBusy}
+                        fullWidth
+                        onPress={confirmDeletePrivateNote}
+                        variant="secondary"
+                      >
+                        Delete Locked Note
+                      </AppButton>
+                    ) : null}
+
+                    <AppButton fullWidth onPress={closePrivateNote} variant="secondary">
+                      Cancel
+                    </AppButton>
+                  </View>
+                </ScrollView>
+              </KeyboardAvoidingView>
+            </ModalSafeAreaScreen>
+          </Modal>
+
           <QuickIntelSheet
             address={displayAddress}
             backInRequired={backInRequired}
@@ -3602,6 +3873,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: Spacing.sm,
     paddingVertical: Spacing.sm,
+  },
+  privateIntelPrivacyCopy: {
+    ...Typography.supporting,
+    textAlign: "center",
+  },
+  privateIntelEditorContent: {
+    gap: Spacing.md,
+    padding: Spacing.lg,
+  },
+  privateIntelInput: {
+    minHeight: 180,
+    paddingTop: Spacing.md,
   },
 
   voteRow: {

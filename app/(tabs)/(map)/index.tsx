@@ -1750,26 +1750,18 @@ export default function HomeScreen() {
       setMergeTargetStopId(p.id);
 
       try {
-        const { error } = await supabase
-          .from("mfi_reports")
-          .update({
-            stop_id: p.id,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("stop_id", mergeSourceStopId);
+        const { error } = await supabase.rpc("merge_owned_freightiq_stop", {
+          p_source_stop_id: mergeSourceStopId,
+          p_target_stop_id: p.id,
+        });
 
         if (error) {
-          Alert.alert("Merge failed", error.message);
-          return;
-        }
-
-        const { error: deleteError } = await supabase
-          .from("mfi_stops")
-          .delete()
-          .eq("id", mergeSourceStopId);
-
-        if (deleteError) {
-          Alert.alert("Merge partial", "Reports moved but failed to delete source stop.");
+          Alert.alert(
+            "Merge not completed",
+            error.code === "23505"
+              ? "A driver has Locked Personal Intel saved at both stops. Keep both stops for now so neither private note is overwritten."
+              : error.message,
+          );
           return;
         }
 
@@ -1783,7 +1775,7 @@ export default function HomeScreen() {
         setMergeSourceStopId(null);
         setMergeTargetStopId(null);
 
-        Alert.alert("Merge complete", "Reports moved to the selected stop.");
+        Alert.alert("Merge complete", "Reports and any locked personal intel were preserved.");
       } catch (err: any) {
         Alert.alert("Merge failed", err?.message ?? "Unknown error");
       }

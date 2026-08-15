@@ -53,15 +53,23 @@ export async function getAppLockCapability(): Promise<AppLockCapability> {
   return { available: true, label, reason: "available" };
 }
 
-export async function authenticateForAppLock(label: AppLockCapability["label"]) {
+export async function authenticateForAppLock(
+  label: AppLockCapability["label"],
+  copy?: {
+    promptDescription?: string;
+    promptMessage?: string;
+    promptSubtitle?: string;
+  },
+) {
   return LocalAuthentication.authenticateAsync({
     biometricsSecurityLevel: "strong",
     cancelLabel: "Cancel",
     disableDeviceFallback: false,
     fallbackLabel: "Use Passcode",
-    promptDescription: "Confirm it’s you to open your signed-in FreightIQ app.",
-    promptMessage: `Unlock FreightIQ with ${label}`,
-    promptSubtitle: "FreightIQ App Lock",
+    promptDescription:
+      copy?.promptDescription ?? "Confirm it’s you to open your signed-in FreightIQ app.",
+    promptMessage: copy?.promptMessage ?? `Unlock FreightIQ with ${label}`,
+    promptSubtitle: copy?.promptSubtitle ?? "FreightIQ App Lock",
   });
 }
 
