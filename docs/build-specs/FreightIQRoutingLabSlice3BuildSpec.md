@@ -4,8 +4,16 @@
 
 Approved by the Product Owner on August 13, 2026.
 
-Implementation is authorized only through the unit sequence and approval gates
-defined below. Slice 3 has not yet been implemented or accepted.
+Implemented and accepted on August 15, 2026.
+
+The Product Owner completed the controlled acceptance test with a different
+two-page reference manifest dated July 28, 2026. The pages were intentionally
+uploaded in reverse order to confirm that extraction and routing do not depend
+on photo-selection order. The complete connected workflow passed: manifest
+extraction and confirmation, route setup, zone review, route proposal, planned
+corrections with reasons, route execution, individual correction review,
+lesson approval and rejection, route completion, and learned-route replay. The
+replayed proposal returned with the approved learning applied correctly.
 
 Unit 1 was implemented and accepted on August 13, 2026. The reusable Test
 Route domain now uses stable stop identifiers for proposal comparison, active
@@ -423,11 +431,11 @@ Slice 3 does not include:
 
 ### Unit 7 — Controlled Acceptance Test
 
-- Run one confirmed reference manifest through the complete connected loop.
-- Verify all three route orders remain distinguishable.
-- Verify a correction can become an approved lesson.
-- Verify that lesson changes only the applicable part of a later proposal.
-- Verify `GR-001`, manifest evidence, and production FreightIQ remain unaffected.
+- [x] Run one confirmed reference manifest through the complete connected loop.
+- [x] Verify all three route orders remain distinguishable.
+- [x] Verify a correction can become an approved lesson.
+- [x] Verify that lesson changes only the applicable part of a later proposal.
+- [x] Verify `GR-001`, manifest evidence, and production FreightIQ remain unaffected.
 
 ## Acceptance Criteria
 
