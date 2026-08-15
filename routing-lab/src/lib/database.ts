@@ -11,10 +11,13 @@ export type Database = {
     Tables: {
       routing_lab_routes: {
         Row: {
+          adjusted_stop_ids: Json
           created_at: string
           id: string
           manifest_import_id: string
+          planned_corrections: Json
           route_kind: string
+          route_proposal: Json
           setup: Json
           source_stops: Json
           status: string
@@ -23,10 +26,13 @@ export type Database = {
           zone_review: Json
         }
         Insert: {
+          adjusted_stop_ids?: Json
           created_at?: string
           id: string
           manifest_import_id: string
+          planned_corrections?: Json
           route_kind?: string
+          route_proposal?: Json
           setup: Json
           source_stops: Json
           status?: string
@@ -35,10 +41,13 @@ export type Database = {
           zone_review?: Json
         }
         Update: {
+          adjusted_stop_ids?: Json
           created_at?: string
           id?: string
           manifest_import_id?: string
+          planned_corrections?: Json
           route_kind?: string
+          route_proposal?: Json
           setup?: Json
           source_stops?: Json
           status?: string

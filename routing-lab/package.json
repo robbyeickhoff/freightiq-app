@@ -13,6 +13,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dnd-kit/helpers": "0.5.0",
+    "@dnd-kit/react": "0.5.0",
     "@supabase/supabase-js": "2.110.8",
     "heic-to": "1.5.2",
     "react": "19.2.8",

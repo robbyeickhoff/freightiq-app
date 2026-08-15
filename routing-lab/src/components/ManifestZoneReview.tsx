@@ -7,12 +7,22 @@ import {
 } from '../lib/zone-classification'
 
 type ManifestZoneReviewProps = {
+  isGenerating: boolean
   route: ManifestDraftRoute
   onBackToSetup: () => void
+  onGenerateProposal: () => Promise<void>
+  onOpenProposal: () => void
   onSave: (classifications: ZoneClassification[], complete: boolean) => Promise<void>
 }
 
-function ManifestZoneReview({ route, onBackToSetup, onSave }: ManifestZoneReviewProps) {
+function ManifestZoneReview({
+  route,
+  isGenerating,
+  onBackToSetup,
+  onGenerateProposal,
+  onOpenProposal,
+  onSave,
+}: ManifestZoneReviewProps) {
   const [classifications, setClassifications] = useState(route.zoneReview)
   const [expandedStopIds, setExpandedStopIds] = useState(() => new Set(
     route.zoneReview
@@ -41,6 +51,8 @@ function ManifestZoneReview({ route, onBackToSetup, onSave }: ManifestZoneReview
   const unresolvedCount = classifications.filter((item) => item.status === 'unresolved').length
   const complete = classifications.length === route.sourceStops.length &&
     classifications.every((item) => item.status === 'approved' && item.selectedZone)
+  const zoneReviewApproved = route.status === 'zone_approved' ||
+    route.status === 'proposal_review' || route.status === 'proposal_reviewed'
 
   async function persist(next: ZoneClassification[], finalize = false) {
     setClassifications(next)
@@ -176,21 +188,36 @@ function ManifestZoneReview({ route, onBackToSetup, onSave }: ManifestZoneReview
       <button
         className="primary-button"
         type="button"
-        disabled={!complete || saveState === 'saving' || route.status === 'zone_approved'}
+        disabled={!complete || saveState === 'saving' || zoneReviewApproved}
         onClick={() => void persist(classifications, true)}
       >
-        {route.status === 'zone_approved' ? 'Zone Review Approved' : 'Complete Zone Review'}
+        {zoneReviewApproved ? 'Zone Review Approved' : 'Complete Zone Review'}
       </button>
 
       {!complete ? (
         <p className="next-step-note">Approve a documented operational zone for every stop to continue.</p>
       ) : null}
-      {route.status === 'zone_approved' ? (
-        <p className="reason-capture-status">Zone review approved. Route proposal is the next Slice 3 unit.</p>
+      {zoneReviewApproved ? (
+        <p className="reason-capture-status">Zone review approved.</p>
       ) : saveState === 'saved' ? (
         <p className="reason-capture-status">Zone review progress saved privately.</p>
       ) : null}
       {error ? <p className="photo-error" role="alert">{error}</p> : null}
+
+      {route.routeProposal ? (
+        <button className="secondary-button" type="button" onClick={onOpenProposal}>
+          Review Route Proposal
+        </button>
+      ) : route.status === 'zone_approved' ? (
+        <button
+          className="secondary-button"
+          type="button"
+          disabled={isGenerating}
+          onClick={() => void onGenerateProposal()}
+        >
+          {isGenerating ? 'Building route proposal…' : 'Generate Route Proposal'}
+        </button>
+      ) : null}
 
       <button className="text-button" type="button" onClick={onBackToSetup}>
         Back to route setup

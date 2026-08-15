@@ -17,6 +17,7 @@ type ReasonPromptProps = {
   onReasonToggle: (reason: string) => void
   onSave: () => void
   selectedReasons: string[]
+  saveLabel?: string
 }
 
 function ReasonPrompt({
@@ -27,6 +28,7 @@ function ReasonPrompt({
   onReasonToggle,
   onSave,
   selectedReasons,
+  saveLabel = 'Save reason',
 }: ReasonPromptProps) {
   const title =
     kind === 'planned'
@@ -71,7 +73,7 @@ function ReasonPrompt({
         disabled={selectedReasons.length === 0}
         onClick={onSave}
       >
-        Save reason
+        {saveLabel}
       </button>
     </section>
   )

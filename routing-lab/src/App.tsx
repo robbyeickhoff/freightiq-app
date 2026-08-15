@@ -5,6 +5,7 @@ import EndOfRouteReview from './components/EndOfRouteReview'
 import type { ReviewStage, SandboxLesson } from './components/EndOfRouteReview'
 import ManifestIntake from './components/ManifestIntake'
 import ManifestRouteSetup from './components/ManifestRouteSetup'
+import ManifestRouteProposalReview from './components/ManifestRouteProposalReview'
 import ManifestZoneReview from './components/ManifestZoneReview'
 import ReasonPrompt from './components/ReasonPrompt'
 import {
@@ -31,10 +32,14 @@ import type {
 import { getSupabase } from './lib/supabase'
 import {
   loadLatestManifestDraftRoute,
+  saveManifestProposalReview,
+  saveManifestRouteProposal,
   saveManifestRouteSetup,
   saveManifestZoneReview,
 } from './lib/route-persistence'
 import type { ManifestDraftRoute, RouteSetup } from './lib/route-persistence'
+import { proposeManifestRoute } from './lib/manifest-route-proposal'
+import type { PlannedRouteCorrection } from './lib/manifest-route-proposal'
 import { proposeZoneClassifications } from './lib/zone-classification'
 import type { ZoneClassification } from './lib/zone-classification'
 
@@ -83,8 +88,9 @@ function App() {
   const [workspace, setWorkspace] = useState<Workspace>('test-route')
   const [testRouteMode, setTestRouteMode] = useState<TestRouteMode>('fixture')
   const [manifestDraftRoute, setManifestDraftRoute] = useState<ManifestDraftRoute | null>(null)
-  const [manifestRouteStage, setManifestRouteStage] = useState<'setup' | 'zone-review'>('setup')
+  const [manifestRouteStage, setManifestRouteStage] = useState<'setup' | 'zone-review' | 'proposal-review'>('setup')
   const [isClassifyingZones, setIsClassifyingZones] = useState(false)
+  const [isGeneratingManifestProposal, setIsGeneratingManifestProposal] = useState(false)
   const [session, setSession] = useState<Session | null>(null)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -306,7 +312,7 @@ function App() {
         if (!active || !route) return
         setManifestDraftRoute(route)
         setTestRouteMode('manifest-draft')
-        setManifestRouteStage(route.zoneReview.length > 0 ? 'zone-review' : 'setup')
+        setManifestRouteStage(route.routeProposal ? 'proposal-review' : route.zoneReview.length > 0 ? 'zone-review' : 'setup')
       })
       .catch((error: unknown) => {
         if (active) {
@@ -320,7 +326,7 @@ function App() {
   function openManifestDraftRoute(route: ManifestDraftRoute) {
     setManifestDraftRoute(route)
     setTestRouteMode('manifest-draft')
-    setManifestRouteStage(route.zoneReview.length > 0 ? 'zone-review' : 'setup')
+    setManifestRouteStage(route.routeProposal ? 'proposal-review' : route.zoneReview.length > 0 ? 'zone-review' : 'setup')
     setWorkspace('test-route')
   }
 
@@ -367,8 +373,54 @@ function App() {
     await saveManifestZoneReview(manifestDraftRoute.id, zoneReview, complete)
     setManifestDraftRoute({
       ...manifestDraftRoute,
+      adjustedStopIds: [],
+      plannedCorrections: [],
+      routeProposal: null,
       status: complete ? 'zone_approved' : 'zone_review',
       zoneReview,
+    })
+  }
+
+  async function generateManifestRouteProposal() {
+    if (!manifestDraftRoute) return
+    setIsGeneratingManifestProposal(true)
+    setMessage('')
+
+    try {
+      const routeProposal = await proposeManifestRoute(manifestDraftRoute)
+      await saveManifestRouteProposal(manifestDraftRoute.id, routeProposal)
+      setManifestDraftRoute({
+        ...manifestDraftRoute,
+        adjustedStopIds: routeProposal.orderedStopIds,
+        plannedCorrections: [],
+        routeProposal,
+        status: 'proposal_review',
+      })
+      setManifestRouteStage('proposal-review')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'The route proposal could not be generated.')
+    } finally {
+      setIsGeneratingManifestProposal(false)
+    }
+  }
+
+  async function saveDraftProposalReview(
+    adjustedStopIds: string[],
+    plannedCorrections: PlannedRouteCorrection[],
+    complete: boolean,
+  ) {
+    if (!manifestDraftRoute) return
+    await saveManifestProposalReview(
+      manifestDraftRoute.id,
+      adjustedStopIds,
+      plannedCorrections,
+      complete,
+    )
+    setManifestDraftRoute({
+      ...manifestDraftRoute,
+      adjustedStopIds,
+      plannedCorrections,
+      status: complete ? 'proposal_reviewed' : 'proposal_review',
     })
   }
 
@@ -889,10 +941,19 @@ function App() {
 
       {workspace === 'manifest-intake' ? (
         <ManifestIntake onOpenDraftRoute={openManifestDraftRoute} />
+      ) : testRouteMode === 'manifest-draft' && manifestDraftRoute && manifestRouteStage === 'proposal-review' ? (
+        <ManifestRouteProposalReview
+          route={manifestDraftRoute}
+          onBackToZones={() => setManifestRouteStage('zone-review')}
+          onSave={saveDraftProposalReview}
+        />
       ) : testRouteMode === 'manifest-draft' && manifestDraftRoute && manifestRouteStage === 'zone-review' ? (
         <ManifestZoneReview
+          isGenerating={isGeneratingManifestProposal}
           route={manifestDraftRoute}
           onBackToSetup={() => setManifestRouteStage('setup')}
+          onGenerateProposal={generateManifestRouteProposal}
+          onOpenProposal={() => setManifestRouteStage('proposal-review')}
           onSave={saveDraftZoneReview}
         />
       ) : testRouteMode === 'manifest-draft' && manifestDraftRoute ? (

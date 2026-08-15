@@ -3,6 +3,10 @@ import type { Json } from './database'
 import type { RouteStop } from './route-domain'
 import { getSupabase } from './supabase'
 import type { ZoneClassification } from './zone-classification'
+import type {
+  ManifestRouteProposal,
+  PlannedRouteCorrection,
+} from './manifest-route-proposal'
 
 export type ManifestRouteStop = RouteStop & {
   postalCode: string
@@ -18,11 +22,14 @@ export type RouteSetup = {
 }
 
 export type ManifestDraftRoute = {
+  adjustedStopIds: string[]
   id: string
   manifestImportId: string
+  plannedCorrections: PlannedRouteCorrection[]
+  routeProposal: ManifestRouteProposal | null
   setup: RouteSetup
   sourceStops: ManifestRouteStop[]
-  status: 'draft_setup' | 'zone_review' | 'zone_approved'
+  status: 'draft_setup' | 'zone_review' | 'zone_approved' | 'proposal_review' | 'proposal_reviewed'
   zoneReview: ZoneClassification[]
 }
 
@@ -55,22 +62,32 @@ function toRouteStops(stops: ProposedStop[]): ManifestRouteStop[] {
 }
 
 function fromRow(row: {
+  adjusted_stop_ids: Json
   id: string
   manifest_import_id: string
+  planned_corrections: Json
+  route_proposal: Json
   setup: Json
   source_stops: Json
   status: string
   zone_review: Json
 }): ManifestDraftRoute {
   return {
+    adjustedStopIds: row.adjusted_stop_ids as unknown as string[],
     id: row.id,
     manifestImportId: row.manifest_import_id,
+    plannedCorrections: row.planned_corrections as unknown as PlannedRouteCorrection[],
+    routeProposal: Object.keys(row.route_proposal as Record<string, Json>).length > 0
+      ? row.route_proposal as unknown as ManifestRouteProposal
+      : null,
     setup: row.setup as unknown as RouteSetup,
     sourceStops: row.source_stops as unknown as ManifestRouteStop[],
     status: row.status as ManifestDraftRoute['status'],
     zoneReview: row.zone_review as unknown as ZoneClassification[],
   }
 }
+
+const routeSelect = 'id,manifest_import_id,status,source_stops,setup,zone_review,route_proposal,adjusted_stop_ids,planned_corrections'
 
 async function currentUserId() {
   const { data, error } = await getSupabase().auth.getUser()
@@ -87,7 +104,7 @@ export async function buildManifestDraftRoute(
   const supabase = getSupabase()
   const existing = await supabase
     .from('routing_lab_routes')
-    .select('id,manifest_import_id,status,source_stops,setup,zone_review')
+    .select(routeSelect)
     .eq('user_id', userId)
     .eq('manifest_import_id', manifestImportId)
     .maybeSingle()
@@ -105,7 +122,7 @@ export async function buildManifestDraftRoute(
   const { data, error } = await supabase
     .from('routing_lab_routes')
     .insert(route)
-    .select('id,manifest_import_id,status,source_stops,setup,zone_review')
+    .select(routeSelect)
     .single()
 
   if (error) throw error
@@ -116,9 +133,9 @@ export async function loadLatestManifestDraftRoute() {
   const userId = await currentUserId()
   const { data, error } = await getSupabase()
     .from('routing_lab_routes')
-    .select('id,manifest_import_id,status,source_stops,setup,zone_review')
+    .select(routeSelect)
     .eq('user_id', userId)
-    .in('status', ['draft_setup', 'zone_review', 'zone_approved'])
+    .in('status', ['draft_setup', 'zone_review', 'zone_approved', 'proposal_review', 'proposal_reviewed'])
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -150,6 +167,9 @@ export async function saveManifestZoneReview(
   const { data, error } = await getSupabase()
     .from('routing_lab_routes')
     .update({
+      adjusted_stop_ids: [] as unknown as Json,
+      planned_corrections: [] as unknown as Json,
+      route_proposal: {} as Json,
       status: complete ? 'zone_approved' : 'zone_review',
       updated_at: new Date().toISOString(),
       zone_review: zoneReview as unknown as Json,
@@ -161,4 +181,53 @@ export async function saveManifestZoneReview(
 
   if (error) throw error
   if (!data) throw new Error('The zone review could not be saved.')
+}
+
+export async function saveManifestRouteProposal(
+  routeId: string,
+  proposal: ManifestRouteProposal,
+) {
+  const userId = await currentUserId()
+  const { data, error } = await getSupabase()
+    .from('routing_lab_routes')
+    .update({
+      adjusted_stop_ids: proposal.orderedStopIds as unknown as Json,
+      planned_corrections: [] as unknown as Json,
+      route_proposal: proposal as unknown as Json,
+      status: 'proposal_review',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', routeId)
+    .eq('user_id', userId)
+    .eq('status', 'zone_approved')
+    .select('id')
+    .single()
+
+  if (error) throw error
+  if (!data) throw new Error('The route proposal could not be saved.')
+}
+
+export async function saveManifestProposalReview(
+  routeId: string,
+  adjustedStopIds: string[],
+  corrections: PlannedRouteCorrection[],
+  complete: boolean,
+) {
+  const userId = await currentUserId()
+  const { data, error } = await getSupabase()
+    .from('routing_lab_routes')
+    .update({
+      adjusted_stop_ids: adjustedStopIds as unknown as Json,
+      planned_corrections: corrections as unknown as Json,
+      status: complete ? 'proposal_reviewed' : 'proposal_review',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', routeId)
+    .eq('user_id', userId)
+    .in('status', ['proposal_review', 'proposal_reviewed'])
+    .select('id')
+    .single()
+
+  if (error) throw error
+  if (!data) throw new Error('The route proposal review could not be saved.')
 }

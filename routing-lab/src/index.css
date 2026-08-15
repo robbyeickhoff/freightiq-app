@@ -67,6 +67,7 @@ button {
 .manifest-intake,
 .manifest-route-setup,
 .manifest-zone-review,
+.manifest-proposal-review,
 .password-editor,
 .reason-prompt,
 .reset-panel,
@@ -213,6 +214,7 @@ button {
 .manifest-intake,
 .manifest-route-setup,
 .manifest-zone-review,
+.manifest-proposal-review,
 .reason-prompt,
 .reset-panel {
   margin-top: 16px;
@@ -445,6 +447,196 @@ textarea:focus-visible {
   display: grid;
   gap: 20px;
   padding: 24px;
+}
+
+.manifest-proposal-review {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+}
+
+.manifest-proposal-summary {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  overflow: hidden;
+  border: 1px solid #294451;
+  border-radius: 16px;
+  background: #0b171e;
+}
+
+.manifest-proposal-summary > div {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+}
+
+.manifest-proposal-summary > div + div {
+  border-left: 1px solid #294451;
+}
+
+.manifest-proposal-summary span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.manifest-proposal-summary strong {
+  color: #eef4f8;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.proposal-supporting-details {
+  border: 1px solid #294451;
+  border-radius: 14px;
+  padding: 14px;
+  background: #0b171e;
+}
+
+.proposal-supporting-details summary {
+  cursor: pointer;
+  color: #dce8ed;
+  font-weight: 900;
+}
+
+.proposal-supporting-details ul,
+.zone-review-alert span {
+  display: grid;
+  gap: 8px;
+}
+
+.proposal-supporting-details li {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.original-proposal-order {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding-left: 24px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.section-heading--compact h3 {
+  margin: 2px 0 0;
+  color: #eef4f8;
+  font-size: 1.05rem;
+}
+
+.zone-review-alert strong,
+.zone-review-alert span {
+  margin-bottom: 5px;
+}
+
+.manifest-proposal-stop-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.manifest-proposal-stop-list > li {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #294451;
+  border-radius: 14px;
+  padding: 12px;
+  background: #0b171e;
+}
+
+.manifest-proposal-stop--dragging {
+  opacity: 0.72;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.proposal-drag-handle {
+  display: grid;
+  place-items: center;
+  gap: 1px;
+  min-width: 48px;
+  min-height: 48px;
+  border: 1px solid #3a5663;
+  border-radius: 10px;
+  padding: 5px;
+  color: #dce8ed;
+  background: #11252f;
+  font-size: 0.62rem;
+  font-weight: 900;
+  cursor: grab;
+  touch-action: none;
+}
+
+.proposal-drag-handle span {
+  color: var(--accent);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.proposal-drag-handle:active {
+  cursor: grabbing;
+}
+
+.proposal-drag-handle:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.proposal-position-select {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.proposal-position-select select {
+  min-width: 64px;
+  min-height: 44px;
+  border: 1px solid #3a5663;
+  border-radius: 9px;
+  padding: 7px;
+  color: #eef4f8;
+  background: #11252f;
+  font: inherit;
+}
+
+.inline-position-reason {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 10px;
+  width: 100%;
+  margin-top: 2px;
+  border-top: 1px solid #294451;
+  padding-top: 12px;
+}
+
+.inline-position-reason .reason-prompt {
+  margin: 0;
+  border: 0;
+  padding: 8px 0 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.inline-position-reason .text-button {
+  justify-self: start;
+}
+
+.manifest-proposal-stop-list .stop-copy small {
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 800;
 }
 
 .zone-review-alert {
@@ -2377,6 +2569,7 @@ details[open] > .proposed-stop-list__heading::after {
   .manifest-intake,
   .manifest-route-setup,
   .manifest-zone-review,
+  .manifest-proposal-review,
   .password-editor,
   .reason-prompt,
   .reset-panel,
