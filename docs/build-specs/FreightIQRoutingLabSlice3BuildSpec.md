@@ -401,17 +401,17 @@ Slice 3 does not include:
 
 ### Unit 4 — Route Proposal and Driver Review
 
-- Add the server-side structured route proposal.
-- Apply the verified macro flow, relevant Zone documents, and applicable
+- [x] Add the server-side structured route proposal.
+- [x] Apply the verified macro flow, relevant Zone documents, and applicable
   approved lessons.
-- Validate stop completeness and uniqueness.
-- Support driver reordering and planned-correction reasons before start.
+- [x] Validate stop completeness and uniqueness.
+- [x] Support driver reordering and planned-correction reasons before start.
 
 ### Unit 5 — Connected Route Execution
 
-- Run manifest-derived routes through the reusable Slice 1 execution loop.
-- Persist outcomes, timestamps, actual order, and reasons.
-- Restore an active route after refresh or sign-in.
+- [x] Run manifest-derived routes through the reusable Slice 1 execution loop.
+- [x] Persist outcomes, timestamps, actual order, and reasons.
+- [x] Restore an active route after refresh or sign-in.
 
 ### Unit 6 — Lesson Review and Replay
 

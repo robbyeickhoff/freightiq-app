@@ -19,6 +19,7 @@ type PendingCorrection = {
 type ManifestRouteProposalReviewProps = {
   route: ManifestDraftRoute
   onBackToZones: () => void
+  onStart: () => Promise<void>
   onSave: (
     adjustedStopIds: string[],
     corrections: PlannedRouteCorrection[],
@@ -83,7 +84,7 @@ function SortableStopCard({
   )
 }
 
-function ManifestRouteProposalReview({ route, onBackToZones, onSave }: ManifestRouteProposalReviewProps) {
+function ManifestRouteProposalReview({ route, onBackToZones, onSave, onStart }: ManifestRouteProposalReviewProps) {
   const proposal = route.routeProposal as ManifestRouteProposal
   const [stopIds, setStopIds] = useState(
     route.adjustedStopIds.length > 0 ? route.adjustedStopIds : proposal.orderedStopIds,
@@ -172,6 +173,17 @@ function ManifestRouteProposalReview({ route, onBackToZones, onSave }: ManifestR
     } catch (saveError) {
       setSaveState('idle')
       setError(saveError instanceof Error ? saveError.message : 'The route review could not be completed.')
+    }
+  }
+
+  async function startReviewedRoute() {
+    setSaveState('saving')
+    setError('')
+    try {
+      await onStart()
+    } catch (startError) {
+      setSaveState('idle')
+      setError(startError instanceof Error ? startError.message : 'The route could not be started.')
     }
   }
 
@@ -309,7 +321,19 @@ function ManifestRouteProposalReview({ route, onBackToZones, onSave }: ManifestR
       >
         {route.status === 'proposal_reviewed' ? 'Driver Review Complete' : 'Complete Driver Review'}
       </button>
-      <p className="next-step-note">Starting and running this route will be added in Slice 3 Unit 5.</p>
+
+      {route.status === 'proposal_reviewed' ? (
+        <button
+          className="primary-button start-route-button"
+          type="button"
+          disabled={saveState === 'saving'}
+          onClick={() => void startReviewedRoute()}
+        >
+          {saveState === 'saving' ? 'Starting route…' : 'Start Manifest Test Route'}
+        </button>
+      ) : (
+        <p className="next-step-note">Complete Driver Review before starting this route.</p>
+      )}
 
       <button className="text-button" type="button" onClick={onBackToZones}>
         Return to Zone Review

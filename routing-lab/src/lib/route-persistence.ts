@@ -1,6 +1,6 @@
 import type { ProposedStop } from './manifest-grouping'
 import type { Json } from './database'
-import type { RouteStop } from './route-domain'
+import type { PendingReason, ReasonRecord, RouteStop, StopEvent } from './route-domain'
 import { getSupabase } from './supabase'
 import type { ZoneClassification } from './zone-classification'
 import type {
@@ -21,15 +21,27 @@ export type RouteSetup = {
   wholeRouteConstraint: string
 }
 
+export type ManifestRouteRunState = {
+  pendingReason: PendingReason | null
+  reasonNote: string
+  reasonRecords: ReasonRecord[]
+  remainingStopIds: string[]
+  routeFinishedAt: string | null
+  routeStartedAt: string
+  selectedReasons: string[]
+  stopEvents: Record<string, StopEvent>
+}
+
 export type ManifestDraftRoute = {
   adjustedStopIds: string[]
   id: string
   manifestImportId: string
   plannedCorrections: PlannedRouteCorrection[]
   routeProposal: ManifestRouteProposal | null
+  runState: ManifestRouteRunState | null
   setup: RouteSetup
   sourceStops: ManifestRouteStop[]
-  status: 'draft_setup' | 'zone_review' | 'zone_approved' | 'proposal_review' | 'proposal_reviewed'
+  status: 'draft_setup' | 'zone_review' | 'zone_approved' | 'proposal_review' | 'proposal_reviewed' | 'route_active' | 'route_completed'
   zoneReview: ZoneClassification[]
 }
 
@@ -67,6 +79,7 @@ function fromRow(row: {
   manifest_import_id: string
   planned_corrections: Json
   route_proposal: Json
+  run_state: Json
   setup: Json
   source_stops: Json
   status: string
@@ -80,6 +93,9 @@ function fromRow(row: {
     routeProposal: Object.keys(row.route_proposal as Record<string, Json>).length > 0
       ? row.route_proposal as unknown as ManifestRouteProposal
       : null,
+    runState: Object.keys(row.run_state as Record<string, Json>).length > 0
+      ? row.run_state as unknown as ManifestRouteRunState
+      : null,
     setup: row.setup as unknown as RouteSetup,
     sourceStops: row.source_stops as unknown as ManifestRouteStop[],
     status: row.status as ManifestDraftRoute['status'],
@@ -87,7 +103,7 @@ function fromRow(row: {
   }
 }
 
-const routeSelect = 'id,manifest_import_id,status,source_stops,setup,zone_review,route_proposal,adjusted_stop_ids,planned_corrections'
+const routeSelect = 'id,manifest_import_id,status,source_stops,setup,zone_review,route_proposal,adjusted_stop_ids,planned_corrections,run_state'
 
 async function currentUserId() {
   const { data, error } = await getSupabase().auth.getUser()
@@ -135,7 +151,7 @@ export async function loadLatestManifestDraftRoute() {
     .from('routing_lab_routes')
     .select(routeSelect)
     .eq('user_id', userId)
-    .in('status', ['draft_setup', 'zone_review', 'zone_approved', 'proposal_review', 'proposal_reviewed'])
+    .in('status', ['draft_setup', 'zone_review', 'zone_approved', 'proposal_review', 'proposal_reviewed', 'route_active', 'route_completed'])
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -230,4 +246,26 @@ export async function saveManifestProposalReview(
 
   if (error) throw error
   if (!data) throw new Error('The route proposal review could not be saved.')
+}
+
+export async function saveManifestRouteRun(
+  routeId: string,
+  runState: ManifestRouteRunState,
+) {
+  const userId = await currentUserId()
+  const { data, error } = await getSupabase()
+    .from('routing_lab_routes')
+    .update({
+      run_state: runState as unknown as Json,
+      status: runState.routeFinishedAt ? 'route_completed' : 'route_active',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', routeId)
+    .eq('user_id', userId)
+    .in('status', ['proposal_reviewed', 'route_active', 'route_completed'])
+    .select('id')
+    .single()
+
+  if (error) throw error
+  if (!data) throw new Error('The active route could not be saved.')
 }

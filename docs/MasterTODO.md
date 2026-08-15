@@ -401,9 +401,9 @@ The Slice 3 manifest-to-Test-Route bridge is approved for implementation in cont
   add persistent route setup.
 - [x] Complete Slice 3 Unit 3: propose operational zones, expose uncertainty, and require driver
   approval of every classification before sequencing.
-- [ ] Complete Slice 3 Unit 4: generate and validate the structured route proposal, then support
+- [x] Complete Slice 3 Unit 4: generate and validate the structured route proposal, then support
   driver review and planned-correction reasons.
-- [ ] Complete Slice 3 Unit 5: run manifest-derived routes through the reusable execution and
+- [x] Complete Slice 3 Unit 5: run manifest-derived routes through the reusable execution and
   correction loop with refresh recovery.
 - [ ] Complete Slice 3 Unit 6: review real-route lessons, record driver-approved correction impact
   and vehicle positioning, and verify scoped lesson replay.

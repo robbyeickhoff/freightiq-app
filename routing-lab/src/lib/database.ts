@@ -18,6 +18,7 @@ export type Database = {
           planned_corrections: Json
           route_kind: string
           route_proposal: Json
+          run_state: Json
           setup: Json
           source_stops: Json
           status: string
@@ -33,6 +34,7 @@ export type Database = {
           planned_corrections?: Json
           route_kind?: string
           route_proposal?: Json
+          run_state?: Json
           setup: Json
           source_stops: Json
           status?: string
@@ -48,6 +50,7 @@ export type Database = {
           planned_corrections?: Json
           route_kind?: string
           route_proposal?: Json
+          run_state?: Json
           setup?: Json
           source_stops?: Json
           status?: string
