@@ -52,8 +52,9 @@ export default function GettingStartedContent() {
           {expandedSection === "search" && (
             <View style={styles.contentPanel}>
               <Text style={styles.step}>
-                Search by business name or address. You can also move the map and tap Show Stops to
-                load FreightIQ stops in that area.
+                Search by business, address, city, or driver. All groups the useful matches, while
+                Stops, Cities, and Drivers narrow the results. You can also move the map and tap
+                Show Stops to load FreightIQ stops in that area.
               </Text>
             </View>
           )}

@@ -114,7 +114,9 @@ export default function ContributingStopIntelContent() {
             <Text style={styles.step}>
               FreightIQ displays Unsaved changes after you edit a saved report. Tap Save Report
               Changes before leaving. Keep the report factual, current, and limited to information
-              another driver needs for the delivery.
+              another driver needs for the delivery. If FreightIQ spots wording that may contain a
+              gate code, password, or access PIN, you can review it, move it to Locked Personal
+              Intel, or deliberately share it anyway.
             </Text>
           </View>
         )}

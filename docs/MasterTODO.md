@@ -126,6 +126,8 @@ Continue refining FreightIQ's in-app documentation experience.
 
 - [x] Polish the Help Center cards and shared guide presentation.
 - [x] Update Help Center copy and educational content for Intel V2.
+- [x] Refresh Help Center guidance for City & Driver Search, App Lock, Locked Personal Intel, and
+  shared-sensitive-information warnings; accept the updated guides on iPhone and Pixel.
 - [ ] Validate Help Center effectiveness through real-world testing.
 - [ ] Continue improving overall Help Center user experience.
 
@@ -158,6 +160,8 @@ Validate the completed Intel V2 experience through real-world driver use before 
 - [ ] Observe whether drivers naturally use Additional Driver Intel.
 - [x] Validate Intel V2 on Android and additional screen sizes.
 - [x] Update Help Center guidance to reflect Intel V2 before the next broader tester release.
+- [x] Collapse saved Contact / Check-In cards into compact summaries that expand individually for
+  editing, with newly added contacts opening automatically; accept on iPhone and Pixel.
 
 ### Map
 
@@ -498,6 +502,9 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
   immediate concealment on exit/background, account-deletion cleanup, and conflict-safe stop
   merging. The threat model is complete; V1 uses owner-only Supabase access plus device unlock and
   makes no end-to-end or zero-knowledge encryption claim.
+- [x] Add conservative shared-sensitive-information safeguards that warn on explicit gate-code,
+  password, passcode, and contextual access-PIN wording and offer an authenticated handoff to
+  Locked Personal Intel without losing unrelated report edits; accept on iPhone and Pixel.
 - [ ] [Operations Board](design/OperationsBoard.md): create a geographically organized,
   self-expiring stream of short operational updates for road conditions, delivery access,
   construction, hazards, services, and customer notices. Keep it professional and focused by

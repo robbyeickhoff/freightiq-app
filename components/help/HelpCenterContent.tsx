@@ -13,6 +13,7 @@ export type HelpCenterNavigationHandlers = {
   onPressUnderstandingStopIntel: () => void;
   onPressContributingStopIntel: () => void;
   onPressUsingTheMap: () => void;
+  onPressPrivacyAppLock: () => void;
 };
 
 type HelpCenterContentProps = {
@@ -27,6 +28,7 @@ const defaultNavigationHandlers: HelpCenterNavigationHandlers = {
   onPressUnderstandingStopIntel: () => router.push("/understanding-stop-intel"),
   onPressContributingStopIntel: () => router.push("/contributing-stop-intel"),
   onPressUsingTheMap: () => router.push("/using-the-map"),
+  onPressPrivacyAppLock: () => router.push("/privacy-app-lock"),
 };
 
 type GuideRowProps = {
@@ -97,6 +99,13 @@ export default function HelpCenterContent({ navigationHandlers }: HelpCenterCont
 
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Guides</Text>
         <View style={styles.guideList}>
+          <GuideRow
+            accessibilityHint="Opens the Privacy and App Lock guide"
+            icon="privacy"
+            onPress={handlers.onPressPrivacyAppLock}
+            subtitle="Face ID, lock timing, and private notes"
+            title="Privacy & App Lock"
+          />
           <GuideRow
             accessibilityHint="Opens the Getting Started guide"
             icon="gettingStarted"

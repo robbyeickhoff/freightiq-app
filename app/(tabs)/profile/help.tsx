@@ -8,6 +8,7 @@ const navigationHandlers: HelpCenterNavigationHandlers = {
   onPressUnderstandingStopIntel: () => router.push("/(tabs)/profile/understanding-stop-intel"),
   onPressContributingStopIntel: () => router.push("/(tabs)/profile/contributing-stop-intel"),
   onPressUsingTheMap: () => router.push("/(tabs)/profile/using-the-map"),
+  onPressPrivacyAppLock: () => router.push("/(tabs)/profile/privacy-app-lock"),
 };
 
 export default function ProfileHelpScreen() {

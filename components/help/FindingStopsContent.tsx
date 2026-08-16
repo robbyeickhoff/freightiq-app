@@ -23,7 +23,7 @@ export default function FindingStopsContent() {
           >
             <View style={styles.expandedHeader}>
               <Text style={styles.stepTitle}>
-                {expandedSection === "search" ? "▼" : "▶"} Search by Name or Address
+                {expandedSection === "search" ? "▼" : "▶"} Search FreightIQ
               </Text>
             </View>
           </Pressable>
@@ -31,8 +31,9 @@ export default function FindingStopsContent() {
           {expandedSection === "search" && (
             <View style={styles.contentPanel}>
               <Text style={styles.step}>
-                Enter the business name or delivery address in the search field. Choose the result
-                that matches your customer and confirm the name and address on the preview card.
+                Enter a business, address, city, or driver name. Use All to see grouped results, or
+                choose Stops, Cities, or Drivers to focus the search. City and driver results open a
+                list of matching stops that you can switch to a map without losing your results.
               </Text>
             </View>
           )}

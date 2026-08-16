@@ -13,6 +13,27 @@ answer one question:
 
 ## Current Objective
 
+Privacy Guardrails & Help Center Refresh is implementation-complete and accepted on physical iPhone
+and Pixel. Its governing contract is
+`docs/build-specs/FreightIQPrivacyGuardrailsHelpCenterBuildSpec.md`. It adds a conservative local
+warning before a full shared Driver Report save when explicit wording suggests a gate code,
+password, passcode, or contextual access PIN. The driver can review, deliberately share anyway, or
+authenticate and append the flagged fields to Locked Personal Intel. Shared fields are cleared only
+after the private note saves successfully; all unrelated report edits remain intact. Existing Help
+guides are refreshed for City & Driver Search and contribution privacy, with a new Privacy & App
+Lock guide. The Additional Driver Intel contact editor also uses compact collapsed contact summaries
+that expand individually for editing, while newly added contacts open automatically. No database,
+Auth, analytics, website, deployment, distribution, or release change is included. Physical-device
+acceptance passed the privacy warning, review, share-anyway, locked-note handoff, Help navigation,
+collapsed contact summaries, expand/edit behavior, newly added contact behavior, and shared-versus-
+owned report separation on iPhone and Pixel. TypeScript and lint have no errors and only the same 11
+pre-existing warnings; focused detector checks and local iOS and Android bundles pass. Commit and
+push remain separate approval gates.
+
+---
+
+## Previously Completed Objective
+
 Locked Personal Intel V1 is implementation-complete and accepted on physical iPhone and Pixel. The governing contract is
 `docs/build-specs/FreightIQLockedPersonalIntelV1BuildSpec.md`. It adds one owner-only, stop-specific
 note for information such as gate codes, kept completely separate from shared Driver Reports and
@@ -42,7 +63,7 @@ distribution, and release remain separate approval gates.
 
 ---
 
-## Previously Completed Objective
+## Earlier Completed Objective
 
 Biometric Access V1 is implementation-complete and accepted in internal development builds on
 physical iPhone and Pixel. Its governing contract is
@@ -53,7 +74,7 @@ production data, tester audience, or public-release state changed.
 
 ---
 
-## Earlier Completed Objective
+## Earlier Completed Objective — City & Driver Search
 
 City & Driver Search V1 is implementation-complete, accepted, committed, and pushed to
 `clean-main` in `30a608f`. It is ready to be included in a future production candidate build. No

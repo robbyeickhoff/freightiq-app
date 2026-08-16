@@ -42,7 +42,7 @@ export default function UnderstandingStopIntelContent() {
         >
           <View style={styles.expandedHeader}>
             <Text style={styles.stepTitle}>
-              {expandedSection === "truckFit" ? "▼" : "▶"} Truck Fit, Delivery Type, and Back In
+              {expandedSection === "truckFit" ? "▼" : "▶"} Truck Fit, Delivery Type & Back In
             </Text>
           </View>
         </Pressable>
