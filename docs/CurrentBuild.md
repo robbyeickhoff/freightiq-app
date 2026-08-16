@@ -22,8 +22,8 @@ FreightIQ Sunrise System, are linked from the public site, and are included in t
 introduce no form, authentication, database, analytics, infrastructure, or mobile-app change.
 Implementation is complete; website lint passes, the optimized Next.js production build succeeds,
 and both routes are statically generated. `/why` and `/faq` were visually accepted in the local
-browser on 2026-08-15. Commit, push, deployment, indexing requests, and release remain separate
-approval gates.
+browser, committed, pushed, and deployed to production on 2026-08-15. Both live routes and the
+updated sitemap return successfully. Google indexing requests remain a separate approval gate.
 
 ---
 

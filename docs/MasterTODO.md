@@ -205,10 +205,10 @@ Continue improving FreightIQ's public presence through a professional, trustwort
 
 #### User Experience
 
-- [x] Add and visually accept the public `/why` page telling FreightIQ's founder story, linked from
-  the homepage and footer and included in the sitemap.
-- [x] Add and visually accept the public `/faq` page with common driver questions, a compact
-  collapsible layout, a footer link, and sitemap coverage.
+- [x] Add, visually accept, and deploy the public `/why` page telling FreightIQ's founder story,
+  linked from the homepage and footer and included in the sitemap.
+- [x] Add, visually accept, and deploy the public `/faq` page with common driver questions, a
+  compact collapsible layout, a footer link, and sitemap coverage.
 - [ ] Continue production monitoring of the completed Sunrise System website and its Contact and
   Early Access forms.
 

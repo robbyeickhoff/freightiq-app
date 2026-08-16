@@ -1,6 +1,6 @@
 # FreightIQ — Why I Built FreightIQ Page
 
-**Status:** Implementation complete and visually accepted (2026-08-15)
+**Status:** Implemented, visually accepted, and deployed (2026-08-15)
 **Type:** Public website content page  
 **Location:** `docs/build-specs/`
 
