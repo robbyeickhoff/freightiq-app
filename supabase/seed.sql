@@ -73,3 +73,111 @@ values
     39.0913,
     -108.4997
   );
+
+-- Reusable fictional recording fixture. Placeholder users have no password and exist only to
+-- provide ownership and public attribution for synthetic Driver Reports.
+insert into auth.users (id, email, created_at, updated_at)
+values
+  (
+    'd0000000-0000-4000-8000-000000000001',
+    'demo-driver-one@example.invalid',
+    now(),
+    now()
+  ),
+  (
+    'd0000000-0000-4000-8000-000000000002',
+    'demo-driver-two@example.invalid',
+    now(),
+    now()
+  );
+
+insert into public.profiles (id, username, tractor_type)
+values
+  (
+    'd0000000-0000-4000-8000-000000000001',
+    'Demo Driver',
+    'Single Axle Day Cab'
+  ),
+  (
+    'd0000000-0000-4000-8000-000000000002',
+    'Route Driver',
+    'Tandem Axle Day Cab'
+  );
+
+insert into public.mfi_stops (
+  id,
+  name,
+  address,
+  lat,
+  lng,
+  deliver_from_type,
+  deliver_from_details,
+  approach_hint,
+  back_in_required,
+  truck_fit,
+  entrance_lat,
+  entrance_lng,
+  city,
+  state_code,
+  country_code,
+  locality_source
+)
+values (
+  'demo-canyon-peak-industrial',
+  'Canyon Peak Industrial Supply',
+  '1000 Demo Route, Grand Junction, CO 81501',
+  39.06435,
+  -108.54995,
+  'Dock',
+  'Rear dock on the north side',
+  'Approach from South; use the wide service entrance',
+  true,
+  '28''',
+  39.06454,
+  -108.55018,
+  'Grand Junction',
+  'CO',
+  'US',
+  'reviewed_backfill'
+);
+
+insert into public.mfi_reports (
+  id,
+  stop_id,
+  user_id,
+  deliver_from_type,
+  deliver_from_details,
+  approach_hint,
+  back_in_required,
+  truck_fit,
+  notes,
+  tractor_type,
+  delivery_type
+)
+values
+  (
+    'd1000000-0000-4000-8000-000000000001',
+    'demo-canyon-peak-industrial',
+    'd0000000-0000-4000-8000-000000000001',
+    'Dock',
+    'Rear dock on the north side',
+    'Approach from South; use the wide service entrance',
+    true,
+    '28''',
+    'Check in at receiving before backing to the dock.',
+    'Single Axle Day Cab',
+    'Dock'
+  ),
+  (
+    'd1000000-0000-4000-8000-000000000002',
+    'demo-canyon-peak-industrial',
+    'd0000000-0000-4000-8000-000000000002',
+    'Dock',
+    'Rear dock on the north side',
+    'Wide turn needed from the south entrance',
+    true,
+    '28''',
+    'Plenty of room for a straight truck once you are lined up.',
+    'Tandem Axle Day Cab',
+    'Dock'
+  );

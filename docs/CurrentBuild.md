@@ -13,17 +13,24 @@ answer one question:
 
 ## Current Objective
 
-The public Why I Built FreightIQ and FAQ pages are the active approved website build. Their governing
-contracts are `docs/build-specs/FreightIQWhyPage.md` and `docs/build-specs/FreightIQFAQPage.md`. The
-approved `/why` route tells the founder's origin story in a direct first-person driver voice. The
-approved `/faq` route answers common driver questions in a compact native collapsible layout and
-clearly distinguishes shared Driver Intel from Locked Personal Intel. Both use the existing
-FreightIQ Sunrise System, are linked from the public site, and are included in the sitemap. They
-introduce no form, authentication, database, analytics, infrastructure, or mobile-app change.
-Implementation is complete; website lint passes, the optimized Next.js production build succeeds,
-and both routes are statically generated. `/why` and `/faq` were visually accepted in the local
-browser, committed, pushed, and deployed to production on 2026-08-15. Both live routes and the
-updated sitemap return successfully. Google indexing requests remain a separate approval gate.
+The FreightIQ Recording Demo Environment is the active approved build. Its governing contract is
+`docs/build-specs/FreightIQRecordingDemoEnvironmentBuildSpec.md`. It runs the actual FreightIQ
+development app in Apple's iPhone Simulator against the existing local Supabase stack and adds one
+reusable, clearly fictional Canyon Peak Industrial Supply fixture with complete demo Intel and two
+fictional Driver Reports. One fictional password-capable account is created through the local Auth
+admin API after a local database reset so the real signed-in app flow can be recorded. Recording
+mode must be explicitly enabled, is restricted to development builds and loopback-only database
+URLs, and fails closed when misconfigured. Production Supabase, production data and users,
+credentials, builds, distribution, and release remain unchanged.
+
+---
+
+## Previously Completed Objective — Public Why and FAQ Pages
+
+The public Why I Built FreightIQ and FAQ pages are complete, visually accepted, committed, pushed,
+and deployed. Their governing contracts are `docs/build-specs/FreightIQWhyPage.md` and
+`docs/build-specs/FreightIQFAQPage.md`. Both live routes and the updated sitemap return successfully,
+and Google live tests passed before indexing was requested for the site's eight public pages.
 
 ---
 
