@@ -1,6 +1,6 @@
 # FreightIQ — Why I Built FreightIQ Page
 
-**Status:** Content draft in review (2026-08-11)  
+**Status:** Implementation complete and visually accepted (2026-08-15)
 **Type:** Public website content page  
 **Location:** `docs/build-specs/`
 
@@ -16,8 +16,7 @@ It should feel direct, practical, and written by a driver for other drivers.
 
 ## Recommended URL
 
-`/why`  
-(Alternative if preferred: `/why-i-built-freightiq`)
+`/why`
 
 ---
 
@@ -43,17 +42,19 @@ Why I Built FreightIQ
 
 I’ve been running freight in Western Colorado for the past 12 years.
 
-About six months ago I was covering a route I didn’t know well. A handful of the stops weren’t obvious — it wasn’t clear where you were actually supposed to deliver. So I had to park the truck, get out, figure out where I needed to be, move into the right spot, and finally get the delivery done.
+FreightIQ started while I was covering a route I didn’t know well. A handful of the stops weren’t obvious—it wasn’t clear where you were actually supposed to deliver. I had to park the truck, get out, figure out where I needed to be, move into the right spot, and finally get the delivery done.
 
-The most annoying part was knowing that several of my coworkers had already delivered there. Drivers from other companies had too. That knowledge exists. It’s just not easy for us to save it and share it with each other.
+The most annoying part was knowing that several of my coworkers had already delivered there. Drivers from other companies had too. That knowledge already existed. There just wasn’t an easy way for us to save it and share it with each other.
 
-We have a hard enough job as it is. Why are we wasting time figuring things out the hard way when other people already know the answers?
+We have a hard enough job as it is. Why are we wasting time figuring things out the hard way when another driver already knows the answer?
 
-I decided to build a system to capture that knowledge. If I can spend a couple of minutes saving information that helps the next driver save 10 or 15 minutes, why not do it?
+So I started building FreightIQ: a way to capture practical delivery knowledge and make it useful to the next driver.
+
+If I can spend a couple of minutes saving information that helps another driver save 10 or 15 minutes, why wouldn’t I?
 
 That’s where FreightIQ came from.
 
-Our job is challenging enough — time constraints, tight locations, bad weather, and sometimes worse customers. I knew there had to be a way to make it a little less stressful.
+Time constraints, tight locations, bad weather, and difficult receiving situations aren’t going away. FreightIQ won’t eliminate every challenge, but it can help drivers arrive knowing where to go, what to expect, and how to get the delivery done with a little less stress.
 
 ### Closing
 
@@ -77,7 +78,7 @@ Our job is challenging enough — time constraints, tight locations, bad weather
 
 - This is a content page only. No new forms, authentication, or data changes.
 - Must remain consistent with existing public routes and navigation.
-- Consider adding a link from the homepage, footer, and/or About section once live.
+- Add a link from the homepage's Why FreightIQ section and the footer.
 - Subject to normal Engineering Playbook review and Product Owner approval before going live.
 - Owner should sit with the body copy and confirm final wording before implementation.
 
@@ -85,6 +86,6 @@ Our job is challenging enough — time constraints, tight locations, bad weather
 
 ## Open Items
 
-- Final confirmation of body copy after Product Owner review
-- Exact URL preference (`/why` vs `/why-i-built-freightiq`)
-- Whether to add a short photo or simple visual later (not required at launch)
+- Body copy approved by the Product Owner on 2026-08-15.
+- URL approved as `/why`.
+- Launch without a photo or new visual pattern.

@@ -13,6 +13,22 @@ answer one question:
 
 ## Current Objective
 
+The public Why I Built FreightIQ and FAQ pages are the active approved website build. Their governing
+contracts are `docs/build-specs/FreightIQWhyPage.md` and `docs/build-specs/FreightIQFAQPage.md`. The
+approved `/why` route tells the founder's origin story in a direct first-person driver voice. The
+approved `/faq` route answers common driver questions in a compact native collapsible layout and
+clearly distinguishes shared Driver Intel from Locked Personal Intel. Both use the existing
+FreightIQ Sunrise System, are linked from the public site, and are included in the sitemap. They
+introduce no form, authentication, database, analytics, infrastructure, or mobile-app change.
+Implementation is complete; website lint passes, the optimized Next.js production build succeeds,
+and both routes are statically generated. `/why` and `/faq` were visually accepted in the local
+browser on 2026-08-15. Commit, push, deployment, indexing requests, and release remain separate
+approval gates.
+
+---
+
+## Previously Completed Objective
+
 Privacy Guardrails & Help Center Refresh is implementation-complete and accepted on physical iPhone
 and Pixel. Its governing contract is
 `docs/build-specs/FreightIQPrivacyGuardrailsHelpCenterBuildSpec.md`. It adds a conservative local
@@ -32,7 +48,7 @@ push remain separate approval gates.
 
 ---
 
-## Previously Completed Objective
+## Earlier Completed Objective
 
 Locked Personal Intel V1 is implementation-complete and accepted on physical iPhone and Pixel. The governing contract is
 `docs/build-specs/FreightIQLockedPersonalIntelV1BuildSpec.md`. It adds one owner-only, stop-specific
