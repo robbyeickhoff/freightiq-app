@@ -35,6 +35,11 @@ import { useAppTheme } from "@/context/theme-context";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { recordFoundingDriverActivity } from "@/utils/founding-driver-activity";
 import {
+  readSearchResultLocality,
+  resolveConfirmedStopLocality,
+  type ConfirmedStopLocality,
+} from "@/utils/stop-locality";
+import {
   availableNavigationProviders,
   isNavigationProviderAvailable,
   navigationProviderLabel,
@@ -50,6 +55,8 @@ type Pin = {
   lng: number;
   name: string;
   address?: string;
+  suggestedCity?: string;
+  suggestedStateCode?: string;
 };
 
 type PlaceResult = {
@@ -581,6 +588,10 @@ export default function HomeScreen() {
   const [newPinOpen, setNewPinOpen] = useState(false);
   const [newPinName, setNewPinName] = useState("");
   const [newPinAddress, setNewPinAddress] = useState("");
+  const [newPinCity, setNewPinCity] = useState("");
+  const [newPinStateCode, setNewPinStateCode] = useState("");
+  const [newPinCityUnknown, setNewPinCityUnknown] = useState(false);
+  const [newPinLocalityEditing, setNewPinLocalityEditing] = useState(false);
 
   const [query, setQuery] = useState("");
   const [searchInputHeight, setSearchInputHeight] = useState(48);
@@ -1917,15 +1928,25 @@ export default function HomeScreen() {
     if (tempSearchPin) {
       setNewPinName(tempSearchPin.name ?? "");
       setNewPinAddress(tempSearchPin.address ?? "");
+      setNewPinCity(tempSearchPin.suggestedCity ?? "");
+      setNewPinStateCode(tempSearchPin.suggestedStateCode ?? "");
+      setNewPinLocalityEditing(
+        !tempSearchPin.suggestedCity || !tempSearchPin.suggestedStateCode,
+      );
     } else {
       setNewPinName("");
       setNewPinAddress("");
+      setNewPinCity("");
+      setNewPinStateCode("");
+      setNewPinLocalityEditing(true);
     }
+
+    setNewPinCityUnknown(false);
 
     setNewPinOpen(true);
   }
 
-  async function createStopPin(pin: Pin) {
+  async function createStopPin(pin: Pin, locality: ConfirmedStopLocality | null) {
     const userId = await requireSignedIn();
 
     if (!userId) return;
@@ -1950,6 +1971,9 @@ export default function HomeScreen() {
         lng: pin.lng,
         address: pin.address ?? null,
         user_id: userId,
+        city: locality?.city ?? null,
+        state_code: locality?.stateCode ?? null,
+        country_code: locality?.countryCode ?? null,
       });
 
       if (error) {
@@ -1978,9 +2002,24 @@ export default function HomeScreen() {
   async function saveNewPinAtCenter() {
     const name = newPinName.trim();
     const address = cleanAddress(newPinAddress);
+    const localityResult = resolveConfirmedStopLocality(
+      newPinCity,
+      newPinStateCode,
+      newPinCityUnknown,
+    );
 
     if (!name) {
       Alert.alert("Name required", "Enter a business/receiver name.");
+      return;
+    }
+
+    if (localityResult.error === "city_required") {
+      Alert.alert("City required", "Enter the stop's city or choose City unknown.");
+      return;
+    }
+
+    if (localityResult.error === "state_required") {
+      Alert.alert("State required", "Enter the two-letter state code or choose City unknown.");
       return;
     }
 
@@ -2044,7 +2083,29 @@ export default function HomeScreen() {
     }
 
     setTempSearchPin(null);
-    createStopPin(pin);
+    createStopPin(pin, localityResult.locality);
+  }
+
+  function finishNewPinLocalityEditing() {
+    const localityResult = resolveConfirmedStopLocality(newPinCity, newPinStateCode, false);
+
+    if (localityResult.error === "city_required") {
+      Alert.alert("City required", "Enter the stop's city or choose City unknown.");
+      return;
+    }
+
+    if (localityResult.error === "state_required") {
+      Alert.alert("State required", "Enter the two-letter state code or choose City unknown.");
+      return;
+    }
+
+    if (!localityResult.locality) return;
+
+    setNewPinCity(localityResult.locality.city);
+    setNewPinStateCode(localityResult.locality.stateCode);
+    setNewPinCityUnknown(false);
+    setNewPinLocalityEditing(false);
+    Keyboard.dismiss();
   }
 
   useEffect(() => {
@@ -2301,6 +2362,7 @@ export default function HomeScreen() {
       const name = r.name;
 
       const props = feature?.properties ?? {};
+      const suggestedLocality = readSearchResultLocality(props.context);
 
       const retrievedAddress = cleanAddress(
         props.full_address ||
@@ -2315,6 +2377,8 @@ export default function HomeScreen() {
         lng,
         name,
         address: retrievedAddress || undefined,
+        suggestedCity: suggestedLocality?.city,
+        suggestedStateCode: suggestedLocality?.stateCode,
       };
 
       const matchingStop = await findNearbyExistingStop(name, retrievedAddress, lat, lng);
@@ -3520,6 +3584,10 @@ export default function HomeScreen() {
                         onPress={() => {
                           setNewPinName("");
                           setNewPinAddress(tempSearchPin?.address ?? "");
+                          setNewPinCity("");
+                          setNewPinStateCode("");
+                          setNewPinCityUnknown(false);
+                          setNewPinLocalityEditing(true);
                           setNewPinOpen(true);
                         }}
                         maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
@@ -3868,41 +3936,30 @@ export default function HomeScreen() {
         visible={newPinOpen}
         transparent
         animationType={reduceMotionEnabled ? "none" : "slide"}
-        onRequestClose={() => setNewPinOpen(false)}
+        onRequestClose={() => {
+          Keyboard.dismiss();
+          setNewPinOpen(false);
+        }}
       >
         <View style={styles.modalBackdrop}>
           <KeyboardAvoidingView
-            behavior="padding"
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
             style={{ width: "100%", flex: 1, justifyContent: "flex-end" }}
-            keyboardVerticalOffset={80}
           >
-            <View style={styles.modalCard}>
+            <View style={[styles.modalCard, styles.createStopModalCard]}>
+              <Text style={styles.modalTitle}>Create Stop</Text>
+              <Text style={styles.modalHelp}>Confirm the stop details.</Text>
+
               <ScrollView
                 keyboardShouldPersistTaps="handled"
-                contentContainerStyle={{ gap: 10, paddingBottom: 10 }}
+                contentContainerStyle={styles.createStopFormContent}
               >
-                <Text style={styles.modalTitle}>
-                  {tempSearchPin ? "New Stop (Search Result)" : "New Stop (Center)"}
-                </Text>
-
-                <Text style={styles.modalHelp}>
-                  {tempSearchPin
-                    ? "Edit the stop name if needed, then save."
-                    : "Pan the map so the stop is under the crosshair, then save."}
-                </Text>
-
-                <Text style={styles.coords}>
-                  {tempSearchPin
-                    ? `Search Result: ${tempSearchPin.lat.toFixed(5)}, ${tempSearchPin.lng.toFixed(5)}`
-                    : `Center: ${region.latitude.toFixed(5)}, ${region.longitude.toFixed(5)}`}
-                </Text>
-
                 <TextInput
                   value={newPinName}
                   onChangeText={setNewPinName}
                   placeholder="Business / Receiver name (required)"
                   style={styles.input}
-                  autoFocus
+                  autoFocus={!tempSearchPin}
                 />
 
                 <TextInput
@@ -3912,19 +3969,87 @@ export default function HomeScreen() {
                   style={styles.input}
                 />
 
-                <View style={styles.modalRow}>
+                {newPinLocalityEditing ? (
+                  <View style={styles.localityEditor}>
+                    <Text style={styles.localityEditorLabel}>City and state</Text>
+                    <View style={styles.localityRow}>
+                      <TextInput
+                        accessibilityLabel="Stop city"
+                        autoCapitalize="words"
+                        onChangeText={setNewPinCity}
+                        placeholder="City"
+                        style={[styles.input, styles.localityCityInput]}
+                        value={newPinCity}
+                      />
+                      <TextInput
+                        accessibilityLabel="Stop state code"
+                        autoCapitalize="characters"
+                        autoCorrect={false}
+                        maxLength={2}
+                        onChangeText={setNewPinStateCode}
+                        placeholder="State"
+                        style={[styles.input, styles.localityStateInput]}
+                        value={newPinStateCode}
+                      />
+                    </View>
+                    <View style={styles.localityEditorActions}>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => {
+                          setNewPinCityUnknown(true);
+                          setNewPinLocalityEditing(false);
+                          Keyboard.dismiss();
+                        }}
+                        style={styles.localityUnknownButton}
+                      >
+                        <Text style={styles.localityUnknownButtonText}>City unknown</Text>
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={finishNewPinLocalityEditing}
+                        style={styles.localityDoneButton}
+                      >
+                        <Text style={styles.localityDoneButtonText}>Done</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : (
                   <Pressable
-                    style={[styles.modalBtn, styles.modalBtnGhost]}
-                    onPress={() => setNewPinOpen(false)}
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setNewPinCityUnknown(false);
+                      setNewPinLocalityEditing(true);
+                    }}
+                    style={styles.localitySummaryRow}
                   >
-                    <Text style={[styles.modalBtnText, styles.modalBtnTextGhost]}>Cancel</Text>
+                    <View style={styles.localitySummaryCopy}>
+                      <Text style={styles.localitySummaryLabel}>City</Text>
+                      <Text style={styles.localitySummaryValue}>
+                        {newPinCityUnknown
+                          ? "Unknown"
+                          : `${newPinCity.trim()}, ${newPinStateCode.trim().toUpperCase()}`}
+                      </Text>
+                    </View>
+                    <Text style={styles.localityChangeText}>Change</Text>
                   </Pressable>
-
-                  <Pressable style={styles.modalBtn} onPress={saveNewPinAtCenter}>
-                    <Text style={styles.modalBtnText}>Save</Text>
-                  </Pressable>
-                </View>
+                )}
               </ScrollView>
+
+              <View style={styles.modalRow}>
+                <Pressable
+                  style={[styles.modalBtn, styles.modalBtnGhost]}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setNewPinOpen(false);
+                  }}
+                >
+                  <Text style={[styles.modalBtnText, styles.modalBtnTextGhost]}>Cancel</Text>
+                </Pressable>
+
+                <Pressable style={styles.modalBtn} onPress={saveNewPinAtCenter}>
+                  <Text style={styles.modalBtnText}>Create Stop</Text>
+                </Pressable>
+              </View>
             </View>
           </KeyboardAvoidingView>
         </View>
@@ -4520,6 +4645,17 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 18,
   },
 
+  createStopModalCard: {
+    gap: 8,
+    maxHeight: "88%",
+  },
+
+  createStopFormContent: {
+    gap: 10,
+    paddingBottom: 4,
+    paddingTop: 4,
+  },
+
   nearbyStopsModalCard: {
     maxHeight: "72%",
   },
@@ -4587,6 +4723,94 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     backgroundColor: "white",
+  },
+
+  localityEditor: {
+    gap: 8,
+  },
+
+  localityEditorLabel: {
+    color: "#111827",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  localityRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  localityCityInput: {
+    flex: 1,
+  },
+
+  localityStateInput: {
+    width: 92,
+  },
+
+  localityEditorActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  localityUnknownButton: {
+    minHeight: 40,
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+
+  localityUnknownButtonText: {
+    color: "#6b7280",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  localityDoneButton: {
+    backgroundColor: "#111827",
+    borderRadius: 10,
+    justifyContent: "center",
+    minHeight: 40,
+    paddingHorizontal: 18,
+  },
+
+  localityDoneButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  localitySummaryRow: {
+    alignItems: "center",
+    borderColor: "#e5e7eb",
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 12,
+  },
+
+  localitySummaryCopy: {
+    flex: 1,
+    gap: 2,
+  },
+
+  localitySummaryLabel: {
+    color: "#6b7280",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  localitySummaryValue: {
+    color: "#111827",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+
+  localityChangeText: {
+    color: "#ff7a00",
+    fontSize: 14,
+    fontWeight: "800",
   },
 
   modalRow: { flexDirection: "row", gap: 10, marginTop: 6 },

@@ -13,7 +13,20 @@ answer one question:
 
 ## Current Objective
 
-The FreightIQ Recording Demo Environment is the active approved build. Its governing contract is
+The active objective is the focused City & Driver Search future-locality capture correction. A
+production-candidate review found that Telluride Storage and every other visible stop created after
+the original fixed-ID locality backfill remained visible to normal stop and geographic search but
+was excluded from City Search because the mobile stop-creation insert did not send the already-
+approved driver-confirmed city/state tuple. Production currently has 19 visible unresolved stops:
+18 have explicit reviewable localities in their saved addresses and one test-like record remains
+unresolved. The approved local scope adds compact visible City/State confirmation, structured
+search-result prefill that the driver confirms by creating the stop, an intentional City unknown
+path inside the city editor, focused regression coverage, and a guarded fixed-ID production
+correction runbook. The screen keeps searched-result keyboards closed and keeps its actions visible
+above the keyboard. No production data correction, replacement candidate, distribution change, or
+release is approved by the local implementation scope.
+
+The FreightIQ Recording Demo Environment remains an approved paused build. Its governing contract is
 `docs/build-specs/FreightIQRecordingDemoEnvironmentBuildSpec.md`. It runs the actual FreightIQ
 development app in Apple's iPhone Simulator against the existing local Supabase stack and adds one
 reusable, clearly fictional Canyon Peak Industrial Supply fixture with complete demo Intel and two

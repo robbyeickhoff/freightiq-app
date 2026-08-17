@@ -9,6 +9,36 @@
 > correction are complete. The complete implementation was committed and pushed to `clean-main` in
 > `30a608f`. Candidate builds, distribution changes, and release remain separately approval-gated.
 
+## 2026-08-16 Future-Locality Capture Correction
+
+Installed candidate review exposed that Telluride Storage remained visible to geographic stop
+search but was absent from the Telluride city collection. Read-only production inspection found
+that its replacement row and every other visible stop created after the original fixed-ID backfill
+had a fully null locality tuple. The mobile stop-creation insert sent name, address, coordinates,
+and owner but omitted the already-approved visible driver-confirmed city/state capture.
+
+The focused correction implements the existing V1 contract without redesigning City Search. The
+approved confirmation UI keeps the driver-facing task compact: a searched business opens with the
+keyboard closed, shows the business name and address, and presents its structured US city/state as
+one confirmable `City` row with a `Change` action. Coordinates, provider terminology, and routing
+explanations are not shown. `City unknown` remains available only inside the city editor, and the
+Cancel/Create Stop actions remain outside the scrolling form so they stay reachable above the
+keyboard.
+
+The correction will:
+
+- require visible City and two-letter State confirmation for new US stops;
+- preserve an explicit `City unknown` path that deliberately excludes the unresolved stop from
+  City Search while retaining normal stop and map search;
+- rely on the existing database trigger to normalize the tuple and record `driver_confirmed`;
+- prepare, but do not execute without separate approval, the fixed-ID correction for the 18
+  production rows whose saved addresses contain explicit reviewable localities; and
+- leave the single test-like `khkcsi / pbezpq` row unresolved.
+
+The reviewed production-data procedure is
+`docs/operations/CityDriverSearchV1UnresolvedLocalityCorrectionRunbook.md`. Candidate replacement,
+distribution, and release remain separate approval gates.
+
 ## Document Control
 
 - **Purpose:** Let drivers intentionally browse FreightIQ knowledge by city or contributing driver.
@@ -169,7 +199,13 @@ The exact schema-deployment sequence and verified dry-run record are documented 
 
 ### Future Locality Capture
 
-- Add visible City and State fields to the stop-creation confirmation flow.
+- Show a compact City summary in the stop-creation confirmation flow, with City and State fields
+  available through `Change` when editing is needed.
+- Prefill a searched US business from the structured city/state context returned by the retrieved
+  search result, while requiring the driver to visibly confirm it by tapping `Create Stop`.
+- Keep the keyboard closed when a searched result first opens, and keep the Cancel/Create Stop
+  actions outside the scrolling form so they remain reachable while editing.
+- Do not expose coordinates, provider terminology, or routing-zone explanations in this flow.
 - Require the driver to confirm or enter the locality before it is stored as `driver_confirmed`.
 - Do not populate hidden locality values directly from the Mapbox Search Box response.
 - Allow a stop to remain without locality only through an intentional `City unknown` path when the
