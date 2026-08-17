@@ -17,14 +17,17 @@ The active objective is the focused City & Driver Search future-locality capture
 production-candidate review found that Telluride Storage and every other visible stop created after
 the original fixed-ID locality backfill remained visible to normal stop and geographic search but
 was excluded from City Search because the mobile stop-creation insert did not send the already-
-approved driver-confirmed city/state tuple. Production currently has 19 visible unresolved stops:
-18 have explicit reviewable localities in their saved addresses and one test-like record remains
-unresolved. The approved local scope adds compact visible City/State confirmation, structured
+approved driver-confirmed city/state tuple. The future-locality capture correction was accepted on
+physical iPhone, committed, and pushed to `clean-main` in `86b7da2`. The Product Owner separately
+approved the exact 18-stop production correction, which was executed and verified on 2026-08-16.
+All 18 rows now have their approved locality and `reviewed_backfill` provenance; Telluride Storage
+is `Telluride, CO`, and the one test-like record remains intentionally unresolved. The correction
+adds compact visible City/State confirmation, structured
 search-result prefill that the driver confirms by creating the stop, an intentional City unknown
 path inside the city editor, focused regression coverage, and a guarded fixed-ID production
 correction runbook. The screen keeps searched-result keyboards closed and keeps its actions visible
-above the keyboard. No production data correction, replacement candidate, distribution change, or
-release is approved by the local implementation scope.
+above the keyboard. No replacement candidate, distribution change, or release is approved by this
+completed correction scope.
 
 The FreightIQ Recording Demo Environment remains an approved paused build. Its governing contract is
 `docs/build-specs/FreightIQRecordingDemoEnvironmentBuildSpec.md`. It runs the actual FreightIQ

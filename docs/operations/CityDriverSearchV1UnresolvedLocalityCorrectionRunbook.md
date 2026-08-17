@@ -1,12 +1,19 @@
 # City & Driver Search V1 — Unresolved Locality Correction Runbook
 
+> **Status: Executed and verified in production — 2026-08-16 21:59 MDT**
+>
+> The Product Owner approved the exact 18-row mapping. The guarded transaction matched all 18
+> expected visible null-locality rows and committed on production project
+> `finjqunyuyfxiesumuxk`. Post-write verification confirmed all 18 exact tuples with
+> `reviewed_backfill` provenance. The excluded test-like row remains unresolved.
+
 ## Purpose
 
 Correct the 18 production stops whose saved addresses provide an explicit reviewable US locality
 but whose structured locality tuple remained null after the original City Search backfill.
 
-This runbook also preserves one intentionally unresolved test-like record. It does not execute or
-authorize a production write.
+This runbook also preserves one intentionally unresolved test-like record. Its SQL is retained as
+the exact record of the approved and completed production write.
 
 ## Cause
 
@@ -166,6 +173,19 @@ commit;
    Placerville by one each.
 5. Verify `1786934118440` remains unresolved.
 6. Verify normal stop search and map visibility remain unchanged.
+
+### 2026-08-16 Production Result
+
+- Exact corrected rows: 18 of 18.
+- Visible unresolved rows after correction: 1.
+- Excluded test-like row `1786934118440`: still unresolved.
+- Telluride Storage: `Telluride, CO, US` with `reviewed_backfill` provenance.
+- Telluride: 32 → 35.
+- Grand Junction: 84 → 93.
+- Ridgway: 16 → 19.
+- Naturita: 1 → 2.
+- Montrose: 41 → 42.
+- Placerville: 2 → 3.
 
 ## Rollback
 
