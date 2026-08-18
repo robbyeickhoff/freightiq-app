@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppButton } from "@/components/ui/app-button";
@@ -74,6 +74,17 @@ export default function ProfileScreen() {
   }, [hasRouteTractorType, router]);
 
   const hasChanges = name !== initialName || tractorType !== initialTractorType;
+
+  async function openFoundingDriversProgram() {
+    try {
+      await Linking.openURL("https://freightiqapp.com/founding-drivers-program");
+    } catch {
+      Alert.alert(
+        "Unable to open Founding Drivers Program",
+        "Visit freightiqapp.com/founding-drivers-program in your browser.",
+      );
+    }
+  }
 
   async function saveProfile() {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -157,6 +168,30 @@ export default function ProfileScreen() {
         <View style={styles.appSection}>
           <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Programs</Text>
           <AppCard clipContent>
+            <Pressable
+              accessibilityHint="Opens the Founding Drivers Program in your browser"
+              accessibilityRole="button"
+              onPress={() => void openFoundingDriversProgram()}
+              style={({ pressed }) => [
+                styles.settingsRow,
+                { backgroundColor: colors.surfaceElevated },
+                pressed ? { backgroundColor: colors.accentMuted } : null,
+              ]}
+            >
+              <View style={[styles.settingsIconContainer, { backgroundColor: colors.accentMuted }]}>
+                <AppIcon name="contributingIntel" size={23} color={colors.accentStrong} />
+              </View>
+              <View style={styles.settingsCopy}>
+                <Text style={[styles.settingsRowLabel, { color: colors.textPrimary }]}>
+                  Founding Drivers Program
+                </Text>
+                <Text style={[styles.settingsRowSubtitle, { color: colors.textSecondary }]}>
+                  Add stop intel, earn rewards, and track your progress
+                </Text>
+              </View>
+              <AppIcon name="chevronRight" size={26} color={colors.textSecondary} />
+            </Pressable>
+            <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
             <Pressable
               accessibilityHint="Opens your referral QR code, link, and progress"
               accessibilityRole="button"
@@ -251,6 +286,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     gap: Spacing.sm,
+  },
+  rowDivider: {
+    height: 1,
+    marginLeft: Sizes.minimumTouchTarget + Spacing.md + Spacing.sm,
   },
   settingsIconContainer: {
     width: Sizes.minimumTouchTarget,
