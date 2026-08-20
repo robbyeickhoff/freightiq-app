@@ -54,8 +54,8 @@ function defaultRouteDate() {
 function createDefaultSetup(): RouteSetup {
   return {
     routeDate: defaultRouteDate(),
-    startLocation: '',
-    returnLocation: '',
+    startLocation: '788 22 Rd, Grand Junction, CO 81505',
+    returnLocation: '788 22 Rd, Grand Junction, CO 81505',
     returnAffectsOrder: false,
     wholeRouteConstraint: '',
   }
