@@ -52,6 +52,17 @@ It should evolve throughout the build and be updated during every End Build Sess
 
 ---
 
+### ReleaseHistory.md
+
+Purpose:
+
+Preserves concise, durable records of release candidates, store submissions, and operational
+lessons that should survive after `CurrentBuild.md` moves to the next objective.
+
+Do not use it as a substitute for current store state or live build records.
+
+---
+
 ## Build Specifications
 
 Location:

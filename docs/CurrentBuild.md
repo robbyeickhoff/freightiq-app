@@ -13,21 +13,16 @@ answer one question:
 
 ## Current Objective
 
-The active objective is the focused City & Driver Search future-locality capture correction. A
-production-candidate review found that Telluride Storage and every other visible stop created after
-the original fixed-ID locality backfill remained visible to normal stop and geographic search but
-was excluded from City Search because the mobile stop-creation insert did not send the already-
-approved driver-confirmed city/state tuple. The future-locality capture correction was accepted on
-physical iPhone, committed, and pushed to `clean-main` in `86b7da2`. The Product Owner separately
-approved the exact 18-stop production correction, which was executed and verified on 2026-08-16.
-All 18 rows now have their approved locality and `reviewed_backfill` provenance; Telluride Storage
-is `Telluride, CO`, and the one test-like record remains intentionally unresolved. The correction
-adds compact visible City/State confirmation, structured
-search-result prefill that the driver confirms by creating the stop, an intentional City unknown
-path inside the city editor, focused regression coverage, and a guarded fixed-ID production
-correction runbook. The screen keeps searched-result keyboards closed and keeps its actions visible
-above the keyboard. No replacement candidate, distribution change, or release is approved by this
-completed correction scope.
+The active objective is Help Center demo discovery. The mobile Help Center now places a **Watch
+FreightIQ Demos** card immediately after Getting Started and opens the public
+`https://freightiqapp.com/demos` page. A visible fallback message provides the same address if the
+device cannot open the link, so the action cannot fail silently.
+
+TypeScript and lint pass with no errors and the same 11 pre-existing warnings. The card's layout,
+placement, and link behavior were accepted in the iPhone Simulator. The implementation is committed
+and pushed in `3d01a08`. Physical iPhone and Pixel verification remains the final acceptance step
+before this change is included in a future production candidate. No build, tester-distribution,
+store-submission, or public-release change is authorized by this objective.
 
 The FreightIQ Recording Demo Environment remains an approved paused build. Its governing contract is
 `docs/build-specs/FreightIQRecordingDemoEnvironmentBuildSpec.md`. It runs the actual FreightIQ
@@ -622,11 +617,8 @@ same 11 pre-existing warnings.
   small new-tester group before any broader tester expansion.
 - Continue monitoring Android Back behavior for recurrence; the single 2026-08-04 Authentication
   return was not reproduced in controlled password, email-code, cold-start, or root-Back checks.
-- Complete focused installed-build acceptance of iOS build 37, prioritizing Refer a Driver, the
-  installed-app **Open in FreightIQ** handoff, and the Trust & Safety surfaces.
-- Create Android version code 21 from pushed correction `175264d` only after separate build
-  approval, verify the installed cold-start referral handoff on physical Pixel, and replace Android
-  version code 20 only after acceptance.
+- Verify the new Help Center demo card and external `/demos` link on physical iPhone and Pixel
+  before including it in a future production candidate.
 - Complete broader large-text, VoiceOver, and TalkBack acceptance before any public-store
   submission.
 - Obtain separate Product Owner approval before changing TestFlight groups, the Google Play closed-
@@ -682,9 +674,7 @@ special build is required solely for that check.
 
 ## Next Safe Step
 
-Pressure-test City & Driver Search as planned, then define the next combined production candidate
-from current `clean-main`, including City & Driver Search V1, Biometric Access V1, and the previously
-pushed release-ready corrections. Before creating any iOS or Android candidate, define the exact
-included commits and acceptance checklist and obtain separate Product Owner build approval.
-Candidate creation does not itself authorize TestFlight-group changes, Google Play audience
-changes, broader distribution, or public release.
+Open **Help Center → Watch FreightIQ Demos** on physical iPhone and Pixel and confirm the live demos
+page opens successfully. Record physical-device acceptance before considering a new production
+candidate. Do not create builds, change tester audiences, submit to a store, or alter release state
+without separate Product Owner approval.

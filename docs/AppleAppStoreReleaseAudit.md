@@ -113,6 +113,9 @@ Voting, reputation, editing, and deletion do not automatically satisfy Apple's e
 - [ ] A stable demo account is available.
 - [ ] The demo account does not require inaccessible SMS, email confirmation, employee approval, or location-specific activation.
 - [ ] Review credentials are tested immediately before submission.
+- [ ] TestFlight **Test Information → Beta App Review Information** uses the current reusable review account rather than an operator or support mailbox.
+- [ ] TestFlight review notes explicitly direct reviewers to password sign-in and tell them not to use login-code or password-recovery paths when mailbox access is unavailable.
+- [ ] TestFlight Beta App Review Information and the public App Review Information are checked separately; updating one does not prove the other is current.
 - [ ] Sign in with Apple compliance has been evaluated if third-party social login is offered.
 
 ## 9. App Store Product Page
