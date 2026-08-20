@@ -15,6 +15,7 @@ const ICONS = {
   close: { default: "close" },
   deliveryType: { default: "inventory-2" },
   deliveryZone: { default: "place" },
+  demos: { default: "play-circle-outline" },
   filter: { default: "filter-list" },
   findingStops: { default: "location-searching" },
   gettingStarted: { default: "local-shipping" },

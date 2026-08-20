@@ -1,5 +1,14 @@
 import { router } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import {
+  Alert,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppCard } from "@/components/ui/app-card";
@@ -81,6 +90,17 @@ export default function HelpCenterContent({ navigationHandlers }: HelpCenterCont
   const handlers = navigationHandlers ?? defaultNavigationHandlers;
   const { colors } = useAppTheme();
 
+  async function openFreightIQDemos() {
+    try {
+      await Linking.openURL("https://freightiqapp.com/demos");
+    } catch {
+      Alert.alert(
+        "Unable to open FreightIQ Demos",
+        "Visit freightiqapp.com/demos in your browser.",
+      );
+    }
+  }
+
   return (
     <SafeAreaView
       edges={["bottom"]}
@@ -112,6 +132,13 @@ export default function HelpCenterContent({ navigationHandlers }: HelpCenterCont
             onPress={handlers.onPressGettingStarted}
             subtitle="Your first delivery"
             title="Getting Started"
+          />
+          <GuideRow
+            accessibilityHint="Opens FreightIQ video demonstrations in your browser"
+            icon="demos"
+            onPress={() => void openFreightIQDemos()}
+            subtitle="Short demonstrations for drivers and supervisors"
+            title="Watch FreightIQ Demos"
           />
           <GuideRow
             accessibilityHint="Opens the Finding Stops guide"
