@@ -46,3 +46,10 @@ app-example
 /freightiq-site
 /routing-lab
 /android.backup-before-prebuild
+
+# Social-media exports are not mobile application build inputs
+/assets/images/instagram-upload.mp4
+/assets/images/instagram-upload-ready.mp4
+
+# Uncommitted Routing Lab specifications are not mobile application build inputs
+/docs/build-specs/FreightIQRoutingLabGrandJunctionZoneLearningBuildSpec.md
