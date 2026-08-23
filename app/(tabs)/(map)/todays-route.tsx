@@ -1,20 +1,30 @@
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Alert,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import DraggableFlatList, {
   ScaleDecorator,
   type RenderItemParams,
 } from "react-native-draggable-flatlist";
+import MapView, { Marker, type Region } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { NavigationAppPicker } from "@/components/navigation-app-picker";
 import { AppButton } from "@/components/ui/app-button";
 import { AppCard } from "@/components/ui/app-card";
 import { AppIcon } from "@/components/ui/app-icon";
-import { Borders, Radius, Spacing, Typography } from "@/constants/theme";
+import { Borders, Elevation, Radius, Spacing, Typography } from "@/constants/theme";
 import { useNavigationPreference } from "@/context/navigation-preference-context";
 import { useAppTheme } from "@/context/theme-context";
 import { useTodayRoute } from "@/context/todays-route-context";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { recordFoundingDriverActivity } from "@/utils/founding-driver-activity";
 import {
   availableNavigationProviders,
@@ -25,6 +35,11 @@ import {
   type NavigationProvider,
 } from "@/utils/navigation-apps";
 import type { TodayRouteStop } from "@/utils/todays-route";
+import {
+  buildRouteOverviewMarkers,
+  routeOverviewMarkerSignature,
+  type RouteOverviewMarker,
+} from "@/utils/route-overview";
 import { supabase } from "@/utils/supabase";
 
 function compactAddress(address: string) {
@@ -37,10 +52,52 @@ function compactAddress(address: string) {
   );
 }
 
+function UpcomingRouteMarker({ marker }: { marker: RouteOverviewMarker }) {
+  const { colors } = useAppTheme();
+
+  return (
+    <View
+      accessible
+      accessibilityLabel={`Upcoming stop ${marker.position}, ${marker.stop.name}, ${compactAddress(marker.stop.address)}`}
+      style={styles.upcomingMarkerOuter}
+    >
+      <View
+        style={[
+          styles.upcomingMarkerInner,
+          { backgroundColor: colors.surfaceElevated, borderColor: colors.accentStrong },
+        ]}
+      >
+        <Text style={[styles.upcomingMarkerText, { color: colors.textPrimary }]}>
+          {marker.position}
+        </Text>
+      </View>
+      <View style={[styles.upcomingMarkerStem, { backgroundColor: colors.accentStrong }]} />
+    </View>
+  );
+}
+
+function CompletedRouteMarker({ marker }: { marker: RouteOverviewMarker }) {
+  const { colors } = useAppTheme();
+
+  return (
+    <View
+      accessible
+      accessibilityLabel={`Completed stop, ${marker.stop.name}, ${compactAddress(marker.stop.address)}`}
+      style={[
+        styles.completedMarker,
+        { backgroundColor: colors.textSecondary, borderColor: colors.surfaceElevated },
+      ]}
+    >
+      <AppIcon name="check" color={colors.surfaceElevated} size={18} />
+    </View>
+  );
+}
+
 export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
   const router = useRouter();
-  const { colors } = useAppTheme();
+  const { colorScheme, colors } = useAppTheme();
   const { navigationPreference } = useNavigationPreference();
+  const reduceMotionEnabled = useReducedMotion();
   const {
     carryForward,
     clearRoute,
@@ -55,6 +112,11 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
   } = useTodayRoute();
   const { fontScale } = useWindowDimensions();
   const usesAccessibilityLayout = fontScale >= 1.5;
+  const mapRef = useRef<MapView | null>(null);
+  const lastFittedMarkerSignatureRef = useRef("");
+  const [isOverviewMapReady, setIsOverviewMapReady] = useState(false);
+  const [trackRouteMarkerChanges, setTrackRouteMarkerChanges] = useState(Platform.OS === "android");
+  const [showRouteList, setShowRouteList] = useState(!isTab);
   const [navigationLaunching, setNavigationLaunching] = useState(false);
   const [navigationPickerDestination, setNavigationPickerDestination] =
     useState<NavigationDestination | null>(null);
@@ -101,6 +163,75 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     () => route.stops.filter((stop) => stop.status === "completed"),
     [route.stops],
   );
+  const overviewMarkers = useMemo(
+    () => buildRouteOverviewMarkers(route.stops, unavailableStopIds),
+    [route.stops, unavailableStopIds],
+  );
+  const overviewMarkerSignature = useMemo(
+    () => routeOverviewMarkerSignature(overviewMarkers),
+    [overviewMarkers],
+  );
+  const overviewInitialRegion = useMemo<Region | undefined>(() => {
+    const first = overviewMarkers[0]?.coordinate;
+    if (!first) return undefined;
+    return {
+      latitude: first.latitude,
+      longitude: first.longitude,
+      latitudeDelta: 0.08,
+      longitudeDelta: 0.08,
+    };
+  }, [overviewMarkers]);
+
+  const fitRoute = useCallback(() => {
+    if (!mapRef.current || overviewMarkers.length === 0) return;
+
+    if (overviewMarkers.length === 1) {
+      const coordinate = overviewMarkers[0].coordinate;
+      mapRef.current.animateToRegion(
+        {
+          ...coordinate,
+          latitudeDelta: 0.025,
+          longitudeDelta: 0.025,
+        },
+        reduceMotionEnabled ? 0 : 350,
+      );
+      return;
+    }
+
+    mapRef.current.fitToCoordinates(
+      overviewMarkers.map((marker) => marker.coordinate),
+      {
+        animated: !reduceMotionEnabled,
+        edgePadding: { top: 56, right: 40, bottom: usesAccessibilityLayout ? 250 : 190, left: 40 },
+      },
+    );
+  }, [overviewMarkers, reduceMotionEnabled, usesAccessibilityLayout]);
+
+  useEffect(() => {
+    if (
+      !isTab ||
+      showRouteList ||
+      !isOverviewMapReady ||
+      !overviewMarkerSignature ||
+      lastFittedMarkerSignatureRef.current === overviewMarkerSignature
+    ) {
+      return;
+    }
+
+    lastFittedMarkerSignatureRef.current = overviewMarkerSignature;
+    fitRoute();
+  }, [fitRoute, isOverviewMapReady, isTab, overviewMarkerSignature, showRouteList]);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+
+    setTrackRouteMarkerChanges(true);
+
+    if (!isOverviewMapReady || showRouteList) return;
+
+    const timeout = setTimeout(() => setTrackRouteMarkerChanges(false), 1500);
+    return () => clearTimeout(timeout);
+  }, [colorScheme, isOverviewMapReady, overviewMarkerSignature, showRouteList]);
 
   function destinationFor(stop: TodayRouteStop): NavigationDestination {
     return { label: stop.name, lat: stop.lat, lng: stop.lng, stopId: stop.id };
@@ -359,6 +490,24 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
             {completed.length} of {route.stops.length} done
           </Text>
         </View>
+        {isTab && showRouteList ? (
+          <AppButton
+            accessibilityLabel="Show route map"
+            onPress={() => {
+              lastFittedMarkerSignatureRef.current = "";
+              setIsOverviewMapReady(false);
+              setShowRouteList(false);
+            }}
+            size="compact"
+            style={styles.headerMapAction}
+            variant="tertiary"
+          >
+            <View style={styles.headerMapActionContent}>
+              <AppIcon name="map" color={colors.accentStrong} size={20} />
+              <Text style={[styles.headerMapActionLabel, { color: colors.accentStrong }]}>Map</Text>
+            </View>
+          </AppButton>
+        ) : null}
       </View>
 
       {isStale ? (
@@ -385,6 +534,171 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
           </Text>
           <AppButton onPress={() => router.replace("/(tabs)/(map)")}>Return to Map</AppButton>
         </View>
+      ) : isTab && !showRouteList ? (
+        <View style={styles.overviewContainer}>
+          {overviewInitialRegion ? (
+            <MapView
+              initialRegion={overviewInitialRegion}
+              legalLabelInsets={{
+                top: 0,
+                right: 0,
+                bottom: usesAccessibilityLayout ? 276 : 202,
+                left: 0,
+              }}
+              mapPadding={{
+                top: 16,
+                right: 12,
+                bottom: usesAccessibilityLayout ? 276 : 202,
+                left: 12,
+              }}
+              mapType="standard"
+              onMapReady={() => setIsOverviewMapReady(true)}
+              ref={(instance) => {
+                mapRef.current = instance;
+              }}
+              rotateEnabled={false}
+              showsCompass={false}
+              style={styles.overviewMap}
+              userInterfaceStyle={colorScheme}
+            >
+              {overviewMarkers.map((marker) => (
+                <Marker
+                  accessibilityLabel={
+                    marker.status === "upcoming"
+                      ? `Upcoming stop ${marker.position}, ${marker.stop.name}`
+                      : `Completed stop, ${marker.stop.name}`
+                  }
+                  coordinate={marker.coordinate}
+                  key={`${marker.stop.id}-${marker.status}-${marker.position ?? "done"}`}
+                  onPress={() => openStop(marker.stop)}
+                  tracksViewChanges={Platform.OS !== "android" || trackRouteMarkerChanges}
+                >
+                  {marker.status === "upcoming" ? (
+                    <UpcomingRouteMarker marker={marker} />
+                  ) : (
+                    <CompletedRouteMarker marker={marker} />
+                  )}
+                </Marker>
+              ))}
+            </MapView>
+          ) : (
+            <View style={[styles.mapUnavailable, { backgroundColor: colors.surface }]}>
+              <AppIcon name="map" color={colors.textSecondary} size={36} />
+              <Text style={[styles.mapUnavailableTitle, { color: colors.textPrimary }]}>
+                Route map unavailable
+              </Text>
+              <Text style={[styles.mapUnavailableCopy, { color: colors.textSecondary }]}>
+                Open the route list to manage these stops.
+              </Text>
+            </View>
+          )}
+
+          {overviewMarkers.length > 0 ? (
+            <AppButton
+              accessibilityLabel="Fit the complete route on the map"
+              onPress={fitRoute}
+              size="compact"
+              style={[
+                styles.fitRouteButton,
+                usesAccessibilityLayout && styles.fitRouteButtonLargeText,
+                Elevation.floating,
+              ]}
+              variant="secondary"
+            >
+              <View style={styles.fitRouteContent}>
+                <AppIcon name="location" color={colors.textPrimary} size={20} />
+                <Text style={[styles.fitRouteLabel, { color: colors.textPrimary }]}>Fit Route</Text>
+              </View>
+            </AppButton>
+          ) : null}
+
+          <View
+            style={[
+              styles.nextStopSheet,
+              usesAccessibilityLayout && styles.nextStopSheetLargeText,
+              { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+              Elevation.sheet,
+            ]}
+          >
+            <View style={styles.nextStopSheetContent}>
+              {upcoming[0] ? (
+                <View style={styles.nextStopCopyRow}>
+                  <View style={[styles.nextStopPosition, { backgroundColor: colors.accentMuted }]}>
+                    <Text style={[styles.nextStopPositionText, { color: colors.accentStrong }]}>
+                      1
+                    </Text>
+                  </View>
+                  <View style={styles.nextStopCopy}>
+                    <Text style={[styles.nextStopEyebrow, { color: colors.accentStrong }]}>
+                      Next Stop
+                    </Text>
+                    <Text
+                      numberOfLines={usesAccessibilityLayout ? 2 : 1}
+                      style={[styles.nextStopName, { color: colors.textPrimary }]}
+                    >
+                      {upcoming[0].name}
+                    </Text>
+                    <Text
+                      numberOfLines={usesAccessibilityLayout ? 2 : 1}
+                      style={[styles.nextStopAddress, { color: colors.textSecondary }]}
+                    >
+                      {compactAddress(upcoming[0].address)}
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.allCompleteSheetCopy}>
+                  <AppIcon name="complete" active color={colors.success} size={28} />
+                  <View style={styles.nextStopCopy}>
+                    <Text style={[styles.nextStopName, { color: colors.textPrimary }]}>
+                      All stops completed
+                    </Text>
+                    <Text style={[styles.nextStopAddress, { color: colors.textSecondary }]}>
+                      Open the route list to review or undo.
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+
+            <View
+              style={[
+                styles.nextStopActions,
+                usesAccessibilityLayout && styles.nextStopActionsLargeText,
+              ]}
+            >
+              <AppButton
+                onPress={() => setShowRouteList(true)}
+                size="compact"
+                style={styles.nextStopAction}
+                variant="secondary"
+              >
+                <View style={styles.routeActionContent}>
+                  <AppIcon name="route" color={colors.textPrimary} size={20} />
+                  <Text style={[styles.routeActionLabel, { color: colors.textPrimary }]}>
+                    View Route
+                  </Text>
+                </View>
+              </AppButton>
+              {upcoming[0] ? (
+                <AppButton
+                  loading={navigationLaunching}
+                  onPress={() => void launchStop(upcoming[0])}
+                  size="compact"
+                  style={styles.nextStopAction}
+                  variant="tertiary"
+                >
+                  <View style={styles.routeActionContent}>
+                    <AppIcon name="navigation" color={colors.accentStrong} size={20} />
+                    <Text style={[styles.routeActionLabel, { color: colors.accentStrong }]}>
+                      Navigate
+                    </Text>
+                  </View>
+                </AppButton>
+              ) : null}
+            </View>
+          </View>
+        </View>
       ) : (
         <DraggableFlatList
           contentContainerStyle={styles.listContent}
@@ -393,17 +707,10 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
           ListHeaderComponent={
             <View style={styles.listHeader}>
               {upcoming[0] ? (
-                <AppButton
-                  fullWidth
-                  loading={navigationLaunching}
-                  onPress={() => void launchStop(upcoming[0])}
-                >
-                  Navigate to Next Stop
-                </AppButton>
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Upcoming</Text>
               ) : (
                 <Text style={[styles.allDone, { color: colors.success }]}>All stops completed</Text>
               )}
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Upcoming</Text>
             </View>
           }
           ListFooterComponent={
@@ -504,6 +811,9 @@ const styles = StyleSheet.create({
   },
   headerCopy: { flex: 1, paddingRight: 48 },
   headerCopyTab: { paddingLeft: 48 },
+  headerMapAction: { position: "absolute", right: Spacing.sm },
+  headerMapActionContent: { alignItems: "center", flexDirection: "row", gap: Spacing.xxs },
+  headerMapActionLabel: { ...Typography.buttonLabel },
   backText: { fontSize: 38, fontWeight: "400", lineHeight: 40 },
   title: { ...Typography.sectionTitle, textAlign: "center" },
   subtitle: { ...Typography.supporting, textAlign: "center" },
@@ -515,8 +825,87 @@ const styles = StyleSheet.create({
   },
   staleTitle: { ...Typography.buttonLabel },
   staleCopy: { ...Typography.supporting },
+  overviewContainer: { flex: 1 },
+  overviewMap: { ...StyleSheet.absoluteFillObject },
+  mapUnavailable: {
+    alignItems: "center",
+    flex: 1,
+    gap: Spacing.xs,
+    justifyContent: "center",
+    padding: Spacing.xl,
+  },
+  mapUnavailableTitle: { ...Typography.sectionTitle, textAlign: "center" },
+  mapUnavailableCopy: { ...Typography.body, textAlign: "center" },
+  upcomingMarkerOuter: {
+    alignItems: "center",
+    height: 50,
+    justifyContent: "flex-start",
+    width: 42,
+  },
+  upcomingMarkerInner: {
+    alignItems: "center",
+    borderRadius: 19,
+    borderWidth: 3,
+    height: 38,
+    justifyContent: "center",
+    width: 38,
+  },
+  upcomingMarkerText: { fontSize: 17, fontWeight: "900" },
+  upcomingMarkerStem: { borderRadius: 2, height: 10, marginTop: -1, width: 4 },
+  completedMarker: {
+    alignItems: "center",
+    borderRadius: 18,
+    borderWidth: 3,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  fitRouteButton: {
+    bottom: 198,
+    position: "absolute",
+    right: Spacing.md,
+  },
+  fitRouteButtonLargeText: { bottom: 272 },
+  fitRouteContent: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: Spacing.xs,
+  },
+  fitRouteLabel: { ...Typography.buttonLabel },
+  nextStopSheet: {
+    borderRadius: Radius.large,
+    borderWidth: Borders.thin,
+    bottom: Spacing.sm,
+    gap: Spacing.sm,
+    left: Spacing.sm,
+    minHeight: 178,
+    padding: Spacing.sm,
+    position: "absolute",
+    right: Spacing.sm,
+  },
+  nextStopSheetLargeText: {
+    minHeight: 252,
+  },
+  nextStopSheetContent: { flex: 1, justifyContent: "center" },
+  nextStopCopyRow: { alignItems: "center", flexDirection: "row", gap: Spacing.sm },
+  nextStopPosition: {
+    alignItems: "center",
+    borderRadius: 24,
+    height: 48,
+    justifyContent: "center",
+    width: 48,
+  },
+  nextStopPositionText: { fontSize: 22, fontWeight: "900" },
+  nextStopCopy: { flex: 1, gap: 2 },
+  nextStopEyebrow: { ...Typography.operationalLabel, fontWeight: "800" },
+  nextStopName: { ...Typography.buttonLabel },
+  nextStopAddress: { ...Typography.supporting },
+  allCompleteSheetCopy: { alignItems: "center", flexDirection: "row", gap: Spacing.sm },
+  nextStopActions: { flexDirection: "row", gap: Spacing.xs },
+  nextStopActionsLargeText: { flexDirection: "column" },
+  nextStopAction: { flex: 1 },
   listContent: { padding: Spacing.md, paddingBottom: Spacing.xxl },
-  listHeader: { gap: Spacing.lg, marginBottom: Spacing.sm },
+  listHeader: { marginBottom: Spacing.sm },
   sectionTitle: { ...Typography.sectionTitle, marginTop: Spacing.sm },
   stopCardOuter: { marginBottom: Spacing.sm },
   stopCard: { gap: Spacing.md, padding: Spacing.md },

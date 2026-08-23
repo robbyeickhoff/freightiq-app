@@ -2770,11 +2770,16 @@ export default function HomeScreen() {
     setShowSelectedEntrance(false);
     setDeliveryZoneInspectionSource(null);
     setTempSearchPin(null);
-    if (
-      String(params.returnToCollection ?? "") === "1" ||
-      String(params.returnToRoute ?? "") === "1"
-    ) {
-      router.back();
+    if (String(params.returnToRoute ?? "") === "1") {
+      router.replace("/(tabs)/route");
+      return;
+    }
+    if (String(params.returnToCollection ?? "") === "1") {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/(tabs)/(map)");
+      }
     }
   }
 
