@@ -1,0 +1,24 @@
+diff --git a/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js b/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js
+index 2100d7d..aef4dbf 100644
+--- a/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js
++++ b/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js
+@@ -1925,7 +1925,6 @@ class GoTrueClient {
+                 if (this.autoRefreshToken && currentSession.refresh_token) {
+                     const { error } = await this._callRefreshToken(currentSession.refresh_token);
+                     if (error) {
+-                        console.error(error);
+                         if (!(0, errors_1.isAuthRetryableFetchError)(error)) {
+                             this._debug(debugName, 'refresh failed with a non-retryable error, removing the session', error);
+                             await this._removeSession();
+diff --git a/node_modules/@supabase/auth-js/dist/module/GoTrueClient.js b/node_modules/@supabase/auth-js/dist/module/GoTrueClient.js
+index 7944e8d..8565562 100644
+--- a/node_modules/@supabase/auth-js/dist/module/GoTrueClient.js
++++ b/node_modules/@supabase/auth-js/dist/module/GoTrueClient.js
+@@ -1922,7 +1922,6 @@ class GoTrueClient {
+                 if (this.autoRefreshToken && currentSession.refresh_token) {
+                     const { error } = await this._callRefreshToken(currentSession.refresh_token);
+                     if (error) {
+-                        console.error(error);
+                         if (!isAuthRetryableFetchError(error)) {
+                             this._debug(debugName, 'refresh failed with a non-retryable error, removing the session', error);
+                             await this._removeSession();
