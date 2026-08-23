@@ -147,6 +147,26 @@ Create a navigation experience that feels consistent throughout the application.
 
 ---
 
+#### Route Builder V1
+
+##### Goals
+
+Give drivers a dependable, manually ordered Today's Route without claiming to optimize freight
+sequence or duplicating Routing Lab intelligence.
+
+##### Active Tasks
+
+- [x] Approve the focused [Route Builder V1 Build Specification](build-specs/FreightIQRouteBuilderV1BuildSpec.md).
+- [x] Implement the account-scoped local route, saved-stop addition, center Route tab,
+  accessible manual ordering, completion, next-stop navigation, stale-day handling, and safe stop
+  reconciliation.
+- [x] Pass TypeScript, focused route tests, lint with only the existing warning baseline, and local
+  iOS and Android production bundles.
+- [x] Complete focused physical iPhone and Pixel acceptance and approve the implementation for
+  commit and push.
+
+---
+
 ### Stop Intel Contribution Workflow
 
 #### Goals
@@ -513,11 +533,11 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
   self-expiring stream of short operational updates for road conditions, delivery access,
   construction, hazards, services, and customer notices. Keep it professional and focused by
   excluding comments, likes, and off-topic discussion.
-- [ ] [Route Builder V1](design/RouteBuilderV1.md): let a driver select an additional FreightIQ
-  stop without losing the first destination, then hand off a supported multi-stop route or
-  next-stop sequence to the selected navigation app. Preserve manual driver ordering in V1 and
-  verify current Apple Maps, Google Maps, and Waze capabilities before choosing the implementation
-  approach.
+- [ ] [Route Builder V1](build-specs/FreightIQRouteBuilderV1BuildSpec.md): complete physical-device
+  acceptance of the approved implementation that lets a driver select an additional FreightIQ
+  stop without losing the first destination, preserve manual driver ordering, and launch each next
+  stop through the existing selected navigation app. Full-route provider handoff remains outside
+  the dependable V1 baseline.
 - [ ] Return to FreightIQ Live Activity — iOS: after handing a stop off to Apple Maps, Google Maps,
   or Waze, provide a persistent Lock Screen and Dynamic Island control that deep-links back to that
   stop's Preview Card or Intel screen. Treat this as a one-tap return experience, not automatic

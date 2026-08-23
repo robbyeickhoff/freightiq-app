@@ -5,6 +5,7 @@ import { Stack, usePathname, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppState, Platform, StyleSheet, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 
 import { AppLockGate } from "@/components/app-lock-gate";
@@ -13,6 +14,7 @@ import {
   useNavigationPreference,
 } from "@/context/navigation-preference-context";
 import { AppThemeProvider, useAppTheme } from "@/context/theme-context";
+import { TodayRouteProvider } from "@/context/todays-route-context";
 import { clearInvalidStoredSession, isInvalidStoredSessionError } from "@/utils/auth-session";
 import {
   DEFAULT_APP_LOCK_BACKGROUND_TIMEOUT_MS,
@@ -382,10 +384,14 @@ const styles = StyleSheet.create({
 
 export default function RootLayout() {
   return (
-    <AppThemeProvider>
-      <NavigationPreferenceProvider>
-        <RootNavigator />
-      </NavigationPreferenceProvider>
-    </AppThemeProvider>
+    <GestureHandlerRootView>
+      <AppThemeProvider>
+        <NavigationPreferenceProvider>
+          <TodayRouteProvider>
+            <RootNavigator />
+          </TodayRouteProvider>
+        </NavigationPreferenceProvider>
+      </AppThemeProvider>
+    </GestureHandlerRootView>
   );
 }

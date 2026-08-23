@@ -32,6 +32,7 @@ import { AppSegmentedControl } from "@/components/ui/app-segmented-control";
 import { Elevation, Typography } from "@/constants/theme";
 import { useNavigationPreference } from "@/context/navigation-preference-context";
 import { useAppTheme } from "@/context/theme-context";
+import { useTodayRoute } from "@/context/todays-route-context";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { recordFoundingDriverActivity } from "@/utils/founding-driver-activity";
 import {
@@ -350,10 +351,7 @@ function searchRadiusMetersFromRegion(region: Region) {
   const longitudeMetersPerDegree =
     111_320 * Math.max(Math.cos((region.latitude * Math.PI) / 180), 0.1);
   const longitudeRadiusMeters = (Math.abs(region.longitudeDelta) * longitudeMetersPerDegree) / 2;
-  const visibleCornerRadiusMeters = Math.hypot(
-    latitudeRadiusMeters,
-    longitudeRadiusMeters,
-  );
+  const visibleCornerRadiusMeters = Math.hypot(latitudeRadiusMeters, longitudeRadiusMeters);
 
   return Math.min(
     Math.max(visibleCornerRadiusMeters, MIN_SEARCH_RADIUS_METERS),
@@ -489,6 +487,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { colorScheme, colors } = useAppTheme();
   const { navigationPreference } = useNavigationPreference();
+  const { addStop, carryForward, route: todayRoute, startFresh } = useTodayRoute();
   const { fontScale, height: windowHeight } = useWindowDimensions();
   const safeAreaInsets = useSafeAreaInsets();
   const reduceMotionEnabled = useReducedMotion();
@@ -567,9 +566,9 @@ export default function HomeScreen() {
   const [navigationLaunching, setNavigationLaunching] = useState(false);
   const [navigationPickerDestination, setNavigationPickerDestination] =
     useState<NavigationDestination | null>(null);
-  const [navigationPickerProviders, setNavigationPickerProviders] = useState<
-    NavigationProvider[]
-  >([]);
+  const [navigationPickerProviders, setNavigationPickerProviders] = useState<NavigationProvider[]>(
+    [],
+  );
 
   useEffect(() => {
     selectedStopRef.current = selectedStop;
@@ -627,10 +626,8 @@ export default function HomeScreen() {
 
   const getMapboxSearchSessionToken = useCallback(() => {
     const now = Date.now();
-    const sessionExpired =
-      now - mapboxSessionStartedAtRef.current >= MAPBOX_SESSION_MAX_AGE_MS;
-    const suggestLimitReached =
-      mapboxSessionSuggestCountRef.current >= MAPBOX_SESSION_MAX_SUGGESTS;
+    const sessionExpired = now - mapboxSessionStartedAtRef.current >= MAPBOX_SESSION_MAX_AGE_MS;
+    const suggestLimitReached = mapboxSessionSuggestCountRef.current >= MAPBOX_SESSION_MAX_SUGGESTS;
 
     if (!mapboxSessionTokenRef.current || sessionExpired || suggestLimitReached) {
       mapboxSessionTokenRef.current = Crypto.randomUUID();
@@ -1007,8 +1004,7 @@ export default function HomeScreen() {
 
     const returnedPin: Pin = {
       id: focusStopId,
-      name:
-        String(params.focusStopName ?? "").trim() || existingPin?.name || "Unknown location",
+      name: String(params.focusStopName ?? "").trim() || existingPin?.name || "Unknown location",
       address: String(params.focusStopAddress ?? "").trim() || undefined,
       lat: validCoordinates ? focusStopLat : existingPin!.lat,
       lng: validCoordinates ? focusStopLng : existingPin!.lng,
@@ -1736,9 +1732,7 @@ export default function HomeScreen() {
           name: stop.name,
           address: stop.address ?? "",
           openedAt: String(Date.now()),
-          ...(String(params.returnToPreview ?? "") === "1"
-            ? { returnToPreview: "1" }
-            : {}),
+          ...(String(params.returnToPreview ?? "") === "1" ? { returnToPreview: "1" } : {}),
         },
       });
     }
@@ -1930,9 +1924,7 @@ export default function HomeScreen() {
       setNewPinAddress(tempSearchPin.address ?? "");
       setNewPinCity(tempSearchPin.suggestedCity ?? "");
       setNewPinStateCode(tempSearchPin.suggestedStateCode ?? "");
-      setNewPinLocalityEditing(
-        !tempSearchPin.suggestedCity || !tempSearchPin.suggestedStateCode,
-      );
+      setNewPinLocalityEditing(!tempSearchPin.suggestedCity || !tempSearchPin.suggestedStateCode);
     } else {
       setNewPinName("");
       setNewPinAddress("");
@@ -2241,12 +2233,7 @@ export default function HomeScreen() {
         })();
 
         const [freightIqOutcome, cityOutcome, driverOutcome, placeOutcome] =
-          await Promise.allSettled([
-          freightIqRequest,
-          cityRequest,
-          driverRequest,
-          placeRequest,
-          ]);
+          await Promise.allSettled([freightIqRequest, cityRequest, driverRequest, placeRequest]);
 
         if (requestId !== lastRequestId.current) return;
 
@@ -2534,6 +2521,73 @@ export default function HomeScreen() {
     await launchNavigation(provider, destination);
   }
 
+  async function addSelectedStopToRoute() {
+    if (!selectedStop || selectedStop.id === "temp-search-result") return;
+
+    const stop = {
+      address: selectedStop.address ?? "",
+      id: selectedStop.id,
+      lat: selectedStop.lat,
+      lng: selectedStop.lng,
+      name: selectedStop.name,
+    };
+
+    try {
+      const result = await addStop(stop);
+      if (result === "stale") {
+        Alert.alert(
+          "Route from an earlier day",
+          "Start a new route for today or deliberately keep the existing route before adding this stop.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Start Fresh",
+              style: "destructive",
+              onPress: () =>
+                void startFresh()
+                  .then(() => addStop(stop))
+                  .catch(() =>
+                    Alert.alert("Route not saved", "FreightIQ could not save that route change."),
+                  ),
+            },
+            {
+              text: "Keep This Route",
+              onPress: () =>
+                void carryForward()
+                  .then(() => addStop(stop))
+                  .catch(() =>
+                    Alert.alert("Route not saved", "FreightIQ could not save that route change."),
+                  ),
+            },
+          ],
+        );
+        return;
+      }
+      if (result === "full") {
+        Alert.alert("Route is full", "Today's Route can contain up to 50 stops.");
+        return;
+      }
+      if (result === "signed_out") {
+        Alert.alert("Sign in required", "Sign in to save stops to Today's Route.");
+        return;
+      }
+      if (result === "added") {
+        Alert.alert("Added to route", `${selectedStop.name} was added to Today's Route.`, [
+          { text: "Done", style: "cancel" },
+          {
+            text: "Open Route",
+            onPress: () => router.push("/(tabs)/route"),
+          },
+        ]);
+      }
+    } catch {
+      Alert.alert(
+        "Route not saved",
+        "FreightIQ could not save that route change. Please try again.",
+      );
+    }
+  }
+
   function onPressCluster(clusterFeature: any) {
     const clusterId = clusterFeature.properties?.cluster_id;
 
@@ -2716,7 +2770,12 @@ export default function HomeScreen() {
     setShowSelectedEntrance(false);
     setDeliveryZoneInspectionSource(null);
     setTempSearchPin(null);
-    if (String(params.returnToCollection ?? "") === "1") router.back();
+    if (
+      String(params.returnToCollection ?? "") === "1" ||
+      String(params.returnToRoute ?? "") === "1"
+    ) {
+      router.back();
+    }
   }
 
   useEffect(() => {
@@ -3601,43 +3660,8 @@ export default function HomeScreen() {
                   </>
                 ) : (
                   <>
-                    <View style={styles.previewSavedActionRow}>
-                      <AppButton
-                        onPress={() =>
-                          router.push({
-                            pathname: "/(tabs)/stop",
-                            params: {
-                              id: selectedStop?.id,
-                              lat: String(selectedStop?.lat),
-                              lng: String(selectedStop?.lng),
-                              name: selectedStop?.name,
-                              address: selectedStop?.address ?? "",
-                              openedAt: String(Date.now()),
-                              returnToPreview: "1",
-                            },
-                          })
-                        }
-                        maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
-                        size="compact"
-                        style={styles.previewSavedActionBtn}
-                      >
-                        Edit Intel
-                      </AppButton>
-
-                      <AppButton
-                        onPress={navToStop}
-                        loading={navigationLaunching}
-                        maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
-                        size="compact"
-                        style={styles.previewSavedActionBtn}
-                        variant="secondary"
-                      >
-                        Navigate
-                      </AppButton>
-                    </View>
-
-                    <View style={styles.previewSavedActionRow}>
-                      <AppButton
+                    <AppCard clipContent contentStyle={styles.previewDetailList}>
+                      <Pressable
                         accessibilityLabel={
                           selectedReportStatsLoading
                             ? "Checking Driver Reports"
@@ -3662,51 +3686,118 @@ export default function HomeScreen() {
                             },
                           })
                         }
-                        maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
-                        size="compact"
-                        style={styles.previewSavedActionBtn}
-                        variant="secondary"
+                        style={({ pressed }) => [
+                          styles.previewDetailRow,
+                          pressed && styles.previewDetailRowPressed,
+                        ]}
                       >
-                        <View style={styles.previewReportButtonContent}>
+                        <View
+                          style={[
+                            styles.previewDetailIcon,
+                            { backgroundColor: colors.accentMuted },
+                          ]}
+                        >
+                          <AppIcon name="contributingIntel" color={colors.accentStrong} size={22} />
+                        </View>
+                        <View style={styles.previewDetailCopy}>
                           <Text
                             maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
                             numberOfLines={2}
-                            style={[styles.previewReportButtonLabel, { color: colors.textPrimary }]}
+                            style={[styles.previewDetailLabel, { color: colors.textPrimary }]}
                           >
                             Driver Reports
                           </Text>
+                          <Text
+                            style={[styles.previewDetailValue, { color: colors.textSecondary }]}
+                          >
+                            {selectedReportStatsLoading || selectedReportStatsUnavailable
+                              ? "Unavailable"
+                              : `${selectedReportStats.count} ${
+                                  selectedReportStats.count === 1 ? "report" : "reports"
+                                }`}
+                          </Text>
+                        </View>
+                        <AppIcon name="chevronRight" color={colors.textSecondary} />
+                      </Pressable>
+                    </AppCard>
+
+                    <View
+                      style={[
+                        styles.previewActionShelf,
+                        usesAccessibilityLayout && styles.previewAccessibilityStack,
+                        { backgroundColor: colors.surface },
+                      ]}
+                    >
+                      <AppButton
+                        accessibilityLabel="Navigate to this stop"
+                        loading={navigationLaunching}
+                        onPress={navToStop}
+                        size="compact"
+                        style={styles.previewActionTile}
+                        variant="tertiary"
+                      >
+                        <View style={styles.previewActionContent}>
                           <View
                             style={[
-                              styles.previewReportCountBadge,
+                              styles.previewActionIcon,
                               { backgroundColor: colors.accentMuted },
                             ]}
                           >
-                            <Text
-                              maxFontSizeMultiplier={1.2}
-                              style={[
-                                styles.previewReportCountText,
-                                { color: colors.accentStrong },
-                              ]}
-                            >
-                              {selectedReportStatsLoading || selectedReportStatsUnavailable
-                                ? "—"
-                                : selectedReportStats.count}
-                            </Text>
+                            <AppIcon name="navigation" color={colors.accentStrong} size={24} />
                           </View>
+                          <Text style={[styles.previewActionLabel, { color: colors.textPrimary }]}>
+                            Navigate
+                          </Text>
                         </View>
                       </AppButton>
 
                       <AppButton
-                        loading={
-                          selectedEntranceStatus === "loading" || selectedEntranceStatus === "idle"
+                        accessibilityLabel={
+                          todayRoute.stops.some((stop) => stop.id === selectedStop?.id)
+                            ? "Open Today's Route"
+                            : "Add this stop to Today's Route"
                         }
-                        maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
-                        onPress={() => {
-                          if (selectedEntrance && selectedStop) {
-                            enterDeliveryZoneInspection("preview", selectedStop, selectedEntrance);
-                            return;
-                          }
+                        accessibilityState={{
+                          selected: todayRoute.stops.some((stop) => stop.id === selectedStop?.id),
+                        }}
+                        onPress={
+                          todayRoute.stops.some((stop) => stop.id === selectedStop?.id)
+                            ? () => router.push("/(tabs)/route")
+                            : () => void addSelectedStopToRoute()
+                        }
+                        size="compact"
+                        style={styles.previewActionTile}
+                        variant="tertiary"
+                      >
+                        <View style={styles.previewActionContent}>
+                          <View
+                            style={[
+                              styles.previewActionIcon,
+                              { backgroundColor: colors.accentMuted },
+                            ]}
+                          >
+                            <AppIcon
+                              active={todayRoute.stops.some((stop) => stop.id === selectedStop?.id)}
+                              name={
+                                todayRoute.stops.some((stop) => stop.id === selectedStop?.id)
+                                  ? "complete"
+                                  : "route"
+                              }
+                              color={colors.accentStrong}
+                              size={24}
+                            />
+                          </View>
+                          <Text style={[styles.previewActionLabel, { color: colors.textPrimary }]}>
+                            {todayRoute.stops.some((stop) => stop.id === selectedStop?.id)
+                              ? "Added"
+                              : "Add to Route"}
+                          </Text>
+                        </View>
+                      </AppButton>
 
+                      <AppButton
+                        accessibilityLabel="Edit stop Intel"
+                        onPress={() =>
                           router.push({
                             pathname: "/(tabs)/stop",
                             params: {
@@ -3715,18 +3806,32 @@ export default function HomeScreen() {
                               lng: String(selectedStop?.lng),
                               name: selectedStop?.name,
                               address: selectedStop?.address ?? "",
-                              setDeliveryZone: "1",
                               openedAt: String(Date.now()),
                               returnToPreview: "1",
                             },
-                          });
-                        }}
+                          })
+                        }
                         size="compact"
-                        style={styles.previewSavedActionBtn}
-                        textStyle={selectedEntrance ? undefined : { color: colors.textSecondary }}
-                        variant="secondary"
+                        style={styles.previewActionTile}
+                        variant="tertiary"
                       >
-                        {selectedEntrance ? "Show DZ" : "Set DZ"}
+                        <View style={styles.previewActionContent}>
+                          <View
+                            style={[
+                              styles.previewActionIcon,
+                              { backgroundColor: colors.accentMuted },
+                            ]}
+                          >
+                            <AppIcon
+                              name="contributingIntel"
+                              color={colors.accentStrong}
+                              size={24}
+                            />
+                          </View>
+                          <Text style={[styles.previewActionLabel, { color: colors.textPrimary }]}>
+                            Edit Intel
+                          </Text>
+                        </View>
                       </AppButton>
                     </View>
                   </>
@@ -4054,7 +4159,6 @@ export default function HomeScreen() {
           </KeyboardAvoidingView>
         </View>
       </Modal>
-
     </View>
   );
 }
@@ -4568,6 +4672,65 @@ const styles = StyleSheet.create({
 
   previewSavedActionBtn: {
     flex: 1,
+  },
+  previewActionShelf: {
+    borderRadius: 16,
+    flexDirection: "row",
+    gap: 4,
+    padding: 6,
+  },
+  previewActionTile: {
+    flex: 1,
+    minHeight: 76,
+    paddingHorizontal: 4,
+  },
+  previewActionContent: {
+    alignItems: "center",
+    flex: 1,
+    gap: 5,
+    justifyContent: "center",
+  },
+  previewActionIcon: {
+    alignItems: "center",
+    borderRadius: 22,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+  previewActionLabel: {
+    ...Typography.operationalLabel,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  previewDetailList: {
+    paddingHorizontal: 14,
+  },
+  previewDetailRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 12,
+    minHeight: 58,
+    paddingVertical: 8,
+  },
+  previewDetailRowPressed: {
+    opacity: 0.68,
+  },
+  previewDetailIcon: {
+    alignItems: "center",
+    borderRadius: 10,
+    height: 38,
+    justifyContent: "center",
+    width: 38,
+  },
+  previewDetailCopy: {
+    flex: 1,
+    gap: 1,
+  },
+  previewDetailLabel: {
+    ...Typography.buttonLabel,
+  },
+  previewDetailValue: {
+    ...Typography.supporting,
   },
   previewReportButtonContent: {
     alignItems: "center",

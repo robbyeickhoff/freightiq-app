@@ -13,18 +13,33 @@ answer one question:
 
 ## Current Objective
 
-The active objective is installed-candidate acceptance for FreightIQ 1.0.1. The candidates contain
-the completed Profile link to the Founding Drivers Program, Help Center access to the public demos
-page, and the narrow stale-session correction that preserves Supabase's invalid-session removal
-without showing an already-handled development error.
+The active objective is commit and synchronization of the accepted Route Builder V1 under
+`docs/build-specs/FreightIQRouteBuilderV1BuildSpec.md`. The approved implementation adds one
+account-scoped, device-local Today's Route, preserves direct single-stop navigation, lets drivers
+add saved FreightIQ stops, manually reorder and complete them, and launch the next stop through the
+existing navigation-app preference. It deliberately excludes optimization, Routing Lab logic,
+cloud sync, manifests, sensitive Intel, automatic completion, full-route provider handoff, widgets,
+and release changes. TypeScript, focused route tests, lint with only the same 11 pre-existing
+warnings, and local iOS and Android production bundles pass. Physical iPhone and Pixel acceptance
+is complete.
 
-Both candidates were created from pushed commit `845dcb5` after TypeScript, lint, patch replay,
-local iOS and Android production bundles, EAS archive isolation, and focused physical iPhone and
-Pixel link checks passed. iOS build 40 was submitted for TestFlight beta review and assigned to the
-Early Testers external group. Android version code 24 was manually submitted to Google Play Closed
-testing — Alpha, completed review, and was installed by the Product Owner on the physical Pixel.
-The Android tester update email was sent after the update became available. Public App Store or
-Google Play Production release remains separately approval-gated.
+Initial physical-iPhone review passed add-to-route, reorder, complete, and undo behavior. It exposed
+a raw-text rendering warning in the persistent route-control label and an overly heavy Preview Card
+and route-card action hierarchy. The label warning is corrected, and the separately approved visual
+amendment now uses a balanced three-action Preview Card shelf with Driver Reports directly above
+it, removes the redundant Delivery Zone detail row, and uses compact route-card actions, an unboxed
+drag affordance, a More action, and restrained Clear Route treatment. The revised Preview Card was
+accepted on physical iPhone. Route Builder now has a permanent center Route tab between Map and
+Profile, with an upcoming-stop badge; the temporary floating map control has been removed. The new
+tab was also accepted on physical iPhone. The Product Owner confirmed the full Pixel test flow
+passed on 2026-08-23.
+
+Installed-candidate acceptance for FreightIQ 1.0.1 remains a separate release-validation track.
+iOS build 40 is in TestFlight beta review and assigned to Early Testers. Android version code 24 was
+submitted to Google Play Closed testing — Alpha, completed review, and was installed by the Product
+Owner on the physical Pixel. Those immutable candidates were created from pushed commit `845dcb5`
+and do not contain Route Builder V1. Public App Store or Google Play Production release remains
+separately approval-gated.
 
 The FreightIQ Recording Demo Environment remains an approved paused build. Its governing contract is
 `docs/build-specs/FreightIQRecordingDemoEnvironmentBuildSpec.md`. It runs the actual FreightIQ
@@ -683,6 +698,7 @@ special build is required solely for that check.
 
 ## Next Safe Step
 
-Complete the focused installed-candidate acceptance checklist on iOS build 40 and Android version
+Commit and push the accepted Route Builder V1 implementation after Product Owner approval, then
+continue the separate installed-candidate acceptance checklist on iOS build 40 and Android version
 code 24. Record the observed results before any broader tester expansion or public App Store or
 Google Play Production release.

@@ -19,6 +19,7 @@ import { AppIcon, type AppIconName } from "@/components/ui/app-icon";
 import { supabase } from "@/utils/supabase";
 import { navigationPreferenceLabel } from "@/utils/navigation-apps";
 import { clearAppLockPreference } from "@/utils/app-lock";
+import { clearStoredTodayRoute } from "@/utils/todays-route";
 
 type SettingsRowProps = {
   accessibilityHint?: string;
@@ -101,7 +102,12 @@ export default function SettingsScreen() {
       return;
     }
 
-    if (userId) await clearAppLockPreference(userId).catch(() => undefined);
+    if (userId) {
+      await Promise.all([
+        clearAppLockPreference(userId).catch(() => undefined),
+        clearStoredTodayRoute(userId).catch(() => undefined),
+      ]);
+    }
 
     Alert.alert("Logged out", "You have been logged out.");
     router.replace("/auth");
