@@ -533,11 +533,12 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
   self-expiring stream of short operational updates for road conditions, delivery access,
   construction, hazards, services, and customer notices. Keep it professional and focused by
   excluding comments, likes, and off-topic discussion.
-- [ ] [Route Builder V1](build-specs/FreightIQRouteBuilderV1BuildSpec.md): complete physical-device
-  acceptance of the approved implementation that lets a driver select an additional FreightIQ
-  stop without losing the first destination, preserve manual driver ordering, and launch each next
-  stop through the existing selected navigation app. Full-route provider handoff remains outside
-  the dependable V1 baseline.
+- [x] [Route Builder V1](build-specs/FreightIQRouteBuilderV1BuildSpec.md): accepted on physical
+  iPhone and Pixel, committed, and pushed in `8d3280b`.
+- [x] [Route Overview Map V1](build-specs/FreightIQRouteOverviewMapV1BuildSpec.md): accepted on
+  physical iPhone and Pixel and committed in `66a9834`. The selected map-first view shows numbered
+  upcoming stops, muted completed stops, fit-to-route framing, explicit list and navigation actions,
+  and direct Preview Card access without optimization or road-valid routing claims.
 - [ ] Return to FreightIQ Live Activity — iOS: after handing a stop off to Apple Maps, Google Maps,
   or Waze, provide a persistent Lock Screen and Dynamic Island control that deep-links back to that
   stop's Preview Card or Intel screen. Treat this as a one-tap return experience, not automatic

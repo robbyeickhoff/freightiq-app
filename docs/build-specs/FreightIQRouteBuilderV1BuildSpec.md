@@ -282,7 +282,7 @@ completing earlier stops.
 - Route loading, persistence, stale-date handling, and logout/account-deletion cleanup
 - Add-to-route behavior for saved FreightIQ Preview Cards
 - Duplicate and 50-stop guards
-- A persistent map route control
+- A permanent center Route tab with an upcoming-stop badge
 - A list-first Today's Route screen
 - Manual drag reordering plus accessible move actions
 - Manual complete, undo, remove, and clear actions
@@ -319,7 +319,7 @@ The expected separation is:
 - A route storage module responsible only for the account-scoped AsyncStorage contract
 - A route provider or focused hook responsible for route commands and confirmed state
 - A dedicated Expo Router route screen
-- Small Preview Card and persistent-control integrations
+- Small Preview Card and primary-tab integrations
 - Reuse of `utils/navigation-apps.ts` for provider launch behavior
 
 Do not add a Supabase table for V1. Do not embed route business logic directly into the existing map
@@ -340,7 +340,7 @@ and verified before it is added.
 5. Add the shared route provider or hook and verify restart, stale-date, failure, and account
    boundaries.
 6. Add the Today's Route screen with ordering, completion, undo, removal, and clear behavior.
-7. Add the saved-stop Preview Card action and persistent map route control.
+7. Add the saved-stop Preview Card action and center Route tab.
 8. Connect next-stop and direct-stop launches to the existing navigation-provider layer.
 9. Run static validation, focused tests, and local iOS and Android production bundles.
 10. Complete focused Expo-compatible review, followed by physical iPhone and Pixel acceptance.

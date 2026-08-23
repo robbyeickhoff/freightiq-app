@@ -13,15 +13,39 @@ answer one question:
 
 ## Current Objective
 
-The active objective is commit and synchronization of the accepted Route Builder V1 under
-`docs/build-specs/FreightIQRouteBuilderV1BuildSpec.md`. The approved implementation adds one
+Route Overview Map V1 is complete, accepted on physical iPhone and Pixel, and committed to
+`clean-main` in `66a9834`. Its governing contract is
+`docs/build-specs/FreightIQRouteOverviewMapV1BuildSpec.md`. The Product Owner selected the map-first
+Option 1 direction and approved its complete Build Specification on 2026-08-23. Local implementation
+is complete: the Route tab now presents numbered upcoming-stop markers, muted completed markers,
+fit-to-route framing, a compact next-stop card, and accessible access to the accepted ordered list.
+Marker selection reuses the existing Preview Card handoff, and next-stop navigation reuses the
+existing provider flow. No route line, optimization, ETA, mileage, new dependency, backend,
+production-service, or release change was added. TypeScript, lint, all ten focused route tests, and
+local iOS and Android production bundles pass. The Product Owner accepted the physical-iPhone map
+presentation on 2026-08-23 and requested one focused interaction cleanup: remove the false drag
+handle from the fixed next-stop card, add explicit View Route and Navigate actions, return to the
+map through a compact icon-and-label **Map** action in the list header, and remove the two redundant
+full-width list controls.
+The refined presentation was accepted on physical iPhone. One intermittent unhandled GO_BACK
+warning appeared after moving between the route list and map: the Preview Card dismissal path could
+request stack history after tab navigation had already removed it. Route-origin previews now return
+deterministically to the Route tab, while collection-origin previews use stack history only when it
+exists and otherwise return safely to the Map tab. Initial Pixel review found that route marker tracking stopped before the
+Android map finished drawing, leaving the route map without markers. Android marker tracking now
+remains active until the overview map reports ready and receives a longer final render window;
+iPhone behavior is unchanged. The corrected Route map and markers then passed on Pixel, and the
+Product Owner rechecked iPhone successfully. Route Overview Map V1 is accepted.
+
+Route Builder V1 is complete, accepted on physical iPhone and Pixel, committed, and pushed to
+`clean-main` in `8d3280b`. Its governing contract remains
+`docs/build-specs/FreightIQRouteBuilderV1BuildSpec.md`. The accepted implementation adds one
 account-scoped, device-local Today's Route, preserves direct single-stop navigation, lets drivers
 add saved FreightIQ stops, manually reorder and complete them, and launch the next stop through the
 existing navigation-app preference. It deliberately excludes optimization, Routing Lab logic,
 cloud sync, manifests, sensitive Intel, automatic completion, full-route provider handoff, widgets,
-and release changes. TypeScript, focused route tests, lint with only the same 11 pre-existing
-warnings, and local iOS and Android production bundles pass. Physical iPhone and Pixel acceptance
-is complete.
+and release changes. The current iOS build 40 and Android version code 24 predate `8d3280b` and do
+not contain Route Builder V1.
 
 Initial physical-iPhone review passed add-to-route, reorder, complete, and undo behavior. It exposed
 a raw-text rendering warning in the persistent route-control label and an overly heavy Preview Card
@@ -698,7 +722,6 @@ special build is required solely for that check.
 
 ## Next Safe Step
 
-Commit and push the accepted Route Builder V1 implementation after Product Owner approval, then
-continue the separate installed-candidate acceptance checklist on iOS build 40 and Android version
-code 24. Record the observed results before any broader tester expansion or public App Store or
-Google Play Production release.
+Decide whether Route Builder V1 and Route Overview Map V1 should be included in the next iOS and
+Android candidates. Candidate creation, tester distribution, installed-candidate acceptance, and
+public release remain separate approval gates.

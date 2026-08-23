@@ -12,8 +12,8 @@
 - **Repository path:** `docs/build-specs/FreightIQRouteOverviewMapV1BuildSpec.md`
 - **Operating mode:** Product → Build Specification
 - **Repository status:** Approved controlling Build Specification
-- **Implementation status:** Complete and accepted on physical iPhone and Pixel; commit and push
-  approved
+- **Implementation status:** Complete and accepted on physical iPhone and Pixel; committed in
+  `66a9834`
 - **Visual direction:** Product Owner selected generated Option 1, Map-First Route Overview, on
   2026-08-23
 - **Foundation:** `docs/build-specs/FreightIQRouteBuilderV1BuildSpec.md`
