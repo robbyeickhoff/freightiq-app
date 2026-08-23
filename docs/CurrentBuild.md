@@ -13,17 +13,18 @@ answer one question:
 
 ## Current Objective
 
-The active objective is Help Center demo discovery. The mobile Help Center now places a **Watch
-FreightIQ Demos** card immediately after Getting Started and opens the public
-`https://freightiqapp.com/demos` page. A visible fallback message provides the same address if the
-device cannot open the link, so the action cannot fail silently.
+The active objective is installed-candidate acceptance for FreightIQ 1.0.1. The candidates contain
+the completed Profile link to the Founding Drivers Program, Help Center access to the public demos
+page, and the narrow stale-session correction that preserves Supabase's invalid-session removal
+without showing an already-handled development error.
 
-TypeScript and lint pass with no errors and the same 11 pre-existing warnings. The card's layout,
-placement, and link behavior were accepted in the iPhone Simulator. The implementation is committed
-and pushed in `3d01a08`. Physical iPhone and Pixel acceptance passed on 2026-08-23: the Help Center
-card opened the live demos page successfully on both devices. The separately completed Profile link
-to the Founding Drivers Program also opened its live page successfully on both devices. No build,
-tester-distribution, store-submission, or public-release change is authorized by this objective.
+Both candidates were created from pushed commit `845dcb5` after TypeScript, lint, patch replay,
+local iOS and Android production bundles, EAS archive isolation, and focused physical iPhone and
+Pixel link checks passed. iOS build 40 was submitted for TestFlight beta review and assigned to the
+Early Testers external group. Android version code 24 was manually submitted to Google Play Closed
+testing — Alpha, completed review, and was installed by the Product Owner on the physical Pixel.
+The Android tester update email was sent after the update became available. Public App Store or
+Google Play Production release remains separately approval-gated.
 
 The FreightIQ Recording Demo Environment remains an approved paused build. Its governing contract is
 `docs/build-specs/FreightIQRecordingDemoEnvironmentBuildSpec.md`. It runs the actual FreightIQ
@@ -614,6 +615,10 @@ same 11 pre-existing warnings.
 
 ## Remaining Release Gates
 
+- Complete focused installed acceptance of iOS build 40 and Android version code 24, including the
+  new external links, stale-session recovery, City & Driver Search, biometrics, referral handoff,
+  and representative core regression checks.
+- Verify the corrected Android launcher assets in installed Android version code 24.
 - Validate Authentication V2, onboarding, Help Center effectiveness, and normal app use with a
   small new-tester group before any broader tester expansion.
 - Continue monitoring Android Back behavior for recurrence; the single 2026-08-04 Authentication
@@ -658,7 +663,8 @@ special build is required solely for that check.
   Supabase Auth client behavior without a broader pre-release dependency upgrade. A simulated stale
   session cleared locally with no console error; patch replay, TypeScript, lint, and local iOS and
   Android production bundles pass. Expo then launched without errors on both physical phones. The
-  correction requires inclusion in the next approved candidate scope.
+  correction is included in iOS build 40 and Android version code 24; installed-candidate recovery
+  acceptance remains open.
 - The focused place-search provider review remains open before any Mapbox replacement decision.
 - The pre-existing `public.rls_auto_enable()` execution warning, unavailable-on-Free leaked-password
   protection, older RLS initialization-plan performance warnings, and API-key review remain
@@ -677,7 +683,6 @@ special build is required solely for that check.
 
 ## Next Safe Step
 
-Confirm the pushed Supabase Auth correction and review the exact app changes since the last
-production candidates, then define the next iOS and Android production-candidate scope and
-acceptance checklist. Obtain separate Product Owner approval before creating builds, changing
-tester audiences, submitting to a store, or altering release state.
+Complete the focused installed-candidate acceptance checklist on iOS build 40 and Android version
+code 24. Record the observed results before any broader tester expansion or public App Store or
+Google Play Production release.

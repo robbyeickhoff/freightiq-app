@@ -18,7 +18,7 @@
 
 ---
 
-Last Updated: 2026-08-15
+Last Updated: 2026-08-23
 
 ---
 
@@ -482,8 +482,8 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 - [x] Separately approve, execute, and production-verify the exact guarded 227-stop locality
   backfill; all approved locality tuples match, no null or partial visible tuple remains, and both
   existing stop search and new city search pass authenticated smoke checks.
-- [ ] Include City & Driver Search V1 in the next separately approved production candidate build,
-  then complete installed-build acceptance before changing tester distribution or release state.
+- [ ] Complete installed-build acceptance of City & Driver Search V1 in iOS build 40 and Android
+  version code 24 before broader tester expansion or public release.
 - [ ] Recent Cities.
 - [ ] Save Today's Stops.
 

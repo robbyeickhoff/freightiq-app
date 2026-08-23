@@ -6,6 +6,31 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-08-23 — App Version 1.0.1 Link and Session-Recovery Candidates
+
+New candidates were created from pushed commit `845dcb5` after focused physical-device link
+acceptance and local verification of the stale-session correction.
+
+- iOS build 40: EAS build `6fab9957-46c2-4cf9-af27-f7df5fa2a005`
+- iOS submission: `6af5797b-4516-4fa4-bac8-223afdb251f6`
+- Android version code 24: EAS build `e7d28475-4f0f-40ed-a0d6-5e09a3c7e05f`
+- Android AAB SHA-256: `850ba744e5b7206e44abfd70eb180144b27c5b20c665dd94b4801086b943860b`
+
+The iOS candidate completed successfully, was submitted for TestFlight beta review, and was
+assigned to the Early Testers external group. The Android AAB completed successfully, passed ZIP
+integrity verification, and was manually submitted to Google Play Closed testing — Alpha. After
+review completed, the Product Owner installed Android version code 24 on the physical Pixel and
+sent the Android tester update email. Full focused installed-candidate acceptance remains open.
+
+Pre-build archive inspection found that unrelated local social exports and an uncommitted Routing
+Lab specification would otherwise have entered the EAS upload. Commit `845dcb5` added exact
+`.easignore` exclusions, and the rebuilt archive retained the mobile Auth patch and required public
+map configuration while excluding all observed Routing Lab and social-media work. The lasting
+lesson is to inspect the EAS archive whenever the canonical checkout contains unrelated local work.
+
+Neither tester-channel distribution authorizes public App Store release, Google Play Production
+release, or broader audience expansion.
+
 ## 2026-08-17 — App Version 1.0.1 Replacement Candidates
 
 Replacement candidates were created from clean, pushed commit `8233036` after physical-iPhone and

@@ -109,6 +109,15 @@ Voting, reputation, editing, and deletion do not automatically satisfy Apple's e
 
 ## 8. Authentication and Review Access
 
+### TestFlight Candidate Evidence — 2026-08-23
+
+- FreightIQ 1.0.1 build 40 was created from commit `845dcb5` in EAS build
+  `6fab9957-46c2-4cf9-af27-f7df5fa2a005`.
+- EAS submission `6af5797b-4516-4fa4-bac8-223afdb251f6` uploaded build 40 to App Store Connect.
+- The Product Owner submitted the required What to Test information for beta review and assigned
+  build 40 to the Early Testers external group.
+- This TestFlight beta distribution does not constitute public App Store submission or release.
+
 - [ ] Apple reviewers can access all reviewable functionality.
 - [ ] A stable demo account is available.
 - [ ] The demo account does not require inaccessible SMS, email confirmation, employee approval, or location-specific activation.
