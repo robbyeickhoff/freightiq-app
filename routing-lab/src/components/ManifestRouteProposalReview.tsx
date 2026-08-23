@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { DragDropProvider, type DragEndEvent } from '@dnd-kit/react'
 import { isSortable, useSortable } from '@dnd-kit/react/sortable'
 
@@ -7,13 +7,19 @@ import type {
   ManifestRouteProposal,
   PlannedRouteCorrection,
 } from '../lib/manifest-route-proposal'
+import { moveStopToPosition, sameStopOrder } from '../lib/route-reordering'
 import type { ManifestDraftRoute } from '../lib/route-persistence'
 
 type PendingCorrection = {
   afterStopIds: string[]
   beforeStopIds: string[]
   description: string
-  stopId: string
+  stopId?: string
+}
+
+type EditSnapshot = {
+  corrections: PlannedRouteCorrection[]
+  stopIds: string[]
 }
 
 type ManifestRouteProposalReviewProps = {
@@ -28,7 +34,6 @@ type ManifestRouteProposalReviewProps = {
 }
 
 type SortableStopCardProps = {
-  children?: ReactNode
   disabled: boolean
   index: number
   onMoveTo: (position: number) => void
@@ -38,7 +43,6 @@ type SortableStopCardProps = {
 }
 
 function SortableStopCard({
-  children,
   disabled,
   index,
   onMoveTo,
@@ -79,7 +83,6 @@ function SortableStopCard({
           ))}
         </select>
       </label>
-      {children}
     </li>
   )
 }
@@ -91,6 +94,7 @@ function ManifestRouteProposalReview({ route, onBackToZones, onSave, onStart }: 
   )
   const [corrections, setCorrections] = useState(route.plannedCorrections)
   const [pending, setPending] = useState<PendingCorrection | null>(null)
+  const [orderHistory, setOrderHistory] = useState<EditSnapshot[]>([])
   const [selectedReasons, setSelectedReasons] = useState<string[]>([])
   const [reasonNote, setReasonNote] = useState('')
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
@@ -99,25 +103,20 @@ function ManifestRouteProposalReview({ route, onBackToZones, onSave, onStart }: 
   useEffect(() => {
     setStopIds(route.adjustedStopIds.length > 0 ? route.adjustedStopIds : proposal.orderedStopIds)
     setCorrections(route.plannedCorrections)
+    setOrderHistory([])
+    setPending(null)
   }, [proposal.orderedStopIds, route.adjustedStopIds, route.plannedCorrections])
 
   const stopsById = new Map(route.sourceStops.map((stop) => [stop.id, stop]))
   const zonesByStopId = new Map(route.zoneReview.map((item) => [item.stopId, item.selectedZone]))
 
-  function moveStop(fromIndex: number, toIndex: number, stopId: string) {
+  function moveStop(fromIndex: number, toIndex: number) {
     if (pending || fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || toIndex >= stopIds.length) return
-    const next = [...stopIds]
-    const [movedStopId] = next.splice(fromIndex, 1)
-    next.splice(toIndex, 0, movedStopId)
+    const next = moveStopToPosition(stopIds, fromIndex, toIndex)
 
+    setOrderHistory((current) => [...current, { corrections, stopIds }])
     setStopIds(next)
-    const movedStop = stopsById.get(stopId)
-    setPending({
-      afterStopIds: next,
-      beforeStopIds: stopIds,
-      description: `${movedStop?.name ?? 'This stop'} moved from position ${fromIndex + 1} to position ${toIndex + 1}. Why is this the better sequence?`,
-      stopId,
-    })
+    setCorrections([])
     setSelectedReasons([])
     setReasonNote('')
   }
@@ -126,12 +125,44 @@ function ManifestRouteProposalReview({ route, onBackToZones, onSave, onStart }: 
     if (event.canceled || pending) return
     const { source } = event.operation
     if (!isSortable(source) || source.initialIndex === source.index) return
-    moveStop(source.initialIndex, source.index, String(source.id))
+    moveStop(source.initialIndex, source.index)
   }
 
-  function undoPendingMove() {
-    if (!pending) return
-    setStopIds(pending.beforeStopIds)
+  function undoLastMove() {
+    const previous = orderHistory.at(-1)
+    if (!previous || pending) return
+    setStopIds(previous.stopIds)
+    setCorrections(previous.corrections)
+    setOrderHistory((current) => current.slice(0, -1))
+    setSelectedReasons([])
+    setReasonNote('')
+  }
+
+  function resetToProposal() {
+    if (pending || sameStopOrder(stopIds, proposal.orderedStopIds)) return
+    setOrderHistory((current) => [...current, { corrections, stopIds }])
+    setStopIds(proposal.orderedStopIds)
+    setCorrections([])
+    setSelectedReasons([])
+    setReasonNote('')
+  }
+
+  function finishReordering() {
+    if (pending || sameStopOrder(stopIds, proposal.orderedStopIds)) return
+    const firstChangedStopId = stopIds.find(
+      (stopId, index) => proposal.orderedStopIds[index] !== stopId,
+    )
+    setPending({
+      afterStopIds: stopIds,
+      beforeStopIds: proposal.orderedStopIds,
+      description: 'Your finished starting order differs from the AI proposal. Why is this the better route?',
+      stopId: firstChangedStopId,
+    })
+    setSelectedReasons([])
+    setReasonNote('')
+  }
+
+  function keepEditing() {
     setPending(null)
     setSelectedReasons([])
     setReasonNote('')
@@ -140,7 +171,6 @@ function ManifestRouteProposalReview({ route, onBackToZones, onSave, onStart }: 
   async function saveReason() {
     if (!pending || selectedReasons.length === 0) return
     const nextCorrections = [
-      ...corrections,
       {
         ...pending,
         note: reasonNote.trim(),
@@ -165,10 +195,15 @@ function ManifestRouteProposalReview({ route, onBackToZones, onSave, onStart }: 
   }
 
   async function completeReview() {
+    const orderAdjusted = !sameStopOrder(stopIds, proposal.orderedStopIds)
+    const correctionMatchesOrder = corrections.some((correction) =>
+      sameStopOrder(correction.afterStopIds, stopIds),
+    )
+    if (pending || (orderAdjusted && !correctionMatchesOrder)) return
     setSaveState('saving')
     setError('')
     try {
-      await onSave(stopIds, corrections, true)
+      await onSave(stopIds, orderAdjusted ? corrections : [], true)
       setSaveState('saved')
     } catch (saveError) {
       setSaveState('idle')
@@ -186,6 +221,14 @@ function ManifestRouteProposalReview({ route, onBackToZones, onSave, onStart }: 
       setError(startError instanceof Error ? startError.message : 'The route could not be started.')
     }
   }
+
+  const orderAdjusted = !sameStopOrder(stopIds, proposal.orderedStopIds)
+  const correctionMatchesOrder = corrections.some((correction) =>
+    sameStopOrder(correction.afterStopIds, stopIds),
+  )
+  const localReviewMatchesSaved = route.status === 'proposal_reviewed' &&
+    sameStopOrder(stopIds, route.adjustedStopIds) &&
+    JSON.stringify(corrections) === JSON.stringify(route.plannedCorrections)
 
   return (
     <section className="manifest-proposal-review" aria-labelledby="manifest-proposal-title">
@@ -271,39 +314,67 @@ function ManifestRouteProposalReview({ route, onBackToZones, onSave, onStart }: 
           {stopIds.map((stopId, index) => {
             const stop = stopsById.get(stopId)
             if (!stop) return null
-            const isPendingStop = pending?.stopId === stopId
             return (
               <SortableStopCard
                 key={stopId}
-                disabled={Boolean(pending)}
+                disabled={Boolean(pending) || saveState === 'saving'}
                 index={index}
-                onMoveTo={(position) => moveStop(index, position, stopId)}
+                onMoveTo={(position) => moveStop(index, position)}
                 stop={stop}
                 totalStops={stopIds.length}
                 zone={zonesByStopId.get(stop.id)}
-              >
-                {isPendingStop ? (
-                  <div className="inline-position-reason">
-                    <ReasonPrompt
-                      description={pending.description}
-                      kind="planned"
-                      note={reasonNote}
-                      onNoteChange={setReasonNote}
-                      onReasonToggle={(reason) => setSelectedReasons((current) =>
-                        current.includes(reason) ? current.filter((item) => item !== reason) : [...current, reason]
-                      )}
-                      onSave={() => void saveReason()}
-                      saveLabel="Save new position"
-                      selectedReasons={selectedReasons}
-                    />
-                    <button className="text-button" type="button" onClick={undoPendingMove}>Undo move</button>
-                  </div>
-                ) : null}
-              </SortableStopCard>
+              />
             )
           })}
         </ol>
       </DragDropProvider>
+
+      <div className="proposal-edit-actions">
+        <button
+          className="secondary-button"
+          type="button"
+          disabled={Boolean(pending) || saveState === 'saving' || orderHistory.length === 0}
+          onClick={undoLastMove}
+        >
+          Undo Last Move
+        </button>
+        <button
+          className="secondary-button"
+          type="button"
+          disabled={Boolean(pending) || saveState === 'saving' || !orderAdjusted}
+          onClick={resetToProposal}
+        >
+          Reset to AI Proposal
+        </button>
+      </div>
+
+      {orderAdjusted && !correctionMatchesOrder && !pending ? (
+        <button className="primary-button" type="button" onClick={finishReordering}>
+          Done Reordering
+        </button>
+      ) : null}
+
+      {pending ? (
+        <div className="proposal-final-reason">
+          <ReasonPrompt
+            description={pending.description}
+            kind="planned"
+            note={reasonNote}
+            onNoteChange={setReasonNote}
+            onReasonToggle={(reason) => setSelectedReasons((current) =>
+              current.includes(reason) ? current.filter((item) => item !== reason) : [...current, reason]
+            )}
+            onSave={() => void saveReason()}
+            saveLabel="Save Final Starting Order"
+            selectedReasons={selectedReasons}
+          />
+          <button className="text-button" type="button" onClick={keepEditing}>Keep Editing</button>
+        </div>
+      ) : null}
+
+      {!orderAdjusted ? (
+        <p className="next-step-note">This matches the AI proposal, so no planned-correction reason is needed.</p>
+      ) : null}
 
       {corrections.length > 0 ? (
         <p className="reason-capture-status">
@@ -316,13 +387,13 @@ function ManifestRouteProposalReview({ route, onBackToZones, onSave, onStart }: 
       <button
         className="primary-button"
         type="button"
-        disabled={Boolean(pending) || saveState === 'saving' || route.status === 'proposal_reviewed'}
+        disabled={Boolean(pending) || saveState === 'saving' || (orderAdjusted && !correctionMatchesOrder) || localReviewMatchesSaved}
         onClick={() => void completeReview()}
       >
-        {route.status === 'proposal_reviewed' ? 'Driver Review Complete' : 'Complete Driver Review'}
+        {localReviewMatchesSaved ? 'Driver Review Complete' : 'Complete Driver Review'}
       </button>
 
-      {route.status === 'proposal_reviewed' ? (
+      {localReviewMatchesSaved ? (
         <button
           className="primary-button start-route-button"
           type="button"

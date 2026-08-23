@@ -8,6 +8,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test:route-reordering": "node --experimental-strip-types scripts/verify-route-reordering.ts",
+    "test:zone-learning": "node --experimental-strip-types scripts/verify-zone-learning.ts",
     "typecheck": "tsc -b --pretty false",
     "audit": "npm audit --audit-level=high",
     "preview": "vite preview"

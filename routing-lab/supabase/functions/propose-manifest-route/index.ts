@@ -1,16 +1,22 @@
 import "@supabase/functions-js/edge-runtime.d.ts"
 import { withSupabase } from "@supabase/server"
+import {
+  grandJunctionParentZones,
+  isGrandJunctionParentZone,
+} from "../../../src/lib/zone-learning.ts"
 
 const MODEL = "gpt-5.6-terra"
 const MAX_STOPS = 100
 const DEFAULT_MACRO_FLOW = [
-  "Grand Junction", "Delta", "Olathe", "Montrose", "Ridgway — North of Highway 62",
+  "Grand Junction", ...grandJunctionParentZones, "Delta", "Olathe", "Montrose", "Ridgway — North of Highway 62",
   "Ouray", "Ridgway Proper", "Log Hill", "Placerville / Sawpit",
   "Wilson Mesa Ranch Zone", "South Park", "Lawson Hill / Society", "Mountain Village",
   "Downtown Telluride", "Airport / Aldasoro", "Norwood", "Nucla / Naturita", "Gateway",
 ] as const
 const DOCUMENTS = [
-  "RouteBuilding.md", "MacroZones.md", "LogHill.md", "SouthPark.md", "MountainVillage.md",
+  "RouteBuilding.md", "MacroZones.md", "GrandJunctionFruita.md", "GrandJunctionWest.md",
+  "GrandJunctionRiverRoad.md", "GrandJunctionAirport.md", "GrandJunctionDowntownTheHole.md",
+  "GrandJunctionEast.md", "LogHill.md", "SouthPark.md", "MountainVillage.md",
   "DowntownTelluride.md", "AirportAldasoro.md",
 ] as const
 
@@ -136,7 +142,18 @@ function readOutputText(response: Record<string, unknown>) {
 
 function activeMacroFlow(stops: InputStop[]) {
   const activeZones = new Set(stops.map((stop) => stop.zone))
-  return DEFAULT_MACRO_FLOW.filter((zone) => activeZones.has(zone))
+  const grandJunctionFlow: string[] = []
+  for (const stop of stops) {
+    if (isGrandJunctionParentZone(stop.zone) && !grandJunctionFlow.includes(stop.zone)) {
+      grandJunctionFlow.push(stop.zone)
+    }
+  }
+  return [
+    ...(activeZones.has("Grand Junction") ? ["Grand Junction"] : []),
+    ...grandJunctionFlow,
+    ...DEFAULT_MACRO_FLOW.filter((zone) =>
+      zone !== "Grand Junction" && !isGrandJunctionParentZone(zone) && activeZones.has(zone)),
+  ]
 }
 
 function flowFromOrderedStops(orderedStopIds: string[], stops: InputStop[]) {
@@ -154,6 +171,12 @@ function requiredDocuments(stops: InputStop[]) {
   const activeZones = new Set(stops.map((stop) => stop.zone))
   const documents = ["RouteBuilding.md", "MacroZones.md"]
   const zoneDocuments: Record<string, string> = {
+    "Fruita": "GrandJunctionFruita.md",
+    "West": "GrandJunctionWest.md",
+    "River Road": "GrandJunctionRiverRoad.md",
+    "Airport": "GrandJunctionAirport.md",
+    "Downtown / The Hole": "GrandJunctionDowntownTheHole.md",
+    "East": "GrandJunctionEast.md",
     "Log Hill": "LogHill.md",
     "South Park": "SouthPark.md",
     "Mountain Village": "MountainVillage.md",
@@ -175,7 +198,13 @@ RouteBuilding.md:
 
 MacroZones.md default forward flow:
 Grand Junction → Delta → Olathe → Montrose → Ridgway — North of Highway 62 → Ouray → Ridgway Proper → Log Hill → Placerville / Sawpit → Wilson Mesa Ranch Zone → South Park → Lawson Hill / Society → Mountain Village → Downtown Telluride → Airport / Aldasoro → Norwood → Nucla / Naturita → Gateway.
-Remove inactive delivery zones while preserving that direction. Use only this forward flow in this unit. A whole-route constraint may affect local ordering but must not silently reverse the macro flow; identify any unsupported macro request as an operational exception needing driver review.
+Outside the Grand Junction parent zones, remove inactive delivery zones while preserving that direction. A whole-route constraint may affect local ordering but must not silently reverse the documented macro flow; identify any unsupported macro request as an operational exception needing driver review. Apply the separate Grand Junction rules below inside Grand Junction.
+
+Grand Junction parent-zone documents:
+- A normal Grand Junction trailer serves exactly one of Fruita, West, River Road, Airport, Downtown / The Hole, or East before returning to the yard.
+- The west-to-east geographic list is not a service sequence.
+- No parent zone has approved Micro Zones or internal road order yet. Label every Grand Junction internal sequence as an estimate.
+- If the driver approved more than one Grand Junction parent zone, preserve the first-appearance order from the supplied current stops only as an unverified working order and add an operational exception requiring driver review. Never claim that order is documented.
 
 SouthPark.md documented internal preference:
 Two Rivers → County Road 63L → South Park Rd → Vance Dr → Nimbus. Complete inbound before Lawson Hill.
@@ -194,7 +223,7 @@ AirportAldasoro.md:
 Complete once after Downtown and preserve residential progression. No durable internal road sequence exists; label local order as an estimate.
 
 No current manifest-derived approved lessons exist yet, so appliedLessonIds must be empty.
-documentsUsed must list RouteBuilding.md, MacroZones.md, then each relevant zone document in this order: LogHill.md, SouthPark.md, MountainVillage.md, DowntownTelluride.md, AirportAldasoro.md. Omit inactive zone documents.
+documentsUsed must list RouteBuilding.md, MacroZones.md, then each relevant zone document in this order: GrandJunctionFruita.md, GrandJunctionWest.md, GrandJunctionRiverRoad.md, GrandJunctionAirport.md, GrandJunctionDowntownTheHole.md, GrandJunctionEast.md, LogHill.md, SouthPark.md, MountainVillage.md, DowntownTelluride.md, AirportAldasoro.md. Omit inactive zone documents.
 Return exactly one transition for each adjacent pair in macroZoneFlow, in macro order.
 Keep reasons short and factual.`
 
@@ -224,7 +253,12 @@ export default {
           model: MODEL,
           reasoning: { effort: "medium" },
           input: [{ role: "user", content: [{ type: "input_text", text:
-            `${KNOWLEDGE_PACKET}\n\nBuild the structured proposal for this current route only:\n${JSON.stringify({ setup, stops })}`,
+            `${KNOWLEDGE_PACKET}\n\nBuild the structured proposal for this current route only:\n${JSON.stringify({
+              expectedMacroFlow: activeMacroFlow(stops),
+              multipleGrandJunctionParentZones: new Set(stops.map((stop) => stop.zone).filter(isGrandJunctionParentZone)).size > 1,
+              setup,
+              stops,
+            })}`,
           }] }],
           text: { format: { type: "json_schema", name: "routing_lab_manifest_route_proposal", strict: true, schema: proposalSchema } },
         }),
@@ -242,8 +276,10 @@ export default {
         appliedLessonIds?: unknown[]
         documentsUsed?: string[]
         macroZoneFlow?: string[]
+        operationalExceptions?: string[]
         orderedStopIds?: string[]
         transitions?: Array<{ fromZone?: string; toZone?: string }>
+        uncertainSequences?: Array<{ zone?: string; reason?: string }>
       }
       let ordered = result.orderedStopIds ?? []
       const sourceIds = stops.map((stop) => stop.id)
@@ -281,11 +317,29 @@ export default {
         if (JSON.stringify(flowFromOrderedStops(ordered, stops)) !== JSON.stringify(expectedFlow))
           return jsonError("An approved lesson conflicts with the verified macro flow and needs driver review.", 409)
       }
+      const grandJunctionZones = new Set(stops.map((stop) => stop.zone).filter(isGrandJunctionParentZone))
+      const grandJunctionExceptions = grandJunctionZones.size > 1
+        ? ["Multiple Grand Junction parent zones were driver-approved; their working order is unverified and needs driver review."]
+        : []
+      const uncertainSequences = [...(result.uncertainSequences ?? [])]
+      for (const zone of grandJunctionZones) {
+        if (!uncertainSequences.some((item) => item.zone === zone)) {
+          uncertainSequences.push({
+            zone,
+            reason: "No approved internal Micro Zones or road sequence exists yet; this order is an estimate.",
+          })
+        }
+      }
       return Response.json({ model: MODEL, ...result, orderedStopIds: ordered,
         appliedLessonIds: applicable.map((lesson) => lesson.id),
-        operationalExceptions: applicable.length > 0
-          ? [...(result.operationalExceptions ?? []), `Applied approved ${applicable[0].scopeType} lesson for ${applicable[0].scopeValue}: ${applicable[0].text}`]
-          : result.operationalExceptions })
+        uncertainSequences,
+        operationalExceptions: [
+          ...(result.operationalExceptions ?? []),
+          ...grandJunctionExceptions,
+          ...(applicable.length > 0
+            ? [`Applied approved ${applicable[0].scopeType} lesson for ${applicable[0].scopeValue}: ${applicable[0].text}`]
+            : []),
+        ] })
     } catch { return jsonError("The structured route proposal could not be read. Try again.", 502) }
   }),
 }

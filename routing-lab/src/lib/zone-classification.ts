@@ -2,27 +2,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js'
 
 import type { ManifestRouteStop } from './route-persistence'
 import { getSupabase } from './supabase'
-
-export const documentedOperationalZones = [
-  'Grand Junction',
-  'Delta',
-  'Olathe',
-  'Montrose',
-  'Ridgway — North of Highway 62',
-  'Ouray',
-  'Ridgway Proper',
-  'Log Hill',
-  'Placerville / Sawpit',
-  'Wilson Mesa Ranch Zone',
-  'South Park',
-  'Lawson Hill / Society',
-  'Mountain Village',
-  'Downtown Telluride',
-  'Airport / Aldasoro',
-  'Norwood',
-  'Nucla / Naturita',
-  'Gateway',
-] as const
+export { documentedOperationalZones, selectableOperationalZones } from './zone-learning'
 
 export type ZoneConfidence = 'high' | 'medium' | 'low' | 'uncertain'
 export type ZoneReviewStatus = 'proposed' | 'approved' | 'unresolved'

@@ -10,6 +10,7 @@ import {
 import type { ReviewState } from '../lib/manifest-extraction'
 
 type ManifestConfirmationProps = {
+  hasLinkedTestRoute: boolean
   photos: ManifestPhoto[]
   initialState: GroupingResult
   initiallyConfirmed: boolean
@@ -30,6 +31,7 @@ function reviewLabel(state: ReviewState) {
 }
 
 function ManifestConfirmation({
+  hasLinkedTestRoute,
   photos,
   initialState,
   initiallyConfirmed,
@@ -266,8 +268,12 @@ function ManifestConfirmation({
         </button>
         {showResetConfirmation ? (
           <div className="manifest-reset-confirmation">
-            <strong>Delete only this manifest?</strong>
-            <p>This removes its photos, extraction, corrections, and confirmed stops. GR-001 and other imports remain unchanged.</p>
+            <strong>Delete this saved manifest?</strong>
+            <p>
+              This permanently removes its photos, extraction, corrections, and confirmed stops.
+              {hasLinkedTestRoute ? ' Its linked Test Route, zone learning, and route lessons will also be deleted.' : ''}
+              {' '}Other manifests and Test Routes remain unchanged.
+            </p>
             <button className="danger-button" type="button" disabled={isResetting} onClick={() => void resetImport()}>
               {isResetting ? 'Deleting…' : 'Yes, delete this manifest'}
             </button>

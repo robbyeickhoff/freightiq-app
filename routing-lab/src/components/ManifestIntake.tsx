@@ -98,10 +98,12 @@ async function normalizeManifestPhoto(source: Blob) {
 }
 
 type ManifestIntakeProps = {
+  onManifestDeleted: (manifestImportId: string) => Promise<void>
   onOpenDraftRoute: (route: ManifestDraftRoute) => void
+  routes: ManifestDraftRoute[]
 }
 
-function ManifestIntake({ onOpenDraftRoute }: ManifestIntakeProps) {
+function ManifestIntake({ onManifestDeleted, onOpenDraftRoute, routes }: ManifestIntakeProps) {
   const [photos, setPhotos] = useState<ManifestPhoto[]>([])
   const [stage, setStage] = useState<IntakeStage>('photos')
   const [isPreparingPhotos, setIsPreparingPhotos] = useState(false)
@@ -299,6 +301,7 @@ function ManifestIntake({ onOpenDraftRoute }: ManifestIntakeProps) {
     return (
       <ManifestConfirmation
         key={savedImportId}
+        hasLinkedTestRoute={routes.some((route) => route.manifestImportId === savedImportId)}
         photos={photos}
         initialState={restoredState}
         initiallyConfirmed={isConfirmed}
@@ -311,6 +314,7 @@ function ManifestIntake({ onOpenDraftRoute }: ManifestIntakeProps) {
         onReset={async () => {
           await deleteSavedManifest(savedImportId, storedPhotos)
           clearCurrentImport()
+          await onManifestDeleted(savedImportId)
         }}
         onStartAnother={clearCurrentImport}
       />

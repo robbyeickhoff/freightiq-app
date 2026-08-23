@@ -7,6 +7,7 @@ import type {
   ManifestRouteProposal,
   PlannedRouteCorrection,
 } from './manifest-route-proposal'
+import { buildAddressKey, isGrandJunctionParentZone } from './zone-learning'
 
 export type ManifestRouteStop = RouteStop & {
   postalCode: string
@@ -160,6 +161,32 @@ export async function loadLatestManifestDraftRoute() {
   return data ? fromRow(data) : null
 }
 
+export async function loadManifestRoutes() {
+  const userId = await currentUserId()
+  const { data, error } = await getSupabase()
+    .from('routing_lab_routes')
+    .select(routeSelect)
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+
+  if (error) throw error
+  return data.map(fromRow)
+}
+
+export async function deleteManifestRoute(routeId: string) {
+  const userId = await currentUserId()
+  const { data, error } = await getSupabase()
+    .from('routing_lab_routes')
+    .delete()
+    .eq('id', routeId)
+    .eq('user_id', userId)
+    .select('id')
+    .single()
+
+  if (error) throw error
+  if (!data) throw new Error('The Test Route could not be deleted.')
+}
+
 export async function saveManifestRouteSetup(routeId: string, setup: RouteSetup) {
   const userId = await currentUserId()
   const { data, error } = await getSupabase()
@@ -175,28 +202,39 @@ export async function saveManifestRouteSetup(routeId: string, setup: RouteSetup)
 }
 
 export async function saveManifestZoneReview(
-  routeId: string,
+  route: ManifestDraftRoute,
   zoneReview: ZoneClassification[],
   complete: boolean,
 ) {
-  const userId = await currentUserId()
-  const { data, error } = await getSupabase()
-    .from('routing_lab_routes')
-    .update({
-      adjusted_stop_ids: [] as unknown as Json,
-      planned_corrections: [] as unknown as Json,
-      route_proposal: {} as Json,
-      status: complete ? 'zone_approved' : 'zone_review',
-      updated_at: new Date().toISOString(),
-      zone_review: zoneReview as unknown as Json,
-    })
-    .eq('id', routeId)
-    .eq('user_id', userId)
-    .select('id')
-    .single()
+  await currentUserId()
+  const approvedZones = new Map(
+    zoneReview
+      .filter((item) => item.status === 'approved' && item.selectedZone)
+      .map((item) => [item.stopId, item.selectedZone as string]),
+  )
+  const evidence = complete
+    ? route.sourceStops.flatMap((stop) => {
+        const approvedZone = approvedZones.get(stop.id)
+        if (!approvedZone || !isGrandJunctionParentZone(approvedZone)) return []
+        return [{
+          address: stop.address,
+          address_key: buildAddressKey(stop),
+          approved_zone: approvedZone,
+          city: stop.city,
+          postal_code: stop.postalCode,
+          state: stop.state,
+          stop_id: stop.id,
+        }]
+      })
+    : []
+  const { error } = await getSupabase().rpc('save_routing_lab_zone_review', {
+    p_complete: complete,
+    p_evidence: evidence as unknown as Json,
+    p_route_id: route.id,
+    p_zone_review: zoneReview as unknown as Json,
+  })
 
   if (error) throw error
-  if (!data) throw new Error('The zone review could not be saved.')
 }
 
 export async function saveManifestRouteProposal(

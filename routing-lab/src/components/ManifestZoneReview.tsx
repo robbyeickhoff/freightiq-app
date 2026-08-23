@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import type { ManifestDraftRoute } from '../lib/route-persistence'
 import {
-  documentedOperationalZones,
+  selectableOperationalZones,
   type ZoneClassification,
 } from '../lib/zone-classification'
 
@@ -153,7 +153,10 @@ function ManifestZoneReview({
                     })}
                   >
                     <option value="">Select a documented zone</option>
-                    {documentedOperationalZones.map((zone) => (
+                    {classification.selectedZone === 'Grand Junction' ? (
+                      <option value="Grand Junction">Grand Junction (legacy)</option>
+                    ) : null}
+                    {selectableOperationalZones.map((zone) => (
                       <option key={zone} value={zone}>{zone}</option>
                     ))}
                   </select>

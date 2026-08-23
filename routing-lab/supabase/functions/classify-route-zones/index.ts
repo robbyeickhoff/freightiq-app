@@ -1,28 +1,15 @@
 import "@supabase/functions-js/edge-runtime.d.ts"
 import { withSupabase } from "@supabase/server"
+import {
+  buildAddressKey,
+  documentedOperationalZones,
+  resolveLearnedZone,
+  type ZoneEvidence,
+} from "../../../src/lib/zone-learning.ts"
 
 const MODEL = "gpt-5.6-terra"
 const MAX_STOPS = 100
-const OPERATIONAL_ZONES = [
-  "Grand Junction",
-  "Delta",
-  "Olathe",
-  "Montrose",
-  "Ridgway — North of Highway 62",
-  "Ouray",
-  "Ridgway Proper",
-  "Log Hill",
-  "Placerville / Sawpit",
-  "Wilson Mesa Ranch Zone",
-  "South Park",
-  "Lawson Hill / Society",
-  "Mountain Village",
-  "Downtown Telluride",
-  "Airport / Aldasoro",
-  "Norwood",
-  "Nucla / Naturita",
-  "Gateway",
-] as const
+const OPERATIONAL_ZONES = documentedOperationalZones
 
 const classificationSchema = {
   type: "object",
@@ -58,6 +45,21 @@ type InputStop = {
   city: string
   state: string
   postalCode: string
+}
+
+type ZoneClassificationResponse = {
+  classifications: Array<{
+    confidence: 'high' | 'medium' | 'low' | 'uncertain'
+    evidence: string
+    proposedZone: (typeof OPERATIONAL_ZONES)[number] | null
+    stopId: string
+  }>
+}
+
+type ZoneEvidenceRow = {
+  address_key: string
+  approved_zone: string
+  source_route_id: string
 }
 
 function jsonError(message: string, status: number) {
@@ -116,7 +118,8 @@ Documented road evidence:
 - Mountain Village: Raspberry Patch Rd, Adams Ranch Rd, Prospect Creek Rd, Mountain Village Blvd, Fox Farm Rd, Wapiti Rd, Benchmark Dr, San Joaquin Rd, Arizona St, Touchdown Dr, Highlands Way, Victoria Dr, and documented Mountain Village residential roads.
 - Downtown Telluride: the Telluride street grid documented in DowntownTelluride.md, including Colorado Ave, Columbia Ave, Pacific Ave, Depot Ave/Alley, San Juan Ave, Gregory Ave, Galena Ave, Dakota Ave, and the named north/south cross streets. Use low confidence when an address falls outside a documented block boundary.
 - Airport / Aldasoro: Airport Rd / CR T60, Aldasoro Blvd, Mariposa Ln, Cristelli Ln, Sunnyside Ranch Dr, Elk Ridge, Cristinas Way, Joaquin Rd, Aguirre Rd, Old Toll Rd, Basque Blvd, Josefa Ln, Miguel Rd, Prudencio Ln, Bernardo Dr, Albert J Rd, W/E Serapio, Francisco Way.
-- MacroZones.md also names Ouray, Ridgway Proper, Ridgway north of Highway 62, Placerville / Sawpit, Wilson Mesa Ranch Zone, Norwood, Nucla / Naturita, Gateway, Grand Junction, Delta, Olathe, and Montrose, but no road-level membership supplied here may be invented.
+- Grand Junction has six permanent parent zones: Fruita, West, River Road, Airport, Downtown / The Hole, and East. These are independent dense trailer territories, not a west-to-east route sequence. Their current documents do not yet provide road-level membership, so unmatched Grand Junction addresses must remain uncertain.
+- MacroZones.md also names Ouray, Ridgway Proper, Ridgway north of Highway 62, Placerville / Sawpit, Wilson Mesa Ranch Zone, Norwood, Nucla / Naturita, Gateway, legacy Grand Junction, Delta, Olathe, and Montrose, but no road-level membership supplied here may be invented.
 
 Confidence:
 - high: direct documented road match.
@@ -137,9 +140,6 @@ export default {
     if (!allowedEmail) return jsonError("The approved user is not configured.", 503)
     if (signedInEmail !== allowedEmail) return jsonError("Access denied.", 403)
 
-    const apiKey = Deno.env.get("OPENAI_API_KEY")
-    if (!apiKey) return jsonError("Zone classification is not configured.", 503)
-
     let body: Record<string, unknown>
     try {
       body = await req.json()
@@ -150,60 +150,114 @@ export default {
     const stops = parseStops(body.stops)
     if (!stops) return jsonError("Provide a valid current stop list.", 400)
 
-    let openAIResponse: Response
-    try {
-      openAIResponse = await fetch("https://api.openai.com/v1/responses", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          reasoning: { effort: "low" },
-          input: [{
-            role: "user",
-            content: [{
-              type: "input_text",
-              text: `${KNOWLEDGE_PACKET}\n\nClassify every stop exactly once:\n${JSON.stringify(stops)}`,
-            }],
-          }],
-          text: {
-            format: {
-              type: "json_schema",
-              name: "routing_lab_zone_classification",
-              strict: true,
-              schema: classificationSchema,
-            },
-          },
-        }),
-      })
-    } catch {
-      return jsonError("The classification service could not be reached. Try again.", 502)
-    }
+    const addressKeys = [...new Set(stops.map(buildAddressKey))]
+    const learned = await ctx.supabase
+      .from("routing_lab_zone_evidence")
+      .select("address_key,approved_zone,source_route_id")
+      .in("address_key", addressKeys)
+    if (learned.error) return jsonError("Prior zone evidence could not be read. Try again.", 502)
 
-    if (!openAIResponse.ok) {
-      console.error("Zone classification provider error", openAIResponse.status)
-      return jsonError("The classification service could not classify these stops. Try again.", 502)
-    }
-
-    const providerResponse = await openAIResponse.json() as Record<string, unknown>
-    const outputText = readOutputText(providerResponse)
-    if (!outputText) return jsonError("No structured classification was returned. Try again.", 502)
-
-    try {
-      const result = JSON.parse(outputText) as { classifications?: Array<{ stopId?: unknown }> }
-      const returnedIds = result.classifications?.map((item) => item.stopId) ?? []
-      if (
-        returnedIds.length !== stops.length ||
-        new Set(returnedIds).size !== stops.length ||
-        stops.some((stop) => !returnedIds.includes(stop.id))
-      ) {
-        return jsonError("The classifier did not preserve the current stop list. Try again.", 502)
+    const evidenceByAddress = new Map<string, ZoneEvidence[]>()
+    for (const item of (learned.data ?? []) as unknown as ZoneEvidenceRow[]) {
+      const evidence: ZoneEvidence = {
+        addressKey: item.address_key,
+        approvedZone: item.approved_zone,
+        sourceRouteId: item.source_route_id,
       }
-      return Response.json({ model: MODEL, ...result })
-    } catch {
-      return jsonError("The structured classification could not be read. Try again.", 502)
+      evidenceByAddress.set(item.address_key, [
+        ...(evidenceByAddress.get(item.address_key) ?? []),
+        evidence,
+      ])
     }
+
+    const learnedClassifications = new Map<string, ZoneClassificationResponse["classifications"][number]>()
+    const unmatchedStops: InputStop[] = []
+    for (const stop of stops) {
+      const resolution = resolveLearnedZone(evidenceByAddress.get(buildAddressKey(stop)) ?? [])
+      if (!resolution) {
+        unmatchedStops.push(stop)
+        continue
+      }
+      learnedClassifications.set(stop.id, {
+        confidence: resolution.confidence,
+        evidence: resolution.evidence,
+        proposedZone: resolution.proposedZone,
+        stopId: stop.id,
+      })
+    }
+
+    let modelClassifications: ZoneClassificationResponse["classifications"] = []
+    if (unmatchedStops.length > 0) {
+      const apiKey = Deno.env.get("OPENAI_API_KEY")
+      if (!apiKey) return jsonError("Zone classification is not configured.", 503)
+      let openAIResponse: Response
+      try {
+        openAIResponse = await fetch("https://api.openai.com/v1/responses", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: MODEL,
+            reasoning: { effort: "low" },
+            input: [{
+              role: "user",
+              content: [{
+                type: "input_text",
+                text: `${KNOWLEDGE_PACKET}\n\nClassify every stop exactly once:\n${JSON.stringify(unmatchedStops)}`,
+              }],
+            }],
+            text: {
+              format: {
+                type: "json_schema",
+                name: "routing_lab_zone_classification",
+                strict: true,
+                schema: classificationSchema,
+              },
+            },
+          }),
+        })
+      } catch {
+        return jsonError("The classification service could not be reached. Try again.", 502)
+      }
+
+      if (!openAIResponse.ok) {
+        console.error("Zone classification provider error", openAIResponse.status)
+        return jsonError("The classification service could not classify these stops. Try again.", 502)
+      }
+
+      const providerResponse = await openAIResponse.json() as Record<string, unknown>
+      const outputText = readOutputText(providerResponse)
+      if (!outputText) return jsonError("No structured classification was returned. Try again.", 502)
+
+      try {
+        const result = JSON.parse(outputText) as ZoneClassificationResponse
+        const returnedIds = result.classifications?.map((item) => item.stopId) ?? []
+        const unmatchedIds = unmatchedStops.map((stop) => stop.id)
+        if (
+          returnedIds.length !== unmatchedIds.length ||
+          new Set(returnedIds).size !== unmatchedIds.length ||
+          unmatchedIds.some((stopId) => !returnedIds.includes(stopId))
+        ) {
+          return jsonError("The classifier did not preserve the unmatched stop list. Try again.", 502)
+        }
+        modelClassifications = result.classifications
+      } catch {
+        return jsonError("The structured classification could not be read. Try again.", 502)
+      }
+    }
+
+    const modelByStop = new Map(modelClassifications.map((item) => [item.stopId, item]))
+    const classifications = stops.map((stop) => learnedClassifications.get(stop.id) ?? modelByStop.get(stop.id))
+    if (
+      classifications.some((item) => !item) ||
+      classifications.length !== stops.length ||
+      new Set(classifications.map((item) => item?.stopId)).size !== stops.length
+    ) {
+      return jsonError("The classifier did not preserve the current stop list. Try again.", 502)
+    }
+
+    return Response.json({ model: MODEL, classifications })
   }),
 }

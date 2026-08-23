@@ -400,7 +400,7 @@ textarea:focus-visible {
 
 .workspace-switcher {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   margin-bottom: 16px;
   border: 1px solid var(--border);
@@ -633,6 +633,37 @@ textarea:focus-visible {
   justify-self: start;
 }
 
+.proposal-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.proposal-edit-actions button {
+  flex: 1 1 180px;
+}
+
+.proposal-final-reason {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #3a5663;
+  border-radius: 14px;
+  padding: 14px;
+  background: #10242d;
+}
+
+.proposal-final-reason .reason-prompt {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.proposal-final-reason .text-button {
+  justify-self: start;
+}
+
 .manifest-proposal-stop-list .stop-copy small {
   color: var(--accent);
   font-size: 0.7rem;
@@ -859,6 +890,80 @@ textarea:focus-visible {
 
 .resume-manifest-route {
   margin-bottom: 16px;
+}
+
+.route-history {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+}
+
+.route-history__lede {
+  color: var(--muted);
+  margin: -2px 0 0;
+}
+
+.route-history__empty,
+.route-history__list > li {
+  background: var(--panel-strong);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 16px;
+}
+
+.route-history__empty p {
+  color: var(--muted);
+  margin-bottom: 0;
+}
+
+.route-history__list {
+  display: grid;
+  gap: 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.route-history__heading,
+.route-history__actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.route-history__heading > div {
+  display: grid;
+  gap: 4px;
+}
+
+.route-history__heading > div span,
+.route-history__zones {
+  color: var(--muted);
+}
+
+.route-history__zones {
+  margin: 12px 0;
+}
+
+.route-history__actions button {
+  margin: 0;
+  width: auto;
+}
+
+@media (max-width: 560px) {
+  .workspace-switcher button {
+    font-size: 0.75rem;
+  }
+
+  .route-history__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .route-history__actions button {
+    width: 100%;
+  }
 }
 
 .manifest-intake__lede {

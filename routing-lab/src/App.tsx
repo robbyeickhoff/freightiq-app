@@ -7,6 +7,7 @@ import ManifestIntake from './components/ManifestIntake'
 import ManifestRouteSetup from './components/ManifestRouteSetup'
 import ManifestRouteProposalReview from './components/ManifestRouteProposalReview'
 import ManifestRouteExecution from './components/ManifestRouteExecution'
+import ManifestRouteHistory from './components/ManifestRouteHistory'
 import { approveManifestLesson } from './lib/manifest-lessons'
 import type { ManifestLesson } from './lib/manifest-lessons'
 import ManifestZoneReview from './components/ManifestZoneReview'
@@ -34,6 +35,8 @@ import type {
 } from './lib/route-domain'
 import { getSupabase } from './lib/supabase'
 import {
+  deleteManifestRoute,
+  loadManifestRoutes,
   loadLatestManifestDraftRoute,
   prepareManifestRouteReplay,
   saveManifestProposalReview,
@@ -49,7 +52,7 @@ import { proposeZoneClassifications } from './lib/zone-classification'
 import type { ZoneClassification } from './lib/zone-classification'
 
 type ProposalSource = 'baseline' | 'learned'
-type Workspace = 'manifest-intake' | 'test-route'
+type Workspace = 'manifest-intake' | 'past-routes' | 'test-route'
 type TestRouteMode = 'fixture' | 'manifest-draft'
 
 type SavedFixtureState = {
@@ -93,6 +96,7 @@ function App() {
   const [workspace, setWorkspace] = useState<Workspace>('test-route')
   const [testRouteMode, setTestRouteMode] = useState<TestRouteMode>('fixture')
   const [manifestDraftRoute, setManifestDraftRoute] = useState<ManifestDraftRoute | null>(null)
+  const [manifestRoutes, setManifestRoutes] = useState<ManifestDraftRoute[]>([])
   const [manifestRouteStage, setManifestRouteStage] = useState<'setup' | 'zone-review' | 'proposal-review' | 'execution'>('setup')
   const [isClassifyingZones, setIsClassifyingZones] = useState(false)
   const [isGeneratingManifestProposal, setIsGeneratingManifestProposal] = useState(false)
@@ -307,14 +311,17 @@ function App() {
   useEffect(() => {
     if (!session) {
       setManifestDraftRoute(null)
+      setManifestRoutes([])
       setTestRouteMode('fixture')
       return
     }
 
     let active = true
-    void loadLatestManifestDraftRoute()
-      .then((route) => {
-        if (!active || !route) return
+    void Promise.all([loadLatestManifestDraftRoute(), loadManifestRoutes()])
+      .then(([route, routes]) => {
+        if (!active) return
+        setManifestRoutes(routes)
+        if (!route) return
         setManifestDraftRoute(route)
         setTestRouteMode('manifest-draft')
         setManifestRouteStage(route.runState ? 'execution' : route.routeProposal ? 'proposal-review' : route.zoneReview.length > 0 ? 'zone-review' : 'setup')
@@ -329,10 +336,47 @@ function App() {
   }, [session])
 
   function openManifestDraftRoute(route: ManifestDraftRoute) {
+    setManifestRoutes((current) => current.some((item) => item.id === route.id) ? current : [route, ...current])
     setManifestDraftRoute(route)
     setTestRouteMode('manifest-draft')
     setManifestRouteStage(route.runState ? 'execution' : route.routeProposal ? 'proposal-review' : route.zoneReview.length > 0 ? 'zone-review' : 'setup')
     setWorkspace('test-route')
+  }
+
+  async function refreshManifestRoutes(deletedRouteId?: string, deletedManifestImportId?: string) {
+    const routes = await loadManifestRoutes()
+    setManifestRoutes(routes)
+    const openRouteWasDeleted = manifestDraftRoute && (
+      manifestDraftRoute.id === deletedRouteId ||
+      manifestDraftRoute.manifestImportId === deletedManifestImportId
+    )
+    if (openRouteWasDeleted) {
+      const nextRoute = routes[0] ?? null
+      setManifestDraftRoute(nextRoute)
+      setTestRouteMode(nextRoute ? 'manifest-draft' : 'fixture')
+      if (nextRoute) {
+        setManifestRouteStage(nextRoute.runState ? 'execution' : nextRoute.routeProposal ? 'proposal-review' : nextRoute.zoneReview.length > 0 ? 'zone-review' : 'setup')
+      }
+    }
+  }
+
+  async function removeManifestRoute(route: ManifestDraftRoute) {
+    await deleteManifestRoute(route.id)
+    await refreshManifestRoutes(route.id)
+  }
+
+  async function handleManifestDeleted(manifestImportId: string) {
+    await refreshManifestRoutes(undefined, manifestImportId)
+  }
+
+  async function openPastRoutes() {
+    setMessage('')
+    try {
+      await refreshManifestRoutes()
+      setWorkspace('past-routes')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Past Routes could not be loaded.')
+    }
   }
 
   async function saveDraftRouteSetup(setup: RouteSetup) {
@@ -355,7 +399,7 @@ function App() {
       }
 
       const zoneReview = await proposeZoneClassifications(manifestDraftRoute.sourceStops)
-      await saveManifestZoneReview(manifestDraftRoute.id, zoneReview, false)
+      await saveManifestZoneReview(manifestDraftRoute, zoneReview, false)
       setManifestDraftRoute({
         ...manifestDraftRoute,
         setup,
@@ -375,7 +419,7 @@ function App() {
     complete: boolean,
   ) {
     if (!manifestDraftRoute) return
-    await saveManifestZoneReview(manifestDraftRoute.id, zoneReview, complete)
+    await saveManifestZoneReview(manifestDraftRoute, zoneReview, complete)
     setManifestDraftRoute({
       ...manifestDraftRoute,
       adjustedStopIds: [],
@@ -984,10 +1028,27 @@ function App() {
         >
           Manifest Intake
         </button>
+        <button
+          type="button"
+          aria-current={workspace === 'past-routes' ? 'page' : undefined}
+          onClick={() => void openPastRoutes()}
+        >
+          Past Routes
+        </button>
       </nav>
 
       {workspace === 'manifest-intake' ? (
-        <ManifestIntake onOpenDraftRoute={openManifestDraftRoute} />
+        <ManifestIntake
+          onManifestDeleted={handleManifestDeleted}
+          onOpenDraftRoute={openManifestDraftRoute}
+          routes={manifestRoutes}
+        />
+      ) : workspace === 'past-routes' ? (
+        <ManifestRouteHistory
+          onDelete={removeManifestRoute}
+          onReview={openManifestDraftRoute}
+          routes={manifestRoutes}
+        />
       ) : testRouteMode === 'manifest-draft' && manifestDraftRoute && manifestRouteStage === 'execution' ? (
         <ManifestRouteExecution route={manifestDraftRoute} onApproveLesson={approveRealRouteLesson} onReplay={replayManifestRoute} onSave={saveActiveManifestRoute} />
       ) : testRouteMode === 'manifest-draft' && manifestDraftRoute && manifestRouteStage === 'proposal-review' ? (

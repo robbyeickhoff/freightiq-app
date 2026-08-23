@@ -66,6 +66,12 @@ export type Database = {
         }
         Relationships: []
       }
+      routing_lab_zone_evidence: {
+        Row: { address: string; address_key: string; approved_zone: string; city: string; confirmed_at: string; id: string; postal_code: string; source_route_id: string; source_stop_id: string; state: string; updated_at: string; user_id: string }
+        Insert: { address: string; address_key: string; approved_zone: string; city: string; confirmed_at?: string; id?: string; postal_code: string; source_route_id: string; source_stop_id: string; state: string; updated_at?: string; user_id: string }
+        Update: { address?: string; address_key?: string; approved_zone?: string; city?: string; confirmed_at?: string; id?: string; postal_code?: string; source_route_id?: string; source_stop_id?: string; state?: string; updated_at?: string; user_id?: string }
+        Relationships: []
+      }
       routing_lab_manifest_imports: {
         Row: {
           confirmed_stops: Json | null
@@ -155,7 +161,12 @@ export type Database = {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      save_routing_lab_zone_review: {
+        Args: { p_complete: boolean; p_evidence: Json; p_route_id: string; p_zone_review: Json }
+        Returns: undefined
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }
