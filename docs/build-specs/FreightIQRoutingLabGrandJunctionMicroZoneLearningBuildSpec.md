@@ -2,7 +2,7 @@
 
 ## Status
 
-**Approved — local implementation and Product Owner diff approval complete**
+**Complete — production deployed and accepted on a live phone**
 
 Prepared and approved by the Product Owner on August 23, 2026.
 
@@ -11,8 +11,9 @@ Junction Micro Zone taxonomy, a parent-first Zone Review experience, and exact-a
 learning without treating the map's A/B/C order as a fixed daily delivery sequence.
 
 Local implementation, Product Owner diff approval, clean migration replay, focused database tests,
-static checks, and the production web build are complete. Production migration, Edge Function
-deployment, Vercel deployment, and live acceptance remain separate gates.
+static checks, the production web build, the separately approved production migration, both
+affected Edge Function deployments, Vercel production deployment, and signed-in live phone
+acceptance are complete.
 
 ## Objective
 

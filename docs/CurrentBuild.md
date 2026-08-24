@@ -29,8 +29,19 @@ numeric weighting, trailer inference, polygon classifier, geocoding, optimizatio
 FreightIQ integration, or deployment was added. TypeScript, lint, the frozen fixture check, route
 reordering checks, expanded zone-learning checks, production build, dependency audit, clean local
 database replay, and all 20 focused database tests pass. The Product Owner approved the local diff
-and interface implementation. Production Routing Lab migration, both Edge Function deployments,
-Vercel deployment, and live acceptance remain separately approval-gated.
+and interface implementation. The separately approved Routing Lab production migration
+`20260823213000_add_routing_lab_micro_zone_learning.sql` was applied to linked project
+`bnhtwtcoalfgqtcgxmsh` and verified in synchronized migration history. The remote schema contains
+the separate `approved_micro_zone` field, canonical parent/Micro Zone validation constraint, and
+guarded review-save function; a post-apply dry run reports the database is up to date. The
+separately approved `classify-route-zones` version 3 and `propose-manifest-route` version 6 Edge
+Functions are active with JWT verification enabled; unsigned production probes correctly return
+HTTP 401. Vercel production deployment `dpl_9RdZCdBuYctqZqvhT7ywmyMyYPkp` is Ready and aliased at
+`https://freightiq-routing-lab.vercel.app`. The production alias returns HTTP 200 and its served
+bundle contains the new primary-parent and Micro Zone review interface. Signed-in live phone
+acceptance passed primary-parent setup, parent-first review, parent and Micro Zone assignment,
+cross-parent exception handling, proposal generation, preferred-but-editable ordering, and saved
+state recovery. Grand Junction Micro-Zone Learning is production-complete and accepted.
 
 ---
 

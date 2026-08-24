@@ -443,8 +443,14 @@ Routing Lab production environment and ready for real-workday field use.
   parent-first review, validated private exact-address evidence, learned proposals, preferred
   baseline proposal context, compatibility, clean replay, and focused checks.
 - [x] Complete Product Owner diff and interface approval for Grand Junction Micro-Zone Learning.
-- [ ] Separately approve and apply the Routing Lab production migration, deploy the two affected
-  Edge Functions and Vercel application, then complete live phone acceptance.
+- [x] Separately approve, apply, and production-verify the one Grand Junction Micro-Zone Learning
+  migration without seeds or role changes.
+- [x] Separately approve, deploy, and verify `classify-route-zones` version 3 and
+  `propose-manifest-route` version 6 with JWT verification preserved.
+- [x] Separately approve, deploy, and verify Vercel production deployment
+  `dpl_9RdZCdBuYctqZqvhT7ywmyMyYPkp` and its canonical production alias.
+- [x] Complete signed-in live phone acceptance for primary-parent setup, parent/Micro Zone review,
+  cross-parent exceptions, save/reload, learned proposals, and preferred-but-overridable ordering.
 - [ ] Run the first real-workday Routing Lab field trial and capture only observed friction,
   incorrect behavior, or unreliable learning for focused follow-up.
 
