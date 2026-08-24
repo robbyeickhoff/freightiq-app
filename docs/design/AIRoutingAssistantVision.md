@@ -787,6 +787,123 @@ The driver must retain manual control even when AI Routing is available.
 
 ---
 
+# AI Routing Vision Alignment Gate
+
+Every future Routing Lab, AI Routing Assistant, Zone discovery, route-learning, or related Route
+Builder proposal must be evaluated against this vision before a focused Build Specification is
+approved.
+
+This gate applies to product design, data modeling, evidence collection, model behavior, user
+experience, implementation, validation, and promotion of learned knowledge.
+
+Passing the gate does not authorize implementation. It establishes that the proposed work moves
+FreightIQ toward the approved long-term direction without creating an avoidable architectural or
+product dead end.
+
+## Required Build-Specification Alignment Statement
+
+Every affected Build Specification must state:
+
+1. **Long-term capability advanced** — Identify the specific AI Routing capability this work proves
+   or enables.
+2. **Evidence created** — Define what observable driver, route, stop, road, Zone, or Fleet evidence
+   the implementation records.
+3. **Driver effort reduced** — Explain how the work moves FreightIQ toward reviewing exceptions
+   instead of requiring manual teaching or duplicate data entry.
+4. **Knowledge scope** — Identify whether resulting knowledge belongs to the current route, stop,
+   road, Micro Zone, Zone, driver, Fleet, or broader FreightIQ system.
+5. **Durable versus situational separation** — Explain how permanent operational knowledge remains
+   distinct from trailer loading, appointments, weather, closures, temporary access, and other
+   one-day conditions.
+6. **Confidence and conflict behavior** — Define how agreement strengthens confidence, how
+   uncertainty remains visible, and how conflicting evidence returns to review.
+7. **Driver authority** — Preserve an understandable way for the driver to review, correct, reject,
+   or override the proposal.
+8. **Explainability** — State what evidence FreightIQ can show to explain an important proposal or
+   learned conclusion.
+9. **Privacy and promotion boundary** — Define what remains private to a driver or Fleet and what
+   approval would be required before broader use.
+10. **Explicit non-learning boundary** — State what the feature deliberately does not infer, retain,
+    promote, or treat as permanent knowledge.
+11. **Future compatibility** — Explain how the data and behavior can support later geocoding,
+    road-network intelligence, Zone discovery, and AI-proposed routes without requiring drivers to
+    recreate the same knowledge.
+12. **Validation signal** — Define the evidence or metric that will show whether the feature
+    improved route usefulness, driver trust, or required intervention.
+
+If one of these items does not apply, the Build Specification must explain why rather than silently
+omit it.
+
+## Alignment Review Questions
+
+Before approving implementation, ask:
+
+- Does this reduce eventual driver workload?
+- Does it collect evidence through ordinary work whenever practical?
+- Does it preserve the Route → Macro Zone → Zone → Micro Zone → Road → Stop hierarchy?
+- Does it separate classification knowledge from today's service order?
+- Does it distinguish a durable correction from a one-day operational exception?
+- Can the system explain why it believes the proposed rule or classification?
+- Can conflicting evidence remain unresolved instead of being forced into a false answer?
+- Does the driver remain the operational authority?
+- Will today's evidence remain useful as FreightIQ adds geospatial and road-network intelligence?
+- Is the work proving reusable learning behavior rather than hard-coding one driver's routes?
+- Does it move the experience toward reviewing exceptions rather than manually teaching
+  everything?
+- Does Route Builder remain the dependable driver-controlled destination for an accepted route?
+
+## Automatic Alignment Failures
+
+A proposal fails this gate if it depends on any of the following without a separately approved,
+evidence-backed reason:
+
+- Requiring ordinary drivers to author complete road lists
+- Requiring drivers to draw an operating territory from a blank map before FreightIQ is useful
+- Treating a polygon as unquestionable operational truth
+- Learning a permanent rule from one route or one unexplained correction
+- Treating actual stop order as preferred order without considering operational context
+- Flattening classification, sequence, access, and situational evidence into one opaque score
+- Hiding uncertainty behind confident AI language
+- Allowing one driver's private behavior to alter other drivers' routing automatically
+- Promoting private Fleet knowledge into broader FreightIQ knowledge without explicit validation
+- Building route optimization claims before FreightIQ can classify, explain, and safely preserve
+  driver corrections
+- Capturing more driver input than the value of the resulting evidence justifies
+- Creating a data representation that must be discarded when geocoding, road-network analysis, or
+  Zone discovery is introduced
+
+## Weighting and Model Guardrail
+
+FreightIQ must not use unexplained numeric weight as a substitute for structured operational
+knowledge.
+
+When weighting is eventually introduced, its inputs, scope, confidence behavior, and validation
+must be documented. A weight may help rank eligible choices, but it must not silently merge facts
+with different meanings, such as:
+
+- Durable Zone membership
+- Preferred geographic flow
+- Stop-specific truck access
+- Current trailer accessibility
+- Appointments or pickups
+- Temporary road, weather, or safety conditions
+- Individual driver preference
+- Fleet-approved operating policy
+
+Routing Lab should continue proving explicit evidence, correction scope, conflict handling, and
+explainability before relying on increasingly complex learned weighting.
+
+## Internal Workflow Requirement
+
+Before asking the Product Owner to approve an affected Build Specification or implementation, the
+Architect must perform the alignment review internally and clearly identify any unresolved conflict
+with this vision.
+
+If a proposal fails the gate, reduce or redesign its scope. Do not proceed merely because the
+feature is technically possible.
+
+---
+
 # Long-Term Product Progression
 
 ## Stage 1 — Routing Lab Controlled Learning
