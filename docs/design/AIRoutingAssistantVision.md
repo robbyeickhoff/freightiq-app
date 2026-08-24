@@ -184,6 +184,175 @@ FreightIQ should do the first-pass organizational work whenever confidence is su
 
 ---
 
+# Low-Effort Zone Learning
+
+Road lists and manually drawn map polygons are useful Routing Lab teaching tools. They allow
+FreightIQ to compare explicit operational documentation with incomplete planning geography while
+the learning system is still being proven.
+
+They must not become required setup work for an ordinary driver.
+
+The long-term product principle is:
+
+> FreightIQ proposes the geography and route. The driver corrects only what matters.
+
+## Zones as Learned Operational Structure
+
+A Zone does not need to begin as a named polygon or a manually authored list of roads. In an
+undocumented area, FreightIQ should be able to build a temporary working structure from:
+
+- Today's geocoded stops
+- Road-network connections
+- Geographic clustering
+- Travel distance and time
+- Repeated route history
+- Driver reordering before the route
+- Actual stop-completion order
+- Known truck restrictions
+- Stop-level delivery intelligence
+- Previously approved Driver and Fleet knowledge
+
+The resulting map shape may be a visualization of what FreightIQ currently believes rather than
+the original source of that belief.
+
+```text
+Stops and road network
+→ AI detects a geographic cluster
+→ Temporary operational Zone
+→ Driver runs or corrects the route
+→ Repeated evidence strengthens or changes the cluster
+→ FreightIQ proposes reusable Zone knowledge
+→ Experienced driver or Fleet reviewer approves it
+```
+
+## First Route in an Undocumented Area
+
+FreightIQ should not require a city to be manually documented before making a useful first
+proposal.
+
+For a new area, the system should:
+
+1. Extract and geocode the current manifest stops.
+2. Analyze the road network and likely geographic clusters.
+3. Apply general FreightIQ routing principles.
+4. Propose temporary operational groups and an explainable route.
+5. Let the driver accept, reorder, or regroup stops without requiring Zone names or boundaries.
+
+The first proposal may be imperfect. Its purpose is to reduce the driver's workload while creating
+structured correction evidence, not to claim expert local knowledge that FreightIQ has not earned.
+
+## Learning From Normal Driver Behavior
+
+FreightIQ should learn primarily from actions the driver already takes:
+
+- Moving a stop before beginning the route
+- Completing stops in a different order
+- Skipping a stop temporarily
+- Returning to a stop later
+- Changing the next destination
+- Repeatedly keeping certain roads or stops together
+- Repeatedly entering or exiting an area through the same corridor
+
+Passive observation alone is insufficient because the same change may represent permanent routing
+knowledge, a one-day trailer-loading constraint, an appointment, weather, temporary road access,
+or an operationally equivalent choice.
+
+FreightIQ should ask for a reason only when the correction is meaningful or ambiguous. The question
+should be brief and tied to the action the driver already took. Potential reasons include:
+
+- Trailer access today
+- Appointment or receiving hours
+- Better durable route order
+- Road, weather, or safety condition
+- Equivalent acceptable route
+
+The system must not turn every minor route action into administrative work.
+
+## AI-Generated Zone Knowledge
+
+As evidence accumulates, FreightIQ may generate human-reviewable summaries such as:
+
+```text
+Proposed West B
+- 17 recurring delivery stops
+- Repeated grouping across 14 approved routes
+- Candidate roads and address ranges
+- Common entry and exit corridor
+- Known exceptions requiring review
+```
+
+The system may propose:
+
+- Candidate Zone names
+- Road and address-range membership
+- Approximate boundaries
+- Micro Zone splits and merges
+- Preferred transitions
+- Confidence and supporting evidence
+
+An experienced driver or Fleet reviewer may approve, rename, merge, split, or correct the proposal.
+FreightIQ should generate the first draft rather than present a blank map or empty road list.
+
+## Optional Map Editing
+
+Map drawing should remain an optional acceleration and correction tool for:
+
+- Experienced drivers
+- Dispatchers
+- Fleet managers
+- New-terminal setup
+- Splitting or merging an AI-proposed Zone
+- Correcting a materially wrong inferred boundary
+
+The preferred workflow is for FreightIQ to display a proposed cluster or boundary and ask for a
+focused adjustment. Drawing an entire operating territory from scratch should not be required for
+normal use.
+
+## Driver-Facing Simplicity
+
+Most drivers may never need to see the terms **parent zone** or **Micro Zone**. FreightIQ may retain
+that hierarchy internally while presenting practical language such as:
+
+- Keep these stops together
+- Finish this area before crossing town
+- This stop usually belongs with the next group
+- Trailer access may require doing this stop earlier today
+
+Route Builder remains the dependable place where the driver reviews and controls the approved
+route. The AI Routing Assistant reduces the work required to populate and order it.
+
+## Road Documentation as an Output
+
+Human-readable road and Zone documents remain valuable for explanation, auditing, and deliberate
+Fleet approval. Over time, FreightIQ should draft those documents from accumulated evidence instead
+of requiring drivers to author every road list manually.
+
+Canonical documentation should record approved operational knowledge. Automatically inferred
+knowledge must remain distinguishable until it receives the required validation.
+
+## Low-Effort Success Standard
+
+The goal is not literally zero driver involvement. The goal is:
+
+> The driver spends time correcting an important operational assumption, not entering information
+> FreightIQ could have inferred itself.
+
+A mature experience should approach:
+
+```text
+Manifest uploaded
+→ FreightIQ proposes route and operational groups
+→ Driver reviews exceptions
+→ Driver accepts the route into Route Builder
+```
+
+The Telluride road-list model and Grand Junction candidate-map model are controlled learning inputs,
+not the intended customer onboarding pattern. Together they help Routing Lab prove which forms of
+evidence, confidence, correction, and explanation are required before low-effort Zone discovery can
+be trusted.
+
+---
+
 # Geospatial Intelligence
 
 Zone documentation alone is not sufficient for AI Routing.
