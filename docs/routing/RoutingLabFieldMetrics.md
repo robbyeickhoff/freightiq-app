@@ -193,22 +193,20 @@ The Routing Lab is ready for the next learning phase when all of the following a
 Passing this standard means the Lab has earned consideration for the next focused learning phase.
 It does not mean the Lab is finished, fully trained, or authorized to bypass driver review.
 
-## Simple Field Log
+## After-Route Checklist
 
-Record the following after each real route:
+Complete this immediately after each real route:
 
-| Field | Entry |
-| --- | --- |
-| Date |  |
-| Route identifier |  |
-| Total reviewed stops |  |
-| Parent-zone corrections |  |
-| Micro-Zone corrections |  |
-| Unresolved classifications |  |
-| High-confidence errors |  |
-| Proposal result | No changes / Minor changes / Major rebuild |
-| Review time |  |
-| Driver trust score | 1-5 |
-| Repeated learned mistake | Yes / No |
-| Safety or operational concern |  |
-| Brief notes |  |
+- Date: `__________`
+- Route: `__________`
+- Stops reviewed: `___`
+- Parent-zone corrections: `___`
+- Micro-Zone corrections: `___`
+- Unresolved classifications: `___`
+- High-confidence errors: `___`
+- Proposal result: [ ] No changes  [ ] Minor changes  [ ] Major rebuild
+- Review time: `___ min`
+- Driver trust: [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5
+- Repeated learned mistake: [ ] No  [ ] Yes
+- Safety or operational concern: [ ] None  [ ] Yes — `____________________`
+- Brief note only if useful: `________________________________________`
