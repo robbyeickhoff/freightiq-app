@@ -67,9 +67,9 @@ export type Database = {
         Relationships: []
       }
       routing_lab_zone_evidence: {
-        Row: { address: string; address_key: string; approved_zone: string; city: string; confirmed_at: string; id: string; postal_code: string; source_route_id: string; source_stop_id: string; state: string; updated_at: string; user_id: string }
-        Insert: { address: string; address_key: string; approved_zone: string; city: string; confirmed_at?: string; id?: string; postal_code: string; source_route_id: string; source_stop_id: string; state: string; updated_at?: string; user_id: string }
-        Update: { address?: string; address_key?: string; approved_zone?: string; city?: string; confirmed_at?: string; id?: string; postal_code?: string; source_route_id?: string; source_stop_id?: string; state?: string; updated_at?: string; user_id?: string }
+        Row: { address: string; address_key: string; approved_micro_zone: string | null; approved_zone: string; city: string; confirmed_at: string; id: string; postal_code: string; source_route_id: string; source_stop_id: string; state: string; updated_at: string; user_id: string }
+        Insert: { address: string; address_key: string; approved_micro_zone?: string | null; approved_zone: string; city: string; confirmed_at?: string; id?: string; postal_code: string; source_route_id: string; source_stop_id: string; state: string; updated_at?: string; user_id: string }
+        Update: { address?: string; address_key?: string; approved_micro_zone?: string | null; approved_zone?: string; city?: string; confirmed_at?: string; id?: string; postal_code?: string; source_route_id?: string; source_stop_id?: string; state?: string; updated_at?: string; user_id?: string }
         Relationships: []
       }
       routing_lab_manifest_imports: {

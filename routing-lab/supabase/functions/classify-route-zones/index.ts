@@ -3,7 +3,7 @@ import { withSupabase } from "@supabase/server"
 import {
   buildAddressKey,
   documentedOperationalZones,
-  resolveLearnedZone,
+  resolveLearnedMicroZone,
   type ZoneEvidence,
 } from "../../../src/lib/zone-learning.ts"
 
@@ -21,13 +21,14 @@ const classificationSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["stopId", "proposedZone", "confidence", "evidence"],
+        required: ["stopId", "proposedZone", "proposedMicroZone", "confidence", "evidence"],
         properties: {
           stopId: { type: "string" },
           proposedZone: {
             type: ["string", "null"],
             enum: [...OPERATIONAL_ZONES, null],
           },
+          proposedMicroZone: { type: "null" },
           confidence: {
             type: "string",
             enum: ["high", "medium", "low", "uncertain"],
@@ -51,6 +52,7 @@ type ZoneClassificationResponse = {
   classifications: Array<{
     confidence: 'high' | 'medium' | 'low' | 'uncertain'
     evidence: string
+    proposedMicroZone: string | null
     proposedZone: (typeof OPERATIONAL_ZONES)[number] | null
     stopId: string
   }>
@@ -58,6 +60,7 @@ type ZoneClassificationResponse = {
 
 type ZoneEvidenceRow = {
   address_key: string
+  approved_micro_zone: string | null
   approved_zone: string
   source_route_id: string
 }
@@ -153,7 +156,7 @@ export default {
     const addressKeys = [...new Set(stops.map(buildAddressKey))]
     const learned = await ctx.supabase
       .from("routing_lab_zone_evidence")
-      .select("address_key,approved_zone,source_route_id")
+      .select("address_key,approved_zone,approved_micro_zone,source_route_id")
       .in("address_key", addressKeys)
     if (learned.error) return jsonError("Prior zone evidence could not be read. Try again.", 502)
 
@@ -161,6 +164,7 @@ export default {
     for (const item of (learned.data ?? []) as unknown as ZoneEvidenceRow[]) {
       const evidence: ZoneEvidence = {
         addressKey: item.address_key,
+        approvedMicroZone: item.approved_micro_zone,
         approvedZone: item.approved_zone,
         sourceRouteId: item.source_route_id,
       }
@@ -173,7 +177,7 @@ export default {
     const learnedClassifications = new Map<string, ZoneClassificationResponse["classifications"][number]>()
     const unmatchedStops: InputStop[] = []
     for (const stop of stops) {
-      const resolution = resolveLearnedZone(evidenceByAddress.get(buildAddressKey(stop)) ?? [])
+      const resolution = resolveLearnedMicroZone(evidenceByAddress.get(buildAddressKey(stop)) ?? [])
       if (!resolution) {
         unmatchedStops.push(stop)
         continue
@@ -181,6 +185,7 @@ export default {
       learnedClassifications.set(stop.id, {
         confidence: resolution.confidence,
         evidence: resolution.evidence,
+        proposedMicroZone: resolution.proposedMicroZone,
         proposedZone: resolution.proposedZone,
         stopId: stop.id,
       })

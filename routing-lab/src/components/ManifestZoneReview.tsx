@@ -5,6 +5,11 @@ import {
   selectableOperationalZones,
   type ZoneClassification,
 } from '../lib/zone-classification'
+import {
+  grandJunctionParentZones,
+  isGrandJunctionParentZone,
+  microZonesForParent,
+} from '../lib/zone-learning'
 
 type ManifestZoneReviewProps = {
   isGenerating: boolean
@@ -50,7 +55,9 @@ function ManifestZoneReview({
   const approvedCount = classifications.filter((item) => item.status === 'approved').length
   const unresolvedCount = classifications.filter((item) => item.status === 'unresolved').length
   const complete = classifications.length === route.sourceStops.length &&
-    classifications.every((item) => item.status === 'approved' && item.selectedZone)
+    classifications.every((item) => item.status === 'approved' && item.selectedZone && (
+      !isGrandJunctionParentZone(item.selectedZone) || item.selectedMicroZone
+    ))
   const zoneReviewApproved = route.status === 'zone_approved' ||
     route.status === 'proposal_review' || route.status === 'proposal_reviewed'
 
@@ -129,6 +136,7 @@ function ManifestZoneReview({
                   <strong>{stop.name}</strong>
                   <span>{stop.address}, {stop.city}, {stop.state} {stop.postalCode}</span>
                   <small>{classification.selectedZone ?? 'Zone decision needed'}</small>
+                  {classification.selectedMicroZone ? <small>{classification.selectedMicroZone}</small> : null}
                 </div>
                 <div className="zone-review-card__status">
                   <span className={`zone-confidence zone-confidence--${classification.confidence}`}>
@@ -144,10 +152,11 @@ function ManifestZoneReview({
               <div className="zone-review-card__body">
                 <p className="zone-evidence">{classification.evidence}</p>
                 <label>
-                  Operational zone
+                  Parent or operational zone
                   <select
                     value={classification.selectedZone ?? ''}
                     onChange={(event) => updateClassification(classification.stopId, {
+                      selectedMicroZone: null,
                       selectedZone: event.target.value || null,
                       status: event.target.value ? 'proposed' : 'unresolved',
                     })}
@@ -156,17 +165,51 @@ function ManifestZoneReview({
                     {classification.selectedZone === 'Grand Junction' ? (
                       <option value="Grand Junction">Grand Junction (legacy)</option>
                     ) : null}
-                    {selectableOperationalZones.map((zone) => (
-                      <option key={zone} value={zone}>{zone}</option>
-                    ))}
+                    <optgroup label={route.setup.primaryParentZone ? 'Primary Grand Junction parent' : 'Grand Junction parent zones'}>
+                      {grandJunctionParentZones
+                        .filter((zone) => !route.setup.primaryParentZone || zone === route.setup.primaryParentZone)
+                        .map((zone) => <option key={zone} value={zone}>{zone}</option>)}
+                    </optgroup>
+                    {route.setup.primaryParentZone ? (
+                      <optgroup label="Other Grand Junction parents · exceptions">
+                        {grandJunctionParentZones
+                          .filter((zone) => zone !== route.setup.primaryParentZone)
+                          .map((zone) => <option key={zone} value={zone}>{zone}</option>)}
+                      </optgroup>
+                    ) : null}
+                    <optgroup label="Other documented operational zones">
+                      {selectableOperationalZones
+                        .filter((zone) => !isGrandJunctionParentZone(zone))
+                        .map((zone) => <option key={zone} value={zone}>{zone}</option>)}
+                    </optgroup>
                   </select>
                 </label>
+
+                {classification.selectedZone && isGrandJunctionParentZone(classification.selectedZone) ? (
+                  <label>
+                    Micro Zone <span>Candidate taxonomy</span>
+                    <select
+                      value={classification.selectedMicroZone ?? ''}
+                      onChange={(event) => updateClassification(classification.stopId, {
+                        selectedMicroZone: event.target.value || null,
+                        status: event.target.value ? 'proposed' : 'unresolved',
+                      })}
+                    >
+                      <option value="">Select a Micro Zone</option>
+                      {microZonesForParent(classification.selectedZone).map((microZone) => (
+                        <option key={microZone} value={microZone}>{microZone}</option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
 
                 <div className="zone-review-actions">
                   <button
                     className="secondary-button"
                     type="button"
-                    disabled={!classification.selectedZone || classification.status === 'approved'}
+                    disabled={!classification.selectedZone || (
+                      isGrandJunctionParentZone(classification.selectedZone) && !classification.selectedMicroZone
+                    ) || classification.status === 'approved'}
                     onClick={() => updateClassification(classification.stopId, { status: 'approved' })}
                   >
                     {classification.status === 'approved' ? 'Zone approved' : 'Approve zone'}
@@ -176,6 +219,7 @@ function ManifestZoneReview({
                     type="button"
                     onClick={() => updateClassification(classification.stopId, {
                       selectedZone: null,
+                      selectedMicroZone: null,
                       status: 'unresolved',
                     })}
                   >

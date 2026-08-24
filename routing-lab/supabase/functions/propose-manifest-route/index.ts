@@ -3,6 +3,8 @@ import { withSupabase } from "@supabase/server"
 import {
   grandJunctionParentZones,
   isGrandJunctionParentZone,
+  isValidMicroZonePair,
+  microZonesForParent,
 } from "../../../src/lib/zone-learning.ts"
 
 const MODEL = "gpt-5.6-terra"
@@ -58,12 +60,14 @@ type InputStop = {
   city: string
   id: string
   name: string
+  microZone: string | null
   postalCode: string
   state: string
   zone: string
 }
 
 type RouteSetup = {
+  primaryParentZone: string
   returnAffectsOrder: boolean
   returnLocation: string
   routeDate: string
@@ -104,7 +108,10 @@ function parseStops(value: unknown): InputStop[] | null {
     if (!stop.id || !stop.address || !stop.zone || ids.has(stop.id) || !DEFAULT_MACRO_FLOW.includes(stop.zone as never)) {
       return null
     }
+    const microZone = record.microZone === null ? null : typeof record.microZone === "string" ? record.microZone.trim() : null
+    if (isGrandJunctionParentZone(stop.zone) && (!microZone || !isValidMicroZonePair(stop.zone, microZone))) return null
     ids.add(stop.id)
+    stop.microZone = microZone
     stops.push(stop)
   }
   return stops
@@ -118,7 +125,10 @@ function parseSetup(value: unknown): RouteSetup | null {
     typeof record.returnLocation !== "string" || typeof record.returnAffectsOrder !== "boolean" ||
     typeof record.wholeRouteConstraint !== "string"
   ) return null
+  if (typeof record.primaryParentZone === "string" && record.primaryParentZone.trim() &&
+    !isGrandJunctionParentZone(record.primaryParentZone.trim())) return null
   return {
+    primaryParentZone: typeof record.primaryParentZone === "string" ? record.primaryParentZone.trim() : "",
     routeDate: record.routeDate.trim(), startLocation: record.startLocation.trim(),
     returnLocation: record.returnLocation.trim(), returnAffectsOrder: record.returnAffectsOrder,
     wholeRouteConstraint: record.wholeRouteConstraint.trim().slice(0, 500),
@@ -203,7 +213,9 @@ Outside the Grand Junction parent zones, remove inactive delivery zones while pr
 Grand Junction parent-zone documents:
 - A normal Grand Junction trailer serves exactly one of Fruita, West, River Road, Airport, Downtown / The Hole, or East before returning to the yard.
 - The west-to-east geographic list is not a service sequence.
-- No parent zone has approved Micro Zones or internal road order yet. Label every Grand Junction internal sequence as an estimate.
+- Candidate Micro Zones are driver-approved for the current route. Their letter order is a Preferred geographic baseline, not a fixed daily sequence: Fruita A → B → C; West A → B → C; River Road A → B; Airport A → B → C; Hole A → B → C → D → E; East A → B → C. Skip inactive Micro Zones.
+- Current constraints, safety needs, and applicable approved Situational lessons may override that baseline. Trailer access is route-specific by default. Never infer trailer layout or freight position.
+- Preserve each stop's approved parent and Micro Zone even when operational order changes. Exact order inside a Micro Zone remains an estimate.
 - If the driver approved more than one Grand Junction parent zone, preserve the first-appearance order from the supplied current stops only as an unverified working order and add an operational exception requiring driver review. Never claim that order is documented.
 
 SouthPark.md documented internal preference:
@@ -258,6 +270,7 @@ export default {
               multipleGrandJunctionParentZones: new Set(stops.map((stop) => stop.zone).filter(isGrandJunctionParentZone)).size > 1,
               setup,
               stops,
+              preferredMicroZoneOrder: Object.fromEntries(grandJunctionParentZones.map((zone) => [zone, microZonesForParent(zone)])),
             })}`,
           }] }],
           text: { format: { type: "json_schema", name: "routing_lab_manifest_route_proposal", strict: true, schema: proposalSchema } },
@@ -326,7 +339,7 @@ export default {
         if (!uncertainSequences.some((item) => item.zone === zone)) {
           uncertainSequences.push({
             zone,
-            reason: "No approved internal Micro Zones or road sequence exists yet; this order is an estimate.",
+            reason: "Micro Zone letter order is a preferred baseline; exact order inside each Micro Zone is an estimate.",
           })
         }
       }

@@ -828,6 +828,7 @@ textarea:focus-visible {
 }
 
 .route-setup-fields input,
+.route-setup-fields select,
 .route-setup-fields textarea {
   width: 100%;
   border: 1px solid #304956;

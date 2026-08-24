@@ -36,8 +36,29 @@ export const selectableOperationalZones = documentedOperationalZones.filter(
 export type GrandJunctionParentZone = (typeof grandJunctionParentZones)[number]
 export type DocumentedOperationalZone = (typeof documentedOperationalZones)[number]
 
+export const grandJunctionMicroZones = {
+  Fruita: ['Fruita A', 'Fruita B', 'Fruita C'],
+  West: ['West A', 'West B', 'West C'],
+  'River Road': ['River Road A', 'River Road B'],
+  Airport: ['Airport A', 'Airport B', 'Airport C'],
+  'Downtown / The Hole': ['Hole A', 'Hole B', 'Hole C', 'Hole D', 'Hole E'],
+  East: ['East A', 'East B', 'East C'],
+} as const satisfies Record<GrandJunctionParentZone, readonly string[]>
+
+export type GrandJunctionMicroZone =
+  (typeof grandJunctionMicroZones)[GrandJunctionParentZone][number]
+
+export function microZonesForParent(parentZone: string) {
+  return isGrandJunctionParentZone(parentZone) ? grandJunctionMicroZones[parentZone] : []
+}
+
+export function isValidMicroZonePair(parentZone: string, microZone: string) {
+  return microZonesForParent(parentZone).includes(microZone as never)
+}
+
 export type ZoneEvidence = {
   addressKey: string
+  approvedMicroZone?: string | null
   approvedZone: string
   sourceRouteId: string
 }
@@ -45,6 +66,7 @@ export type ZoneEvidence = {
 export type LearnedZoneResolution = {
   confidence: 'high' | 'medium' | 'uncertain'
   evidence: string
+  proposedMicroZone: GrandJunctionMicroZone | null
   proposedZone: GrandJunctionParentZone | null
 }
 
@@ -83,6 +105,7 @@ export function resolveLearnedZone(evidence: ZoneEvidence[]): LearnedZoneResolut
     return {
       confidence: 'uncertain',
       evidence: 'Prior driver-approved exact-address reviews conflict and need current review.',
+      proposedMicroZone: null,
       proposedZone: null,
     }
   }
@@ -94,6 +117,45 @@ export function resolveLearnedZone(evidence: ZoneEvidence[]): LearnedZoneResolut
     evidence: count >= 2
       ? `${count} prior driver-approved exact-address reviews agree on ${zone}.`
       : `One prior driver-approved exact-address review assigned this stop to ${zone}.`,
+    proposedMicroZone: null,
     proposedZone: zone as GrandJunctionParentZone,
+  }
+}
+
+export function resolveLearnedMicroZone(evidence: ZoneEvidence[]): LearnedZoneResolution | null {
+  const parentResolution = resolveLearnedZone(evidence)
+  if (!parentResolution || !parentResolution.proposedZone) return parentResolution
+  const validEvidence = evidence.filter((item) =>
+    item.approvedZone === parentResolution.proposedZone && item.approvedMicroZone &&
+      isValidMicroZonePair(item.approvedZone, item.approvedMicroZone),
+  )
+  if (validEvidence.length === 0) return parentResolution
+
+  const routesByPair = new Map<string, Set<string>>()
+  for (const item of validEvidence) {
+    const key = `${item.approvedZone}|${item.approvedMicroZone}`
+    const routes = routesByPair.get(key) ?? new Set<string>()
+    routes.add(item.sourceRouteId)
+    routesByPair.set(key, routes)
+  }
+  if (routesByPair.size > 1) {
+    return {
+      confidence: 'uncertain',
+      evidence: 'Prior driver-approved exact-address Micro Zone reviews conflict and need current review.',
+      proposedMicroZone: null,
+      proposedZone: null,
+    }
+  }
+
+  const [[pair, routes]] = routesByPair.entries()
+  const [parentZone, microZone] = pair.split('|') as [GrandJunctionParentZone, GrandJunctionMicroZone]
+  const count = routes.size
+  return {
+    confidence: count >= 2 ? 'high' : 'medium',
+    evidence: count >= 2
+      ? `${count} prior driver-approved exact-address reviews agree on ${parentZone} · ${microZone}.`
+      : `One prior driver-approved exact-address review assigned this stop to ${parentZone} · ${microZone}.`,
+    proposedMicroZone: microZone,
+    proposedZone: parentZone,
   }
 }

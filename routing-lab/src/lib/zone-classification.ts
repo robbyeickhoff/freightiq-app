@@ -10,7 +10,9 @@ export type ZoneReviewStatus = 'proposed' | 'approved' | 'unresolved'
 export type ZoneClassification = {
   confidence: ZoneConfidence
   evidence: string
+  proposedMicroZone: string | null
   proposedZone: string | null
+  selectedMicroZone: string | null
   selectedZone: string | null
   status: ZoneReviewStatus
   stopId: string
@@ -20,6 +22,7 @@ type ZoneClassificationResponse = {
   classifications: Array<{
     confidence: ZoneConfidence
     evidence: string
+    proposedMicroZone?: string | null
     proposedZone: string | null
     stopId: string
   }>
@@ -72,7 +75,9 @@ export async function proposeZoneClassifications(stops: ManifestRouteStop[]) {
       return {
         confidence: 'uncertain',
         evidence: 'The classifier did not return a result for this stop.',
+        proposedMicroZone: null,
         proposedZone: null,
+        selectedMicroZone: null,
         selectedZone: null,
         status: 'unresolved',
         stopId: stop.id,
@@ -81,6 +86,8 @@ export async function proposeZoneClassifications(stops: ManifestRouteStop[]) {
 
     return {
       ...classification,
+      proposedMicroZone: classification.proposedMicroZone ?? null,
+      selectedMicroZone: classification.proposedMicroZone ?? null,
       selectedZone: classification.proposedZone,
       status: classification.proposedZone ? 'proposed' : 'unresolved',
     }

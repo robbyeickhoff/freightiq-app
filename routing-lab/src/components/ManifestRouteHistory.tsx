@@ -19,7 +19,9 @@ const statusLabels: Record<ManifestDraftRoute['status'], string> = {
 }
 
 function routeZones(route: ManifestDraftRoute) {
-  return [...new Set(route.zoneReview.flatMap((review) => review.selectedZone ? [review.selectedZone] : []))]
+  return [...new Set(route.zoneReview.flatMap((review) => review.selectedZone
+    ? [`${review.selectedZone}${review.selectedMicroZone ? ` · ${review.selectedMicroZone}` : ''}`]
+    : []))]
 }
 
 function formatRouteDate(routeDate: string) {

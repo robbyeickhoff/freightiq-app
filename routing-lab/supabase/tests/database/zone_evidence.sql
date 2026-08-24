@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(20);
 
 insert into auth.users (id, email, created_at, updated_at) values
 ('30000000-0000-4000-8000-000000000001', 'zone-owner@example.test', now(), now()),
@@ -31,27 +31,29 @@ set local "request.jwt.claim.sub" = '30000000-0000-4000-8000-000000000001';
 select lives_ok($$
   select public.save_routing_lab_zone_review(
     '32000000-0000-4000-8000-000000000001',
-    '[{"stopId":"stop-1","status":"approved","selectedZone":"West"}]',
-    '[{"stop_id":"stop-1","address":"123 Main St","city":"Grand Junction","state":"CO","postal_code":"81501","address_key":"123 main st|grand junction|co|81501","approved_zone":"West"}]',
+    '[{"stopId":"stop-1","status":"approved","selectedZone":"West","selectedMicroZone":"West A"}]',
+    '[{"stop_id":"stop-1","address":"123 Main St","city":"Grand Junction","state":"CO","postal_code":"81501","address_key":"123 main st|grand junction|co|81501","approved_zone":"West","approved_micro_zone":"West A"}]',
     true
   )
 $$, 'an owner can approve a matching route stop');
 select is((select count(*) from public.routing_lab_zone_evidence), 1::bigint, 'one approval creates one evidence row');
+select is((select approved_micro_zone from public.routing_lab_zone_evidence), 'West A', 'the approved Micro Zone is saved separately');
 select is((select status from public.routing_lab_routes where id = '32000000-0000-4000-8000-000000000001'), 'zone_approved', 'the route advances atomically');
 
 select public.save_routing_lab_zone_review(
   '32000000-0000-4000-8000-000000000001',
-  '[{"stopId":"stop-1","status":"approved","selectedZone":"East"}]',
-  '[{"stop_id":"stop-1","address":"123 Main St","city":"Grand Junction","state":"CO","postal_code":"81501","address_key":"123 main st|grand junction|co|81501","approved_zone":"East"}]',
+  '[{"stopId":"stop-1","status":"approved","selectedZone":"East","selectedMicroZone":"East A"}]',
+  '[{"stop_id":"stop-1","address":"123 Main St","city":"Grand Junction","state":"CO","postal_code":"81501","address_key":"123 main st|grand junction|co|81501","approved_zone":"East","approved_micro_zone":"East A"}]',
   true
 );
 select is((select count(*) from public.routing_lab_zone_evidence where source_route_id = '32000000-0000-4000-8000-000000000001'), 1::bigint, 're-approval replaces rather than duplicates route evidence');
 select is((select approved_zone from public.routing_lab_zone_evidence where source_route_id = '32000000-0000-4000-8000-000000000001'), 'East', 'a correction replaces the previous zone');
+select is((select approved_micro_zone from public.routing_lab_zone_evidence where source_route_id = '32000000-0000-4000-8000-000000000001'), 'East A', 'a correction replaces the previous Micro Zone');
 
 select public.save_routing_lab_zone_review(
   '32000000-0000-4000-8000-000000000002',
-  '[{"stopId":"stop-2","status":"approved","selectedZone":"West"}]',
-  '[{"stop_id":"stop-2","address":"123 Main St","city":"Grand Junction","state":"CO","postal_code":"81501","address_key":"123 main st|grand junction|co|81501","approved_zone":"West"}]',
+  '[{"stopId":"stop-2","status":"approved","selectedZone":"West","selectedMicroZone":"West B"}]',
+  '[{"stop_id":"stop-2","address":"123 Main St","city":"Grand Junction","state":"CO","postal_code":"81501","address_key":"123 main st|grand junction|co|81501","approved_zone":"West","approved_micro_zone":"West B"}]',
   true
 );
 select is((select count(*) from public.routing_lab_zone_evidence where address_key = '123 main st|grand junction|co|81501'), 2::bigint, 'distinct routes preserve separate evidence for confidence and conflicts');
@@ -60,14 +62,21 @@ select is((select count(distinct approved_zone) from public.routing_lab_zone_evi
 select throws_ok($$
   select public.save_routing_lab_zone_review(
     '32000000-0000-4000-8000-000000000002',
-    '[{"stopId":"stop-2","status":"approved","selectedZone":"West"}]',
-    '[{"stop_id":"wrong-stop","address":"123 Main St","city":"Grand Junction","state":"CO","postal_code":"81501","address_key":"123 main st|grand junction|co|81501","approved_zone":"West"}]',
+    '[{"stopId":"stop-2","status":"approved","selectedZone":"West","selectedMicroZone":"West B"}]',
+    '[{"stop_id":"wrong-stop","address":"123 Main St","city":"Grand Junction","state":"CO","postal_code":"81501","address_key":"123 main st|grand junction|co|81501","approved_zone":"West","approved_micro_zone":"West B"}]',
     true
   )
 $$, 'P0001', 'Zone evidence did not match the approved current route.', 'mismatched evidence rolls the transaction back');
 select is((select approved_zone from public.routing_lab_zone_evidence where source_route_id = '32000000-0000-4000-8000-000000000002'), 'West', 'failed replacement preserves prior evidence');
 
 reset role;
+select throws_ok($$
+  insert into public.routing_lab_zone_evidence
+    (user_id, source_route_id, source_stop_id, address, city, state, postal_code, address_key, approved_zone, approved_micro_zone)
+  values
+    ('30000000-0000-4000-8000-000000000001', '32000000-0000-4000-8000-000000000002', 'invalid-pair', '1 Test', 'Grand Junction', 'CO', '81501', 'invalid', 'West', 'Hole A')
+$$, '23514', null, 'the database rejects an invalid parent and Micro Zone pair');
+
 set local role authenticated;
 set local "request.jwt.claim.sub" = '30000000-0000-4000-8000-000000000002';
 select is((select count(*) from public.routing_lab_zone_evidence), 0::bigint, 'another user cannot discover the owner evidence');

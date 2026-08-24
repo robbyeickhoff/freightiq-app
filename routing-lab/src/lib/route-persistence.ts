@@ -15,6 +15,7 @@ export type ManifestRouteStop = RouteStop & {
 }
 
 export type RouteSetup = {
+  primaryParentZone: string
   routeDate: string
   startLocation: string
   returnLocation: string
@@ -54,6 +55,7 @@ function defaultRouteDate() {
 
 function createDefaultSetup(): RouteSetup {
   return {
+    primaryParentZone: '',
     routeDate: defaultRouteDate(),
     startLocation: '788 22 Rd, Grand Junction, CO 81505',
     returnLocation: '788 22 Rd, Grand Junction, CO 81505',
@@ -220,6 +222,7 @@ export async function saveManifestZoneReview(
           address: stop.address,
           address_key: buildAddressKey(stop),
           approved_zone: approvedZone,
+          approved_micro_zone: zoneReview.find((item) => item.stopId === stop.id)?.selectedMicroZone,
           city: stop.city,
           postal_code: stop.postalCode,
           state: stop.state,

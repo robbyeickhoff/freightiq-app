@@ -108,7 +108,12 @@ function ManifestRouteProposalReview({ route, onBackToZones, onSave, onStart }: 
   }, [proposal.orderedStopIds, route.adjustedStopIds, route.plannedCorrections])
 
   const stopsById = new Map(route.sourceStops.map((stop) => [stop.id, stop]))
-  const zonesByStopId = new Map(route.zoneReview.map((item) => [item.stopId, item.selectedZone]))
+  const zonesByStopId = new Map(route.zoneReview.map((item) => [
+    item.stopId,
+    item.selectedMicroZone
+      ? `${item.selectedZone} · ${item.selectedMicroZone}`
+      : item.selectedZone,
+  ]))
 
   function moveStop(fromIndex: number, toIndex: number) {
     if (pending || fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || toIndex >= stopIds.length) return

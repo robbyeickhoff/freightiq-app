@@ -438,6 +438,13 @@ Routing Lab production environment and ready for real-workday field use.
   and vehicle positioning, and verify scoped lesson replay.
 - [x] Complete the controlled Slice 3 acceptance matrix while preserving `GR-001`, manifest
   evidence, and production FreightIQ isolation.
+- [x] Approve the focused [Grand Junction Micro-Zone Learning Build Specification](build-specs/FreightIQRoutingLabGrandJunctionMicroZoneLearningBuildSpec.md), including the 19-zone candidate taxonomy, canonical `Downtown / The Hole` parent, and preferred-not-fixed sequence model.
+- [x] Complete the local Grand Junction Micro-Zone implementation: primary-parent setup context,
+  parent-first review, validated private exact-address evidence, learned proposals, preferred
+  baseline proposal context, compatibility, clean replay, and focused checks.
+- [x] Complete Product Owner diff and interface approval for Grand Junction Micro-Zone Learning.
+- [ ] Separately approve and apply the Routing Lab production migration, deploy the two affected
+  Edge Functions and Vercel application, then complete live phone acceptance.
 - [ ] Run the first real-workday Routing Lab field trial and capture only observed friction,
   incorrect behavior, or unreliable learning for focused follow-up.
 

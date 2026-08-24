@@ -25,10 +25,11 @@ function ManifestLessonReview({ route, onApprove, onReplay }: Props) {
   const afterStopIds = correction?.afterStopIds ?? route.adjustedStopIds
   const firstChanged = afterStopIds.find((id, index) => beforeStopIds[index] !== id)
   const stop = route.sourceStops.find((item) => item.id === firstChanged) ?? route.sourceStops[0]
-  const correctionZone = route.zoneReview.find((item) => item.stopId === stop?.id)?.selectedZone
+  const correctionReview = route.zoneReview.find((item) => item.stopId === stop?.id)
+  const correctionZone = correctionReview?.selectedMicroZone ?? correctionReview?.selectedZone
   const [text, setText] = useState(`When this route context repeats, use the driver-approved stop sequence shown in this evidence.`)
   const [impact, setImpact] = useState<LessonImpact>('Moderate')
-  const [scopeType, setScopeType] = useState<LessonScope>('Zone')
+  const [scopeType, setScopeType] = useState<LessonScope>(correctionReview?.selectedMicroZone ? 'Micro Zone' : 'Zone')
   const [scopeValue, setScopeValue] = useState(correctionZone ?? 'Current route')
   const [strength, setStrength] = useState<ManifestLesson['strength']>('Preferred')
   const [category, setCategory] = useState(correction?.reasons.includes('Vehicle positioning') ? 'Vehicle positioning' : 'Route flow')

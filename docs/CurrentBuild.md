@@ -13,6 +13,29 @@ answer one question:
 
 ## Current Objective
 
+Grand Junction Micro-Zone Learning is the active isolated Routing Lab build. Its governing contract
+is `docs/build-specs/FreightIQRoutingLabGrandJunctionMicroZoneLearningBuildSpec.md`, approved by the
+Product Owner on 2026-08-23. Local implementation is complete: the Lab now defines the 19 supplied
+candidate Micro Zones under their canonical parents, normalizes The Hole under `Downtown / The
+Hole`, adds an optional primary-parent Route Setup context, and replaces the long Grand Junction
+choice with a parent-first review hierarchy that still exposes true cross-parent exceptions. Parent
+and Micro Zone are stored and reviewed separately. Exact-address evidence applies the existing one,
+repeated, and conflicting-review confidence rules to a validated parent/Micro Zone pair.
+
+Micro Zone letters are a Preferred unconstrained baseline, not a fixed daily delivery sequence.
+Current operational constraints and approved matching lessons remain authoritative; `Trailer
+access` stays route-specific unless the driver explicitly approves a Situational lesson. No hidden
+numeric weighting, trailer inference, polygon classifier, geocoding, optimization, production
+FreightIQ integration, or deployment was added. TypeScript, lint, the frozen fixture check, route
+reordering checks, expanded zone-learning checks, production build, dependency audit, clean local
+database replay, and all 20 focused database tests pass. The Product Owner approved the local diff
+and interface implementation. Production Routing Lab migration, both Edge Function deployments,
+Vercel deployment, and live acceptance remain separately approval-gated.
+
+---
+
+## Previously Completed Objective — Route Overview Map V1
+
 Route Overview Map V1 is complete, accepted on physical iPhone and Pixel, and committed to
 `clean-main` in `66a9834`. Its governing contract is
 `docs/build-specs/FreightIQRouteOverviewMapV1BuildSpec.md`. The Product Owner selected the map-first

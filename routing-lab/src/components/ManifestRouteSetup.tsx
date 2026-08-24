@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import type { ManifestDraftRoute, RouteSetup } from '../lib/route-persistence'
+import { grandJunctionParentZones } from '../lib/zone-learning'
 
 type ManifestRouteSetupProps = {
   route: ManifestDraftRoute
@@ -59,6 +60,18 @@ function ManifestRouteSetup({
       </p>
 
       <div className="route-setup-fields">
+        <label>
+          Primary Grand Junction parent zone <span>Optional</span>
+          <select
+            value={setup.primaryParentZone ?? ''}
+            onChange={(event) => updateSetup('primaryParentZone', event.target.value)}
+          >
+            <option value="">Not a Grand Junction parent-zone route</option>
+            {grandJunctionParentZones.map((zone) => (
+              <option key={zone} value={zone}>{zone}</option>
+            ))}
+          </select>
+        </label>
         <label>
           Route date
           <input
