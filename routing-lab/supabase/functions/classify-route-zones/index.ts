@@ -3,6 +3,8 @@ import { withSupabase } from "@supabase/server"
 import {
   buildAddressKey,
   documentedOperationalZones,
+  isValidMicroZonePair,
+  microZonesByParent,
   resolveLearnedMicroZone,
   type ZoneEvidence,
 } from "../../../src/lib/zone-learning.ts"
@@ -28,7 +30,10 @@ const classificationSchema = {
             type: ["string", "null"],
             enum: [...OPERATIONAL_ZONES, null],
           },
-          proposedMicroZone: { type: "null" },
+          proposedMicroZone: {
+            type: ["string", "null"],
+            enum: [...Object.values(microZonesByParent).flat(), null],
+          },
           confidence: {
             type: "string",
             enum: ["high", "medium", "low", "uncertain"],
@@ -118,8 +123,9 @@ Documented road evidence:
 - South Park: Two Rivers Dr, County Road 63L, South Park Rd, Vance Dr, Nimbus Dr.
 - Lawson Hill / Society: Society Dr and the Lawson Hill physical delivery area.
 - Log Hill: Ponderosa Dr, Badger Trail N/S, Woodchuck Place, Cedar Ln E/W, Alpine View Meadows Dr, Divide Ranch roads, and the documented CR 1 / CR 24 network. Ridgway mailing labels do not change this classification.
-- Mountain Village: Raspberry Patch Rd, Adams Ranch Rd, Prospect Creek Rd, Mountain Village Blvd, Fox Farm Rd, Wapiti Rd, Benchmark Dr, San Joaquin Rd, Arizona St, Touchdown Dr, Highlands Way, Victoria Dr, and documented Mountain Village residential roads.
-- Downtown Telluride: the Telluride street grid documented in DowntownTelluride.md, including Colorado Ave, Columbia Ave, Pacific Ave, Depot Ave/Alley, San Juan Ave, Gregory Ave, Galena Ave, Dakota Ave, and the named north/south cross streets. Use low confidence when an address falls outside a documented block boundary.
+- Mountain Village / Ophir: Ophir Road / County Road D65 and Matterhorn Road propose Micro Zone Ophir. The approximate polygon is not classification evidence.
+- Mountain Village: Raspberry Patch Rd proposes Ski Ranch South. Fox Farm Rd and Wapiti Rd propose Ski Ranch North. Arizona St, Touchdown Dr, Highlands Way, Victoria Dr, and the western portion of Mountain Village Blvd propose Mountain Village West. Benchmark Dr and its documented branches propose Benchmark. San Joaquin Rd, Prospect Creek Rd, Cortina Dr, and their documented branches propose San Joaquin. Mountain Village Blvd about 450 and higher plus Yellow Brick, Granite Ridge, Lookout Ridge, Sunny Ridge, Country Club, Aspen Ridge, and Vischer propose Mountain Village East. Russell Dr, Adams Ranch Rd, Boulders Way, Meadowlark Ln, Spring Creek Dr, and documented northern roads propose Mountain Village North.
+- Downtown Telluride: Highway 145 Spur, Mahoney, Prospect, Pacific, Depot, San Juan, and south cross streets propose Zone 1 South. E Colorado or E Columbia 300 block and east plus Pandora, Liberty Bell, Primrose, Wilkins, Shadow, Laurel, Pinon, Hemlock, Maple, and Alder propose Zone 2 East. E Colorado or E Columbia 100-200, W Colorado 100-500, Gregory, Galena, Dakota, central/north cross streets, and documented hillside roads propose Zone 3 Central / North. Use low confidence when a block boundary is unclear.
 - Airport / Aldasoro: Airport Rd / CR T60, Aldasoro Blvd, Mariposa Ln, Cristelli Ln, Sunnyside Ranch Dr, Elk Ridge, Cristinas Way, Joaquin Rd, Aguirre Rd, Old Toll Rd, Basque Blvd, Josefa Ln, Miguel Rd, Prudencio Ln, Bernardo Dr, Albert J Rd, W/E Serapio, Francisco Way.
 - Grand Junction has six permanent parent zones: Fruita, West, River Road, Airport, Downtown / The Hole, and East. These are independent dense trailer territories, not a west-to-east route sequence. Their current documents do not yet provide road-level membership, so unmatched Grand Junction addresses must remain uncertain.
 - MacroZones.md also names Ouray, Ridgway Proper, Ridgway north of Highway 62, Placerville / Sawpit, Wilson Mesa Ranch Zone, Norwood, Nucla / Naturita, Gateway, legacy Grand Junction, Delta, Olathe, and Montrose, but no road-level membership supplied here may be invented.
@@ -247,6 +253,9 @@ export default {
         ) {
           return jsonError("The classifier did not preserve the unmatched stop list. Try again.", 502)
         }
+        if (result.classifications.some((item) =>
+          item.proposedMicroZone && (!item.proposedZone || !isValidMicroZonePair(item.proposedZone, item.proposedMicroZone))
+        )) return jsonError("The classifier returned an invalid parent and Micro Zone pair. Try again.", 502)
         modelClassifications = result.classifications
       } catch {
         return jsonError("The structured classification could not be read. Try again.", 502)

@@ -4,10 +4,13 @@ import {
   buildAddressKey,
   grandJunctionParentZones,
   grandJunctionMicroZones,
+  isMicroZoneParent,
   isValidMicroZonePair,
+  microZonesByParent,
   resolveLearnedMicroZone,
   resolveLearnedZone,
   selectableOperationalZones,
+  tellurideMicroZones,
 } from '../src/lib/zone-learning.ts'
 
 assert.deepEqual(grandJunctionParentZones, [
@@ -20,8 +23,29 @@ assert.deepEqual(grandJunctionParentZones, [
 ])
 assert.equal(selectableOperationalZones.includes('Grand Junction'), false)
 assert.equal(Object.values(grandJunctionMicroZones).flat().length, 19)
+assert.equal(Object.values(microZonesByParent).flat().length, 30)
+assert.deepEqual(tellurideMicroZones['Mountain Village'], [
+  'Ophir',
+  'Ski Ranch South',
+  'Ski Ranch North',
+  'Mountain Village West',
+  'Benchmark',
+  'San Joaquin',
+  'Mountain Village East',
+  'Mountain Village North',
+])
+assert.deepEqual(tellurideMicroZones['Downtown Telluride'], [
+  'Zone 1 South',
+  'Zone 2 East',
+  'Zone 3 Central / North',
+])
+assert.equal(isMicroZoneParent('Mountain Village'), true)
+assert.equal(isMicroZoneParent('Lawson Hill / Society'), false)
 assert.equal(isValidMicroZonePair('Downtown / The Hole', 'Hole E'), true)
 assert.equal(isValidMicroZonePair('West', 'Hole E'), false)
+assert.equal(isValidMicroZonePair('Mountain Village', 'Ophir'), true)
+assert.equal(isValidMicroZonePair('Downtown Telluride', 'Zone 2 East'), true)
+assert.equal(isValidMicroZonePair('Mountain Village', 'Zone 2 East'), false)
 
 assert.equal(buildAddressKey({
   address: '  123   Main St ',
@@ -74,4 +98,17 @@ assert.equal(resolveLearnedMicroZone([
   { addressKey: 'one', approvedZone: 'West', approvedMicroZone: 'Hole A', sourceRouteId: 'route-2' },
 ])?.proposedMicroZone, 'West A')
 
-console.log('Grand Junction zone-learning checks passed.')
+assert.deepEqual(resolveLearnedMicroZone([
+  { addressKey: 'ophir', approvedZone: 'Mountain Village', approvedMicroZone: 'Ophir', sourceRouteId: 'route-1' },
+]), {
+  confidence: 'medium',
+  evidence: 'One prior driver-approved exact-address review assigned this stop to Mountain Village · Ophir.',
+  proposedMicroZone: 'Ophir',
+  proposedZone: 'Mountain Village',
+})
+assert.equal(resolveLearnedMicroZone([
+  { addressKey: 'town', approvedZone: 'Downtown Telluride', approvedMicroZone: 'Zone 1 South', sourceRouteId: 'route-1' },
+  { addressKey: 'town', approvedZone: 'Downtown Telluride', approvedMicroZone: 'Zone 2 East', sourceRouteId: 'route-2' },
+])?.confidence, 'uncertain')
+
+console.log('Shared Micro Zone learning checks passed.')

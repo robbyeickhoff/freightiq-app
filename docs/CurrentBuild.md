@@ -13,35 +13,22 @@ answer one question:
 
 ## Current Objective
 
-Grand Junction Micro-Zone Learning is the active isolated Routing Lab build. Its governing contract
-is `docs/build-specs/FreightIQRoutingLabGrandJunctionMicroZoneLearningBuildSpec.md`, approved by the
-Product Owner on 2026-08-23. Local implementation is complete: the Lab now defines the 19 supplied
-candidate Micro Zones under their canonical parents, normalizes The Hole under `Downtown / The
-Hole`, adds an optional primary-parent Route Setup context, and replaces the long Grand Junction
-choice with a parent-first review hierarchy that still exposes true cross-parent exceptions. Parent
-and Micro Zone are stored and reviewed separately. Exact-address evidence applies the existing one,
-repeated, and conflicting-review confidence rules to a validated parent/Micro Zone pair.
+Telluride-Area Micro-Zone Learning is production-complete and accepted. Its governing contract is
+`docs/build-specs/FreightIQRoutingLabTellurideMicroZoneLearningBuildSpec.md`. The shared Routing Lab
+taxonomy now contains all 30 approved Micro Zones: the existing 19 Grand Junction values, eight
+Mountain Village values with Ophir first, and three Downtown Telluride values. Lawson Hill / Society
+remains its own parent zone. Parent and Micro Zone stay separately reviewed and saved; preferred
+sequence remains overridable, and historical parent-only routes remain readable.
 
-Micro Zone letters are a Preferred unconstrained baseline, not a fixed daily delivery sequence.
-Current operational constraints and approved matching lessons remain authoritative; `Trailer
-access` stays route-specific unless the driver explicitly approves a Situational lesson. No hidden
-numeric weighting, trailer inference, polygon classifier, geocoding, optimization, production
-FreightIQ integration, or deployment was added. TypeScript, lint, the frozen fixture check, route
-reordering checks, expanded zone-learning checks, production build, dependency audit, clean local
-database replay, and all 20 focused database tests pass. The Product Owner approved the local diff
-and interface implementation. The separately approved Routing Lab production migration
-`20260823213000_add_routing_lab_micro_zone_learning.sql` was applied to linked project
-`bnhtwtcoalfgqtcgxmsh` and verified in synchronized migration history. The remote schema contains
-the separate `approved_micro_zone` field, canonical parent/Micro Zone validation constraint, and
-guarded review-save function; a post-apply dry run reports the database is up to date. The
-separately approved `classify-route-zones` version 3 and `propose-manifest-route` version 6 Edge
-Functions are active with JWT verification enabled; unsigned production probes correctly return
-HTTP 401. Vercel production deployment `dpl_9RdZCdBuYctqZqvhT7ywmyMyYPkp` is Ready and aliased at
-`https://freightiq-routing-lab.vercel.app`. The production alias returns HTTP 200 and its served
-bundle contains the new primary-parent and Micro Zone review interface. Signed-in live phone
-acceptance passed primary-parent setup, parent-first review, parent and Micro Zone assignment,
-cross-parent exception handling, proposal generation, preferred-but-editable ordering, and saved
-state recovery. Grand Junction Micro-Zone Learning is production-complete and accepted.
+Local static checks, frozen fixture and route regressions, clean database replay, 24 focused
+database tests, production build, and dependency audit pass. Migration
+`20260823233000_extend_telluride_micro_zone_learning.sql` is synchronized with Routing Lab project
+`bnhtwtcoalfgqtcgxmsh`. `classify-route-zones` version 4 and `propose-manifest-route` version 7 are
+active with JWT verification enabled and return HTTP 401 to unsigned probes. Vercel deployment
+`dpl_8r2YFZ3eXYaHZ78XoHAFBwgejpiD` is Ready at
+`https://freightiq-routing-lab.vercel.app`. Signed-in phone acceptance passed all Telluride-area
+Micro Zone choices, required approval, proposal generation, saved-state recovery, and the focused
+non-GJ-first picker ordering correction.
 
 ---
 
@@ -756,6 +743,6 @@ special build is required solely for that check.
 
 ## Next Safe Step
 
-Decide whether Route Builder V1 and Route Overview Map V1 should be included in the next iOS and
-Android candidates. Candidate creation, tester distribution, installed-candidate acceptance, and
-public release remain separate approval gates.
+Run the first real-workday Routing Lab field trial. Capture only observed classification friction,
+incorrect Micro Zone proposals, sequence problems, or unreliable learning as evidence for the next
+focused improvement. Do not expand the learning model from hypothetical cases alone.

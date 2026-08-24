@@ -223,9 +223,11 @@ This commonly allows:
 
 Mountain Village normally follows Lawson Hill / Society and precedes Downtown Telluride.
 
-Ophir belongs to the broader Mountain Village portion, not the West End.
+Ophir is the first preferred Micro Zone inside the broader Mountain Village portion. It is not a
+parent or Macro Zone and does not belong to the West End.
 
-The detailed order of Ophir, Prospect Creek, Mountain Village core, Adams Ranch, and other internal areas belongs in the Mountain Village Zone document.
+The detailed preferred order of Ophir, Ski Ranch, Prospect Creek, Mountain Village core, Adams
+Ranch, and other internal areas belongs in the Mountain Village Zone document.
 
 ## Downtown Telluride and Airport / Aldasoro
 

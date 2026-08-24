@@ -451,6 +451,15 @@ Routing Lab production environment and ready for real-workday field use.
   `dpl_9RdZCdBuYctqZqvhT7ywmyMyYPkp` and its canonical production alias.
 - [x] Complete signed-in live phone acceptance for primary-parent setup, parent/Micro Zone review,
   cross-parent exceptions, save/reload, learned proposals, and preferred-but-overridable ordering.
+- [x] Approve and complete the
+  [Telluride-Area Micro-Zone Learning Build Specification](build-specs/FreightIQRoutingLabTellurideMicroZoneLearningBuildSpec.md):
+  add Ophir as Mountain Village's first preferred Micro Zone, expose all eight Mountain Village and
+  three Downtown Telluride Micro Zones through the shared review and exact-address learning system,
+  preserve historical parent-only routes, and keep Lawson Hill / Society as its own parent zone.
+- [x] Production-verify migration `20260823233000_extend_telluride_micro_zone_learning.sql`,
+  `classify-route-zones` version 4, `propose-manifest-route` version 7, and Vercel deployment
+  `dpl_8r2YFZ3eXYaHZ78XoHAFBwgejpiD`; complete signed-in phone acceptance including the focused
+  non-GJ picker-order correction.
 - [ ] Run the first real-workday Routing Lab field trial and capture only observed friction,
   incorrect behavior, or unreliable learning for focused follow-up.
 

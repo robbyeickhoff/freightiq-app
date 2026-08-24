@@ -3,7 +3,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js'
 import type { ManifestDraftRoute } from './route-persistence'
 import { getSupabase } from './supabase'
 import { loadManifestLessons } from './manifest-lessons'
-import { isGrandJunctionParentZone } from './zone-learning'
+import { isMicroZoneParent } from './zone-learning'
 
 export type RouteTransition = {
   fromZone: string
@@ -59,9 +59,9 @@ export async function proposeManifestRoute(route: ManifestDraftRoute) {
   }
   const reviewsByStop = new Map(route.zoneReview.map((item) => [item.stopId, item]))
   if (route.zoneReview.some((item) =>
-    item.selectedZone && isGrandJunctionParentZone(item.selectedZone) && !item.selectedMicroZone,
+    item.selectedZone && isMicroZoneParent(item.selectedZone) && !item.selectedMicroZone,
   )) {
-    throw new Error('Every Grand Junction stop must have one driver-approved Micro Zone.')
+    throw new Error('Every stop in a documented Micro Zone parent must have one driver-approved Micro Zone.')
   }
 
   const lessons = await loadManifestLessons()

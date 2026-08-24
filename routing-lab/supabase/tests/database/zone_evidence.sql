@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(24);
 
 insert into auth.users (id, email, created_at, updated_at) values
 ('30000000-0000-4000-8000-000000000001', 'zone-owner@example.test', now(), now()),
@@ -76,6 +76,26 @@ select throws_ok($$
   values
     ('30000000-0000-4000-8000-000000000001', '32000000-0000-4000-8000-000000000002', 'invalid-pair', '1 Test', 'Grand Junction', 'CO', '81501', 'invalid', 'West', 'Hole A')
 $$, '23514', null, 'the database rejects an invalid parent and Micro Zone pair');
+
+insert into public.routing_lab_zone_evidence
+  (user_id, source_route_id, source_stop_id, address, city, state, postal_code, address_key, approved_zone, approved_micro_zone)
+values
+  ('30000000-0000-4000-8000-000000000001', '32000000-0000-4000-8000-000000000002', 'mv-stop', 'County Road D65', 'Ophir', 'CO', '81426', 'county road d65|ophir|co|81426', 'Mountain Village', 'Ophir'),
+  ('30000000-0000-4000-8000-000000000001', '32000000-0000-4000-8000-000000000002', 'dt-stop', '300 E Colorado Ave', 'Telluride', 'CO', '81435', '300 e colorado ave|telluride|co|81435', 'Downtown Telluride', 'Zone 2 East');
+select is((select approved_micro_zone from public.routing_lab_zone_evidence where source_stop_id = 'mv-stop'), 'Ophir', 'Mountain Village accepts Ophir evidence');
+select is((select approved_micro_zone from public.routing_lab_zone_evidence where source_stop_id = 'dt-stop'), 'Zone 2 East', 'Downtown Telluride accepts block-zone evidence');
+select throws_ok($$
+  insert into public.routing_lab_zone_evidence
+    (user_id, source_route_id, source_stop_id, address, city, state, postal_code, address_key, approved_zone, approved_micro_zone)
+  values
+    ('30000000-0000-4000-8000-000000000001', '32000000-0000-4000-8000-000000000002', 'bad-mv', '1 Test', 'Ophir', 'CO', '81426', 'bad-mv', 'Mountain Village', 'Zone 1 South')
+$$, '23514', null, 'Mountain Village rejects a Downtown Telluride Micro Zone');
+select throws_ok($$
+  insert into public.routing_lab_zone_evidence
+    (user_id, source_route_id, source_stop_id, address, city, state, postal_code, address_key, approved_zone, approved_micro_zone)
+  values
+    ('30000000-0000-4000-8000-000000000001', '32000000-0000-4000-8000-000000000002', 'bad-dt', '1 Test', 'Telluride', 'CO', '81435', 'bad-dt', 'Downtown Telluride', 'Ophir')
+$$, '23514', null, 'Downtown Telluride rejects a Mountain Village Micro Zone');
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '30000000-0000-4000-8000-000000000002';

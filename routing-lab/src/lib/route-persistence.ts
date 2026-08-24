@@ -7,7 +7,7 @@ import type {
   ManifestRouteProposal,
   PlannedRouteCorrection,
 } from './manifest-route-proposal'
-import { buildAddressKey, isGrandJunctionParentZone } from './zone-learning'
+import { buildAddressKey, isMicroZoneParent } from './zone-learning'
 
 export type ManifestRouteStop = RouteStop & {
   postalCode: string
@@ -217,7 +217,7 @@ export async function saveManifestZoneReview(
   const evidence = complete
     ? route.sourceStops.flatMap((stop) => {
         const approvedZone = approvedZones.get(stop.id)
-        if (!approvedZone || !isGrandJunctionParentZone(approvedZone)) return []
+        if (!approvedZone || !isMicroZoneParent(approvedZone)) return []
         return [{
           address: stop.address,
           address_key: buildAddressKey(stop),

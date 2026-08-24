@@ -8,6 +8,7 @@ import {
 import {
   grandJunctionParentZones,
   isGrandJunctionParentZone,
+  isMicroZoneParent,
   microZonesForParent,
 } from '../lib/zone-learning'
 
@@ -56,7 +57,7 @@ function ManifestZoneReview({
   const unresolvedCount = classifications.filter((item) => item.status === 'unresolved').length
   const complete = classifications.length === route.sourceStops.length &&
     classifications.every((item) => item.status === 'approved' && item.selectedZone && (
-      !isGrandJunctionParentZone(item.selectedZone) || item.selectedMicroZone
+      !isMicroZoneParent(item.selectedZone) || item.selectedMicroZone
     ))
   const zoneReviewApproved = route.status === 'zone_approved' ||
     route.status === 'proposal_review' || route.status === 'proposal_reviewed'
@@ -165,27 +166,40 @@ function ManifestZoneReview({
                     {classification.selectedZone === 'Grand Junction' ? (
                       <option value="Grand Junction">Grand Junction (legacy)</option>
                     ) : null}
-                    <optgroup label={route.setup.primaryParentZone ? 'Primary Grand Junction parent' : 'Grand Junction parent zones'}>
-                      {grandJunctionParentZones
-                        .filter((zone) => !route.setup.primaryParentZone || zone === route.setup.primaryParentZone)
-                        .map((zone) => <option key={zone} value={zone}>{zone}</option>)}
-                    </optgroup>
                     {route.setup.primaryParentZone ? (
-                      <optgroup label="Other Grand Junction parents · exceptions">
-                        {grandJunctionParentZones
-                          .filter((zone) => zone !== route.setup.primaryParentZone)
-                          .map((zone) => <option key={zone} value={zone}>{zone}</option>)}
-                      </optgroup>
-                    ) : null}
-                    <optgroup label="Other documented operational zones">
-                      {selectableOperationalZones
-                        .filter((zone) => !isGrandJunctionParentZone(zone))
-                        .map((zone) => <option key={zone} value={zone}>{zone}</option>)}
-                    </optgroup>
+                      <>
+                        <optgroup label="Primary Grand Junction parent">
+                          <option value={route.setup.primaryParentZone}>{route.setup.primaryParentZone}</option>
+                        </optgroup>
+                        <optgroup label="Other Grand Junction parents · exceptions">
+                          {grandJunctionParentZones
+                            .filter((zone) => zone !== route.setup.primaryParentZone)
+                            .map((zone) => <option key={zone} value={zone}>{zone}</option>)}
+                        </optgroup>
+                        <optgroup label="Other documented operational zones">
+                          {selectableOperationalZones
+                            .filter((zone) => !isGrandJunctionParentZone(zone))
+                            .map((zone) => <option key={zone} value={zone}>{zone}</option>)}
+                        </optgroup>
+                      </>
+                    ) : (
+                      <>
+                        <optgroup label="Documented operational zones">
+                          {selectableOperationalZones
+                            .filter((zone) => !isGrandJunctionParentZone(zone))
+                            .map((zone) => <option key={zone} value={zone}>{zone}</option>)}
+                        </optgroup>
+                        <optgroup label="Grand Junction parent zones · exceptions">
+                          {grandJunctionParentZones.map((zone) => (
+                            <option key={zone} value={zone}>{zone}</option>
+                          ))}
+                        </optgroup>
+                      </>
+                    )}
                   </select>
                 </label>
 
-                {classification.selectedZone && isGrandJunctionParentZone(classification.selectedZone) ? (
+                {classification.selectedZone && isMicroZoneParent(classification.selectedZone) ? (
                   <label>
                     Micro Zone <span>Candidate taxonomy</span>
                     <select
@@ -208,7 +222,7 @@ function ManifestZoneReview({
                     className="secondary-button"
                     type="button"
                     disabled={!classification.selectedZone || (
-                      isGrandJunctionParentZone(classification.selectedZone) && !classification.selectedMicroZone
+                      isMicroZoneParent(classification.selectedZone) && !classification.selectedMicroZone
                     ) || classification.status === 'approved'}
                     onClick={() => updateClassification(classification.stopId, { status: 'approved' })}
                   >

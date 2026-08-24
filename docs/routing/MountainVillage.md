@@ -124,12 +124,13 @@ Passing the entrance sign while leaving the village marks completion of the Moun
 
 ## Internal Flow
 
-Mountain Village is built from seven operational Micro Zones.
+Mountain Village is built from eight operational Micro Zones.
 
 The normal progression is:
 
 ```text
-Ski Ranch South
+Ophir
+→ Ski Ranch South
 → Ski Ranch North
 → Mountain Village West
 → Benchmark
@@ -155,11 +156,49 @@ Do not reverse the overall Mountain Village flow unless the operational benefit 
 
 ---
 
+## Micro Zone — Ophir
+
+### Status
+
+**Partially Confirmed**
+
+Ophir's durable identity, initial road membership, and position before Ski Ranch are confirmed. The
+supplied planning-map polygon is approximate and must not be treated as an exact classification
+boundary.
+
+### Included Roads and Areas
+
+- Ophir Road / County Road D65
+- Matterhorn Road
+
+### Preferred Flow
+
+Ophir is the first Mountain Village Micro Zone in the preferred baseline:
+
+```text
+Lawson Hill / Society
+→ Ophir
+→ Ski Ranch South
+→ Ski Ranch North
+→ remaining Mountain Village Micro Zones
+```
+
+Current stop volume does not justify a permanent internal road sequence. Driver judgment, trailer
+access, safety, weather, and current freight accessibility remain authoritative.
+
+### Winter Operations
+
+The driver does not enter Ophir Road in winter. This confirmed restriction applies specifically to
+Ophir Road / County Road D65. Winter behavior for Matterhorn Road and any future Ophir-area roads
+remains unresolved until separately confirmed.
+
+---
+
 ## Micro Zone — Ski Ranch South
 
 ### Purpose
 
-Ski Ranch South is the western residential approach into Mountain Village and normally represents the first active Micro Zone.
+Ski Ranch South is the western residential approach after Ophir and normally represents the first active Ski Ranch Micro Zone.
 
 Most roads are short residential branches with limited turnaround opportunities.
 

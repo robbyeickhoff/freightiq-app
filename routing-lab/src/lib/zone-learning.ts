@@ -45,11 +45,30 @@ export const grandJunctionMicroZones = {
   East: ['East A', 'East B', 'East C'],
 } as const satisfies Record<GrandJunctionParentZone, readonly string[]>
 
-export type GrandJunctionMicroZone =
-  (typeof grandJunctionMicroZones)[GrandJunctionParentZone][number]
+export const tellurideMicroZones = {
+  'Mountain Village': [
+    'Ophir',
+    'Ski Ranch South',
+    'Ski Ranch North',
+    'Mountain Village West',
+    'Benchmark',
+    'San Joaquin',
+    'Mountain Village East',
+    'Mountain Village North',
+  ],
+  'Downtown Telluride': ['Zone 1 South', 'Zone 2 East', 'Zone 3 Central / North'],
+} as const
+
+export const microZonesByParent = {
+  ...grandJunctionMicroZones,
+  ...tellurideMicroZones,
+} as const
+
+export type MicroZoneParent = keyof typeof microZonesByParent
+export type MicroZone = (typeof microZonesByParent)[MicroZoneParent][number]
 
 export function microZonesForParent(parentZone: string) {
-  return isGrandJunctionParentZone(parentZone) ? grandJunctionMicroZones[parentZone] : []
+  return isMicroZoneParent(parentZone) ? microZonesByParent[parentZone] : []
 }
 
 export function isValidMicroZonePair(parentZone: string, microZone: string) {
@@ -66,8 +85,12 @@ export type ZoneEvidence = {
 export type LearnedZoneResolution = {
   confidence: 'high' | 'medium' | 'uncertain'
   evidence: string
-  proposedMicroZone: GrandJunctionMicroZone | null
-  proposedZone: GrandJunctionParentZone | null
+  proposedMicroZone: MicroZone | null
+  proposedZone: MicroZoneParent | null
+}
+
+export function isMicroZoneParent(value: string): value is MicroZoneParent {
+  return Object.prototype.hasOwnProperty.call(microZonesByParent, value)
 }
 
 export function isGrandJunctionParentZone(value: string): value is GrandJunctionParentZone {
@@ -94,7 +117,7 @@ export function resolveLearnedZone(evidence: ZoneEvidence[]): LearnedZoneResolut
 
   const routesByZone = new Map<string, Set<string>>()
   for (const item of evidence) {
-    if (!isGrandJunctionParentZone(item.approvedZone)) continue
+    if (!isMicroZoneParent(item.approvedZone)) continue
     const routes = routesByZone.get(item.approvedZone) ?? new Set<string>()
     routes.add(item.sourceRouteId)
     routesByZone.set(item.approvedZone, routes)
@@ -118,7 +141,7 @@ export function resolveLearnedZone(evidence: ZoneEvidence[]): LearnedZoneResolut
       ? `${count} prior driver-approved exact-address reviews agree on ${zone}.`
       : `One prior driver-approved exact-address review assigned this stop to ${zone}.`,
     proposedMicroZone: null,
-    proposedZone: zone as GrandJunctionParentZone,
+    proposedZone: zone as MicroZoneParent,
   }
 }
 
@@ -148,7 +171,7 @@ export function resolveLearnedMicroZone(evidence: ZoneEvidence[]): LearnedZoneRe
   }
 
   const [[pair, routes]] = routesByPair.entries()
-  const [parentZone, microZone] = pair.split('|') as [GrandJunctionParentZone, GrandJunctionMicroZone]
+  const [parentZone, microZone] = pair.split('|') as [MicroZoneParent, MicroZone]
   const count = routes.size
   return {
     confidence: count >= 2 ? 'high' : 'medium',

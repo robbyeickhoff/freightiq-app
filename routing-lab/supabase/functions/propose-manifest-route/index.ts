@@ -3,8 +3,9 @@ import { withSupabase } from "@supabase/server"
 import {
   grandJunctionParentZones,
   isGrandJunctionParentZone,
+  isMicroZoneParent,
   isValidMicroZonePair,
-  microZonesForParent,
+  microZonesByParent,
 } from "../../../src/lib/zone-learning.ts"
 
 const MODEL = "gpt-5.6-terra"
@@ -109,7 +110,7 @@ function parseStops(value: unknown): InputStop[] | null {
       return null
     }
     const microZone = record.microZone === null ? null : typeof record.microZone === "string" ? record.microZone.trim() : null
-    if (isGrandJunctionParentZone(stop.zone) && (!microZone || !isValidMicroZonePair(stop.zone, microZone))) return null
+    if (isMicroZoneParent(stop.zone) && (!microZone || !isValidMicroZonePair(stop.zone, microZone))) return null
     ids.add(stop.id)
     stop.microZone = microZone
     stops.push(stop)
@@ -225,7 +226,7 @@ LogHill.md documented guidance:
 Keep active branches together; finish Ridgway Proper first; avoid descending then climbing back. Ponderosa usually enters from the south and moves generally counterclockwise, but exact order is stop-dependent. Cedar/Alpine View and Divide Ranch internal orders are not fully documented. Label estimates.
 
 MountainVillage.md documented micro-zone flow:
-Ski Ranch South → Ski Ranch North → Mountain Village West → Benchmark → San Joaquin → Mountain Village East → Mountain Village North.
+Ophir → Ski Ranch South → Ski Ranch North → Mountain Village West → Benchmark → San Joaquin → Mountain Village East → Mountain Village North. Ophir includes Ophir Road / County Road D65 and Matterhorn Road. The driver does not enter Ophir Road in winter; do not infer the same restriction for Matterhorn Road. Ophir's internal order is not documented.
 Ski Ranch South roads include Raspberry Patch. Ski Ranch North includes Fox Farm and Wapiti. West includes Mountain Village Blvd, Arizona, Touchdown, Highlands, Victoria. Benchmark includes Benchmark, Hang Glider, Wilson Peak, Snow Drift, Palmyra, Polecat, Autumn, Hood Park, Rocky, Snowfield. San Joaquin includes San Joaquin, Lodges, Tristant, Ridgeline, Cortina, Prospect Creek, Cabins, Stonegate, High Country, Butch Cassidy, Sundance, Eagles Rest. East is Mountain Village Blvd about 450+ plus Yellow Brick, Granite Ridge, Lookout Ridge, Sunny Ridge, Country Club, Aspen Ridge, Vischer. North begins near Russell and includes Adams Ranch, Boulders, Meadowlark, Spring Creek and documented northern roads. Preserve west-to-east south-side movement and westbound north-side return. Victoria and Mountain Lodge may be safer eastbound exceptions. Cortina has no practical turnaround. If same-micro order is not documented, label it an estimate.
 
 DowntownTelluride.md documented micro-zone flow:
@@ -270,7 +271,7 @@ export default {
               multipleGrandJunctionParentZones: new Set(stops.map((stop) => stop.zone).filter(isGrandJunctionParentZone)).size > 1,
               setup,
               stops,
-              preferredMicroZoneOrder: Object.fromEntries(grandJunctionParentZones.map((zone) => [zone, microZonesForParent(zone)])),
+              preferredMicroZoneOrder: microZonesByParent,
             })}`,
           }] }],
           text: { format: { type: "json_schema", name: "routing_lab_manifest_route_proposal", strict: true, schema: proposalSchema } },
