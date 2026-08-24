@@ -26,6 +26,10 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 
+# Generated document artifacts
+/output/
+/tmp/
+
 # macOS
 .DS_Store
 *.pem
