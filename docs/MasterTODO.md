@@ -563,10 +563,12 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
   physical iPhone and Pixel and committed in `66a9834`. The selected map-first view shows numbered
   upcoming stops, muted completed stops, fit-to-route framing, explicit list and navigation actions,
   and direct Preview Card access without optimization or road-valid routing claims.
-- [ ] Return to FreightIQ Live Activity — iOS: after handing a stop off to Apple Maps, Google Maps,
-  or Waze, provide a persistent Lock Screen and Dynamic Island control that deep-links back to that
-  stop's Preview Card or Intel screen. Treat this as a one-tap return experience, not automatic
-  app reopening when navigation ends, and revisit it after the current tester-validation cycle.
+- [ ] [Return to FreightIQ Live Activity](design/ReturnToFreightIQLiveActivity.md) — iOS: after
+  handing a stop off to Apple Maps, Google Maps, or Waze, provide a persistent Lock Screen and
+  Dynamic Island control that deep-links back to the active route context. Treat this as a one-tap
+  return experience, not automatic app reopening when navigation ends. Do not prepare a Build
+  Specification or begin implementation until Route Builder completes at least one week of
+  real-world field testing and the recurring return problem is confirmed.
 - [ ] Improve Driver Reports consumption.
 - [ ] Continue refining route knowledge workflows.
 
