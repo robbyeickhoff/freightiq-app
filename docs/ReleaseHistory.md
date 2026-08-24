@@ -6,6 +6,23 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-08-23 — Route Builder Personal Field-Test Candidate
+
+An iOS-only candidate was created from pushed `clean-main` commit `3090c76` so the Product Owner
+can evaluate Route Builder V1 and Route Overview Map V1 during real work before any tester
+expansion.
+
+- iOS build 41: EAS build `9a92b0e2-4d94-4d07-a30f-bee032ad9673`
+- iOS submission: `73520507-d3a0-4d7a-8640-760d80b2e308`
+
+The production-profile build completed successfully and EAS Submit uploaded the exact finished IPA
+to App Store Connect for TestFlight processing. No TestFlight group was specified, Early Testers
+was not targeted, no Android candidate was created, and no public App Store submission or release
+was authorized. The Product Owner installed build 41 from TestFlight on the physical iPhone,
+confirming the personal installation path. Real-route field acceptance remains pending and will be
+evaluated during at least one week of normal work use before Route Builder expansion or broader
+distribution is considered.
+
 ## 2026-08-23 — App Version 1.0.1 Link and Session-Recovery Candidates
 
 New candidates were created from pushed commit `845dcb5` after focused physical-device link

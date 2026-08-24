@@ -118,6 +118,18 @@ Voting, reputation, editing, and deletion do not automatically satisfy Apple's e
   build 40 to the Early Testers external group.
 - This TestFlight beta distribution does not constitute public App Store submission or release.
 
+### Route Builder Personal Field-Test Candidate — 2026-08-23
+
+- FreightIQ 1.0.1 build 41 was created from pushed commit `3090c76` in EAS build
+  `9a92b0e2-4d94-4d07-a30f-bee032ad9673`.
+- EAS submission `73520507-d3a0-4d7a-8640-760d80b2e308` uploaded the finished build to App Store
+  Connect for TestFlight processing.
+- No TestFlight group was specified and Early Testers was not targeted. The Product Owner installed
+  build 41 from TestFlight on the physical iPhone, confirming the personal installation path.
+- Real-work Route Builder field acceptance remains pending and is separate from successful
+  installation.
+- No Android build, public App Store submission, or public release was authorized by this action.
+
 - [ ] Apple reviewers can access all reviewable functionality.
 - [ ] A stable demo account is available.
 - [ ] The demo account does not require inaccessible SMS, email confirmation, employee approval, or location-specific activation.

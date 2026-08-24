@@ -86,6 +86,16 @@ Owner on the physical Pixel. Those immutable candidates were created from pushed
 and do not contain Route Builder V1. Public App Store or Google Play Production release remains
 separately approval-gated.
 
+An iOS-only personal field-test candidate was created from pushed commit `3090c76` after Route
+Builder V1 and Route Overview Map V1 passed focused iPhone and Pixel acceptance. FreightIQ 1.0.1
+build 41 is EAS build `9a92b0e2-4d94-4d07-a30f-bee032ad9673`; EAS submission
+`73520507-d3a0-4d7a-8640-760d80b2e308` successfully uploaded it to App Store Connect for TestFlight
+processing. No TestFlight group was specified, Early Testers was not targeted, no Android build was
+created, and no public App Store submission or release was authorized. The Product Owner installed
+build 41 from TestFlight on the physical iPhone, confirming the personal installation path.
+Real-route field acceptance remains pending and will be evaluated during at least one week of
+normal work use before Route Builder expansion or broader distribution is considered.
+
 The FreightIQ Recording Demo Environment remains an approved paused build. Its governing contract is
 `docs/build-specs/FreightIQRecordingDemoEnvironmentBuildSpec.md`. It runs the actual FreightIQ
 development app in Apple's iPhone Simulator against the existing local Supabase stack and adds one
