@@ -402,6 +402,8 @@ higher-priority adoption, reliability, tester, or release work. Routing Lab is a
 long-term FreightIQ capability and remains active when time allows. Slices 1, 2, and 3 are
 complete. The connected manifest-to-Test-Route learning loop is deployed in the independent
 Routing Lab production environment and ready for real-workday field use.
+Field-trial readiness is measured against the
+[Routing Lab Field Metrics](routing/RoutingLabFieldMetrics.md) scorecard.
 
 ### Active Tasks
 
