@@ -2656,7 +2656,7 @@ export default function HomeScreen() {
       : selectedEntranceStatus === "error"
         ? "Unavailable"
         : selectedEntrance
-          ? "Saved"
+          ? "Saved · View"
           : "Not set";
   const selectedCoreIntel = [
     {
@@ -3550,8 +3550,28 @@ export default function HomeScreen() {
 
                     <View style={styles.previewCoreGrid}>
                       {selectedCoreIntel.map((item) => (
-                        <View
+                        <Pressable
+                          accessibilityLabel={
+                            item.label === "Delivery Zone" && selectedEntrance
+                              ? "Saved Delivery Zone, view on map"
+                              : undefined
+                          }
+                          accessibilityRole={
+                            item.label === "Delivery Zone" && selectedEntrance
+                              ? "button"
+                              : undefined
+                          }
+                          disabled={item.label !== "Delivery Zone" || !selectedEntrance}
                           key={item.label}
+                          onPress={() => {
+                            if (selectedStop && selectedEntrance) {
+                              enterDeliveryZoneInspection(
+                                "preview",
+                                selectedStop,
+                                selectedEntrance,
+                              );
+                            }
+                          }}
                           style={[
                             styles.previewCoreItem,
                             usesAccessibilityLayout && styles.previewAccessibilityCoreItem,
@@ -3592,7 +3612,7 @@ export default function HomeScreen() {
                               {item.value}
                             </Text>
                           </View>
-                        </View>
+                        </Pressable>
                       ))}
                     </View>
                   </View>
