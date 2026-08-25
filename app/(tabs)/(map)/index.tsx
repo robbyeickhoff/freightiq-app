@@ -506,6 +506,7 @@ export default function HomeScreen() {
     latitudeDelta: 0.2,
     longitudeDelta: 0.2,
   });
+  const regionRef = useRef(region);
 
   const [mapInitialRegion, setMapInitialRegion] = useState<Region | null>(null);
   const [isMapReady, setIsMapReady] = useState(Platform.OS === "ios");
@@ -517,7 +518,7 @@ export default function HomeScreen() {
   const stopLayerRequestIdRef = useRef(0);
   const [tempSearchPin, setTempSearchPin] = useState<Pin | null>(null);
   const [didSetInitialLocation, setDidSetInitialLocation] = useState(false);
-  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const hasUserInteractedRef = useRef(false);
   const [locationGranted, setLocationGranted] = useState<boolean | null>(null);
 
   const [intelByStopId, setIntelByStopId] = useState<Record<string, boolean>>({});
@@ -823,14 +824,6 @@ export default function HomeScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const safePins = sanitizePins(pins);
-      } catch {}
-    })();
-  }, [pins]);
-
-  useEffect(() => {
-    (async () => {
-      try {
         if (!pins.length) {
           setIntelByStopId({});
           setScoreByStopId({});
@@ -927,9 +920,6 @@ export default function HomeScreen() {
 
     void (async () => {
       try {
-        const raw = await AsyncStorage.getItem(stopKey(targetPin.id));
-        const parsed = raw ? (JSON.parse(raw) as StopIntel) : null;
-
         const entranceLat = Number.isFinite(Number(params.entranceLat))
           ? Number(params.entranceLat)
           : undefined;
@@ -971,7 +961,15 @@ export default function HomeScreen() {
         mapRef.current?.animateToRegion(next, 300);
       }
     })();
-  }, [params.focusStopId, params.showEntrance, params.hidePreview, params.revealAt, pins]);
+  }, [
+    params.entranceLat,
+    params.entranceLng,
+    params.focusStopId,
+    params.showEntrance,
+    params.hidePreview,
+    params.revealAt,
+    pins,
+  ]);
 
   useEffect(() => {
     const returnToPreview = String(params.returnToPreview ?? "") === "1";
@@ -1415,6 +1413,10 @@ export default function HomeScreen() {
   }
 
   useEffect(() => {
+    regionRef.current = region;
+  }, [region]);
+
+  useEffect(() => {
     if (didSetInitialLocation) return;
 
     (async () => {
@@ -1424,7 +1426,7 @@ export default function HomeScreen() {
         setLocationGranted(granted);
 
         if (!granted) {
-          setMapInitialRegion(region);
+          setMapInitialRegion(regionRef.current);
           setDidSetInitialLocation(true);
           return;
         }
@@ -1439,7 +1441,7 @@ export default function HomeScreen() {
             longitudeDelta: 0.12,
           };
 
-          if (!hasUserInteracted) {
+          if (!hasUserInteractedRef.current) {
             setRegion(cachedRegion);
           }
 
@@ -1460,7 +1462,7 @@ export default function HomeScreen() {
           longitudeDelta: 0.12,
         };
 
-        if (!hasUserInteracted) {
+        if (!hasUserInteractedRef.current) {
           setRegion(next);
           mapRef.current?.animateToRegion(next, 300);
         }
@@ -1470,7 +1472,7 @@ export default function HomeScreen() {
         recomputeClusters(next);
       } catch {
         setLocationGranted(false);
-        setMapInitialRegion(region);
+        setMapInitialRegion(regionRef.current);
         setDidSetInitialLocation(true);
       }
     })();
@@ -2625,11 +2627,6 @@ export default function HomeScreen() {
     recomputeClusters(next);
   }
 
-  const selectedScore = selectedStopId
-    ? (scoreByStopId[selectedStopId] ?? { up: 0, down: 0 })
-    : { up: 0, down: 0 };
-
-  const selectedScoreValue = selectedScore.up - selectedScore.down;
   const selectedReportStats = selectedStopId
     ? (reportStatsByStopId[selectedStopId] ?? {
         count: 0,
@@ -2888,7 +2885,9 @@ export default function HomeScreen() {
           mapType={mapType}
           userInterfaceStyle={colorScheme}
           onMapReady={() => setIsMapReady(true)}
-          onPanDrag={() => setHasUserInteracted(true)}
+          onPanDrag={() => {
+            hasUserInteractedRef.current = true;
+          }}
           onRegionChangeComplete={(r) => {
             const latChanged = Math.abs(region.latitude - r.latitude);
             const lngChanged = Math.abs(region.longitude - r.longitude);
@@ -2929,7 +2928,6 @@ export default function HomeScreen() {
                   const hasIntel = resolveStopHasIntel(p.id, intelByStopId, reportStatsByStopId);
 
                   const reportCount = reportStatsByStopId[p.id]?.count ?? 0;
-                  const latestUsername = reportStatsByStopId[p.id]?.latestUsername ?? null;
                   return (
                     <Marker
                       key={`raw-stop-${p.id}`}
@@ -2974,7 +2972,6 @@ export default function HomeScreen() {
                   const hasIntel =
                     typeof f.properties.hasIntel === "boolean" ? f.properties.hasIntel : null;
                   const reportCount = Number(f.properties.reportCount ?? 0);
-                  const latestUsername = reportStatsByStopId[stopId]?.latestUsername ?? null;
                   return (
                     <Marker
                       key={`stop-${stopId}-${
