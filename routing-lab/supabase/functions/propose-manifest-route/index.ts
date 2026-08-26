@@ -7,6 +7,7 @@ import {
   isValidMicroZonePair,
   microZonesByParent,
 } from "../../../src/lib/zone-learning.ts"
+import { preservesVerifiedMacroFlow } from "../../../src/lib/macro-flow-validation.ts"
 
 const MODEL = "gpt-5.6-terra"
 const MAX_STOPS = 100
@@ -328,12 +329,14 @@ export default {
       }
       if (applicable.length > 0) {
         ordered = finalLessons[0].evidence.afterStopIds
-        if (JSON.stringify(flowFromOrderedStops(ordered, stops)) !== JSON.stringify(expectedFlow))
+        if (!preservesVerifiedMacroFlow(flowFromOrderedStops(ordered, stops), expectedFlow))
           return jsonError("An approved lesson conflicts with the verified macro flow and needs driver review.", 409)
       }
       const grandJunctionZones = new Set(stops.map((stop) => stop.zone).filter(isGrandJunctionParentZone))
       const grandJunctionExceptions = grandJunctionZones.size > 1
-        ? ["Multiple Grand Junction parent zones were driver-approved; their working order is unverified and needs driver review."]
+        ? [applicable.length > 0
+            ? "Multiple Grand Junction parent zones were driver-approved; their current working order comes from an approved route lesson and remains route-specific."
+            : "Multiple Grand Junction parent zones were driver-approved; their working order is unverified and needs driver review."]
         : []
       const uncertainSequences = [...(result.uncertainSequences ?? [])]
       for (const zone of grandJunctionZones) {

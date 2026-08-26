@@ -664,6 +664,26 @@ textarea:focus-visible {
   justify-self: start;
 }
 
+.proposal-reason-progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  border-bottom: 1px solid #294451;
+  padding-bottom: 12px;
+}
+
+.proposal-reason-progress strong {
+  color: #f4ce7b;
+  font-size: 0.82rem;
+}
+
+.proposal-reason-progress span {
+  color: #b7c6ce;
+  font-size: 0.74rem;
+}
+
 .manifest-proposal-stop-list .stop-copy small {
   color: var(--accent);
   font-size: 0.7rem;
