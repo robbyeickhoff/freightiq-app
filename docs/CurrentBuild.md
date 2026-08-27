@@ -86,8 +86,8 @@ account-scoped, device-local Today's Route, preserves direct single-stop navigat
 add saved FreightIQ stops, manually reorder and complete them, and launch the next stop through the
 existing navigation-app preference. It deliberately excludes optimization, Routing Lab logic,
 cloud sync, manifests, sensitive Intel, automatic completion, full-route provider handoff, widgets,
-and release changes. The current iOS build 40 and Android version code 24 predate `8d3280b` and do
-not contain Route Builder V1.
+and release changes. Route Builder V1, Route Overview Map V1, and the tappable Delivery Zone status
+are included in the current iOS build 42 and Android version code 25 production-profile candidates.
 
 Initial physical-iPhone review passed add-to-route, reorder, complete, and undo behavior. It exposed
 a raw-text rendering warning in the persistent route-control label and an overly heavy Preview Card
@@ -101,21 +101,17 @@ tab was also accepted on physical iPhone. The Product Owner confirmed the full P
 passed on 2026-08-23.
 
 Installed-candidate acceptance for FreightIQ 1.0.1 remains a separate release-validation track.
-iOS build 40 is in TestFlight beta review and assigned to Early Testers. Android version code 24 was
-submitted to Google Play Closed testing — Alpha, completed review, and was installed by the Product
-Owner on the physical Pixel. Those immutable candidates were created from pushed commit `845dcb5`
-and do not contain Route Builder V1. Public App Store or Google Play Production release remains
-separately approval-gated.
+The current production-profile candidates were created from pushed commit `d2327a8` on 2026-08-25
+with the EAS message **Tappable Delivery Zone and Route Builder field release**:
 
-An iOS-only personal field-test candidate was created from pushed commit `3090c76` after Route
-Builder V1 and Route Overview Map V1 passed focused iPhone and Pixel acceptance. FreightIQ 1.0.1
-build 41 is EAS build `9a92b0e2-4d94-4d07-a30f-bee032ad9673`; EAS submission
-`73520507-d3a0-4d7a-8640-760d80b2e308` successfully uploaded it to App Store Connect for TestFlight
-processing. No TestFlight group was specified, Early Testers was not targeted, no Android build was
-created, and no public App Store submission or release was authorized. The Product Owner installed
-build 41 from TestFlight on the physical iPhone, confirming the personal installation path.
-Real-route field acceptance remains pending and will be evaluated during at least one week of
-normal work use before Route Builder expansion or broader distribution is considered.
+- iOS build 42: EAS build `d7a77a2f-a876-49dc-b537-20b90e04df08`
+- Android version code 25: EAS build `adb263ba-7817-4982-ad55-47f732c30081`
+
+The Product Owner confirmed these are the current installed builds on both physical platforms and
+that both include Route Builder, Route Overview Map, and the tappable Delivery Zone status. They do
+not contain the external-navigation correction committed in `e435224`. Replacement production-
+profile build creation is approved for that navigation-only mobile delta. Store submission,
+tester assignment, and public App Store or Google Play Production release remain separate gates.
 
 The FreightIQ Recording Demo Environment remains an approved paused build. Its governing contract is
 `docs/build-specs/FreightIQRecordingDemoEnvironmentBuildSpec.md`. It runs the actual FreightIQ

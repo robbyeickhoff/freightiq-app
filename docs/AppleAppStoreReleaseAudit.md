@@ -130,6 +130,15 @@ Voting, reputation, editing, and deletion do not automatically satisfy Apple's e
   installation.
 - No Android build, public App Store submission, or public release was authorized by this action.
 
+### Route Builder and Tappable Delivery Zone Candidate — 2026-08-25
+
+- FreightIQ 1.0.1 build 42 was created from pushed commit `d2327a8` in EAS build
+  `d7a77a2f-a876-49dc-b537-20b90e04df08`.
+- The EAS build message is **Tappable Delivery Zone and Route Builder field release**.
+- The Product Owner confirmed build 42 as the current installed production-profile iPhone build.
+- Build 42 does not contain the external-navigation correction committed in `e435224`.
+- No public App Store submission or release is inferred or authorized by this build record.
+
 - [ ] Apple reviewers can access all reviewable functionality.
 - [ ] A stable demo account is available.
 - [ ] The demo account does not require inaccessible SMS, email confirmation, employee approval, or location-specific activation.

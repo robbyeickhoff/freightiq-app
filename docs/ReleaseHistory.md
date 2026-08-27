@@ -6,6 +6,22 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-08-25 — Route Builder and Tappable Delivery Zone Candidates
+
+Production-profile candidates were created from pushed `clean-main` commit `d2327a8` after Route
+Builder, Route Overview Map, tappable Delivery Zone access, and focused map lint cleanup passed
+their applicable verification.
+
+- iOS build 42: EAS build `d7a77a2f-a876-49dc-b537-20b90e04df08`
+- Android version code 25: EAS build `adb263ba-7817-4982-ad55-47f732c30081`
+
+Both EAS records carry the message **Tappable Delivery Zone and Route Builder field release**. The
+Product Owner confirmed these are the current installed production-profile builds on iPhone and
+Pixel and that both include Route Builder and tappable Delivery Zone access. Later real-route use
+exposed the external-navigation destination-identification defect; its correction is not present in
+build 42 or version code 25. Store submission and distribution details remain governed by their live
+platform records and are not inferred here.
+
 ## 2026-08-23 — Route Builder Personal Field-Test Candidate
 
 An iOS-only candidate was created from pushed `clean-main` commit `3090c76` so the Product Owner
