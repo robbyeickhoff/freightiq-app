@@ -13,6 +13,27 @@ answer one question:
 
 ## Current Objective
 
+Apple Maps destination identification is under one focused correction within the completed
+Navigation App Choice contract, `docs/build-specs/FreightIQNavigationAppChoiceBuildSpec.md`.
+Real-route use showed Apple Maps routing to the correct Mountain Village address while displaying
+the broad nearby POI name Telluride Ski Resort, while Google Maps displayed only raw latitude and
+longitude. The app now supplies the saved full address through each provider's documented directions
+destination parameter for Apple Maps and Google Maps, with exact-coordinate fallback when an address
+is unavailable. Waze remains coordinate-based under its documented contract. Focused URL regressions,
+the existing route tests, TypeScript, and lint pass with no new errors. Physical-iPhone acceptance
+confirmed that Apple Maps identifies both tested Mountain Village destinations by their street
+addresses instead of Telluride Ski Resort. Expo-hosted Google Maps testing exposed a false
+`canOpenURL` unavailable result before launch; explicit provider navigation now attempts the chosen
+app directly and falls back only when the launch itself rejects. Google Maps destination display and
+Pixel navigation then passed both affected Mountain Village addresses on physical devices. The
+focused correction is accepted across Apple Maps on iPhone and Google Maps on iPhone and Pixel. It
+was approved for one focused commit and push on 2026-08-26; no build, distribution, release,
+database, or production-service change is included.
+
+---
+
+## Previously Completed Objective — Telluride-Area Micro-Zone Learning
+
 Telluride-Area Micro-Zone Learning is production-complete and accepted. Its governing contract is
 `docs/build-specs/FreightIQRoutingLabTellurideMicroZoneLearningBuildSpec.md`. The shared Routing Lab
 taxonomy now contains all 30 approved Micro Zones: the existing 19 Grand Junction values, eight

@@ -1,6 +1,6 @@
 # FreightIQ Navigation App Choice — Focused Build Specification
 
-> **Status: Implemented, Expo-compatible acceptance complete, committed, and pushed**
+> **Status: Implemented; focused destination-identification correction accepted on iPhone and Pixel**
 >
 > This specification adds driver choice only for external turn-by-turn navigation. FreightIQ's
 > in-app map viewing and Mapbox/FreightIQ search behavior remain unchanged.
@@ -12,7 +12,7 @@
 - **Repository path:** `docs/build-specs/FreightIQNavigationAppChoiceBuildSpec.md`
 - **Repository status:** Completed controlling Build Specification
 - **Implementation status:** Implemented; Expo-compatible iPhone and Pixel acceptance, commit, and
-  push complete
+  push complete; focused Apple/Google Maps correction accepted locally on 2026-08-26
 - **Approval status:** Approved by the Product Owner on 2026-08-01
 
 ## 1. Objective
@@ -106,8 +106,8 @@ Apple Maps must not appear as an Android choice.
 ### Navigate Behavior
 
 - **FreightIQ Default:** open Apple Maps directly on iPhone and Google Maps directly on Android.
-- **Explicit installed app:** open that app directly with the selected stop's coordinates and
-  cleaned display name.
+- **Explicit installed app:** open that app directly with the selected stop's provider-appropriate
+  destination information and cleaned display name.
 - **Ask Every Time:** show a platform-appropriate choice sheet containing FreightIQ Default and the
   supported installed navigation apps.
 - The picker must be usable with large text, VoiceOver, and TalkBack.
@@ -115,6 +115,9 @@ Apple Maps must not appear as an Android choice.
 
 ### Missing-App and Launch Failure Behavior
 
+- A deliberately selected provider must be opened optimistically. Do not block launch solely on a
+  `canOpenURL` preflight result because Expo Go and other host binaries may return a false negative
+  when they do not declare the provider's query scheme.
 - Do not silently open an unrelated browser page when an explicitly selected navigation app is no
   longer installed.
 - Show a clear alert naming the unavailable app and offer **Use FreightIQ Default** or **Cancel**.
@@ -125,11 +128,18 @@ Apple Maps must not appear as an Android choice.
 
 ## 5. Navigation URL Contract
 
-All providers receive the selected destination's latitude, longitude, and safe display label.
+All providers receive the selected destination's latitude, longitude, safe display label, and saved
+address when one is available.
 
 - **Apple Maps:** request driving directions from the current location using the broadly compatible
-  Apple Map Link format.
+  Apple Map Link format. Use the saved full address as the documented `daddr` value and fall back to
+  exact coordinates only when no usable address exists. Do not combine coordinate `daddr` with `q`:
+  Apple documents `q` as a label with `ll` or `address`, not with directions, and may replace that
+  unsupported combination with a broad nearby point-of-interest name.
 - **Google Maps:** request driving navigation using Google's documented Maps URL or platform scheme.
+  Use the saved full address as the destination and fall back to exact coordinates only when no
+  usable address exists; coordinate-only destinations do not provide Google with a place name or
+  address to display.
 - **Waze:** request navigation to latitude/longitude using the documented Waze Deep Link and include
   a FreightIQ `utm_source` value.
 - **FreightIQ Default on Android:** request Google Maps driving navigation directly.
@@ -201,8 +211,12 @@ coordinate destination.
 
 ### Explicit Providers
 
-- Apple Maps opens the correct coordinates from iPhone.
-- Google Maps opens the correct coordinates from iPhone and Pixel.
+- Apple Maps opens the correct saved destination from iPhone, using its address when available and
+  exact coordinates as the fallback.
+- Apple Maps identifies an addressed FreightIQ stop by its destination address rather than a broad
+  nearby point-of-interest label.
+- Google Maps opens the correct saved destination from iPhone and Pixel and identifies an addressed
+  stop by its destination address instead of displaying raw latitude/longitude.
 - Waze opens the correct coordinates from iPhone and Pixel.
 - Test saved FreightIQ stops and temporary provider results.
 
@@ -269,3 +283,24 @@ fallback behavior. Final native installed-app detection, direct provider launch,
 handoff, platform-specific option visibility, missing-app fallback, preference persistence, and
 root return behavior passed on store-installed iOS build 35 and Android version code 17 on
 2026-08-04. The focused repository work was committed and pushed as `e3a16fa` on 2026-08-01.
+
+On 2026-08-26, real-route field use exposed that Apple Maps could route to the correct coordinate
+while displaying a broad nearby POI such as Telluride Ski Resort, while Google Maps displayed only
+raw latitude/longitude. The focused correction passes each provider the documented destination
+information it can identify: saved address first for Apple and Google, coordinate fallback for
+addressless pins, and unchanged coordinate navigation for Waze. The navigation URL regression suite,
+TypeScript, lint, and local iOS/Android production exports pass with no new errors. No build,
+distribution, release, database, or provider-account change is authorized here.
+
+Physical-iPhone Expo acceptance then confirmed that Apple Maps identified both 457 and 688 Mountain
+Village Boulevard by address rather than Telluride Ski Resort. Explicit Google Maps selection
+initially produced a false unavailable alert because the Expo host's `canOpenURL` query returned
+false before FreightIQ attempted the installed app. Explicit provider navigation now attempts the
+chosen URL directly and uses the existing fallback only when that launch rejects. Installed-app
+filtering remains available for the Ask Every Time picker in native FreightIQ binaries.
+
+After reload, physical-device acceptance passed both affected Mountain Village addresses in Google
+Maps on iPhone, and Google Maps navigation also passed on Pixel. Together with the Apple Maps checks
+above, the focused destination-identification correction is accepted. The Product Owner approved
+one focused commit and push on 2026-08-26; build creation, distribution, and release remain separate
+approval gates.

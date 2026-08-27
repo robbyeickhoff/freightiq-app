@@ -28,7 +28,6 @@ import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { recordFoundingDriverActivity } from "@/utils/founding-driver-activity";
 import {
   availableNavigationProviders,
-  isNavigationProviderAvailable,
   navigationProviderLabel,
   openNavigationProvider,
   type NavigationDestination,
@@ -234,7 +233,13 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
   }, [colorScheme, isOverviewMapReady, overviewMarkerSignature, showRouteList]);
 
   function destinationFor(stop: TodayRouteStop): NavigationDestination {
-    return { label: stop.name, lat: stop.lat, lng: stop.lng, stopId: stop.id };
+    return {
+      address: stop.address,
+      label: stop.name,
+      lat: stop.lat,
+      lng: stop.lng,
+      stopId: stop.id,
+    };
   }
 
   function showNavigationFallback(
@@ -300,11 +305,6 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
 
     setNavigationLaunching(true);
     try {
-      const available = await isNavigationProviderAvailable(navigationPreference);
-      if (!available) {
-        showNavigationFallback(navigationPreference, destination);
-        return;
-      }
       await openNavigationProvider(navigationPreference, destination);
       void recordFoundingDriverActivity("navigation_started", stop.id);
     } catch {

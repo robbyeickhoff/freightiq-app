@@ -42,7 +42,6 @@ import {
 } from "@/utils/stop-locality";
 import {
   availableNavigationProviders,
-  isNavigationProviderAvailable,
   navigationProviderLabel,
   openNavigationProvider,
   type NavigationDestination,
@@ -2486,6 +2485,7 @@ export default function HomeScreen() {
     if (!selectedStop || navigationLaunching) return;
 
     const destination: NavigationDestination = {
+      address: selectedStop.address,
       label: selectedStop.name,
       lat: selectedStop.lat,
       lng: selectedStop.lng,
@@ -2507,19 +2507,6 @@ export default function HomeScreen() {
     }
 
     const provider = navigationPreference;
-    setNavigationLaunching(true);
-
-    try {
-      const isAvailable = await isNavigationProviderAvailable(provider);
-
-      if (!isAvailable) {
-        showNavigationFallback(provider, destination);
-        return;
-      }
-    } finally {
-      setNavigationLaunching(false);
-    }
-
     await launchNavigation(provider, destination);
   }
 

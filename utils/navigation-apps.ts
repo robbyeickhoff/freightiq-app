@@ -1,15 +1,14 @@
 import * as Linking from "expo-linking";
 import { Platform } from "react-native";
 
-export type NavigationPreference = "default" | "ask" | "apple" | "google" | "waze";
-export type NavigationProvider = Exclude<NavigationPreference, "ask">;
+import {
+  buildNavigationUrl,
+  type NavigationDestination,
+  type NavigationProvider,
+} from "@/utils/navigation-urls";
 
-export type NavigationDestination = {
-  label: string;
-  lat: number;
-  lng: number;
-  stopId?: string;
-};
+export type NavigationPreference = "default" | "ask" | "apple" | "google" | "waze";
+export type { NavigationDestination, NavigationProvider } from "@/utils/navigation-urls";
 
 export type NavigationPreferenceOption = {
   description: string;
@@ -137,37 +136,9 @@ export async function availableNavigationProviders(): Promise<NavigationProvider
   return availability.filter(({ available }) => available).map(({ provider }) => provider);
 }
 
-function navigationUrl(
-  provider: NavigationProvider,
-  destination: NavigationDestination,
-): string {
-  const { label, lat, lng } = destination;
-  const encodedLabel = encodeURIComponent(label.trim() || "Destination");
-
-  if (provider === "default") {
-    if (Platform.OS === "android") {
-      return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving&dir_action=navigate`;
-    }
-
-    return `http://maps.apple.com/?daddr=${lat},${lng}&q=${encodedLabel}&dirflg=d`;
-  }
-
-  if (provider === "apple") {
-    return `http://maps.apple.com/?daddr=${lat},${lng}&q=${encodedLabel}&dirflg=d`;
-  }
-
-  if (provider === "google") {
-    return Platform.OS === "android"
-      ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving&dir_action=navigate`
-      : `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving`;
-  }
-
-  return `waze://?ll=${lat},${lng}&navigate=yes&utm_source=freightiq`;
-}
-
 export async function openNavigationProvider(
   provider: NavigationProvider,
   destination: NavigationDestination,
 ): Promise<void> {
-  await Linking.openURL(navigationUrl(provider, destination));
+  await Linking.openURL(buildNavigationUrl(provider, destination, Platform.OS));
 }
