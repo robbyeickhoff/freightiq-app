@@ -6,6 +6,23 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-08-26 — External Navigation Destination Fix Candidates
+
+Replacement production-profile candidates were created from clean pushed `clean-main` commit
+`b8f4086`. Relative to the preceding build-42/code-25 mobile baseline, the release story is limited
+to the accepted external-navigation destination-identification correction.
+
+- iOS build 43: EAS build `74e1941e-8cfa-4587-a27f-ba0c73b7785e`
+- iOS submission: `82f7cfe6-344f-4cb4-ab5f-a58e7fb73574`
+- Android version code 26: EAS build `6b584ea6-61b2-4e54-82aa-d4f1d94635f9`
+- Android AAB SHA-256: `0d4c07418e21eaefd54f935943a12d92d12b31349033356a93ddf05d896aa4e8`
+
+Both builds finished successfully with the EAS message **External navigation destination fix
+b8f4086**. The iOS submission uploaded build 43 to App Store Connect for Apple processing without a
+TestFlight group or public App Review action. The 73 MB Android AAB passed ZIP integrity verification
+and was not submitted to Google Play. Installed acceptance, Android submission, tester assignment,
+and public release remain separate gates.
+
 ## 2026-08-25 — Route Builder and Tappable Delivery Zone Candidates
 
 Production-profile candidates were created from pushed `clean-main` commit `d2327a8` after Route

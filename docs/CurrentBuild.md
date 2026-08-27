@@ -27,8 +27,10 @@ addresses instead of Telluride Ski Resort. Expo-hosted Google Maps testing expos
 app directly and falls back only when the launch itself rejects. Google Maps destination display and
 Pixel navigation then passed both affected Mountain Village addresses on physical devices. The
 focused correction is accepted across Apple Maps on iPhone and Google Maps on iPhone and Pixel. It
-was approved for one focused commit and push on 2026-08-26; no build, distribution, release,
-database, or production-service change is included.
+was committed in `e435224`. Replacement iOS build 43 and Android version code 26 were created from
+clean pushed commit `b8f4086`; iOS was uploaded to App Store Connect for processing, while Android
+submission remains a separate gate. No tester assignment, public release, database, or production-
+service change is included.
 
 ---
 
@@ -101,17 +103,19 @@ tab was also accepted on physical iPhone. The Product Owner confirmed the full P
 passed on 2026-08-23.
 
 Installed-candidate acceptance for FreightIQ 1.0.1 remains a separate release-validation track.
-The current production-profile candidates were created from pushed commit `d2327a8` on 2026-08-25
-with the EAS message **Tappable Delivery Zone and Route Builder field release**:
+Replacement production-profile candidates were created from clean pushed commit `b8f4086` on
+2026-08-26 with the EAS message **External navigation destination fix b8f4086**:
 
-- iOS build 42: EAS build `d7a77a2f-a876-49dc-b537-20b90e04df08`
-- Android version code 25: EAS build `adb263ba-7817-4982-ad55-47f732c30081`
+- iOS build 43: EAS build `74e1941e-8cfa-4587-a27f-ba0c73b7785e`
+- iOS submission: `82f7cfe6-344f-4cb4-ab5f-a58e7fb73574`
+- Android version code 26: EAS build `6b584ea6-61b2-4e54-82aa-d4f1d94635f9`
+- Android AAB SHA-256: `0d4c07418e21eaefd54f935943a12d92d12b31349033356a93ddf05d896aa4e8`
 
-The Product Owner confirmed these are the current installed builds on both physical platforms and
-that both include Route Builder, Route Overview Map, and the tappable Delivery Zone status. They do
-not contain the external-navigation correction committed in `e435224`. Replacement production-
-profile build creation is approved for that navigation-only mobile delta. Store submission,
-tester assignment, and public App Store or Google Play Production release remain separate gates.
+Both builds finished successfully. The iOS submission uploaded build 43 to App Store Connect, where
+Apple processing remains pending; no TestFlight group or public App Review submission was included.
+The Android AAB passes ZIP integrity verification and has not been submitted to Google Play.
+Installed acceptance, Android submission, tester assignment, and public App Store or Google Play
+Production release remain separate gates.
 
 The FreightIQ Recording Demo Environment remains an approved paused build. Its governing contract is
 `docs/build-specs/FreightIQRecordingDemoEnvironmentBuildSpec.md`. It runs the actual FreightIQ

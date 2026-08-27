@@ -139,6 +139,15 @@ Voting, reputation, editing, and deletion do not automatically satisfy Apple's e
 - Build 42 does not contain the external-navigation correction committed in `e435224`.
 - No public App Store submission or release is inferred or authorized by this build record.
 
+### External Navigation Destination Fix Candidate — 2026-08-26
+
+- FreightIQ 1.0.1 build 43 was created from clean pushed commit `b8f4086` in EAS build
+  `74e1941e-8cfa-4587-a27f-ba0c73b7785e`.
+- EAS submission `82f7cfe6-344f-4cb4-ab5f-a58e7fb73574` successfully uploaded build 43 to App
+  Store Connect for Apple processing.
+- No TestFlight group was specified, and no public App Review submission or release was authorized.
+- Installed-build acceptance remains required after Apple processing completes.
+
 - [ ] Apple reviewers can access all reviewable functionality.
 - [ ] A stable demo account is available.
 - [ ] The demo account does not require inaccessible SMS, email confirmation, employee approval, or location-specific activation.

@@ -304,3 +304,11 @@ Maps on iPhone, and Google Maps navigation also passed on Pixel. Together with t
 above, the focused destination-identification correction is accepted. The Product Owner approved
 one focused commit and push on 2026-08-26; build creation, distribution, and release remain separate
 approval gates.
+
+The accepted correction was committed in `e435224`. Replacement production-profile iOS build 43
+(`74e1941e-8cfa-4587-a27f-ba0c73b7785e`) and Android version code 26
+(`6b584ea6-61b2-4e54-82aa-d4f1d94635f9`) were then created from clean pushed commit `b8f4086`.
+Both builds finished successfully. iOS submission `82f7cfe6-344f-4cb4-ab5f-a58e7fb73574`
+uploaded build 43 to App Store Connect for processing without assigning a TestFlight group or
+initiating public App Review. The Android AAB passed ZIP integrity verification and remains
+unsubmitted. Installed acceptance and all remaining distribution/release actions are separate gates.
