@@ -109,6 +109,7 @@ Replacement production-profile candidates were created from clean pushed commit 
 - iOS build 43: EAS build `74e1941e-8cfa-4587-a27f-ba0c73b7785e`
 - iOS submission: `82f7cfe6-344f-4cb4-ab5f-a58e7fb73574`
 - Android version code 26: EAS build `6b584ea6-61b2-4e54-82aa-d4f1d94635f9`
+- Android AAB: `/Users/robbyeickhoff/FreightIQ/Play Store Build Files/FreightIQ-1.0.1-android-v26-b8f4086.aab`
 - Android AAB SHA-256: `0d4c07418e21eaefd54f935943a12d92d12b31349033356a93ddf05d896aa4e8`
 
 Both builds finished successfully. The iOS submission uploaded build 43 to App Store Connect, where
