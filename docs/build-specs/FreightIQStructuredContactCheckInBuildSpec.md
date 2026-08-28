@@ -1,5 +1,16 @@
 # FreightIQ Structured Contact / Check-In — Focused Build Specification
 
+## 2026-08-27 Approved Collapsed Actions and Mobile Defaults Amendment
+
+Real-world use showed that collapsed contact summaries displayed saved phone numbers without making
+them actionable. A collapsed saved number must now launch Call when tapped and must also expose a
+Message action for Mobile and Work Mobile numbers. Expanding the contact remains the editing path.
+
+Every newly added phone row defaults to **Mobile**, including each of the five available phone slots.
+This supersedes the earlier Receiving-first and explicit-type defaults below. Existing saved phone
+types remain unchanged. This amendment authorizes focused local implementation and verification
+only; commit, push, build, distribution, and release remain separate gates.
+
 ## 2026-08-09 Approved Amendment — Multiple Named Contacts
 
 The Product Owner approved a focused amendment after real-world use exposed that a report could

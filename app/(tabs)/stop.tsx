@@ -1258,10 +1258,7 @@ export default function StopScreen() {
         index === personIndex
           ? {
               ...person,
-              phones: [
-                ...person.phones,
-                { type: contactPhoneCount(previous) === 0 ? "receiving" : null, number: "" },
-              ],
+              phones: [...person.phones, { type: "mobile", number: "" }],
             }
           : person,
       );
@@ -2889,9 +2886,11 @@ export default function StopScreen() {
                                 <Text numberOfLines={1} style={styles.contactSummaryName}>
                                   {summary.name}
                                 </Text>
-                                <Text numberOfLines={1} style={styles.contactSummaryDetail}>
-                                  {summary.detail}
-                                </Text>
+                                {expanded ? (
+                                  <Text numberOfLines={1} style={styles.contactSummaryDetail}>
+                                    {summary.detail}
+                                  </Text>
+                                ) : null}
                               </View>
                               <MaterialIcons
                                 name={expanded ? "expand-less" : "expand-more"}
@@ -2899,6 +2898,73 @@ export default function StopScreen() {
                                 color="#6b7280"
                               />
                             </Pressable>
+
+                            {!expanded ? (
+                              person.phones.some((phone) => phone.number.trim()) ? (
+                                <View style={styles.collapsedContactPhones}>
+                                  {person.phones
+                                    .filter((phone) => phone.number.trim())
+                                    .map((phone, phoneIndex) => {
+                                      const validPhone = isValidPhone(phone.number);
+                                      const phoneLabel = `${phoneTypeLabel(phone.type)} ${phone.number}`;
+                                      return (
+                                        <View
+                                          key={`collapsed-contact-phone-${phoneIndex}`}
+                                          style={styles.collapsedContactPhoneRow}
+                                        >
+                                          <Pressable
+                                            accessibilityRole="button"
+                                            accessibilityLabel={`Call ${summary.name}, ${phoneLabel}`}
+                                            disabled={!validPhone}
+                                            onPress={() => openContactAction("call", phone)}
+                                            style={({ pressed }) => [
+                                              styles.collapsedContactPhoneCall,
+                                              !validPhone && styles.contactActionButtonDisabled,
+                                              pressed && validPhone
+                                                ? styles.collapsedContactActionPressed
+                                                : null,
+                                            ]}
+                                          >
+                                            <Text
+                                              numberOfLines={1}
+                                              style={styles.contactSummaryDetail}
+                                            >
+                                              {phoneLabel}
+                                            </Text>
+                                            <MaterialIcons name="phone" size={20} color="#d45b18" />
+                                          </Pressable>
+                                          {canMessagePhoneType(phone.type) ? (
+                                            <Pressable
+                                              accessibilityRole="button"
+                                              accessibilityLabel={`Message ${summary.name}, ${phoneLabel}`}
+                                              disabled={!validPhone}
+                                              hitSlop={6}
+                                              onPress={() => openContactAction("message", phone)}
+                                              style={({ pressed }) => [
+                                                styles.collapsedContactMessageButton,
+                                                !validPhone && styles.contactActionButtonDisabled,
+                                                pressed && validPhone
+                                                  ? styles.collapsedContactActionPressed
+                                                  : null,
+                                              ]}
+                                            >
+                                              <MaterialIcons
+                                                name="message"
+                                                size={20}
+                                                color="#d45b18"
+                                              />
+                                            </Pressable>
+                                          ) : null}
+                                        </View>
+                                      );
+                                    })}
+                                </View>
+                              ) : (
+                                <Text style={styles.contactSummaryDetail}>
+                                  No phone number added
+                                </Text>
+                              )
+                            ) : null}
 
                             {expanded ? (
                               <>
@@ -3823,6 +3889,33 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     fontSize: 13,
     marginTop: 2,
+  },
+  collapsedContactPhones: {
+    gap: 4,
+  },
+  collapsedContactPhoneRow: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  collapsedContactPhoneCall: {
+    minHeight: 44,
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  collapsedContactMessageButton: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  collapsedContactActionPressed: {
+    opacity: 0.6,
   },
   removeContactButton: {
     alignSelf: "flex-end",
