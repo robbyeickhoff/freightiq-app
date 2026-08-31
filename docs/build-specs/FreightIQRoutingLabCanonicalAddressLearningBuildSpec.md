@@ -2,7 +2,7 @@
 
 ## Status
 
-**Database and classifier deployed and verified — website deployment approved and pending**
+**Production deployed and technically verified — signed-in live acceptance pending**
 
 Approved by the Product Owner on August 31, 2026.
 
@@ -59,7 +59,7 @@ Each requires separate Product Owner approval after local acceptance:
 
 1. Routing Lab database migration and backfill — **complete and verified August 31, 2026**
 2. `classify-route-zones` Edge Function deployment — **complete and verified August 31, 2026**
-3. Routing Lab Vercel website deployment — **approved August 31, 2026; pending**
+3. Routing Lab Vercel website deployment — **complete and verified August 31, 2026**
 4. Signed-in live acceptance using a genuinely new Test Route
 
 No commit or push is implied by implementation approval.
@@ -73,7 +73,11 @@ Remote verification found all 86 existing evidence rows present, zero blank cano
 backfill mismatches, synchronized migration history, correct save privileges, and zero database-lint
 errors. The separately approved classifier gate deployed `classify-route-zones` version 5 with JWT
 verification enabled; an unsigned production probe returns HTTP 401. `extract-manifest` remains at
-version 1 and `propose-manifest-route` remains at version 8. No website deployment was included.
+version 1 and `propose-manifest-route` remains at version 8. Production deployment
+`dpl_29rwuJbqjkKArAgPxGdzuoDbSeoZ` is Ready and aliased to
+`https://freightiq-routing-lab.vercel.app`. The deployment and production alias return HTTP 200, the
+served bundle contains the canonical-key client path, and the post-deploy error scan is clean.
+Signed-in live acceptance using a genuinely new Test Route remains pending.
 
 ## Required Local Validation
 

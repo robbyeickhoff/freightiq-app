@@ -26,8 +26,12 @@ mismatches. A follow-up compatibility migration lets the currently deployed webs
 its legacy evidence payload while validating canonical keys from the new client.
 `classify-route-zones` version 5 is active with JWT verification enabled and an unsigned production
 probe returns HTTP 401. `extract-manifest` remains version 1 and `propose-manifest-route` remains
-version 8. Commit, push, and the isolated Routing Lab Vercel deployment are approved and pending.
-Mobile-app changes and production FreightIQ Supabase changes remain unauthorized.
+version 8. The implementation commit, push, and isolated Routing Lab Vercel deployment are complete.
+Production deployment `dpl_29rwuJbqjkKArAgPxGdzuoDbSeoZ` is Ready at
+`https://freightiq-routing-lab.vercel.app`; both the deployment and production alias return HTTP
+200, the served bundle contains the canonical-key client path, and the post-deploy error scan is
+clean. Signed-in acceptance with a genuinely new Test Route remains pending. Mobile-app changes and
+production FreightIQ Supabase changes remain unauthorized.
 
 ### Mobile Release Track
 

@@ -410,7 +410,9 @@ Field-trial readiness is measured against the
   - [x] Deploy and verify the isolated Routing Lab database migration, canonical-key backfill, and
     legacy website save compatibility.
   - [x] Deploy and verify `classify-route-zones` version 5 with JWT verification retained.
-  - [ ] Deploy and verify the approved Routing Lab website production build.
+  - [x] Deploy and technically verify Routing Lab production deployment
+    `dpl_29rwuJbqjkKArAgPxGdzuoDbSeoZ`.
+  - [ ] Complete signed-in live acceptance with a genuinely new Test Route.
 
 ### Active Tasks
 
