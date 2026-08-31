@@ -2,12 +2,14 @@ import assert from 'node:assert/strict'
 
 import {
   buildAddressKey,
+  buildCanonicalPhysicalAddressKey,
   grandJunctionParentZones,
   grandJunctionMicroZones,
   isMicroZoneParent,
   isValidMicroZonePair,
   microZonesByParent,
   resolveLearnedMicroZone,
+  resolveLearnedAddressEvidence,
   resolveLearnedZone,
   selectableOperationalZones,
   tellurideMicroZones,
@@ -53,6 +55,24 @@ assert.equal(buildAddressKey({
   state: ' CO ',
   postalCode: ' 81501 ',
 }), '123 main st|grand junction|co|81501')
+
+const canonicalCases = [
+  ['123 Main Street, Suite 200', '123 Main St #9'],
+  ['123 Main St.', '123 MAIN STREET'],
+  ['123 North Main Avenue', '123 N Main Ave.'],
+  ['123 U.S. Highway 550', '123 US Hwy 550'],
+  ['123 County Road 63L', '123 Co Rd 63L'],
+] as const
+for (const [firstAddress, secondAddress] of canonicalCases) {
+  assert.equal(
+    buildCanonicalPhysicalAddressKey({ address: firstAddress, city: 'Grand Junction', state: 'Colorado', postalCode: '81501-1234' }),
+    buildCanonicalPhysicalAddressKey({ address: secondAddress, city: 'grand junction', state: 'CO', postalCode: '81501' }),
+  )
+}
+assert.notEqual(
+  buildCanonicalPhysicalAddressKey({ address: '123 Main St Unit 2', city: 'Grand Junction', state: 'CO', postalCode: '81501' }),
+  buildCanonicalPhysicalAddressKey({ address: '124 Main Street', city: 'Grand Junction', state: 'Colorado', postalCode: '81501-1234' }),
+)
 
 assert.equal(resolveLearnedZone([]), null)
 assert.deepEqual(resolveLearnedZone([
@@ -110,5 +130,18 @@ assert.equal(resolveLearnedMicroZone([
   { addressKey: 'town', approvedZone: 'Downtown Telluride', approvedMicroZone: 'Zone 1 South', sourceRouteId: 'route-1' },
   { addressKey: 'town', approvedZone: 'Downtown Telluride', approvedMicroZone: 'Zone 2 East', sourceRouteId: 'route-2' },
 ])?.confidence, 'uncertain')
+
+const exactWest = [{ addressKey: 'exact', approvedZone: 'West', approvedMicroZone: 'West A', sourceRouteId: 'route-1' }]
+const conflictingCanonical = [
+  { addressKey: 'canonical', approvedZone: 'West', approvedMicroZone: 'West A', sourceRouteId: 'route-2' },
+  { addressKey: 'canonical', approvedZone: 'East', approvedMicroZone: 'East A', sourceRouteId: 'route-3' },
+]
+assert.equal(resolveLearnedAddressEvidence(exactWest, conflictingCanonical)?.proposedZone, 'West')
+assert.deepEqual(resolveLearnedAddressEvidence([], conflictingCanonical), {
+  confidence: 'uncertain',
+  evidence: 'Prior driver-approved exact-address reviews conflict and need current review.',
+  proposedMicroZone: null,
+  proposedZone: null,
+})
 
 console.log('Shared Micro Zone learning checks passed.')

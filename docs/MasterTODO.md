@@ -18,7 +18,7 @@
 
 ---
 
-Last Updated: 2026-08-23
+Last Updated: 2026-08-31
 
 ---
 
@@ -404,6 +404,13 @@ complete. The connected manifest-to-Test-Route learning loop is deployed in the 
 Routing Lab production environment and ready for real-workday field use.
 Field-trial readiness is measured against the
 [Routing Lab Field Metrics](routing/RoutingLabFieldMetrics.md) scorecard.
+
+- [ ] Complete the approved canonical physical-address learning fallback through its separately
+  approved database, Edge Function, website, and live-acceptance gates.
+  - [x] Deploy and verify the isolated Routing Lab database migration, canonical-key backfill, and
+    legacy website save compatibility.
+  - [x] Deploy and verify `classify-route-zones` version 5 with JWT verification retained.
+  - [ ] Deploy and verify the approved Routing Lab website production build.
 
 ### Active Tasks
 

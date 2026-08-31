@@ -7,7 +7,11 @@ import type {
   ManifestRouteProposal,
   PlannedRouteCorrection,
 } from './manifest-route-proposal'
-import { buildAddressKey, isMicroZoneParent } from './zone-learning'
+import {
+  buildAddressKey,
+  buildCanonicalPhysicalAddressKey,
+  isMicroZoneParent,
+} from './zone-learning'
 
 export type ManifestRouteStop = RouteStop & {
   postalCode: string
@@ -221,6 +225,7 @@ export async function saveManifestZoneReview(
         return [{
           address: stop.address,
           address_key: buildAddressKey(stop),
+          canonical_address_key: buildCanonicalPhysicalAddressKey(stop),
           approved_zone: approvedZone,
           approved_micro_zone: zoneReview.find((item) => item.stopId === stop.id)?.selectedMicroZone,
           city: stop.city,

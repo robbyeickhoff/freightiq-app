@@ -112,6 +112,61 @@ export function buildAddressKey(stop: {
     .join('|')
 }
 
+const stateAbbreviations: Record<string, string> = {
+  alabama: 'al', alaska: 'ak', arizona: 'az', arkansas: 'ar', california: 'ca', colorado: 'co',
+  connecticut: 'ct', delaware: 'de', florida: 'fl', georgia: 'ga', hawaii: 'hi', idaho: 'id',
+  illinois: 'il', indiana: 'in', iowa: 'ia', kansas: 'ks', kentucky: 'ky', louisiana: 'la',
+  maine: 'me', maryland: 'md', massachusetts: 'ma', michigan: 'mi', minnesota: 'mn',
+  mississippi: 'ms', missouri: 'mo', montana: 'mt', nebraska: 'ne', nevada: 'nv',
+  'new hampshire': 'nh', 'new jersey': 'nj', 'new mexico': 'nm', 'new york': 'ny',
+  'north carolina': 'nc', 'north dakota': 'nd', ohio: 'oh', oklahoma: 'ok', oregon: 'or',
+  pennsylvania: 'pa', 'rhode island': 'ri', 'south carolina': 'sc', 'south dakota': 'sd',
+  tennessee: 'tn', texas: 'tx', utah: 'ut', vermont: 'vt', virginia: 'va', washington: 'wa',
+  'west virginia': 'wv', wisconsin: 'wi', wyoming: 'wy',
+}
+
+const streetTokenAliases: Record<string, string> = {
+  alley: 'aly', avenue: 'ave', boulevard: 'blvd', circle: 'cir', court: 'ct', drive: 'dr',
+  expressway: 'expy', freeway: 'fwy', lane: 'ln', parkway: 'pkwy', place: 'pl', road: 'rd',
+  square: 'sq', street: 'st', terrace: 'ter', trail: 'trl',
+  north: 'n', south: 's', east: 'e', west: 'w', northeast: 'ne', northwest: 'nw',
+  southeast: 'se', southwest: 'sw',
+}
+
+function normalizeStreetAddress(value: string) {
+  const withoutSecondary = value
+    .toLocaleLowerCase('en-US')
+    .replace(/\s+(?:apt|apartment|bldg|building|dept|department|floor|fl|hangar|lot|room|rm|ste|suite|trailer|unit)\b[\s#.:,-]*.*$/iu, '')
+    .replace(/\s+#\s*[\p{L}\p{N}-]+.*$/iu, '')
+  const normalizedHighway = withoutSecondary
+    .replace(/\b(?:united states|u\.?\s*s\.?)\s+(?:highway|hwy|route|rte)\b/giu, 'us')
+    .replace(/\b(?:state|st)\s+(?:highway|hwy|route|rte)\b/giu, 'state')
+    .replace(/\b(?:county|co)\s+(?:road|rd|route|rte)\b/giu, 'county rd')
+    .replace(/\b(?:highway|hwy)\b/giu, 'hwy')
+  return normalizedHighway
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+    .split(/\s+/u)
+    .map((token) => streetTokenAliases[token] ?? token)
+    .join(' ')
+}
+
+export function buildCanonicalPhysicalAddressKey(stop: {
+  address: string
+  city: string
+  postalCode: string
+  state: string
+}) {
+  const state = normalizeAddressComponent(stop.state).replace(/[^a-z]/g, '')
+  const postalCode = stop.postalCode.match(/\b\d{5}\b/u)?.[0] ?? normalizeAddressComponent(stop.postalCode)
+  return [
+    normalizeStreetAddress(stop.address),
+    normalizeAddressComponent(stop.city).replace(/[^\p{L}\p{N}]+/gu, ' ').trim(),
+    stateAbbreviations[normalizeAddressComponent(stop.state)] ?? state,
+    postalCode,
+  ].join('|')
+}
+
 export function resolveLearnedZone(evidence: ZoneEvidence[]): LearnedZoneResolution | null {
   if (evidence.length === 0) return null
 
@@ -181,4 +236,11 @@ export function resolveLearnedMicroZone(evidence: ZoneEvidence[]): LearnedZoneRe
     proposedMicroZone: microZone,
     proposedZone: parentZone,
   }
+}
+
+export function resolveLearnedAddressEvidence(
+  exactEvidence: ZoneEvidence[],
+  canonicalEvidence: ZoneEvidence[],
+) {
+  return resolveLearnedMicroZone(exactEvidence) ?? resolveLearnedMicroZone(canonicalEvidence)
 }

@@ -13,6 +13,24 @@ answer one question:
 
 ## Current Objective
 
+### Private Routing Lab — Canonical Physical-Address Learning
+
+One approved, isolated Routing Lab improvement is in local implementation under
+`docs/build-specs/FreightIQRoutingLabCanonicalAddressLearningBuildSpec.md`. It preserves the current
+exact-address key as the first match, adds a separate canonical physical-address fallback for
+harmless formatting differences, preserves original manifest address fields, retains collisions as
+separate evidence, and returns conflicting canonical Parent or Micro-Zone evidence to driver review.
+The isolated Routing Lab database migration and backfill are deployed and verified in project
+`bnhtwtcoalfgqtcgxmsh`. All 86 existing evidence rows have canonical keys with zero backfill
+mismatches. A follow-up compatibility migration lets the currently deployed website continue saving
+its legacy evidence payload while validating canonical keys from the new client.
+`classify-route-zones` version 5 is active with JWT verification enabled and an unsigned production
+probe returns HTTP 401. `extract-manifest` remains version 1 and `propose-manifest-route` remains
+version 8. Commit, push, and the isolated Routing Lab Vercel deployment are approved and pending.
+Mobile-app changes and production FreightIQ Supabase changes remain unauthorized.
+
+### Mobile Release Track
+
 Apple Maps destination identification is under one focused correction within the completed
 Navigation App Choice contract, `docs/build-specs/FreightIQNavigationAppChoiceBuildSpec.md`.
 Real-route use showed Apple Maps routing to the correct Mountain Village address while displaying

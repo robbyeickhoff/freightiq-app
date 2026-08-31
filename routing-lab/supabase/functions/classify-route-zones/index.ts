@@ -2,10 +2,11 @@ import "@supabase/functions-js/edge-runtime.d.ts"
 import { withSupabase } from "@supabase/server"
 import {
   buildAddressKey,
+  buildCanonicalPhysicalAddressKey,
   documentedOperationalZones,
   isValidMicroZonePair,
   microZonesByParent,
-  resolveLearnedMicroZone,
+  resolveLearnedAddressEvidence,
   type ZoneEvidence,
 } from "../../../src/lib/zone-learning.ts"
 
@@ -65,6 +66,7 @@ type ZoneClassificationResponse = {
 
 type ZoneEvidenceRow = {
   address_key: string
+  canonical_address_key: string
   approved_micro_zone: string | null
   approved_zone: string
   source_route_id: string
@@ -160,30 +162,66 @@ export default {
     if (!stops) return jsonError("Provide a valid current stop list.", 400)
 
     const addressKeys = [...new Set(stops.map(buildAddressKey))]
-    const learned = await ctx.supabase
+    const exactEvidence = await ctx.supabase
       .from("routing_lab_zone_evidence")
-      .select("address_key,approved_zone,approved_micro_zone,source_route_id")
+      .select("address_key,canonical_address_key,approved_zone,approved_micro_zone,source_route_id")
       .in("address_key", addressKeys)
-    if (learned.error) return jsonError("Prior zone evidence could not be read. Try again.", 502)
+    if (exactEvidence.error) return jsonError("Prior zone evidence could not be read. Try again.", 502)
 
-    const evidenceByAddress = new Map<string, ZoneEvidence[]>()
-    for (const item of (learned.data ?? []) as unknown as ZoneEvidenceRow[]) {
+    const exactEvidenceByAddress = new Map<string, ZoneEvidence[]>()
+    for (const item of (exactEvidence.data ?? []) as unknown as ZoneEvidenceRow[]) {
       const evidence: ZoneEvidence = {
         addressKey: item.address_key,
         approvedMicroZone: item.approved_micro_zone,
         approvedZone: item.approved_zone,
         sourceRouteId: item.source_route_id,
       }
-      evidenceByAddress.set(item.address_key, [
-        ...(evidenceByAddress.get(item.address_key) ?? []),
+      exactEvidenceByAddress.set(item.address_key, [
+        ...(exactEvidenceByAddress.get(item.address_key) ?? []),
         evidence,
       ])
+    }
+
+    const exactResolutionByStop = new Map<string, ReturnType<typeof resolveLearnedAddressEvidence>>()
+    const canonicalFallbackStops: InputStop[] = []
+    for (const stop of stops) {
+      const exactResolution = resolveLearnedAddressEvidence(
+        exactEvidenceByAddress.get(buildAddressKey(stop)) ?? [],
+        [],
+      )
+      if (exactResolution) exactResolutionByStop.set(stop.id, exactResolution)
+      else canonicalFallbackStops.push(stop)
+    }
+
+    const canonicalEvidenceByAddress = new Map<string, ZoneEvidence[]>()
+    if (canonicalFallbackStops.length > 0) {
+      const canonicalAddressKeys = [...new Set(canonicalFallbackStops.map(buildCanonicalPhysicalAddressKey))]
+      const canonicalEvidence = await ctx.supabase
+        .from("routing_lab_zone_evidence")
+        .select("address_key,canonical_address_key,approved_zone,approved_micro_zone,source_route_id")
+        .in("canonical_address_key", canonicalAddressKeys)
+      if (canonicalEvidence.error) return jsonError("Prior zone evidence could not be read. Try again.", 502)
+
+      for (const item of (canonicalEvidence.data ?? []) as unknown as ZoneEvidenceRow[]) {
+        const evidence: ZoneEvidence = {
+          addressKey: item.address_key,
+          approvedMicroZone: item.approved_micro_zone,
+          approvedZone: item.approved_zone,
+          sourceRouteId: item.source_route_id,
+        }
+        canonicalEvidenceByAddress.set(item.canonical_address_key, [
+          ...(canonicalEvidenceByAddress.get(item.canonical_address_key) ?? []),
+          evidence,
+        ])
+      }
     }
 
     const learnedClassifications = new Map<string, ZoneClassificationResponse["classifications"][number]>()
     const unmatchedStops: InputStop[] = []
     for (const stop of stops) {
-      const resolution = resolveLearnedMicroZone(evidenceByAddress.get(buildAddressKey(stop)) ?? [])
+      const resolution = exactResolutionByStop.get(stop.id) ?? resolveLearnedAddressEvidence(
+        [], canonicalEvidenceByAddress.get(buildCanonicalPhysicalAddressKey(stop)) ?? [],
+      )
       if (!resolution) {
         unmatchedStops.push(stop)
         continue
