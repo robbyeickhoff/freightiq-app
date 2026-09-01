@@ -13,6 +13,28 @@ answer one question:
 
 ## Current Objective
 
+### Completed Objective — Private Routing Lab Ridgway Name Normalization
+
+One approved, isolated Routing Lab terminology correction is locally implemented under
+`docs/build-specs/FreightIQRoutingLabRidgwayNameNormalizationBuildSpec.md`. The active zone label
+`Ridgway — North of Highway 62` is replaced by `Ridgway North`, while the physical boundary remains
+documented as Ridgway-address stops north of Highway 62. Historical route state is normalized only
+when read, so stored history is not rewritten. The proposal boundary preserves the verified
+`Montrose → Ridgway North → Ouray → Ridgway Proper → Log Hill` flow and explicitly prevents the
+broader Ridgway geography from collapsing Ouray's operational placement. No persisted Ridgway
+parent, polygon runtime use, geocoding, database migration, production FreightIQ change, or
+deployment is included. Focused compatibility and macro-flow regressions plus the full required
+local Routing Lab validation pass. The Product Owner accepted the local implementation and diff on
+September 1, 2026. Edge Function
+deployment and Vercel production deployment were separately approved and completed.
+`classify-route-zones` version 6 and `propose-manifest-route` version 9 are active with JWT
+verification enabled and reject unsigned probes with HTTP 401. Vercel deployment
+`dpl_3bL4Nma2RFWXinqmvtRbczVN6vws` is Ready and aliased at
+`https://freightiq-routing-lab.vercel.app`; the alias returns HTTP 200, the served bundle contains
+the canonical label and deliberate compatibility alias, and the post-deploy error scan is clean.
+Signed-in phone acceptance passed on September 1, 2026 when the live Zone Review picker displayed
+`Ridgway North` as intended. The Product Owner approved commit and push for closeout.
+
 ### Private Routing Lab — Canonical Physical-Address Learning
 
 One approved, isolated Routing Lab improvement is in local implementation under

@@ -35,7 +35,7 @@ Major references:
 Neighboring operational zones include:
 
 - Ridgway Proper
-- Ridgway-address stops north of Highway 62
+- Ridgway North — Ridgway-address stops physically north of Highway 62
 - Placerville / Sawpit
 
 ## Authoritative Boundary Definition

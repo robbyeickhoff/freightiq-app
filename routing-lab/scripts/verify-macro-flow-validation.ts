@@ -32,6 +32,23 @@ assert.equal(
   true,
   'Grand Junction parent order may change while documented downstream flow is preserved',
 )
+
+assert.equal(
+  preservesVerifiedMacroFlow(
+    ['Montrose', 'Ridgway North', 'Ouray', 'Ridgway Proper', 'Log Hill'],
+    ['Montrose', 'Ridgway North', 'Ouray', 'Ridgway Proper', 'Log Hill'],
+  ),
+  true,
+  'Ouray remains between the two independently serviced Ridgway segments',
+)
+assert.equal(
+  preservesVerifiedMacroFlow(
+    ['Montrose', 'Ridgway North', 'Ridgway Proper', 'Ouray', 'Log Hill'],
+    ['Montrose', 'Ridgway North', 'Ouray', 'Ridgway Proper', 'Log Hill'],
+  ),
+  false,
+  'Ridgway geography may not collapse the verified placement of Ouray',
+)
 assert.equal(
   preservesVerifiedMacroFlow(
     ['River Road', 'West', 'Airport', 'Montrose', 'Delta'],

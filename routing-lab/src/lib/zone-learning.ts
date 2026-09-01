@@ -7,13 +7,17 @@ export const grandJunctionParentZones = [
   'East',
 ] as const
 
+export const legacyOperationalZoneNames = {
+  'Ridgway — North of Highway 62': 'Ridgway North',
+} as const
+
 export const documentedOperationalZones = [
   'Grand Junction',
   ...grandJunctionParentZones,
   'Delta',
   'Olathe',
   'Montrose',
-  'Ridgway — North of Highway 62',
+  'Ridgway North',
   'Ouray',
   'Ridgway Proper',
   'Log Hill',
@@ -35,6 +39,10 @@ export const selectableOperationalZones = documentedOperationalZones.filter(
 
 export type GrandJunctionParentZone = (typeof grandJunctionParentZones)[number]
 export type DocumentedOperationalZone = (typeof documentedOperationalZones)[number]
+
+export function normalizeOperationalZoneName(value: string) {
+  return legacyOperationalZoneNames[value as keyof typeof legacyOperationalZoneNames] ?? value
+}
 
 export const grandJunctionMicroZones = {
   Fruita: ['Fruita A', 'Fruita B', 'Fruita C'],

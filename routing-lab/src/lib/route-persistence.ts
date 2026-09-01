@@ -8,6 +8,11 @@ import type {
   PlannedRouteCorrection,
 } from './manifest-route-proposal'
 import {
+  normalizeStoredRouteProposal,
+  normalizeStoredRouteStop,
+  normalizeStoredZoneClassification,
+} from './route-taxonomy-compatibility'
+import {
   buildAddressKey,
   buildCanonicalPhysicalAddressKey,
   isMicroZoneParent,
@@ -92,21 +97,24 @@ function fromRow(row: {
   status: string
   zone_review: Json
 }): ManifestDraftRoute {
+  const routeProposal = Object.keys(row.route_proposal as Record<string, Json>).length > 0
+    ? row.route_proposal as unknown as ManifestRouteProposal
+    : null
+
   return {
     adjustedStopIds: row.adjusted_stop_ids as unknown as string[],
     id: row.id,
     manifestImportId: row.manifest_import_id,
     plannedCorrections: row.planned_corrections as unknown as PlannedRouteCorrection[],
-    routeProposal: Object.keys(row.route_proposal as Record<string, Json>).length > 0
-      ? row.route_proposal as unknown as ManifestRouteProposal
-      : null,
+    routeProposal: routeProposal ? normalizeStoredRouteProposal(routeProposal) : null,
     runState: Object.keys(row.run_state as Record<string, Json>).length > 0
       ? row.run_state as unknown as ManifestRouteRunState
       : null,
     setup: row.setup as unknown as RouteSetup,
-    sourceStops: row.source_stops as unknown as ManifestRouteStop[],
+    sourceStops: (row.source_stops as unknown as ManifestRouteStop[]).map(normalizeStoredRouteStop),
     status: row.status as ManifestDraftRoute['status'],
-    zoneReview: row.zone_review as unknown as ZoneClassification[],
+    zoneReview: (row.zone_review as unknown as ZoneClassification[])
+      .map(normalizeStoredZoneClassification),
   }
 }
 

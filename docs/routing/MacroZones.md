@@ -45,7 +45,7 @@ Grand Junction
 → Delta
 → Olathe
 → Montrose
-→ Ridgway-address stops north of Highway 62
+→ Ridgway North
 → Ouray
 → Ridgway Proper
 → Log Hill
@@ -92,15 +92,18 @@ Montrose
 
 ---
 
-# Ridgway Stops North of Highway 62
+# Ridgway North
 
 Stops with a Ridgway mailing address that are physically located north of Highway 62 should normally be completed before Ouray.
+
+`Ridgway North` is the canonical operational-zone name. The Highway 62 wording defines the
+physical boundary; it is not part of the zone label.
 
 Default flow:
 
 ```text
 Montrose
-→ Ridgway-address stops north of Highway 62
+→ Ridgway North
 → Ouray
 → Ridgway Proper
 ```
@@ -121,7 +124,7 @@ Default:
 
 ```text
 Montrose
-→ Ridgway-address stops north of Highway 62
+→ Ridgway North
 → Ouray
 → Ridgway Proper
 ```

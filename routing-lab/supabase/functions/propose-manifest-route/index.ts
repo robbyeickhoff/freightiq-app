@@ -12,7 +12,7 @@ import { preservesVerifiedMacroFlow } from "../../../src/lib/macro-flow-validati
 const MODEL = "gpt-5.6-terra"
 const MAX_STOPS = 100
 const DEFAULT_MACRO_FLOW = [
-  "Grand Junction", ...grandJunctionParentZones, "Delta", "Olathe", "Montrose", "Ridgway — North of Highway 62",
+  "Grand Junction", ...grandJunctionParentZones, "Delta", "Olathe", "Montrose", "Ridgway North",
   "Ouray", "Ridgway Proper", "Log Hill", "Placerville / Sawpit",
   "Wilson Mesa Ranch Zone", "South Park", "Lawson Hill / Society", "Mountain Village",
   "Downtown Telluride", "Airport / Aldasoro", "Norwood", "Nucla / Naturita", "Gateway",
@@ -209,7 +209,8 @@ RouteBuilding.md:
 - Preserve zone integrity, forward truck movement, and local operational exceptions.
 
 MacroZones.md default forward flow:
-Grand Junction → Delta → Olathe → Montrose → Ridgway — North of Highway 62 → Ouray → Ridgway Proper → Log Hill → Placerville / Sawpit → Wilson Mesa Ranch Zone → South Park → Lawson Hill / Society → Mountain Village → Downtown Telluride → Airport / Aldasoro → Norwood → Nucla / Naturita → Gateway.
+Grand Junction → Delta → Olathe → Montrose → Ridgway North → Ouray → Ridgway Proper → Log Hill → Placerville / Sawpit → Wilson Mesa Ranch Zone → South Park → Lawson Hill / Society → Mountain Village → Downtown Telluride → Airport / Aldasoro → Norwood → Nucla / Naturita → Gateway.
+Ridgway North and Ridgway Proper are separate operational routing segments. Ouray remains between them in the normal forward flow; do not combine the two Ridgway segments into one contiguous service block.
 Outside the Grand Junction parent zones, remove inactive delivery zones while preserving that direction. A whole-route constraint may affect local ordering but must not silently reverse the documented macro flow; identify any unsupported macro request as an operational exception needing driver review. Apply the separate Grand Junction rules below inside Grand Junction.
 
 Grand Junction parent-zone documents:
