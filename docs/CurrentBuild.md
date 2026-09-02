@@ -13,6 +13,43 @@ answer one question:
 
 ## Current Objective
 
+### Private Routing Lab — Grand Junction Geocoding and Polygon Classification V1
+
+The Product Owner approved the bounded GJ-first specification on September 1, 2026. Its local
+implementation contract is
+`docs/build-specs/FreightIQRoutingLabGrandJunctionGeocodingPolygonClassificationV1BuildSpec.md`.
+The proposed slice preserves exact and canonical learned evidence as authoritative, geocodes only
+unmatched Grand Junction addresses through server-side Mapbox Permanent Geocoding, and uses a
+versioned artifact derived from the approved GJ master KMZ to propose Parent and Micro Zones. Every
+classification remains driver-reviewed; weak geocodes, boundary cases, overlaps, hierarchy
+conflicts, and outside-map addresses remain explicit review work. Telluride polygons, route
+sequencing, production FreightIQ, database migrations, and deployment are excluded. The local
+implementation is complete and validated. Mapbox Permanent Geocoding billing readiness and the
+isolated server-only `MAPBOX_GEOCODING_TOKEN` configuration were verified on September 1, 2026.
+The isolated `classify-route-zones` Edge Function version 8 was then deployed and technically
+verified with JWT verification retained. Routing Lab production deployment
+`dpl_FtkiZSShhAzugSfPYrXd7Qh99sny` is READY and assigned to the production alias. Signed-in
+acceptance exposed one bounded address-format defect: manifest addresses beginning with suite text
+were rejected before polygon classification even when the physical street address was valid. The
+local correction preserves the original manifest value and removes only a leading suite/unit prefix
+from the provider query and house-number comparison. Focused DaVita regressions and the complete
+local validation pass. The corrected isolated `classify-route-zones` function is active with JWT
+verification retained and rejects unsigned requests. A live-provider diagnostic then proved that
+the Mapbox account, pay-as-you-go billing, permanent-geocoding request, and Routing Lab token were
+valid, while the stored Supabase secret fingerprint did not match that working token. The Product
+Owner approved replacement of only `MAPBOX_GEOCODING_TOKEN`; its remote fingerprint now matches the
+working token. Repeated signed-in acceptance classified 12 of 13 stops automatically: nine through
+the GJ polygons and three through prior learned evidence. The remaining 519 Ligrani Lane stop
+correctly stayed unresolved because the `gj-v1` geometry paired River Road with Hole A. The Product
+Owner refined the source map so that the same accepted rooftop coordinate now falls under Downtown
+/ The Hole and Hole A. A preserved `gj-v1` plus `gj-v2` records that correction, retains the
+75-meter boundary-safety flag, excludes three non-polygon map markers, and passes the complete local
+Routing Lab validation. The Product Owner approved the isolated server deployment on September 2,
+2026. `classify-route-zones` version 11 is active with JWT verification retained and rejects
+unsigned requests with HTTP 401. After the approved one-route Zone Review reset, signed-in
+acceptance confirmed that 519 Ligrani Lane now classifies as Downtown / The Hole and Hole A under
+`gj-v2`. Git synchronization remains separately gated.
+
 ### Completed Objective — Private Routing Lab Ridgway Name Normalization
 
 One approved, isolated Routing Lab terminology correction is locally implemented under

@@ -416,6 +416,28 @@ Field-trial readiness is measured against the
 
 ### Active Tasks
 
+- [x] Review and approve the focused [Grand Junction Geocoding and Polygon Classification V1 Build
+  Specification](build-specs/FreightIQRoutingLabGrandJunctionGeocodingPolygonClassificationV1BuildSpec.md).
+- [x] Verify Mapbox Permanent Geocoding billing readiness and configure the isolated server-only
+  `MAPBOX_GEOCODING_TOKEN` secret; replace the mismatched stored value after a direct permanent-
+  geocoding request proved the working token and verify the remote fingerprint.
+- [x] Deploy and technically verify isolated `classify-route-zones` version 8 with JWT verification
+  retained.
+- [x] Deploy and technically verify Routing Lab production deployment
+  `dpl_FtkiZSShhAzugSfPYrXd7Qh99sny`.
+- [x] Redeploy and technically verify the leading-suite address correction in isolated
+  `classify-route-zones` version 9 with JWT verification retained.
+- [x] Repeat signed-in acceptance with a genuinely new Grand Junction Test Route and verify 12 of
+  13 stops receive proposals while one genuine Parent/Micro geometry conflict remains unresolved.
+- [x] Convert the Product Owner's refined GJ master KMZ into the preserved `gj-v1` plus local
+  `gj-v2` geometry candidate; verify 519 Ligrani Lane resolves to Downtown / The Hole and Hole A
+  while retaining the boundary-adjacent safety flag.
+- [x] Deploy and technically verify `gj-v2` in isolated `classify-route-zones` version 11 with JWT
+  verification retained and unsigned requests rejected with HTTP 401.
+- [x] Repeat signed-in acceptance for `gj-v2` and verify 519 Ligrani Lane classifies as Downtown /
+  The Hole and Hole A after an approved one-route Zone Review reset.
+- [ ] Advance through the separate Git gate.
+
 - [x] Establish the isolated Routing Lab application and validation boundary.
 - [x] Load and replay the frozen GR-001 baseline proposal.
 - [x] Track the active route and stop outcomes.

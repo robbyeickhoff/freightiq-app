@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test:macro-flow-validation": "node --experimental-strip-types scripts/verify-macro-flow-validation.ts",
+    "test:gj-geocoding-polygon": "node --experimental-strip-types scripts/verify-gj-geocoding-polygon.ts",
     "test:route-taxonomy-compatibility": "node --experimental-strip-types scripts/verify-route-taxonomy-compatibility.ts",
     "test:route-reordering": "node --experimental-strip-types scripts/verify-route-reordering.ts",
     "test:zone-learning": "node --experimental-strip-types scripts/verify-zone-learning.ts",

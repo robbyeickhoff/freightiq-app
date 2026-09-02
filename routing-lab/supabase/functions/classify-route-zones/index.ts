@@ -9,6 +9,14 @@ import {
   resolveLearnedAddressEvidence,
   type ZoneEvidence,
 } from "../../../src/lib/zone-learning.ts"
+import {
+  GRAND_JUNCTION_BOUNDARY_SAFETY_METERS,
+  classifyGrandJunctionPoint,
+} from "../../../src/lib/grand-junction-zone-geography.ts"
+import {
+  geocodeGrandJunctionStops,
+  type GeocodingAudit,
+} from "../../../src/lib/mapbox-geocoding.ts"
 
 const MODEL = "gpt-5.6-terra"
 const MAX_STOPS = 100
@@ -58,6 +66,7 @@ type ZoneClassificationResponse = {
   classifications: Array<{
     confidence: 'high' | 'medium' | 'low' | 'uncertain'
     evidence: string
+    geocoding?: GeocodingAudit
     proposedMicroZone: string | null
     proposedZone: (typeof OPERATIONAL_ZONES)[number] | null
     stopId: string
@@ -235,8 +244,46 @@ export default {
       })
     }
 
+    const geocodingByStop = await geocodeGrandJunctionStops(
+      unmatchedStops,
+      Deno.env.get("MAPBOX_GEOCODING_TOKEN")?.trim() ?? "",
+    )
+    const polygonClassifications = new Map<string, ZoneClassificationResponse["classifications"][number]>()
+    for (const stop of unmatchedStops) {
+      const geocoding = geocodingByStop.get(stop.id)
+      if (!geocoding || geocoding.status !== "accepted" || !geocoding.coordinates) continue
+      const decision = classifyGrandJunctionPoint(
+        geocoding.coordinates.longitude,
+        geocoding.coordinates.latitude,
+      )
+      geocoding.geometryRevision = decision.revision
+      geocoding.polygonDecision = decision
+      geocoding.reason = decision.reason
+      if (!decision.proposedZone) continue
+
+      const safelyInterior = decision.proposedMicroZone &&
+        decision.boundaryDistanceMeters !== null &&
+        decision.boundaryDistanceMeters >= GRAND_JUNCTION_BOUNDARY_SAFETY_METERS &&
+        (geocoding.matchConfidence === "exact" || geocoding.matchConfidence === "high") &&
+        geocoding.pointAccuracy !== "interpolated" && geocoding.pointAccuracy !== "approximate"
+      const distanceText = decision.boundaryDistanceMeters === null
+        ? "an unknown distance from the nearest boundary"
+        : `${Math.round(decision.boundaryDistanceMeters)} meters from the nearest boundary`
+      polygonClassifications.set(stop.id, {
+        confidence: safelyInterior ? "medium" : "low",
+        evidence: decision.proposedMicroZone
+          ? `GJ zone map ${decision.revision} places the address in ${decision.proposedZone} / ${decision.proposedMicroZone}, ${distanceText}; driver approval is required.`
+          : `GJ zone map ${decision.revision} places the address in ${decision.proposedZone}, but the Micro Zone remains uncertain; driver review is required.`,
+        geocoding,
+        proposedMicroZone: decision.proposedMicroZone,
+        proposedZone: decision.proposedZone as (typeof OPERATIONAL_ZONES)[number],
+        stopId: stop.id,
+      })
+    }
+
+    const modelStops = unmatchedStops.filter((stop) => !polygonClassifications.has(stop.id))
     let modelClassifications: ZoneClassificationResponse["classifications"] = []
-    if (unmatchedStops.length > 0) {
+    if (modelStops.length > 0) {
       const apiKey = Deno.env.get("OPENAI_API_KEY")
       if (!apiKey) return jsonError("Zone classification is not configured.", 503)
       let openAIResponse: Response
@@ -254,7 +301,7 @@ export default {
               role: "user",
               content: [{
                 type: "input_text",
-                text: `${KNOWLEDGE_PACKET}\n\nClassify every stop exactly once:\n${JSON.stringify(unmatchedStops)}`,
+                text: `${KNOWLEDGE_PACKET}\n\nClassify every stop exactly once:\n${JSON.stringify(modelStops)}`,
               }],
             }],
             text: {
@@ -283,7 +330,7 @@ export default {
       try {
         const result = JSON.parse(outputText) as ZoneClassificationResponse
         const returnedIds = result.classifications?.map((item) => item.stopId) ?? []
-        const unmatchedIds = unmatchedStops.map((stop) => stop.id)
+        const unmatchedIds = modelStops.map((stop) => stop.id)
         if (
           returnedIds.length !== unmatchedIds.length ||
           new Set(returnedIds).size !== unmatchedIds.length ||
@@ -294,14 +341,20 @@ export default {
         if (result.classifications.some((item) =>
           item.proposedMicroZone && (!item.proposedZone || !isValidMicroZonePair(item.proposedZone, item.proposedMicroZone))
         )) return jsonError("The classifier returned an invalid parent and Micro Zone pair. Try again.", 502)
-        modelClassifications = result.classifications
+        modelClassifications = result.classifications.map((classification) => ({
+          ...classification,
+          ...(geocodingByStop.get(classification.stopId)
+            ? { geocoding: geocodingByStop.get(classification.stopId) }
+            : {}),
+        }))
       } catch {
         return jsonError("The structured classification could not be read. Try again.", 502)
       }
     }
 
     const modelByStop = new Map(modelClassifications.map((item) => [item.stopId, item]))
-    const classifications = stops.map((stop) => learnedClassifications.get(stop.id) ?? modelByStop.get(stop.id))
+    const classifications = stops.map((stop) => learnedClassifications.get(stop.id) ??
+      polygonClassifications.get(stop.id) ?? modelByStop.get(stop.id))
     if (
       classifications.some((item) => !item) ||
       classifications.length !== stops.length ||

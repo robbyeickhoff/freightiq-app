@@ -1,6 +1,7 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 
 import type { ManifestRouteStop } from './route-persistence'
+import type { GeocodingAudit } from './mapbox-geocoding'
 import { getSupabase } from './supabase'
 export { documentedOperationalZones, selectableOperationalZones } from './zone-learning'
 
@@ -10,6 +11,7 @@ export type ZoneReviewStatus = 'proposed' | 'approved' | 'unresolved'
 export type ZoneClassification = {
   confidence: ZoneConfidence
   evidence: string
+  geocoding?: GeocodingAudit
   proposedMicroZone: string | null
   proposedZone: string | null
   selectedMicroZone: string | null
@@ -22,6 +24,7 @@ type ZoneClassificationResponse = {
   classifications: Array<{
     confidence: ZoneConfidence
     evidence: string
+    geocoding?: GeocodingAudit
     proposedMicroZone?: string | null
     proposedZone: string | null
     stopId: string
