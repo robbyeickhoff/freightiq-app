@@ -118,6 +118,15 @@ production FreightIQ Supabase changes remain unauthorized.
 
 ### Mobile Release Track
 
+The September 2 tester-feedback corrections are accepted in Expo on physical iPhone and Pixel and
+committed in `aa2499a`: Navigation Preference alignment, Map Tools and contact-screen theming,
+removal of individual-stop report-count badges, and the prominent email-code Spam/Junk reminder.
+The next mobile release step is production-profile candidate creation, followed by installed-device
+verification. Candidate references and prepared tester notes are in `docs/ReleaseHistory.md` under
+September 3. No new build or tester distribution has been performed for this correction set.
+
+#### Previous External Navigation Candidate Work
+
 Apple Maps destination identification is under one focused correction within the completed
 Navigation App Choice contract, `docs/build-specs/FreightIQNavigationAppChoiceBuildSpec.md`.
 Real-route use showed Apple Maps routing to the correct Mountain Village address while displaying

@@ -53,3 +53,7 @@ app-example
 
 # Uncommitted Routing Lab specifications are not mobile application build inputs
 /docs/build-specs/FreightIQRoutingLabGrandJunctionZoneLearningBuildSpec.md
+
+# Local Telluride drawing-reference artifacts are not mobile build inputs
+/output/pdf/Telluride-Zone-Boundary-Drawing-Reference.pdf
+/tmp/pdfs

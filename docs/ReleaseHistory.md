@@ -6,6 +6,34 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-09-03 — Tester Feedback Fixes Ready for Candidate Builds
+
+Mobile implementation commit `aa2499a` is included in pushed `clean-main` commit `4dc9a18`.
+The Product Owner accepted the focused fixes in Expo on physical iPhone and Pixel on September 2,
+2026: Navigation Preference arrow alignment, theme-aware Map Tools and contact viewing/editing,
+removal of individual-stop report-count badges, and the prominent Spam/Junk reminder after code
+requests. Individual stop taps, cluster behavior, and Driver Reports passed the reported checks.
+TypeScript and focused lint passed with no errors and four existing stop-screen lint warnings.
+
+Live EAS records checked September 3 show the preceding completed candidates as iOS build 45
+(`71c812ef-694b-4cfe-b846-01c6ef6df6d3`) and Android version code 27
+(`61f19228-e558-43b1-b6e8-6afa44808b34`), both version 1.0.1 from `75e8be4`.
+These are the prior candidate references; their current store distribution state was not rechecked.
+No new build or submission has been started for this correction set. Installed-candidate testing
+and tester distribution remain separate from the accepted Expo checks.
+
+Archive inspection for both platforms confirmed the accepted mobile files, configuration, lockfile,
+and required patches match the checkout. The archive excludes the separate Routing Lab and website.
+Exact `.easignore` entries also exclude the local Telluride reference PDF and `tmp/pdfs` artifacts
+found during inspection; the source artifacts were preserved.
+
+### Prepared Tester Release Notes
+
+- Simplified map pins by removing report-count badges; stop clusters still show their counts.
+- Improved Light and Dark appearance for Map Tools and contact information screens.
+- Corrected the Navigation Preference arrow alignment.
+- Made the reminder to check Spam or Junk for email codes more prominent.
+
 ## 2026-08-26 — External Navigation Destination Fix Candidates
 
 Replacement production-profile candidates were created from clean pushed `clean-main` commit
