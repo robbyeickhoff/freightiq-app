@@ -15,8 +15,14 @@ import {
 } from "../../../src/lib/grand-junction-zone-geography.ts"
 import {
   geocodeGrandJunctionStops,
+  geocodeTellurideRouteStops,
+  isTellurideRouteGeocodingCandidate,
   type GeocodingAudit,
 } from "../../../src/lib/mapbox-geocoding.ts"
+import {
+  classifyTellurideRoutePoint,
+  TELLURIDE_ROUTE_BOUNDARY_SAFETY_METERS,
+} from "../../../src/lib/telluride-route-zone-geography.ts"
 
 const MODEL = "gpt-5.6-terra"
 const MAX_STOPS = 100
@@ -353,6 +359,47 @@ export default {
     }
 
     const modelByStop = new Map(modelClassifications.map((item) => [item.stopId, item]))
+    const telluridePolygonStops = modelStops.filter((stop) =>
+      !modelByStop.get(stop.id)?.proposedZone && isTellurideRouteGeocodingCandidate(stop))
+    const tellurideGeocodingByStop = await geocodeTellurideRouteStops(
+      telluridePolygonStops,
+      Deno.env.get("MAPBOX_GEOCODING_TOKEN")?.trim() ?? "",
+    )
+    for (const stop of telluridePolygonStops) {
+      const geocoding = tellurideGeocodingByStop.get(stop.id)
+      if (!geocoding || geocoding.status !== "accepted" || !geocoding.coordinates) continue
+      const decision = classifyTellurideRoutePoint(
+        geocoding.coordinates.longitude,
+        geocoding.coordinates.latitude,
+      )
+      geocoding.geometryRevision = decision.revision
+      geocoding.polygonDecision = decision
+      geocoding.reason = decision.reason
+      if (!decision.proposedZone) continue
+
+      const completeClassification = Boolean(decision.proposedMicroZone) ||
+        decision.operationalCandidates.length === 1
+      const safelyInterior = completeClassification &&
+        decision.boundaryDistanceMeters !== null &&
+        decision.boundaryDistanceMeters >= TELLURIDE_ROUTE_BOUNDARY_SAFETY_METERS &&
+        (geocoding.matchConfidence === "exact" || geocoding.matchConfidence === "high") &&
+        geocoding.pointAccuracy !== "interpolated" && geocoding.pointAccuracy !== "approximate"
+      const distanceText = decision.boundaryDistanceMeters === null
+        ? "an unknown distance from the nearest boundary"
+        : `${Math.round(decision.boundaryDistanceMeters)} meters from the nearest boundary`
+      modelByStop.set(stop.id, {
+        confidence: safelyInterior ? "medium" : "low",
+        evidence: decision.proposedMicroZone
+          ? `Telluride route zone map ${decision.revision} places the address in ${decision.proposedZone} / ${decision.proposedMicroZone}, ${distanceText}; driver approval is required.`
+          : completeClassification
+            ? `Telluride route zone map ${decision.revision} places the address in ${decision.proposedZone}, ${distanceText}; driver approval is required.`
+            : `Telluride route zone map ${decision.revision} places the address in ${decision.proposedZone}, but the Micro Zone remains uncertain; driver review is required.`,
+        geocoding,
+        proposedMicroZone: decision.proposedMicroZone,
+        proposedZone: decision.proposedZone as (typeof OPERATIONAL_ZONES)[number],
+        stopId: stop.id,
+      })
+    }
     const classifications = stops.map((stop) => learnedClassifications.get(stop.id) ??
       polygonClassifications.get(stop.id) ?? modelByStop.get(stop.id))
     if (

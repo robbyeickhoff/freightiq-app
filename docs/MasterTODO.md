@@ -55,6 +55,17 @@ preparation for expanding the tester base.
 
 ### Active Tasks
 
+- [x] Approve the [Telluride Route Polygon Classification V1 Build Specification](build-specs/FreightIQRoutingLabTellurideRoutePolygonClassificationV1BuildSpec.md).
+- [x] Complete and locally validate the bounded Telluride-route polygon implementation.
+- [x] Review and accept the bounded local implementation and diff.
+- [x] Separately approve, deploy, and technically verify isolated `classify-route-zones` version 12
+  with JWT verification retained and unsigned requests rejected with HTTP 401.
+- [x] Reset only the preserved route's Zone Review checkpoint while retaining its manifest, setup,
+  and nine stops; verify no learned evidence existed or changed.
+- [ ] Repeat signed-in acceptance on the preserved nine-stop September 2 Telluride route.
+- [x] Obtain separate Product Owner commit/push approval on September 2, 2026; signed-in acceptance
+  remains tracked above.
+
 - [ ] Continue gathering tester feedback.
 - [ ] Observe real-world driver workflows.
 - [ ] Identify friction points during normal use.

@@ -1,4 +1,10 @@
-import type { GrandJunctionPolygonDecision } from './grand-junction-zone-geography.ts'
+export type PolygonDecisionAudit = {
+  boundaryDistanceMeters: number | null
+  proposedMicroZone: string | null
+  proposedZone: string | null
+  reason: string
+  revision: string
+}
 
 export type GeocodingAudit = {
   attemptedAt: string
@@ -9,7 +15,7 @@ export type GeocodingAudit = {
   matchConfidence: string | null
   originalInput: GeocodingInputStop
   pointAccuracy: string | null
-  polygonDecision: GrandJunctionPolygonDecision | null
+  polygonDecision: PolygonDecisionAudit | null
   provider: 'mapbox-geocoding-v6'
   reason: string
   standardizedLabel: string | null
@@ -32,6 +38,9 @@ type MapboxFeature = {
 
 const GRAND_JUNCTION_CITIES = new Set([
   'clifton', 'fruita', 'grand junction', 'loma', 'mack', 'palisade',
+])
+const TELLURIDE_ROUTE_CITIES = new Set([
+  'mountain village', 'ophir', 'ouray', 'placerville', 'ridgway', 'telluride',
 ])
 const MATCH_CONFIDENCE = new Set(['exact', 'high', 'medium', 'low'])
 const POINT_ACCURACY = new Set(['rooftop', 'parcel', 'point', 'interpolated', 'approximate'])
@@ -71,6 +80,12 @@ function unavailable(
 export function isGrandJunctionGeocodingCandidate(stop: GeocodingInputStop) {
   return normalize(stop.state) === 'co' || normalize(stop.state) === 'colorado'
     ? GRAND_JUNCTION_CITIES.has(normalize(stop.city))
+    : false
+}
+
+export function isTellurideRouteGeocodingCandidate(stop: GeocodingInputStop) {
+  return normalize(stop.state) === 'co' || normalize(stop.state) === 'colorado'
+    ? TELLURIDE_ROUTE_CITIES.has(normalize(stop.city))
     : false
 }
 
@@ -148,19 +163,22 @@ export function parseMapboxGeocodingResponse(
   }
 }
 
-export async function geocodeGrandJunctionStops(
+async function geocodeStops(
   stops: GeocodingInputStop[],
   accessToken: string,
+  isEligible: (stop: GeocodingInputStop) => boolean,
+  bbox: [number, number, number, number],
+  outsideScopeReason: string,
   fetcher: typeof fetch = fetch,
 ) {
   const attemptedAt = new Date().toISOString()
   if (!accessToken) return new Map(stops.map((stop) => [stop.id, unavailable(
     stop, 'Permanent geocoding is not configured; manual review remains available.', attemptedAt,
   )]))
-  const eligible = stops.filter(isGrandJunctionGeocodingCandidate)
-  const skipped = stops.filter((stop) => !isGrandJunctionGeocodingCandidate(stop))
+  const eligible = stops.filter(isEligible)
+  const skipped = stops.filter((stop) => !isEligible(stop))
   const results = new Map(skipped.map((stop) => [stop.id, unavailable(
-    stop, 'The stop is outside the approved Grand Junction V1 city scope.', attemptedAt,
+    stop, outsideScopeReason, attemptedAt,
   )]))
   if (eligible.length === 0) return results
 
@@ -172,7 +190,7 @@ export async function geocodeGrandJunctionStops(
     response = await fetcher(url, {
       body: JSON.stringify(eligible.map((stop) => ({
         autocomplete: false,
-        bbox: [-109.2, 38.8, -108.1, 39.5],
+        bbox,
         country: 'us',
         limit: 1,
         q: `${physicalStreetAddress(stop.address)}, ${stop.city}, ${stop.state} ${stop.postalCode}`.trim(),
@@ -215,4 +233,28 @@ export async function geocodeGrandJunctionStops(
     stop.id, parseMapboxGeocodingResponse(stop, batch[index], attemptedAt),
   ))
   return results
+}
+
+export function geocodeGrandJunctionStops(
+  stops: GeocodingInputStop[],
+  accessToken: string,
+  fetcher: typeof fetch = fetch,
+) {
+  return geocodeStops(
+    stops, accessToken, isGrandJunctionGeocodingCandidate,
+    [-109.2, 38.8, -108.1, 39.5],
+    'The stop is outside the approved Grand Junction V1 city scope.', fetcher,
+  )
+}
+
+export function geocodeTellurideRouteStops(
+  stops: GeocodingInputStop[],
+  accessToken: string,
+  fetcher: typeof fetch = fetch,
+) {
+  return geocodeStops(
+    stops, accessToken, isTellurideRouteGeocodingCandidate,
+    [-108.1, 37.75, -107.55, 38.4],
+    'The stop is outside the approved Telluride-route polygon city scope.', fetcher,
+  )
 }

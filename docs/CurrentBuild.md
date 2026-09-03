@@ -13,7 +13,30 @@ answer one question:
 
 ## Current Objective
 
-### Private Routing Lab — Grand Junction Geocoding and Polygon Classification V1
+### Private Routing Lab — Telluride Route Polygon Classification V1
+
+The Product Owner approved the bounded implementation contract on September 2, 2026:
+`docs/build-specs/FreightIQRoutingLabTellurideRoutePolygonClassificationV1BuildSpec.md`. This slice
+converts the supplied Downtown Telluride, Mountain Village, and Placerville/Sawpit/Wilson Mesa/
+Ridgway/Ouray/Log Hill maps into one checksummed polygon artifact. Learned-address and documented
+road evidence remain authoritative; polygon classification is attempted only for supported-city
+stops that remain unresolved. Every result still requires driver approval. Today’s nine-stop route
+is the signed-in acceptance fixture: its four existing proposals must remain unchanged, Placerville
+and Ouray should gain polygon proposals, and three Montrose stops must remain unresolved because no
+Montrose polygon source exists. Database changes, sequencing, production FreightIQ, commit, and
+push remain separately gated. The bounded implementation is complete with one
+checksummed 23-polygon artifact and conservative unresolved-stop fallback. Focused Telluride and
+unchanged Grand Junction polygon regressions, TypeScript, lint, build, zone learning, taxonomy,
+macro-flow, route-reordering, dependency audit, Deno function validation, and diff checks pass. The
+existing Vite large-chunk warning remains unchanged. The Product Owner accepted the bounded local
+implementation and diff on September 2, 2026. The Product Owner separately approved deployment.
+Isolated `classify-route-zones` version 12 is ACTIVE with JWT verification retained and rejects
+unsigned requests with HTTP 401. After separate approval, only the preserved route's Zone Review
+checkpoint was reset to `draft_setup`; its manifest, setup, and nine stops remain intact, and no
+learned evidence existed or was changed. Signed-in acceptance remains pending. The Product Owner
+separately approved commit and push for this bounded slice on September 2, 2026.
+
+### Completed Objective — Private Routing Lab Grand Junction Geocoding and Polygon Classification V1
 
 The Product Owner approved the bounded GJ-first specification on September 1, 2026. Its local
 implementation contract is
@@ -48,7 +71,7 @@ Routing Lab validation. The Product Owner approved the isolated server deploymen
 2026. `classify-route-zones` version 11 is active with JWT verification retained and rejects
 unsigned requests with HTTP 401. After the approved one-route Zone Review reset, signed-in
 acceptance confirmed that 519 Ligrani Lane now classifies as Downtown / The Hole and Hole A under
-`gj-v2`. Git synchronization remains separately gated.
+`gj-v2`. Commit `4d90824` is pushed to `clean-main`, and local and remote were verified synchronized.
 
 ### Completed Objective — Private Routing Lab Ridgway Name Normalization
 
