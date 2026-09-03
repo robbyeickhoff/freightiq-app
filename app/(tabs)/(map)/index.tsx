@@ -431,11 +431,9 @@ function findMatchingExistingStop(
 
 function StopMarkerVisual({
   hasIntel,
-  reportCount,
   score,
 }: {
   hasIntel: boolean | null;
-  reportCount: number;
   score: number;
 }) {
   let color = "#9ca3af";
@@ -451,11 +449,6 @@ function StopMarkerVisual({
   return (
     <View style={styles.pinMarkerWrap}>
       <View style={[styles.pinDot, { backgroundColor: color }]} />
-      {Platform.OS !== "android" && reportCount > 0 ? (
-        <View style={styles.pinBadge}>
-          <Text style={styles.pinBadgeText}>{reportCount > 99 ? "99+" : String(reportCount)}</Text>
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -2914,7 +2907,6 @@ export default function HomeScreen() {
               ? sanitizePins(pins).map((p) => {
                   const hasIntel = resolveStopHasIntel(p.id, intelByStopId, reportStatsByStopId);
 
-                  const reportCount = reportStatsByStopId[p.id]?.count ?? 0;
                   return (
                     <Marker
                       key={`raw-stop-${p.id}`}
@@ -2927,7 +2919,6 @@ export default function HomeScreen() {
                     >
                       <StopMarkerVisual
                         hasIntel={hasIntel}
-                        reportCount={reportCount}
                         score={(scoreByStopId[p.id]?.up ?? 0) - (scoreByStopId[p.id]?.down ?? 0)}
                       />
                     </Marker>
@@ -2982,7 +2973,6 @@ export default function HomeScreen() {
                     >
                       <StopMarkerVisual
                         hasIntel={hasIntel}
-                        reportCount={reportCount}
                         score={
                           (scoreByStopId[stopId]?.up ?? 0) - (scoreByStopId[stopId]?.down ?? 0)
                         }
@@ -3004,7 +2994,6 @@ export default function HomeScreen() {
             >
               <StopMarkerVisual
                 hasIntel={resolveStopHasIntel(selectedStop.id, intelByStopId, reportStatsByStopId)}
-                reportCount={reportStatsByStopId[selectedStop.id]?.count ?? 0}
                 score={
                   (scoreByStopId[selectedStop.id]?.up ?? 0) -
                   (scoreByStopId[selectedStop.id]?.down ?? 0)
@@ -4011,36 +4000,50 @@ export default function HomeScreen() {
         animationType={reduceMotionEnabled ? "none" : "slide"}
         onRequestClose={() => setMapToolsOpen(false)}
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.mapToolsModalCard}>
-            <Text style={styles.modalTitle}>Map Tools</Text>
+        <View style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}>
+          <View style={[styles.mapToolsModalCard, { backgroundColor: colors.surfaceElevated }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Map Tools</Text>
 
             <Pressable
-              style={styles.mapToolsSheetRow}
+              style={[styles.mapToolsSheetRow, { borderTopColor: colors.border }]}
               onPress={() => {
                 setMapToolsOpen(false);
                 saveStopsForOffline();
               }}
             >
-              <Text style={styles.mapToolsSheetText}>Save Stops for Offline</Text>
+              <Text style={[styles.mapToolsSheetText, { color: colors.textPrimary }]}>
+                Save Stops for Offline
+              </Text>
             </Pressable>
 
-            <View style={styles.mapToolsSheetRow}>
-              <Text style={styles.mapToolsSecondaryText}>Cached Stops: {cachedStopCount}</Text>
+            <View style={[styles.mapToolsSheetRow, { borderTopColor: colors.border }]}>
+              <Text style={[styles.mapToolsSecondaryText, { color: colors.textSecondary }]}>
+                Cached Stops: {cachedStopCount}
+              </Text>
             </View>
 
             <Pressable
-              style={styles.mapToolsSheetRow}
+              style={[styles.mapToolsSheetRow, { borderTopColor: colors.border }]}
               onPress={() => {
                 setMapToolsOpen(false);
                 clearCachedStops();
               }}
             >
-              <Text style={[styles.mapToolsSheetText, { color: "#dc2626" }]}>Clear Cache</Text>
+              <Text
+                style={[
+                  styles.mapToolsSheetText,
+                  { color: colorScheme === "dark" ? "#f87171" : colors.danger },
+                ]}
+              >
+                Clear Cache
+              </Text>
             </Pressable>
 
-            <Pressable style={styles.mapToolsSheetRow} onPress={() => setMapToolsOpen(false)}>
-              <Text style={styles.mapToolsSheetText}>Cancel</Text>
+            <Pressable
+              style={[styles.mapToolsSheetRow, { borderTopColor: colors.border }]}
+              onPress={() => setMapToolsOpen(false)}
+            >
+              <Text style={[styles.mapToolsSheetText, { color: colors.textPrimary }]}>Cancel</Text>
             </Pressable>
           </View>
         </View>
@@ -4233,27 +4236,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 2,
     borderColor: "white",
-  },
-
-  pinBadge: {
-    position: "absolute",
-    top: -10,
-    right: -14,
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: "black",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 5,
-    borderWidth: 1,
-    borderColor: "white",
-  },
-
-  pinBadgeText: {
-    color: "white",
-    fontSize: 11,
-    fontWeight: "900",
   },
 
   crosshairWrap: {

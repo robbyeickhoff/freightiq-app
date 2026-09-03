@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AppButton } from "@/components/ui/app-button";
 import { AppCard } from "@/components/ui/app-card";
 import { AppTextField } from "@/components/ui/app-text-field";
+import { EmailCodeReminder } from "@/components/ui/email-code-reminder";
 import { Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { friendlyAuthError } from "@/utils/auth-errors";
@@ -102,6 +103,7 @@ export default function ForgotPasswordScreen() {
                   ? "An account with this email already exists. Reset your password to keep your existing profile and contributions."
                   : "Enter the email connected to your FreightIQ account."}
             </Text>
+            {isVerifyMode ? <EmailCodeReminder /> : null}
 
             <AppTextField
               autoCapitalize="none"

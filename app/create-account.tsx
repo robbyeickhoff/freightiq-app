@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AppButton } from "@/components/ui/app-button";
 import { AppCard } from "@/components/ui/app-card";
 import { AppTextField } from "@/components/ui/app-text-field";
+import { EmailCodeReminder } from "@/components/ui/email-code-reminder";
 import { Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { friendlyAuthError } from "@/utils/auth-errors";
@@ -140,6 +141,7 @@ export default function CreateAccountScreen() {
             {complete ? (
               <>
                 <Text style={[styles.body, { color: colors.textSecondary }]}>We sent a confirmation code to {email.trim()}. Enter it below to finish creating your account.</Text>
+                <EmailCodeReminder />
                 <AppTextField
                   autoComplete="one-time-code"
                   keyboardType="number-pad"

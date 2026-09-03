@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AppButton } from "@/components/ui/app-button";
 import { AppCard } from "@/components/ui/app-card";
 import { AppTextField } from "@/components/ui/app-text-field";
+import { EmailCodeReminder } from "@/components/ui/email-code-reminder";
 import { Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { friendlyAuthError } from "@/utils/auth-errors";
@@ -200,6 +201,7 @@ export default function AuthScreen() {
                   ? "Enter the one-time code sent to your FreightIQ email."
                   : "We’ll email a one-time code to the address already connected to FreightIQ."}
             </Text>
+            {isCodeVerifyMode ? <EmailCodeReminder /> : null}
 
             <AppTextField
               autoCapitalize="none"

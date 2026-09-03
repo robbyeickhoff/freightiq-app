@@ -63,27 +63,48 @@ import {
 type ChipProps = {
   label: string;
   active?: boolean;
+  themed?: boolean;
   onPress: () => void;
   style?: StyleProp<ViewStyle>;
 };
 
-function Chip({ label, active, onPress, style }: ChipProps) {
+function Chip({ label, active, onPress, style, themed = false }: ChipProps) {
+  const { colors } = useAppTheme();
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.chip, style, active ? styles.chipActive : styles.chipInactive]}
+      style={[
+        styles.chip,
+        style,
+        active ? styles.chipActive : styles.chipInactive,
+        themed
+          ? {
+              backgroundColor: active ? colors.accent : colors.surface,
+              borderColor: active ? colors.accent : colors.border,
+            }
+          : null,
+      ]}
     >
-      <Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>
+      <Text
+        style={[
+          styles.chipText,
+          active ? styles.chipTextActive : styles.chipTextInactive,
+          themed ? { color: active ? colors.textOnAccent : colors.textPrimary } : null,
+        ]}
+      >
         {label}
       </Text>
     </Pressable>
   );
 }
 
-function ModalSafeAreaScreen({ children }: PropsWithChildren) {
+function ModalSafeAreaScreen({
+  children,
+  style,
+}: PropsWithChildren<{ style?: StyleProp<ViewStyle> }>) {
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.additionalIntelScreen}>{children}</SafeAreaView>
+      <SafeAreaView style={[styles.additionalIntelScreen, style]}>{children}</SafeAreaView>
     </SafeAreaProvider>
   );
 }
@@ -302,7 +323,62 @@ export default function StopScreen() {
   const deliveryZonePreviewMapRef = useRef<MapView | null>(null);
   const router = useRouter();
   const isFocused = useIsFocused();
-  const { colors } = useAppTheme();
+  const { colors, colorScheme } = useAppTheme();
+  const destructiveTextColor = colorScheme === "dark" ? "#f87171" : colors.danger;
+  const contactActionTheme = { backgroundColor: colors.surface, borderColor: colors.border };
+  const intelStyles = {
+    removeContactText: { ...styles.removeContactText, color: destructiveTextColor },
+    contactValidationText: { ...styles.contactValidationText, color: destructiveTextColor },
+    additionalIntelScreen: { ...styles.additionalIntelScreen, backgroundColor: colors.background },
+    contactEditorCard: {
+      ...styles.contactEditorCard,
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+    },
+    input: {
+      ...styles.input,
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      color: colors.textPrimary,
+    },
+    contactActionButton: [styles.contactActionButton, contactActionTheme],
+    addContactPhoneText: { ...styles.addContactPhoneText, color: colors.accentStrong },
+    saveBtn: { ...styles.saveBtn, backgroundColor: colors.accent },
+    saveBtnText: { ...styles.saveBtnText, color: colors.textOnAccent },
+    additionalIntelTitle: { ...styles.additionalIntelTitle, color: colors.textPrimary },
+    additionalIntelStopName: { ...styles.additionalIntelStopName, color: colors.textPrimary },
+    sectionLabel: { ...styles.sectionLabel, color: colors.textPrimary },
+    contactSummaryName: { ...styles.contactSummaryName, color: colors.textPrimary },
+    contactPhoneRowTitle: { ...styles.contactPhoneRowTitle, color: colors.textPrimary },
+    secondaryBtnText: { ...styles.secondaryBtnText, color: colors.textPrimary },
+    additionalIntelAddress: { ...styles.additionalIntelAddress, color: colors.textSecondary },
+    helperText: { ...styles.helperText, color: colors.textSecondary },
+    contactFieldLabel: { ...styles.contactFieldLabel, color: colors.textSecondary },
+    contactSummaryDetail: { ...styles.contactSummaryDetail, color: colors.textSecondary },
+    contactLimitText: { ...styles.contactLimitText, color: colors.textSecondary },
+    reportSavedStatusText: { ...styles.reportSavedStatusText, color: colors.textSecondary },
+    card: { ...styles.card, backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+    contactPhoneCard: {
+      ...styles.contactPhoneCard,
+      backgroundColor: colors.surfaceElevated,
+      borderColor: colors.border,
+    },
+    contactPersonCard: {
+      ...styles.contactPersonCard,
+      backgroundColor: colors.surfaceElevated,
+      borderColor: colors.border,
+    },
+    secondaryBtn: {
+      ...styles.secondaryBtn,
+      backgroundColor: colors.surfaceElevated,
+      borderColor: colors.border,
+    },
+    addContactPhoneButton: {
+      ...styles.addContactPhoneButton,
+      backgroundColor: colors.surfaceElevated,
+      borderColor: colors.border,
+    },
+  };
   const { fontScale } = useWindowDimensions();
   const reduceMotionEnabled = useReducedMotion();
   const usesAccessibilityLayout = fontScale >= 1.5;
@@ -2548,7 +2624,7 @@ export default function StopScreen() {
                                         <Pressable
                                           accessibilityRole="button"
                                           accessibilityLabel={`Call ${person.name || phoneTypeLabel(phone.type)} ${formatPhoneDisplay(phone.number)}`}
-                                          style={styles.contactActionButton}
+                                          style={[styles.contactActionButton, contactActionTheme]}
                                           onPress={() => openContactAction("call", phone)}
                                         >
                                           <MaterialIcons
@@ -2561,7 +2637,7 @@ export default function StopScreen() {
                                           <Pressable
                                             accessibilityRole="button"
                                             accessibilityLabel={`Message ${person.name || phoneTypeLabel(phone.type)} ${formatPhoneDisplay(phone.number)}`}
-                                            style={styles.contactActionButton}
+                                            style={[styles.contactActionButton, contactActionTheme]}
                                             onPress={() => openContactAction("message", phone)}
                                           >
                                             <MaterialIcons
@@ -2785,9 +2861,9 @@ export default function StopScreen() {
             animationType={reduceMotionEnabled ? "none" : "slide"}
             onRequestClose={() => setAdditionalIntelOpen(false)}
           >
-            <ModalSafeAreaScreen>
+            <ModalSafeAreaScreen style={intelStyles.additionalIntelScreen}>
               <KeyboardAvoidingView
-                style={styles.additionalIntelScreen}
+                style={intelStyles.additionalIntelScreen}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
               >
                 <ScrollView
@@ -2797,25 +2873,26 @@ export default function StopScreen() {
                   keyboardDismissMode="on-drag"
                 >
                   <View style={styles.additionalIntelHeader}>
-                    <Text style={styles.additionalIntelTitle}>Additional Driver Intel</Text>
-                    <Text style={styles.additionalIntelStopName}>{title}</Text>
+                    <Text style={intelStyles.additionalIntelTitle}>Additional Driver Intel</Text>
+                    <Text style={intelStyles.additionalIntelStopName}>{title}</Text>
                     {currentStopAddress ? (
-                      <Text style={styles.additionalIntelAddress}>{displayAddress}</Text>
+                      <Text style={intelStyles.additionalIntelAddress}>{displayAddress}</Text>
                     ) : null}
                   </View>
 
                   <Pressable
-                    style={styles.secondaryBtn}
+                    style={intelStyles.secondaryBtn}
                     onPress={() => setAdditionalIntelOpen(false)}
                   >
-                    <Text style={styles.secondaryBtnText}>← Back to Essentials</Text>
+                    <Text style={intelStyles.secondaryBtnText}>← Back to Essentials</Text>
                   </Pressable>
 
-                  <View style={styles.card}>
-                    <Text style={styles.sectionLabel}>Deliver From</Text>
+                  <View style={intelStyles.card}>
+                    <Text style={intelStyles.sectionLabel}>Deliver From</Text>
                     <View style={styles.chipRow}>
                       {deliverFromChips.map(({ value, label }) => (
                         <Chip
+                          themed
                           key={value}
                           label={label}
                           active={deliverFromType === value}
@@ -2825,18 +2902,21 @@ export default function StopScreen() {
                     </View>
 
                     <TextInput
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardAppearance={colorScheme}
                       value={deliverFromDetails}
                       onChangeText={setDeliverFromDetails}
                       onFocus={(event) => keepAdditionalIntelInputVisible(event.nativeEvent.target)}
                       placeholder='Details (e.g. "alley behind building")'
-                      style={styles.input}
+                      style={intelStyles.input}
                       multiline
                     />
 
-                    <Text style={styles.sectionLabel}>Best Approach</Text>
+                    <Text style={intelStyles.sectionLabel}>Best Approach</Text>
                     <View style={styles.chipRow}>
                       {approachChips.map((approach) => (
                         <Chip
+                          themed
                           key={approach}
                           label={approach}
                           active={approachHint.toLowerCase().includes(approach.toLowerCase())}
@@ -2846,17 +2926,19 @@ export default function StopScreen() {
                     </View>
 
                     <TextInput
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardAppearance={colorScheme}
                       value={approachHint}
                       onChangeText={setApproachHint}
                       onFocus={(event) => keepAdditionalIntelInputVisible(event.nativeEvent.target)}
                       placeholder='Approach details (e.g. "come from south")'
-                      style={styles.input}
+                      style={intelStyles.input}
                       multiline
                     />
 
-                    <Text style={styles.sectionLabel}>Contact / Check-In</Text>
-                    <View style={styles.contactEditorCard}>
-                      <Text style={styles.helperText}>
+                    <Text style={intelStyles.sectionLabel}>Contact / Check-In</Text>
+                    <View style={intelStyles.contactEditorCard}>
+                      <Text style={intelStyles.helperText}>
                         Add business delivery contacts only. Do not include passwords, gate codes,
                         or unrelated personal information.
                       </Text>
@@ -2868,7 +2950,7 @@ export default function StopScreen() {
                           <View
                             key={`contact-person-${personIndex}`}
                             style={[
-                              styles.contactPersonCard,
+                              intelStyles.contactPersonCard,
                               expanded ? styles.contactPersonCardExpanded : null,
                             ]}
                           >
@@ -2883,11 +2965,11 @@ export default function StopScreen() {
                               style={styles.contactSummaryHeader}
                             >
                               <View style={styles.contactSummaryCopy}>
-                                <Text numberOfLines={1} style={styles.contactSummaryName}>
+                                <Text numberOfLines={1} style={intelStyles.contactSummaryName}>
                                   {summary.name}
                                 </Text>
                                 {expanded ? (
-                                  <Text numberOfLines={1} style={styles.contactSummaryDetail}>
+                                  <Text numberOfLines={1} style={intelStyles.contactSummaryDetail}>
                                     {summary.detail}
                                   </Text>
                                 ) : null}
@@ -2895,7 +2977,7 @@ export default function StopScreen() {
                               <MaterialIcons
                                 name={expanded ? "expand-less" : "expand-more"}
                                 size={28}
-                                color="#6b7280"
+                                color={colors.textSecondary}
                               />
                             </Pressable>
 
@@ -2927,11 +3009,15 @@ export default function StopScreen() {
                                           >
                                             <Text
                                               numberOfLines={1}
-                                              style={styles.contactSummaryDetail}
+                                              style={intelStyles.contactSummaryDetail}
                                             >
                                               {phoneLabel}
                                             </Text>
-                                            <MaterialIcons name="phone" size={20} color="#d45b18" />
+                                            <MaterialIcons
+                                              name="phone"
+                                              size={20}
+                                              color={colors.accentStrong}
+                                            />
                                           </Pressable>
                                           {canMessagePhoneType(phone.type) ? (
                                             <Pressable
@@ -2951,7 +3037,7 @@ export default function StopScreen() {
                                               <MaterialIcons
                                                 name="message"
                                                 size={20}
-                                                color="#d45b18"
+                                                color={colors.accentStrong}
                                               />
                                             </Pressable>
                                           ) : null}
@@ -2960,7 +3046,7 @@ export default function StopScreen() {
                                     })}
                                 </View>
                               ) : (
-                                <Text style={styles.contactSummaryDetail}>
+                                <Text style={intelStyles.contactSummaryDetail}>
                                   No phone number added
                                 </Text>
                               )
@@ -2975,11 +3061,17 @@ export default function StopScreen() {
                                   onPress={() => removeContactPerson(personIndex)}
                                   style={styles.removeContactButton}
                                 >
-                                  <MaterialIcons name="delete-outline" size={20} color="#b91c1c" />
-                                  <Text style={styles.removeContactText}>Remove Contact</Text>
+                                  <MaterialIcons
+                                    name="delete-outline"
+                                    size={20}
+                                    color={destructiveTextColor}
+                                  />
+                                  <Text style={intelStyles.removeContactText}>Remove Contact</Text>
                                 </Pressable>
-                                <Text style={styles.contactFieldLabel}>Contact Name</Text>
+                                <Text style={intelStyles.contactFieldLabel}>Contact Name</Text>
                                 <TextInput
+                                  placeholderTextColor={colors.textSecondary}
+                                  keyboardAppearance={colorScheme}
                                   accessibilityLabel={`Contact ${personIndex + 1} name`}
                                   value={person.name}
                                   onChangeText={(text) =>
@@ -2989,7 +3081,7 @@ export default function StopScreen() {
                                     keepContactFieldVisible(event.nativeEvent.target)
                                   }
                                   placeholder="e.g. Shipping desk or contact name"
-                                  style={styles.input}
+                                  style={intelStyles.input}
                                   autoCapitalize="words"
                                 />
                                 {person.phones.map((phone, phoneIndex) => {
@@ -2997,10 +3089,10 @@ export default function StopScreen() {
                                   return (
                                     <View
                                       key={`contact-phone-${phoneIndex}`}
-                                      style={styles.contactPhoneCard}
+                                      style={intelStyles.contactPhoneCard}
                                     >
                                       <View style={styles.contactPhoneHeader}>
-                                        <Text style={styles.contactPhoneRowTitle}>
+                                        <Text style={intelStyles.contactPhoneRowTitle}>
                                           Phone {phoneIndex + 1}
                                         </Text>
                                         <Pressable
@@ -3011,12 +3103,17 @@ export default function StopScreen() {
                                             removeContactPhone(personIndex, phoneIndex)
                                           }
                                         >
-                                          <MaterialIcons name="close" size={22} color="#6b7280" />
+                                          <MaterialIcons
+                                            name="close"
+                                            size={22}
+                                            color={colors.textSecondary}
+                                          />
                                         </Pressable>
                                       </View>
                                       <View style={styles.contactTypeRow}>
                                         {CONTACT_PHONE_TYPES.map((type) => (
                                           <Chip
+                                            themed
                                             key={type}
                                             label={CONTACT_PHONE_LABELS[type]}
                                             active={phone.type === type}
@@ -3029,6 +3126,8 @@ export default function StopScreen() {
                                       </View>
                                       <View style={styles.contactPhoneInputRow}>
                                         <TextInput
+                                          placeholderTextColor={colors.textSecondary}
+                                          keyboardAppearance={colorScheme}
                                           accessibilityLabel={`${person.name || `Contact ${personIndex + 1}`} ${phoneTypeLabel(phone.type)} phone number`}
                                           value={phone.number}
                                           onChangeText={(text) =>
@@ -3041,19 +3140,23 @@ export default function StopScreen() {
                                           }
                                           placeholder="Phone number"
                                           keyboardType="phone-pad"
-                                          style={[styles.input, styles.contactPhoneInput]}
+                                          style={[intelStyles.input, styles.contactPhoneInput]}
                                         />
                                         <Pressable
                                           accessibilityRole="button"
                                           accessibilityLabel={`Call ${person.name || phoneTypeLabel(phone.type)}`}
                                           disabled={!validPhone}
                                           style={[
-                                            styles.contactActionButton,
+                                            intelStyles.contactActionButton,
                                             !validPhone && styles.contactActionButtonDisabled,
                                           ]}
                                           onPress={() => openContactAction("call", phone)}
                                         >
-                                          <MaterialIcons name="phone" size={22} color="#d45b18" />
+                                          <MaterialIcons
+                                            name="phone"
+                                            size={22}
+                                            color={colors.accentStrong}
+                                          />
                                         </Pressable>
                                         {canMessagePhoneType(phone.type) ? (
                                           <Pressable
@@ -3061,7 +3164,7 @@ export default function StopScreen() {
                                             accessibilityLabel={`Message ${person.name || phoneTypeLabel(phone.type)}`}
                                             disabled={!validPhone}
                                             style={[
-                                              styles.contactActionButton,
+                                              intelStyles.contactActionButton,
                                               !validPhone && styles.contactActionButtonDisabled,
                                             ]}
                                             onPress={() => openContactAction("message", phone)}
@@ -3069,13 +3172,13 @@ export default function StopScreen() {
                                             <MaterialIcons
                                               name="message"
                                               size={22}
-                                              color="#d45b18"
+                                              color={colors.accentStrong}
                                             />
                                           </Pressable>
                                         ) : null}
                                       </View>
                                       {phone.number && !validPhone ? (
-                                        <Text style={styles.contactValidationText}>
+                                        <Text style={intelStyles.contactValidationText}>
                                           Enter a phone number with 7–15 digits.
                                         </Text>
                                       ) : null}
@@ -3085,11 +3188,17 @@ export default function StopScreen() {
                                 {contactPhoneCount() < 5 ? (
                                   <Pressable
                                     accessibilityRole="button"
-                                    style={styles.addContactPhoneButton}
+                                    style={intelStyles.addContactPhoneButton}
                                     onPress={() => addContactPhone(personIndex)}
                                   >
-                                    <MaterialIcons name="add" size={20} color="#d45b18" />
-                                    <Text style={styles.addContactPhoneText}>Add phone number</Text>
+                                    <MaterialIcons
+                                      name="add"
+                                      size={20}
+                                      color={colors.accentStrong}
+                                    />
+                                    <Text style={intelStyles.addContactPhoneText}>
+                                      Add phone number
+                                    </Text>
                                   </Pressable>
                                 ) : null}
                               </>
@@ -3100,38 +3209,42 @@ export default function StopScreen() {
 
                       <Pressable
                         accessibilityRole="button"
-                        style={styles.addContactPhoneButton}
+                        style={intelStyles.addContactPhoneButton}
                         onPress={addContactPerson}
                       >
-                        <MaterialIcons name="person-add" size={20} color="#d45b18" />
-                        <Text style={styles.addContactPhoneText}>Add another contact</Text>
+                        <MaterialIcons name="person-add" size={20} color={colors.accentStrong} />
+                        <Text style={intelStyles.addContactPhoneText}>Add another contact</Text>
                       </Pressable>
-                      <Text style={styles.contactLimitText}>
+                      <Text style={intelStyles.contactLimitText}>
                         {contactPhoneCount()} of 5 phone numbers used
                       </Text>
 
-                      <Text style={styles.contactFieldLabel}>Check-In Notes</Text>
+                      <Text style={intelStyles.contactFieldLabel}>Check-In Notes</Text>
                       <TextInput
+                        placeholderTextColor={colors.textSecondary}
+                        keyboardAppearance={colorScheme}
                         value={checkInNotes}
                         onChangeText={(text) => setCheckInNotes(text.slice(0, 500))}
                         onFocus={(event) => keepContactFieldVisible(event.nativeEvent.target)}
                         placeholder="e.g. Call receiving before backing into dock"
-                        style={[styles.input, styles.checkInNotesInput]}
+                        style={[intelStyles.input, styles.checkInNotesInput]}
                         multiline
                       />
                     </View>
 
-                    <Text style={styles.sectionLabel}>Driver Notes</Text>
-                    <Text style={styles.helperText}>
+                    <Text style={intelStyles.sectionLabel}>Driver Notes</Text>
+                    <Text style={intelStyles.helperText}>
                       💡 Driver Tip: Share delivery guidance, not gate codes or security
                       credentials.
                     </Text>
                     <TextInput
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardAppearance={colorScheme}
                       value={notes}
                       onChangeText={setNotes}
                       onFocus={(event) => keepAdditionalIntelInputVisible(event.nativeEvent.target)}
                       placeholder="Construction, weather or temporary issues"
-                      style={[styles.input, styles.driverNotesInput]}
+                      style={[intelStyles.input, styles.driverNotesInput]}
                       multiline
                     />
 
@@ -3141,16 +3254,16 @@ export default function StopScreen() {
                         accessibilityLabel="Report saved"
                         style={styles.reportSavedStatus}
                       >
-                        <MaterialIcons name="check" size={20} color="#6b7280" />
-                        <Text style={styles.reportSavedStatusText}>Report saved</Text>
+                        <MaterialIcons name="check" size={20} color={colors.textSecondary} />
+                        <Text style={intelStyles.reportSavedStatusText}>Report saved</Text>
                       </View>
                     ) : (
                       <Pressable
-                        style={styles.saveBtn}
+                        style={intelStyles.saveBtn}
                         onPress={() => void saveMyReport()}
                         disabled={loading}
                       >
-                        <Text style={styles.saveBtnText}>{reportSaveLabel}</Text>
+                        <Text style={intelStyles.saveBtnText}>{reportSaveLabel}</Text>
                       </Pressable>
                     )}
                   </View>

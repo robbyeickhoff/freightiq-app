@@ -63,6 +63,7 @@ function SettingsRow({
         style={[
           styles.rowCopy,
           usesAccessibilityLayout || stacksValue ? styles.stackedRowCopy : null,
+          usesAccessibilityLayout ? styles.accessibilityRowCopy : null,
         ]}
       >
         <Text
@@ -281,10 +282,12 @@ const styles = StyleSheet.create({
   },
   stackedRowCopy: {
     alignSelf: "stretch",
-    flex: 0,
     flexDirection: "column",
     alignItems: "flex-start",
     gap: 0,
+  },
+  accessibilityRowCopy: {
+    flex: 0,
   },
   rowLabel: {
     flex: 1,
