@@ -62,9 +62,10 @@ preparation for expanding the tester base.
   with JWT verification retained and unsigned requests rejected with HTTP 401.
 - [x] Reset only the preserved route's Zone Review checkpoint while retaining its manifest, setup,
   and nine stops; verify no learned evidence existed or changed.
-- [ ] Repeat signed-in acceptance on the preserved nine-stop September 2 Telluride route.
-- [x] Obtain separate Product Owner commit/push approval on September 2, 2026; signed-in acceptance
-  remains tracked above.
+- [x] Complete signed-in acceptance on the preserved nine-stop September 2 Telluride route;
+  confirmed passed by the Product Owner on September 2, 2026.
+- [x] Obtain separate Product Owner commit/push approval and push implementation commit `46bfba1`
+  to `clean-main` on September 2, 2026.
 
 - [ ] Continue gathering tester feedback.
 - [ ] Observe real-world driver workflows.

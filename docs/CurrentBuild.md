@@ -13,7 +13,7 @@ answer one question:
 
 ## Current Objective
 
-### Private Routing Lab — Telluride Route Polygon Classification V1
+### Completed Objective — Private Routing Lab Telluride Route Polygon Classification V1
 
 The Product Owner approved the bounded implementation contract on September 2, 2026:
 `docs/build-specs/FreightIQRoutingLabTellurideRoutePolygonClassificationV1BuildSpec.md`. This slice
@@ -33,8 +33,9 @@ implementation and diff on September 2, 2026. The Product Owner separately appro
 Isolated `classify-route-zones` version 12 is ACTIVE with JWT verification retained and rejects
 unsigned requests with HTTP 401. After separate approval, only the preserved route's Zone Review
 checkpoint was reset to `draft_setup`; its manifest, setup, and nine stops remain intact, and no
-learned evidence existed or was changed. Signed-in acceptance remains pending. The Product Owner
-separately approved commit and push for this bounded slice on September 2, 2026.
+learned evidence existed or was changed. The Product Owner confirmed that signed-in acceptance
+passed on September 2, 2026. Separately approved implementation commit `46bfba1` is pushed to
+`clean-main`.
 
 ### Completed Objective — Private Routing Lab Grand Junction Geocoding and Polygon Classification V1
 

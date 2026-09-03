@@ -2,7 +2,7 @@
 
 ## Status
 
-**Deployed and technically verified — signed-in Product Owner acceptance pending**
+**Deployed, technically verified, and accepted by the Product Owner**
 
 Approved by the Product Owner on September 2, 2026.
 
@@ -12,7 +12,8 @@ request regressions. The complete required local validation passes. The Product 
 bounded local implementation and diff and separately approved deployment on September 2, 2026.
 Isolated `classify-route-zones` version 12 is ACTIVE with JWT verification retained, and an unsigned
 request is rejected with HTTP 401. No database or production FreightIQ change was performed. The Product Owner separately approved
-commit and push on September 2, 2026. Signed-in acceptance remains pending.
+commit and push on September 2, 2026; implementation commit `46bfba1` is pushed to `clean-main`.
+The Product Owner confirmed that signed-in acceptance passed on September 2, 2026.
 
 ## Objective
 
@@ -206,8 +207,8 @@ Required local checks:
    requests. **Complete — version 12 ACTIVE; unsigned HTTP 401**
 6. Reset only today’s saved Zone Review state if required and separately approved. **Complete —
    manifest, setup, and nine stops preserved; no learned evidence existed or was changed**
-7. Repeat signed-in acceptance using today’s preserved manifest and setup.
-8. Product Owner separately approves commit and push. **Approved September 2, 2026; signed-in acceptance remains pending.**
+7. Repeat signed-in acceptance using today’s preserved manifest and setup. **Passed — confirmed by the Product Owner September 2, 2026.**
+8. Product Owner separately approves commit and push. **Complete — approved September 2, 2026; implementation committed and pushed as `46bfba1`.**
 
 ## Exclusions
 
