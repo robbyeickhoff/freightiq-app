@@ -392,3 +392,8 @@ V0 does not include:
 This specification must be reviewed and approved by Robby before meaningful implementation begins.
 
 After approval, the next valid step is **Phase 1 — Inspect and Map**. That inspection must produce the proposed implementation plan and Supabase schema/event contract before any database, website, or mobile changes are made.
+
+
+## Approved admin review history refinement — September 3, 2026
+
+Robby approved replacing the dashboard's growing completed-review list with a View history link. Keep unresolved reviews on the dashboard. Put completed decisions on an admin-only history page with ten records per page, newest reviewed first, Previous/Next navigation, and the existing expandable review controls. Fetch only the requested history page and its related profiles/stops. Preserve review decisions, program qualification, rewards, and access controls. Validate locally before requesting website publication approval.
