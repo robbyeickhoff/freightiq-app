@@ -2322,7 +2322,7 @@ export default function StopScreen() {
                 }
                 style={[styles.v2Eyebrow, { color: colors.textSecondary }]}
               >
-                CONTRIBUTE
+                {myReportId || reportHasContent ? "ADDITIONAL INFO" : "CONTRIBUTE"}
               </Text>
               <View style={styles.v2DisclosureCopy}>
                 <Text
@@ -2352,7 +2352,9 @@ export default function StopScreen() {
                 }}
                 variant="secondary"
               >
-                {myReportId || reportHasContent ? "Edit Additional Intel" : "Add Additional Intel"}
+                {myReportId || reportHasContent
+                  ? "View or Edit Additional Intel"
+                  : "Add Additional Intel"}
               </AppButton>
 
               {reportIsSaved ? (
