@@ -178,6 +178,20 @@ Final payment remains a human action by Robby.
 
 ## Driver Experience
 
+### Program email updates
+
+- A newly enrolled driver receives one welcome email at the email address on their existing FreightIQ account. The message summarizes the program dates, reward milestones, qualifying activity, review requirement, and how to sign in to the private progress page.
+- Existing enrollments are not emailed automatically when this feature is introduced. The admin may queue a welcome email from the driver's expanded program card.
+- Contribution-review email updates are optional and off by default. A driver may turn them on or off from their private Founding Drivers page.
+- When enabled, completed review decisions are grouped into one hourly email with totals for Counts, Needs clarification, and Does not count, plus a link to the private review list.
+- Account email addresses remain private and are used only by the server-side delivery worker.
+
+### Admin driver cards
+
+- Program driver cards start collapsed to keep the operating page compact.
+- The collapsed row shows the driver, status, dates, active days, qualifying stops, pending reviews, and earned reward.
+- Expanding a card reveals program, reward, and welcome-email controls.
+
 ### Access
 
 Only enrolled Founding Driver candidates and qualified Founding Drivers may access the private Founding Drivers website section.

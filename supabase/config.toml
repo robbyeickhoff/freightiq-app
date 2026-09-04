@@ -422,3 +422,6 @@ enabled = true
 # Scheduled worker authenticates with a dedicated secret, not a user JWT.
 [functions.notify-founding-driver-reviews]
 verify_jwt = false
+
+[functions.notify-founding-driver-emails]
+verify_jwt = false
