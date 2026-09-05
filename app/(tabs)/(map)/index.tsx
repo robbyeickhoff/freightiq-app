@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Animated,
+  AppState,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -35,6 +36,16 @@ import { useAppTheme } from "@/context/theme-context";
 import { useTodayRoute } from "@/context/todays-route-context";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { recordFoundingDriverActivity } from "@/utils/founding-driver-activity";
+import {
+  categoryLabel,
+  filterCachedOperations,
+  distanceMeters,
+  isHeadingToward,
+  readOperationsEncounters,
+  type OperationsUpdate,
+  writeOperationsEncounters,
+} from "@/utils/operations-board";
+import { evaluateOperationsEncounter } from "@/utils/operations-proximity";
 import {
   readSearchResultLocality,
   resolveConfirmedStopLocality,
@@ -429,13 +440,7 @@ function findMatchingExistingStop(
   );
 }
 
-function StopMarkerVisual({
-  hasIntel,
-  score,
-}: {
-  hasIntel: boolean | null;
-  score: number;
-}) {
+function StopMarkerVisual({ hasIntel, score }: { hasIntel: boolean | null; score: number }) {
   let color = "#9ca3af";
 
   if (score >= 2) {
@@ -512,6 +517,10 @@ export default function HomeScreen() {
   const [didSetInitialLocation, setDidSetInitialLocation] = useState(false);
   const hasUserInteractedRef = useRef(false);
   const [locationGranted, setLocationGranted] = useState<boolean | null>(null);
+  const [appIsActive, setAppIsActive] = useState(AppState.currentState === "active");
+  const [nearbyOperationsUpdate, setNearbyOperationsUpdate] = useState<OperationsUpdate | null>(
+    null,
+  );
 
   const [intelByStopId, setIntelByStopId] = useState<Record<string, boolean>>({});
 
@@ -798,6 +807,146 @@ export default function HomeScreen() {
       };
     }, []),
   );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!appIsActive) {
+        setNearbyOperationsUpdate(null);
+        return;
+      }
+      let active = true;
+      let subscription: Location.LocationSubscription | null = null;
+      let displayedUpdateId: string | null = null;
+      let refreshTimer: ReturnType<typeof setInterval> | undefined;
+      let expiryTimer: ReturnType<typeof setInterval> | undefined;
+      void (async () => {
+        const auth = await supabase.auth.getUser();
+        const userId = auth.data.user?.id;
+        if (!active || !userId || !locationGranted) return;
+        let pinned: OperationsUpdate[] = [];
+        let lastPosition: Location.LocationObject | null = null;
+        const encounters = await readOperationsEncounters(userId);
+        if (!active) return;
+        const evaluatePosition = (position: Location.LocationObject) => {
+          if (!active || position.coords.accuracy == null || position.coords.accuracy > 100) return;
+          lastPosition = position;
+          const here = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+          const ranked = filterCachedOperations(pinned, false)
+            .map((update) => ({
+              update,
+              distance: distanceMeters(here, {
+                latitude: update.latitude!,
+                longitude: update.longitude!,
+              }),
+            }))
+            .sort((a, b) => a.distance - b.distance);
+          const encounterResult = evaluateOperationsEncounter(
+            encounters,
+            ranked.map(({ update, distance }) => ({
+              id: update.id,
+              revision: update.revision,
+              distance,
+              directionAllowed:
+                position.coords.speed == null ||
+                position.coords.speed < 1.5 ||
+                isHeadingToward(
+                  here,
+                  { latitude: update.latitude!, longitude: update.longitude! },
+                  position.coords.heading,
+                ),
+            })),
+          );
+          Object.keys(encounters).forEach((id) => delete encounters[id]);
+          Object.assign(encounters, encounterResult.encounters);
+          const candidate = ranked.find(({ update }) => update.id === encounterResult.candidateId);
+          void writeOperationsEncounters(userId, encounters);
+          if (candidate) displayedUpdateId = candidate.update.id;
+          if (candidate) setNearbyOperationsUpdate(candidate.update);
+          else if (!displayedUpdateId || !encounters[displayedUpdateId] ||
+            !ranked.some(({ update }) => update.id === displayedUpdateId)) {
+            displayedUpdateId = null;
+            setNearbyOperationsUpdate(null);
+          }
+        };
+        let refreshing = false;
+        const refresh = async () => {
+          if (!active || refreshing) return;
+          refreshing = true;
+          try {
+            const { data, error } = await supabase.rpc("get_operations_board", {
+              p_area_slug: null, p_include_history: false,
+            });
+            if (!active) return;
+            pinned = error ? [] : filterCachedOperations(
+              (Array.isArray(data) ? data : []) as OperationsUpdate[], false,
+            ).filter((update) => update.latitude != null && update.longitude != null && !update.is_author);
+            // Update or remove a visible prompt without reopening a dismissed one.
+            setNearbyOperationsUpdate((current) => current
+              ? pinned.find((update) => update.id === current.id) ?? null : null);
+            if (lastPosition) {
+              if (Date.now() - lastPosition.timestamp < 60000) evaluatePosition(lastPosition);
+              else {
+                try {
+                  evaluatePosition(await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }));
+                } catch { /* Wait for the location subscription before prompting. */ }
+              }
+            }
+          } catch {
+            if (active) {
+              pinned = [];
+              setNearbyOperationsUpdate(null);
+            }
+          } finally {
+            refreshing = false;
+          }
+        };
+        await refresh();
+        if (!active) return;
+        refreshTimer = setInterval(() => void refresh(), 60000);
+        expiryTimer = setInterval(() => {
+          setNearbyOperationsUpdate((current) => current && filterCachedOperations([current], false).length
+            ? current : null);
+        }, 1000);
+        try {
+          const current = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High,
+          });
+          evaluatePosition(current);
+        } catch {}
+        if (!active) return;
+        try {
+          const nextSubscription = await Location.watchPositionAsync(
+            { accuracy: Location.Accuracy.High, distanceInterval: 75, timeInterval: 15000 },
+            evaluatePosition,
+          );
+          if (!active) {
+            nextSubscription.remove();
+            return;
+          }
+          subscription = nextSubscription;
+        } catch {
+          if (active) setNearbyOperationsUpdate(null);
+        }
+      })();
+      return () => {
+        active = false;
+        subscription?.remove();
+        clearInterval(refreshTimer);
+        clearInterval(expiryTimer);
+        setNearbyOperationsUpdate(null);
+      };
+    }, [appIsActive, locationGranted]),
+  );
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      setAppIsActive(state === "active");
+    });
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     if (!mergeModeParam || !mergeSourceStopIdParam) return;
@@ -3852,6 +4001,76 @@ export default function HomeScreen() {
         </Pressable>
       ) : null}
 
+      {nearbyOperationsUpdate && !showPreview ? (
+        <View
+          accessibilityLiveRegion="polite"
+          style={[
+            styles.operationsPrompt,
+            { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+            Elevation.sheet,
+          ]}
+        >
+          <Text style={[styles.operationsPromptTitle, { color: colors.textPrimary }]}>
+            Still there?
+          </Text>
+          <Text
+            numberOfLines={usesAccessibilityLayout ? undefined : 2}
+            style={{ color: colors.textSecondary }}
+          >
+            {categoryLabel(nearbyOperationsUpdate.category)} · {nearbyOperationsUpdate.message}
+          </Text>
+          <View
+            style={[
+              styles.operationsPromptActions,
+              usesAccessibilityLayout && styles.operationsPromptActionsAccessible,
+            ]}
+          >
+            <AppButton
+              size="compact"
+              variant="secondary"
+              onPress={async () => {
+                const { error } = await supabase.rpc("confirm_operations_update", {
+                  p_update_id: nearbyOperationsUpdate.id,
+                  p_response: "yes",
+                });
+                if (error) {
+                  Alert.alert("Could not confirm", error.message);
+                  return;
+                }
+                setNearbyOperationsUpdate(null);
+              }}
+            >
+              Yes
+            </AppButton>
+            <AppButton
+              size="compact"
+              variant="secondary"
+              onPress={async () => {
+                const { error } = await supabase.rpc("confirm_operations_update", {
+                  p_update_id: nearbyOperationsUpdate.id,
+                  p_response: "no",
+                });
+                if (error) {
+                  Alert.alert("Could not confirm", error.message);
+                  return;
+                }
+                setNearbyOperationsUpdate(null);
+              }}
+            >
+              No
+            </AppButton>
+            <AppButton
+              accessibilityLabel="Dismiss condition prompt"
+              size="compact"
+              variant="tertiary"
+              onPress={() => setNearbyOperationsUpdate(null)}
+            >
+              Dismiss
+            </AppButton>
+          </View>
+        </View>
+      ) : null}
+
       {!showPreview ? (
         <View
           style={[
@@ -4178,6 +4397,20 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
+
+  operationsPrompt: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    top: 118,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    gap: 8,
+  },
+  operationsPromptTitle: { fontSize: 18, fontWeight: "800" },
+  operationsPromptActions: { flexDirection: "row", justifyContent: "flex-end", gap: 8 },
+  operationsPromptActionsAccessible: { alignItems: "stretch", flexDirection: "column" },
 
   stopLayerButton: {
     minWidth: 112,

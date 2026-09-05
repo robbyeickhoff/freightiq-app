@@ -22,6 +22,7 @@ export type HelpCenterNavigationHandlers = {
   onPressUnderstandingStopIntel: () => void;
   onPressContributingStopIntel: () => void;
   onPressUsingTheMap: () => void;
+  onPressOperationsBoard: () => void;
   onPressPrivacyAppLock: () => void;
 };
 
@@ -37,6 +38,7 @@ const defaultNavigationHandlers: HelpCenterNavigationHandlers = {
   onPressUnderstandingStopIntel: () => router.push("/understanding-stop-intel"),
   onPressContributingStopIntel: () => router.push("/contributing-stop-intel"),
   onPressUsingTheMap: () => router.push("/using-the-map"),
+  onPressOperationsBoard: () => router.push("/operations-board"),
   onPressPrivacyAppLock: () => router.push("/privacy-app-lock"),
 };
 
@@ -160,6 +162,13 @@ export default function HelpCenterContent({ navigationHandlers }: HelpCenterCont
             onPress={handlers.onPressContributingStopIntel}
             subtitle="Add and update driver intel"
             title="Contributing Stop Intel"
+          />
+          <GuideRow
+            accessibilityHint="Opens the Operations Board guide"
+            icon="operations"
+            onPress={handlers.onPressOperationsBoard}
+            subtitle="Current conditions and driver updates"
+            title="Operations Board"
           />
           <GuideRow
             accessibilityHint="Opens the Using the Map guide"

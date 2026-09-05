@@ -35,6 +35,7 @@ const ICONS = {
   logout: { default: "logout" },
   map: { default: "map" },
   navigation: { default: "navigation" },
+  operations: { default: "campaign" },
   more: { default: "more-horiz" },
   profile: { default: "person-outline", active: "person" },
   referral: { default: "group-add" },

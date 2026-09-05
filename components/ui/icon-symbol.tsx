@@ -20,6 +20,7 @@ const MAPPING = {
   "chevron.right": "chevron-right",
   "map.fill": "map",
   "list.bullet": "route",
+  "exclamationmark.bubble.fill": "campaign",
   "person.fill": "person",
 } as IconMapping;
 

@@ -66,6 +66,10 @@ export default function ProfileLayout() {
       />
       <Stack.Screen name="using-the-map" options={{ headerShown: true, title: "Using the Map" }} />
       <Stack.Screen
+        name="operations-board"
+        options={{ headerShown: true, title: "Operations Board" }}
+      />
+      <Stack.Screen
         name="privacy-app-lock"
         options={{ headerShown: true, title: "Privacy & App Lock" }}
       />

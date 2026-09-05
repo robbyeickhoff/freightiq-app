@@ -13,6 +13,228 @@ answer one question:
 
 ## Current Objective
 
+### Active Objective — Operations Board V1
+
+The Product Owner approved the bounded local implementation contract on September 3, 2026:
+`docs/build-specs/FreightIQOperationsBoardV1BuildSpec.md`. This slice adds an in-app, broad-region
+Operations Board for current delivery conditions, eligible Founding Driver contributions,
+foreground-only nearby-condition confirmation, and Operations-update handling in the existing
+private moderation dashboard. It uses repository-backed additive Supabase migrations and local
+verification. Production database migration, deployment, mobile builds, tester distribution,
+commit, push, and release remain separately gated.
+The local candidate now includes the repository-backed database contract, Operations tab and active
+count, broad-area feed, eligible contribution flow, temporary Operations map, foreground nearby
+confirmation, offline cache and draft recovery, Operations reporting, and private moderation queue
+support. TypeScript, lint, iOS and Android production bundle exports, local migration application,
+and the website production build pass. Physical iPhone and Pixel checks are recorded below; the final return-to-app expiration check passed September 5. Production-profile install acceptance remains a later gate.
+The Product Owner approved **Active Conditions** as the shared current-feed label; **My Updates**
+continues to identify the signed-in driver's own seven-day posting history.
+The Product Owner separately approved the production database gate on September 3, 2026.
+Migration `20260903232656_operations_board_v1.sql` is now synchronized with the production
+FreightIQ Supabase project. The remote migration ledger matches locally, and anonymous table and
+Operations RPC probes both fail with PostgreSQL permission code `42501` as intended. The required
+privacy and community-guideline review added accurate Operations, foreground proximity,
+confirmation, moderation, and retention disclosures locally; those website policy changes were deployed September 5 after separate approval (see publishing evidence below). Production mobile builds, distribution, and release remain separately gated.
+Physical-iPhone review found that the initial Active Updates map pill looked like a second stop-layer
+toggle and did not explain the destination clearly. The Product Owner approved replacing it with a
+permanent Operations tab. The local candidate now uses a labeled Operations tab with an orange
+active-update badge and removes the ambiguous map pill; nearby-condition prompts remain on Map.
+Further physical-iPhone review refined the Operations landing screen into a compact horizontal area
+selector, one full-width **Report a Condition** action, a separate **View Map** link, a neutral
+Active/My Updates selector with a selected-state indicator, and a structured empty state. The
+Product Owner accepted this landing-screen presentation for the current V1 candidate on September
+3, 2026, with future visual refinements to be driven by continued use.
+Physical-iPhone contribution review then corrected keyboard avoidance and dismissal, made expiration
+selection explicit, and removed seconds from the expiration summary. The Product Owner successfully
+posted the first production Grand Junction Weather / Road Conditions acceptance update and confirmed
+that its Active Updates presentation looked correct on September 3, 2026. The same post then appeared
+correctly under My Updates with its Edit and Resolve author controls. Editing loaded the existing
+values, saved the revised message, and displayed the Edited indicator correctly. Operations map,
+author resolution, and nearby-condition confirmation were tested in the subsequent acceptance steps.
+Physical-iPhone Operations map review replaced the initial floating title controls with the Route
+Map's fixed header structure, added an area and mapped-update subtitle, and introduced a visible
+center target. A compact control now explains **Move the map to position the target** before the
+**Report a Condition Here** action. The Product Owner accepted this Operations map presentation for
+V1 on September 3, 2026. Pinned-condition creation, pin selection, author resolution, and
+nearby-condition confirmation were tested in the subsequent acceptance steps.
+The Product Owner then created a production Temporary Hazard from the map target and confirmed its
+Active Updates entry and native orange map pin. Pin selection displayed the correct update card;
+closing now resets the native annotation so the pin returns to normal size and can be selected
+again. This complete pinned-condition map interaction passed on physical iPhone. Nearby-condition
+confirmation acceptance remains pending.
+The Product Owner then resolved the original Weather / Road Conditions acceptance update from My
+Updates and confirmed the author-resolution flow on physical iPhone. The separately pinned
+Temporary Hazard expired after its selected two-hour duration before the remaining
+nearby-condition confirmation test.
+Physical-Pixel review on September 4, 2026 confirmed that a signed-in driver who is not enrolled in
+the Founding Drivers Program can view Operations but is not offered the contribution action. This
+contributor-eligibility gate passed; the same non-enrolled account remains available to confirm a
+new hazard authored by an eligible account.
+The same review found that selecting a pin-required category from the board contribution flow gave
+the driver no direct way to set its location. The local candidate now shows a clear required or
+optional location state in the form, opens a dedicated **Set Location** map, and returns through
+**Use This Location** with the area, category, message, and expiration draft preserved. Physical
+Pixel acceptance of this corrected round trip remains pending.
+Initial Pixel proximity review exposed a timing issue: the prompt query could choose an area before
+the regular Map finished centering on the device, leaving an otherwise nearby update out of the
+candidate set. The local candidate now loads the small active cross-area set for foreground
+proximity evaluation and applies heading direction only while the device is moving. A stationary
+driver already within the quarter-mile radius can therefore receive the prompt. Physical Pixel
+acceptance remains pending.
+The first diagnostic Pixel check correctly withheld the driver prompt because the newly authored
+hazard was 6,092 meters from the device, outside the 402-meter radius. This exposed that the new
+location picker began at the broad-area center. The picker now requests the driver's foreground
+position when it opens, shows the device location, starts at a close working scale, and provides a
+**Center on Me** recovery action. Temporary development diagnostics were removed after identifying
+the cause. Physical Pixel acceptance of the current-location picker and an in-radius confirmation
+remain pending.
+After the author resolved the incorrectly placed hazard and reposted through the corrected picker,
+the non-enrolled second account received the real **Still there?** prompt with **Yes** and **No**
+actions while near the pin on a physical Pixel. Cross-account, in-radius prompt display therefore
+passes. Confirmation submission and resulting board state remain to be checked.
+The second account then submitted **Yes** successfully and the foreground prompt dismissed cleanly;
+the hazard correctly remained active. The subsequent board check exposed that the feed did not
+return the server-owned last-confirmed timestamp, so the card could not explain the successful
+confirmation. Additive migration `20260904124148_operations_board_confirmation_state.sql` now adds
+only the latest current-revision Yes timestamp to the caller-scoped board RPC, and the local card
+renders it as **Confirmed just now**, minutes, hours, or date. The SQL executes locally, TypeScript
+and lint pass for the Operations changes. The Product Owner approved the production database gate
+on September 4, 2026, and migration
+`20260904124148_operations_board_confirmation_state.sql` is now applied with matching local and
+remote ledger entries. Production verification confirms anonymous execution remains denied,
+authenticated execution remains granted, and the board function returns confirmation state.
+Physical Pixel presentation remains pending.
+The confirmation timestamp displayed correctly on Pixel, but reloading the regular Map while still
+beside the pin showed the prompt again. The local candidate now stores account-scoped encounter
+state on the device when a prompt is shown, includes a **Dismiss** action, suppresses repeats across
+reloads while the driver remains nearby, and resets only after the device moves beyond the
+half-mile boundary. After reloading on the physical Pixel, the prompt correctly remained hidden
+while the same account and device stayed beside the pin. Same-encounter repeat suppression passes;
+the reset boundary is isolated in `utils/operations-proximity.ts`. Deterministic tests now verify
+that the first in-radius approach prompts, the same encounter stays suppressed, 805 meters clears
+the encounter, a later approach prompts again, a revised update starts a new encounter, and an
+out-of-radius or directionally invalid approach does not prompt. All three proximity test cases
+pass locally, providing the leave-and-return evidence without requiring a physical drive solely for
+acceptance.
+Physical-Pixel review also opened **Report** from a non-owned Operations update and confirmed that
+the existing Report Content screen presents the required reason choices, supporting helper text,
+and an optional additional-notes field correctly. Report submission and private moderation-queue
+handling remain pending.
+The non-author test account then submitted a **Duplicate** report without additional notes. The
+success notice appeared, the existing optional Block Contributor follow-up was declined, and the
+hazard correctly remained visible in Active Updates while awaiting review. Driver-side Operations
+report submission passes; private moderator queue and resolution remain pending.
+The report then appeared in the local private admin moderation queue as an **Operations Update**
+with reason **Duplicate**. The administrator saved a **Dismissed** decision with acceptance-test
+notes; the item left Open reports, entered Decision history, and the valid hazard remained active.
+The end-to-end Operations reporting and moderator-dismissal path passes.
+The author then edited the active Temporary Hazard. Physical-Pixel review confirmed the card shows
+**Edited** and no longer displays the Yes-confirmation timestamp from the prior revision. Current-
+revision confirmation invalidation passes; the revised-update proximity prompt remains to be
+checked with the second account. After switching back to the non-enrolled test account, the revised
+hazard produced a fresh **Still there?** prompt on the physical Pixel. Revision-based encounter
+reset passes.
+The second account answered **No** on the revised hazard; the prompt dismissed and the update
+correctly remained active with **Possibly cleared**. The first-No transition passes on physical
+Pixel. Local database fixtures with isolated author and responder identities then verified the
+remaining transactional rules: one responder cannot vote again inside a ten-minute server
+cooldown, a later distinct Yes restores Active, the first No after that Yes returns to Possibly
+cleared, and a second distinct current No resolves the update. Additive migration
+`20260904132209_operations_confirmation_cooldown.sql` implements the missing server cooldown and
+passes the local transaction test. The Product Owner approved its production database gate on
+September 4, 2026. The migration is applied with matching local and remote ledger entries;
+production verification confirms the cooldown is present, anonymous execution remains denied, and
+authenticated execution remains granted.
+With the active hazard already cached, physical-Pixel testing then enabled Airplane mode and
+refreshed the Operations feed. The update remained readable and the screen identified it as an
+offline copy with its saved time. Weak-service cached-feed presentation passes.
+Physical-Pixel draft review then selected an area, category, note, and expiration, left the
+contribution form without posting, and reopened it. All four values returned from the account-
+scoped local draft. Draft recovery passes.
+Pixel system settings confirmed Expo Go holds precise **Allow only while using the app** location
+permission and no background-location permission. The Map proximity subscription now also observes
+the application foreground state explicitly, removes the subscription and banner on background,
+and starts a fresh foreground check only after return. Static checks pass; physical background and
+return acceptance is deferred to the installed production-profile candidate because Expo Go owns
+the native permission surface and cannot replace authoritative FreightIQ-binary verification.
+Final local validation on September 4, 2026 passes the focused 30-test regression set, TypeScript,
+mobile lint
+with only the four pre-existing `app/(tabs)/stop.tsx` warnings, iOS and Android production bundle
+exports, website lint and production build, linked production-schema lint, and `git diff --check`.
+`npm audit --omit=dev` reports 42 existing Expo SDK 54 ecosystem advisories; the suggested forced
+remediation includes the separately gated SDK 57 upgrade, so dependency versions were not changed
+inside the Operations Board scope. Final scoped review corrected failed Map confirmations so a
+server error remains visible instead of closing the prompt, closed a location-watcher cleanup race,
+and made optional versus required form locations accurate. The remaining approved V1 items are now
+implemented locally: a review-before-post step, advisory duplicate matches with an explicit
+legitimate-post override, FreightIQ stop search and attachment, condition-category filters, and
+account-scoped author notices for expired, resolved, possibly-cleared, and moderator-removed
+updates. Additive migration `20260904141244_operations_board_lifecycle_details.sql` returns safe
+stop and lifecycle display details, stores a brief author-visible moderation reason, validates that
+posted coordinates belong to the selected broad area, snapshots trusted stop coordinates, and
+serializes rate-limit checks per author. A clean local migration run, focused database fixture,
+schema lint, TypeScript, mobile lint, 30 tests, both production bundle exports, and
+`git diff --check` pass. The Product Owner approved the production database gate, and additive
+migration `20260904141244_operations_board_lifecycle_details.sql` is applied with matching local
+and remote migration ledgers. Production verification confirms the lifecycle column and returned
+stop fields, serialized author posting limits, and area validation are present; anonymous board and
+create execution remain denied while authenticated execution remains granted. Supabase advisors
+reported no new Operations table/RLS or anonymous-access finding. Their Operations RPC warnings
+describe the deliberately authenticated, server-authorized `security definer` boundary, and the
+remaining advisor entries predate this lifecycle migration or are informational index suggestions.
+The Operations-specific automated coverage now directly exercises two-hour and four-hour expiry,
+End of Day across a daylight-saving transition, category filtering and the **All Conditions** reset,
+regional, stop, nearby, and distinct-condition duplicate matching, and author notices for expired,
+possibly-cleared, community-resolved, and moderator-removed updates.
+The in-app Help Center now includes a dedicated **Operations Board** guide covering the shared and
+personal feeds, area and condition filters, map pins, eligible-driver posting, required and optional
+locations, FreightIQ stop attachment, expiration, review and duplicate advice, nearby Yes/No
+confirmation, author controls, reporting, and the emergency-information boundary. The guide is
+reachable through both existing Help Center navigation paths and uses the established expandable,
+screen-reader-aware help layout. TypeScript, lint, and formatting checks pass after the addition.
+The remote code review then added explicit selected-state announcements to area, category,
+expiration, stop, and feed controls; raised compact filter targets to the app's 44-point minimum;
+stacked search and footer actions at large system text sizes; labeled the condition and stop-search
+fields; and added empty stop-search and retryable board/map failure states. Operations map markers
+now expose their category, area, contributor, and message to assistive technology. The focused SQL
+fixture also verifies the six-area contract, unsupported-area rejection, trusted stop snapshot,
+safe returned stop details, and anonymous RPC denial. A final recovery review separated offline
+caches by area and feed, suppresses expired cached conditions, rejects malformed saved drafts and
+caches, validates coordinate pairs and bounds before submission, and gives Operations-specific
+feedback after blocking a contributor. TypeScript, mobile lint with only the four pre-existing
+stop-screen warnings, the 33-test regression set, the focused database fixture, both production
+bundle exports, website lint and production build, and formatting checks pass. Physical large-text,
+VoiceOver, and TalkBack acceptance remains pending.
+
+### Operations acceptance consolidation — September 5, 2026
+
+The Product Owner tested current Metro code through the September 4 development builds:
+Android `91bee598-d007-442a-b1f4-1c59c8764ebf` and iOS
+`4c1c3dc6-b828-4700-a188-e54ee3b10e3a`. These are not production-profile candidates.
+
+Physical Pixel acceptance passed Area/Condition menus; note and search keyboard handling;
+location selection and draft preservation; review, duplicate warning, board return, draft recovery,
+Post Anyway, posting and resolution; stop search, attachment, removal, review address and map pin;
+Resolved history; empty search, network failure with spinner completion, and search recovery.
+The Product Owner read and checked every Operations Help Center section.
+Larger-text board, menu, form and map checks passed on both phones at the selected font sizes.
+Later iPhone header and chevron clipping was fixed and explicitly rechecked successfully.
+The familiar Operations map control bar, satellite toggle and location-selection controls passed.
+This evidence does not cover every possible font size or assistive technology.
+
+Controlled expiration test `9712ab91-c21f-49b5-94ee-18214adec016` passed the author notice,
+removal from Active Conditions, and Expired history display after its timer was shortened.
+Separately authorized duplicate stop `1781638833163` was deleted after checking eight linked
+tables; populated Mountain Lodge `1781638829465` was retained and search cleanup confirmed.
+
+An Android linking warning after returning from Settings cleared on reload and did not repeat
+in the next return check. Its root cause remains unconfirmed. iPhone returned without an error.
+The Product Owner explicitly deferred VoiceOver/TalkBack for the pilot. Foreground/background
+location lifecycle in a production candidate, denied permission, reduced motion and real-route
+directional checks remain open. Search retry passed; the board's no-cache failure/retry state
+was not explicitly tested. No full diff acceptance, commit, push, deployment, production build,
+distribution or release is authorized by this consolidation.
+
 ### Completed Objective — Private Routing Lab Telluride Route Polygon Classification V1
 
 The Product Owner approved the bounded implementation contract on September 2, 2026:
@@ -68,8 +290,7 @@ correctly stayed unresolved because the `gj-v1` geometry paired River Road with 
 Owner refined the source map so that the same accepted rooftop coordinate now falls under Downtown
 / The Hole and Hole A. A preserved `gj-v1` plus `gj-v2` records that correction, retains the
 75-meter boundary-safety flag, excludes three non-polygon map markers, and passes the complete local
-Routing Lab validation. The Product Owner approved the isolated server deployment on September 2,
-2026. `classify-route-zones` version 11 is active with JWT verification retained and rejects
+Routing Lab validation. The Product Owner approved the isolated server deployment on September 2, 2026. `classify-route-zones` version 11 is active with JWT verification retained and rejects
 unsigned requests with HTTP 401. After the approved one-route Zone Review reset, signed-in
 acceptance confirmed that 519 Ligrani Lane now classifies as Downtown / The Hole and Hole A under
 `gj-v2`. Commit `4d90824` is pushed to `clean-main`, and local and remote were verified synchronized.
@@ -887,8 +1108,34 @@ special build is required solely for that check.
 
 ---
 
+## September 5 review follow-up — pending device acceptance
+
+Implemented the three approved review fixes:
+- Regular map refreshes Operations every 60 seconds while focused/active, including when the first response has no pins. Current prompts expire locally; refreshed reports update/remove visible prompts without reopening dismissed reports. Focus cleanup stops polling and location subscriptions.
+- Operations map refreshes pins/cards every 60 seconds and removes expired pins/cards locally. Its reporting control uses the same posting-access RPC as the board.
+- Possibly-cleared reports now transition to expired in My Updates and generate the expiration notice; resolved/removed labels retain precedence.
+
+Changed files in this follow-up: `app/(tabs)/(map)/index.tsx`, `app/(tabs)/(map)/operations-map.tsx`, `utils/operations-board.ts`, `tests/operations-board.test.ts`, and this document. All remain uncommitted within the existing Operations candidate.
+
+Validation: 34 automated tests pass, including the possibly-cleared expiration regression. Lint reports no errors and the four existing stop.tsx warnings. Focused device acceptance still required for refresh without navigation and non-contributor map controls.
+
+Website approval package remains four existing files in `freightiq-site`: `app/privacy/page.tsx`, `app/community-guidelines/page.tsx`, `app/founding-drivers/admin/moderation/page.tsx`, and `lib/moderation/types.ts`. These add Operations disclosures, contribution guidance, and moderation labels/types. Website build/lint passed during review; public live pages still have older wording. Authenticated live moderation is not verified. No website edits, publication, database changes, or releases performed in this follow-up.
+
+## September 5 return-to-app follow-up
+
+Device observations: non-contributor map reporting control hidden (passed); new nearby hazard prompt appeared on Pixel in about 30 seconds without navigation (passed); resolving it on iPhone removed the Pixel prompt in about 30 seconds (passed). A second test entered possibly-cleared status and sent the author notice. With explicit approval, only test report `eec1168d-3adc-474d-9820-db76af8b4f7b` had expiration shortened to `2026-09-05T14:26:02.849426Z`. It left Active Conditions but retained the possibly-cleared history label until reload; user had switched apps. Expired label after reload is accepted; automatic return-to-app behavior is not yet accepted.
+
+Inspection found board polling/focus refresh without an AppState resume handler. Updated `app/(tabs)/(map)/operations.tsx` to refresh on foreground return, pause polling in background, and invalidate background/outdated focus requests before status notices/snapshot consumption. This document is the only other file changed in this follow-up. TypeScript and 34 automated tests pass; lint has no errors and the same four existing stop.tsx warnings. Physical return-to-app expiration check remains pending. Changes remain uncommitted; no additional database or deployment actions taken.
+
+## September 5 accepted candidate and publishing approval
+
+The return-to-app test passed: report `924dadaa-71e5-4f80-896f-644cf7c93880` (Background expiration test) was possibly cleared, then expired at `2026-09-05T14:49:03.195067Z` while FreightIQ was backgrounded. On returning without reload, the iPhone showed the expiration notice and Expired history label. This supersedes the pending follow-up acceptance above. All three review fixes now have device confirmation.
+
+The Product Owner approved the mobile commit and website deployment package. Website commit `61545d3` (four policy/moderation files) was pushed to `main`; its automatic production deployment `dpl_Gogt5Jpuu5HBjmMUvywecZNqKhzc` is READY and aliased to `freightiqapp.com`. Live privacy and community-guidelines pages contain the new Operations wording. Previous production deployment `dpl_G49TCks3kQD7d3rMJHCWbnKKsbrq` remains the rollback reference. Mobile commit scope is the reviewed Operations implementation, tests, migration source files, help, and governing candidate documents. No production mobile build, store submission, or distribution is part of this approval.
+
 ## Next Safe Step
 
-Run the first real-workday Routing Lab field trial. Capture only observed classification friction,
-incorrect Micro Zone proposals, sequence problems, or unreliable learning as evidence for the next
-focused improvement. Do not expand the learning model from hypothetical cases alone.
+Website publication verified; finish mobile repository synchronization. Next release gate
+is production-profile mobile build preparation/approval and installed-device verification before
+any distribution. Authenticated live moderation remains a distinct check; prior local moderation
+acceptance does not establish live acceptance.

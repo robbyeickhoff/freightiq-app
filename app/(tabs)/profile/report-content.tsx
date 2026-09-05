@@ -27,25 +27,34 @@ const reasons = [
   ["other", "Other"],
 ] as const;
 
-type Reason = (typeof reasons)[number][0];
+const operationsReasons = [
+  ["outdated", "Outdated"],
+  ["inaccurate", "Inaccurate"],
+  ["duplicate", "Duplicate"],
+  ["inappropriate", "Inappropriate"],
+] as const;
+
 const DETAILS_INPUT_ACCESSORY_ID = "report-details-keyboard-toolbar";
 
 export default function ReportContentScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const params = useLocalSearchParams<{
-    subjectType?: "report" | "stop";
+    subjectType?: "report" | "stop" | "operations_update";
     subjectId?: string;
     ownerId?: string;
     ownerName?: string;
   }>();
-  const [reason, setReason] = useState<Reason | null>(null);
+  const [reason, setReason] = useState<string | null>(null);
   const [details, setDetails] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const detailsFieldYRef = useRef(0);
 
-  const canBlock = params.subjectType === "report" && Boolean(params.ownerId);
+  const canBlock =
+    (params.subjectType === "report" || params.subjectType === "operations_update") &&
+    Boolean(params.ownerId);
+  const availableReasons = params.subjectType === "operations_update" ? operationsReasons : reasons;
 
   async function blockContributor() {
     const { data } = await supabase.auth.getUser();
@@ -61,7 +70,9 @@ export default function ReportContentScreen() {
       return;
     }
 
-    Alert.alert("Contributor blocked", "Their Driver Reports will be hidden for you.", [
+    const hiddenContent =
+      params.subjectType === "operations_update" ? "Operations updates" : "Driver Reports";
+    Alert.alert("Contributor blocked", `Their ${hiddenContent} will be hidden for you.`, [
       { text: "Done", onPress: () => router.back() },
     ]);
   }
@@ -74,6 +85,7 @@ export default function ReportContentScreen() {
       subject_type: params.subjectType,
       report_id: params.subjectType === "report" ? params.subjectId : null,
       stop_id: params.subjectType === "stop" ? params.subjectId : null,
+      operations_update_id: params.subjectType === "operations_update" ? params.subjectId : null,
       reason,
       details: details.trim() || null,
     };
@@ -132,7 +144,7 @@ export default function ReportContentScreen() {
 
         <AppCard contentStyle={styles.card}>
           <Text style={[styles.heading, { color: colors.textPrimary }]}>Reason</Text>
-          {reasons.map(([value, label]) => (
+          {availableReasons.map(([value, label]) => (
             <AppButton
               key={value}
               accessibilityState={{ selected: reason === value }}
@@ -154,6 +166,7 @@ export default function ReportContentScreen() {
             Additional details (optional)
           </Text>
           <TextInput
+            accessibilityLabel="Additional report details"
             accessibilityHint="Up to 500 characters"
             inputAccessoryViewID={Platform.OS === "ios" ? DETAILS_INPUT_ACCESSORY_ID : undefined}
             maxLength={500}
