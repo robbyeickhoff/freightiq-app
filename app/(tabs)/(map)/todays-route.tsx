@@ -1,4 +1,6 @@
-import { useRouter } from "expo-router";
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { useNavigation, type ParamListBase } from "@react-navigation/native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -19,7 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { NavigationAppPicker } from "@/components/navigation-app-picker";
 import { AppButton } from "@/components/ui/app-button";
 import { AppCard } from "@/components/ui/app-card";
-import { AppIcon } from "@/components/ui/app-icon";
+import { AppIcon, type AppIconName } from "@/components/ui/app-icon";
 import { Borders, Elevation, Radius, Spacing, Typography } from "@/constants/theme";
 import { useNavigationPreference } from "@/context/navigation-preference-context";
 import { useAppTheme } from "@/context/theme-context";
@@ -49,6 +51,68 @@ function compactAddress(address: string) {
       .replace(/\bColorado\b/g, "CO")
       .trim() || "No address saved"
   );
+}
+
+type CoreIntelReportRow = {
+  back_in_required: boolean | null;
+  delivery_type: string | null;
+  truck_fit: string | null;
+};
+
+type RouteCoreIntel = {
+  backInRequired: boolean | null;
+  deliveryType: string | null;
+  deliveryZone: { lat: number; lng: number } | null;
+  stopId: string;
+  truckFit: string | null;
+};
+
+function resolveStringConsensus<T extends string>(values: T[]): T | "Mixed" | null {
+  if (!values.length) return null;
+  const counts = new Map<T, number>();
+  values.forEach((value) => counts.set(value, (counts.get(value) ?? 0) + 1));
+  const highestCount = Math.max(...counts.values());
+  const winners = [...counts.entries()].filter(([, count]) => count === highestCount);
+  return winners.length === 1 ? winners[0][0] : "Mixed";
+}
+
+function resolveBooleanConsensus(values: boolean[]): boolean | null {
+  const yesCount = values.filter(Boolean).length;
+  const noCount = values.length - yesCount;
+  if (yesCount === noCount) return null;
+  return yesCount > noCount;
+}
+
+function summarizeCoreIntel(
+  stopId: string,
+  reports: CoreIntelReportRow[],
+  deliveryZone: { lat: number; lng: number } | null,
+): RouteCoreIntel {
+  return {
+    stopId,
+    deliveryZone,
+    deliveryType: resolveStringConsensus(
+      reports
+        .map((report) => report.delivery_type)
+        .filter(
+          (value): value is "Dock" | "Forklift" | "Liftgate" =>
+            value === "Dock" || value === "Forklift" || value === "Liftgate",
+        ),
+    ),
+    truckFit: resolveStringConsensus(
+      reports
+        .map((report) => report.truck_fit)
+        .filter(
+          (value): value is "53'" | "48'" | "40'" | "28'" =>
+            value === "53'" || value === "48'" || value === "40'" || value === "28'",
+        ),
+    ),
+    backInRequired: resolveBooleanConsensus(
+      reports
+        .map((report) => report.back_in_required)
+        .filter((value): value is boolean => typeof value === "boolean"),
+    ),
+  };
 }
 
 function UpcomingRouteMarker({ marker }: { marker: RouteOverviewMarker }) {
@@ -94,6 +158,8 @@ function CompletedRouteMarker({ marker }: { marker: RouteOverviewMarker }) {
 
 export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
   const router = useRouter();
+  const navigation = useNavigation<BottomTabNavigationProp<ParamListBase>>();
+  const params = useLocalSearchParams();
   const { colorScheme, colors } = useAppTheme();
   const { navigationPreference } = useNavigationPreference();
   const reduceMotionEnabled = useReducedMotion();
@@ -123,6 +189,35 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     [],
   );
   const [unavailableStopIds, setUnavailableStopIds] = useState<Set<string>>(new Set());
+  const [nextStopExpanded, setNextStopExpanded] = useState(false);
+  const [nextStopIntel, setNextStopIntel] = useState<RouteCoreIntel | null>(null);
+  const [nextStopIntelStatus, setNextStopIntelStatus] = useState<
+    "idle" | "loading" | "resolved" | "error"
+  >("idle");
+  const [nextStopSheetHeight, setNextStopSheetHeight] = useState(
+    usesAccessibilityLayout ? 208 : 146,
+  );
+
+  useEffect(() => {
+    if (!isTab) return;
+
+    const routeView = String(params.routeView ?? "");
+    if (routeView === "list") {
+      setShowRouteList(true);
+      return;
+    }
+
+    if (routeView === "map") {
+      lastFittedMarkerSignatureRef.current = "";
+      setIsOverviewMapReady(false);
+      setShowRouteList(false);
+    }
+  }, [isTab, params.routeView]);
+
+  useEffect(() => {
+    if (!isTab) return;
+    return navigation.addListener("tabPress", () => setShowRouteList(true));
+  }, [isTab, navigation]);
 
   useEffect(() => {
     const ids = route.stops.map((stop) => stop.id);
@@ -162,6 +257,57 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     () => route.stops.filter((stop) => stop.status === "completed"),
     [route.stops],
   );
+  const nextStopId = upcoming[0]?.id ?? null;
+
+  useEffect(() => {
+    setNextStopExpanded(false);
+    setNextStopIntel(null);
+    setNextStopIntelStatus("idle");
+  }, [nextStopId]);
+
+  useEffect(() => {
+    if (!nextStopExpanded || !nextStopId) return;
+
+    let active = true;
+    setNextStopIntelStatus("loading");
+
+    void Promise.all([
+      supabase
+        .from("mfi_reports")
+        .select("delivery_type, truck_fit, back_in_required")
+        .eq("stop_id", nextStopId),
+      supabase
+        .from("mfi_stops")
+        .select("entrance_lat, entrance_lng")
+        .eq("id", nextStopId)
+        .maybeSingle(),
+    ])
+      .then(([reportsResult, stopResult]) => {
+        if (!active) return;
+        if (reportsResult.error || stopResult.error) throw reportsResult.error ?? stopResult.error;
+
+        const stop = stopResult.data;
+        const deliveryZone =
+          typeof stop?.entrance_lat === "number" && typeof stop?.entrance_lng === "number";
+        setNextStopIntel(
+          summarizeCoreIntel(
+            nextStopId,
+            (reportsResult.data ?? []) as CoreIntelReportRow[],
+            deliveryZone
+              ? { lat: stop.entrance_lat, lng: stop.entrance_lng }
+              : null,
+          ),
+        );
+        setNextStopIntelStatus("resolved");
+      })
+      .catch(() => {
+        if (active) setNextStopIntelStatus("error");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [nextStopExpanded, nextStopId]);
   const overviewMarkers = useMemo(
     () => buildRouteOverviewMarkers(route.stops, unavailableStopIds),
     [route.stops, unavailableStopIds],
@@ -201,10 +347,10 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
       overviewMarkers.map((marker) => marker.coordinate),
       {
         animated: !reduceMotionEnabled,
-        edgePadding: { top: 56, right: 40, bottom: usesAccessibilityLayout ? 250 : 190, left: 40 },
+        edgePadding: { top: 56, right: 40, bottom: nextStopSheetHeight + 56, left: 40 },
       },
     );
-  }, [overviewMarkers, reduceMotionEnabled, usesAccessibilityLayout]);
+  }, [nextStopSheetHeight, overviewMarkers, reduceMotionEnabled]);
 
   useEffect(() => {
     if (
@@ -348,12 +494,14 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     router.push({
       pathname: "/(tabs)/(map)",
       params: {
+        collectionOpenAt: String(Date.now()),
         collectionStopAddress: stop.address,
         collectionStopId: stop.id,
         collectionStopLat: String(stop.lat),
         collectionStopLng: String(stop.lng),
         collectionStopName: stop.name,
         returnToRoute: "1",
+        returnToRouteView: showRouteList ? "list" : "map",
       },
     });
   }
@@ -471,6 +619,79 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     );
   }
 
+  const currentNextStopIntel =
+    nextStopIntel?.stopId === nextStopId ? nextStopIntel : null;
+  const unresolvedIntelValue =
+    nextStopIntelStatus === "error" ? "Unavailable" : "Checking…";
+  const nextStopCoreIntel: {
+    complete: boolean;
+    icon: AppIconName;
+    label: string;
+    onPress?: () => void;
+    value: string;
+  }[] = [
+    {
+      complete: Boolean(currentNextStopIntel?.truckFit),
+      icon: "truckFit",
+      label: "Truck Fit",
+      value:
+        nextStopIntelStatus === "resolved"
+          ? (currentNextStopIntel?.truckFit ?? "Not reported")
+          : unresolvedIntelValue,
+    },
+    {
+      complete: Boolean(currentNextStopIntel?.deliveryZone),
+      icon: "deliveryZone",
+      label: "Delivery Zone",
+      onPress:
+        currentNextStopIntel?.deliveryZone && upcoming[0]
+          ? () => {
+              router.push({
+                pathname: "/(tabs)/(map)",
+                params: {
+                  entranceLat: String(currentNextStopIntel.deliveryZone?.lat),
+                  entranceLng: String(currentNextStopIntel.deliveryZone?.lng),
+                  focusStopId: upcoming[0].id,
+                  hidePreview: "1",
+                  returnToRoute: "1",
+                  returnToRouteView: "map",
+                  revealAt: String(Date.now()),
+                  showEntrance: "1",
+                },
+              });
+            }
+          : undefined,
+      value:
+        nextStopIntelStatus === "resolved"
+          ? currentNextStopIntel?.deliveryZone
+            ? "Saved · View"
+            : "Not reported"
+          : unresolvedIntelValue,
+    },
+    {
+      complete: Boolean(currentNextStopIntel?.deliveryType),
+      icon: "deliveryType",
+      label: "Delivery Type",
+      value:
+        nextStopIntelStatus === "resolved"
+          ? (currentNextStopIntel?.deliveryType ?? "Not reported")
+          : unresolvedIntelValue,
+    },
+    {
+      complete: currentNextStopIntel?.backInRequired !== null && currentNextStopIntel != null,
+      icon: "backIn",
+      label: "Back In",
+      value:
+        nextStopIntelStatus !== "resolved"
+          ? unresolvedIntelValue
+          : currentNextStopIntel?.backInRequired === null || currentNextStopIntel == null
+            ? "Not reported"
+            : currentNextStopIntel.backInRequired
+              ? "Yes"
+              : "No",
+    },
+  ];
+
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -490,21 +711,31 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
             {completed.length} of {route.stops.length} done
           </Text>
         </View>
-        {isTab && showRouteList ? (
+        {isTab ? (
           <AppButton
-            accessibilityLabel="Show route map"
+            accessibilityLabel={showRouteList ? "Show route map" : "Show route list"}
             onPress={() => {
-              lastFittedMarkerSignatureRef.current = "";
-              setIsOverviewMapReady(false);
-              setShowRouteList(false);
+              if (showRouteList) {
+                lastFittedMarkerSignatureRef.current = "";
+                setIsOverviewMapReady(false);
+                setShowRouteList(false);
+              } else {
+                setShowRouteList(true);
+              }
             }}
             size="compact"
             style={styles.headerMapAction}
             variant="tertiary"
           >
             <View style={styles.headerMapActionContent}>
-              <AppIcon name="map" color={colors.accentStrong} size={20} />
-              <Text style={[styles.headerMapActionLabel, { color: colors.accentStrong }]}>Map</Text>
+              <AppIcon
+                name={showRouteList ? "map" : "route"}
+                color={colors.accentStrong}
+                size={20}
+              />
+              <Text style={[styles.headerMapActionLabel, { color: colors.accentStrong }]}>
+                {showRouteList ? "Map" : "List"}
+              </Text>
             </View>
           </AppButton>
         ) : null}
@@ -542,13 +773,13 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
               legalLabelInsets={{
                 top: 0,
                 right: 0,
-                bottom: usesAccessibilityLayout ? 276 : 202,
+                bottom: nextStopSheetHeight + Spacing.lg,
                 left: 0,
               }}
               mapPadding={{
                 top: 16,
                 right: 12,
-                bottom: usesAccessibilityLayout ? 276 : 202,
+                bottom: nextStopSheetHeight + Spacing.lg,
                 left: 12,
               }}
               mapType="standard"
@@ -600,7 +831,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
               size="compact"
               style={[
                 styles.fitRouteButton,
-                usesAccessibilityLayout && styles.fitRouteButtonLargeText,
+                { bottom: nextStopSheetHeight + Spacing.md },
                 Elevation.floating,
               ]}
               variant="secondary"
@@ -613,6 +844,12 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
           ) : null}
 
           <View
+            onLayout={({ nativeEvent }) => {
+              const measuredHeight = Math.ceil(nativeEvent.layout.height);
+              setNextStopSheetHeight((current) =>
+                current === measuredHeight ? current : measuredHeight,
+              );
+            }}
             style={[
               styles.nextStopSheet,
               usesAccessibilityLayout && styles.nextStopSheetLargeText,
@@ -623,31 +860,70 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
             <View style={styles.nextStopSheetContent}>
               {upcoming[0] ? (
                 <View style={styles.nextStopCopyRow}>
-                  <View style={[styles.nextStopPosition, { backgroundColor: colors.accentMuted }]}>
-                    <Text style={[styles.nextStopPositionText, { color: colors.accentStrong }]}>
-                      1
-                    </Text>
-                  </View>
-                  <View style={styles.nextStopCopy}>
-                    <Text style={[styles.nextStopEyebrow, { color: colors.accentStrong }]}>
-                      Next Stop
-                    </Text>
-                    <Text
-                      numberOfLines={usesAccessibilityLayout ? 2 : 1}
-                      style={[styles.nextStopName, { color: colors.textPrimary }]}
-                    >
-                      {upcoming[0].name}
-                    </Text>
-                    <Text
-                      numberOfLines={usesAccessibilityLayout ? 2 : 1}
-                      style={[styles.nextStopAddress, { color: colors.textSecondary }]}
-                    >
-                      {compactAddress(upcoming[0].address)}
-                    </Text>
-                  </View>
+                  <Pressable
+                    accessibilityHint="Returns to the ordered route list"
+                    accessibilityLabel={`Open route list at ${upcoming[0].name}`}
+                    accessibilityRole="button"
+                    onPress={() => setShowRouteList(true)}
+                    style={({ pressed }) => [
+                      styles.nextStopSummary,
+                      pressed && styles.nextStopInfoPressed,
+                    ]}
+                  >
+                    <View style={[styles.nextStopPosition, { backgroundColor: colors.accentMuted }]}>
+                      <Text style={[styles.nextStopPositionText, { color: colors.accentStrong }]}>
+                        1
+                      </Text>
+                    </View>
+                    <View style={styles.nextStopCopy}>
+                      <Text style={[styles.nextStopEyebrow, { color: colors.accentStrong }]}>
+                        Next Stop
+                      </Text>
+                      <Text
+                        numberOfLines={usesAccessibilityLayout ? 2 : 1}
+                        style={[styles.nextStopName, { color: colors.textPrimary }]}
+                      >
+                        {upcoming[0].name}
+                      </Text>
+                      <Text
+                        numberOfLines={usesAccessibilityLayout ? 2 : 1}
+                        style={[styles.nextStopAddress, { color: colors.textSecondary }]}
+                      >
+                        {compactAddress(upcoming[0].address)}
+                      </Text>
+                    </View>
+                  </Pressable>
+                  <Pressable
+                    accessibilityHint="Shows or hides the four core intel details for this stop"
+                    accessibilityLabel={`${nextStopExpanded ? "Collapse" : "Expand"} core intel for ${upcoming[0].name}`}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: nextStopExpanded }}
+                    hitSlop={6}
+                    onPress={() => setNextStopExpanded((expanded) => !expanded)}
+                    style={({ pressed }) => [
+                      styles.nextStopDisclosure,
+                      pressed && styles.nextStopInfoPressed,
+                    ]}
+                  >
+                    <AppIcon
+                      name="chevronRight"
+                      color={colors.textSecondary}
+                      size={26}
+                      style={{ transform: [{ rotate: nextStopExpanded ? "-90deg" : "90deg" }] }}
+                    />
+                  </Pressable>
                 </View>
               ) : (
-                <View style={styles.allCompleteSheetCopy}>
+                <Pressable
+                  accessibilityHint="Returns to the ordered route list"
+                  accessibilityLabel="Open route list. All stops completed"
+                  accessibilityRole="button"
+                  onPress={() => setShowRouteList(true)}
+                  style={({ pressed }) => [
+                    styles.allCompleteSheetCopy,
+                    pressed && styles.nextStopInfoPressed,
+                  ]}
+                >
                   <AppIcon name="complete" active color={colors.success} size={28} />
                   <View style={styles.nextStopCopy}>
                     <Text style={[styles.nextStopName, { color: colors.textPrimary }]}>
@@ -657,46 +933,91 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
                       Open the route list to review or undo.
                     </Text>
                   </View>
-                </View>
+                  <AppIcon name="chevronRight" color={colors.textSecondary} size={26} />
+                </Pressable>
               )}
             </View>
 
-            <View
-              style={[
-                styles.nextStopActions,
-                usesAccessibilityLayout && styles.nextStopActionsLargeText,
-              ]}
-            >
+            {upcoming[0] && nextStopExpanded ? (
+              <View style={[styles.nextStopCoreIntel, { borderTopColor: colors.border }]}>
+                <Text style={[styles.nextStopCoreIntelHeading, { color: colors.textSecondary }]}>
+                  CORE INTEL
+                </Text>
+                <View style={styles.nextStopCoreIntelGrid}>
+                  {nextStopCoreIntel.map((item) => (
+                    <Pressable
+                      accessibilityLabel={
+                        item.onPress ? "Saved Delivery Zone, view on map" : undefined
+                      }
+                      accessibilityRole={item.onPress ? "button" : undefined}
+                      disabled={!item.onPress}
+                      key={item.label}
+                      onPress={item.onPress}
+                      style={({ pressed }) => [
+                        styles.nextStopCoreIntelItem,
+                        usesAccessibilityLayout && styles.nextStopCoreIntelItemLargeText,
+                        pressed && styles.nextStopInfoPressed,
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.nextStopCoreIntelIcon,
+                          { backgroundColor: colors.accentMuted },
+                        ]}
+                      >
+                        <AppIcon
+                          color={item.complete ? colors.accentStrong : colors.textSecondary}
+                          name={item.icon}
+                          size={18}
+                        />
+                      </View>
+                      <View style={styles.nextStopCoreIntelCopy}>
+                        <Text
+                          style={[
+                            styles.nextStopCoreIntelLabel,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          {item.label}
+                        </Text>
+                        <Text
+                          numberOfLines={usesAccessibilityLayout ? undefined : 1}
+                          style={[
+                            styles.nextStopCoreIntelValue,
+                            {
+                              color: item.onPress
+                                ? colors.accentStrong
+                                : item.complete
+                                  ? colors.textPrimary
+                                  : colors.textSecondary,
+                            },
+                          ]}
+                        >
+                          {item.value}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ) : null}
+
+            {upcoming[0] ? (
               <AppButton
-                onPress={() => setShowRouteList(true)}
+                fullWidth
+                loading={navigationLaunching}
+                onPress={() => void launchStop(upcoming[0])}
                 size="compact"
-                style={styles.nextStopAction}
-                variant="secondary"
+                variant="primary"
               >
                 <View style={styles.routeActionContent}>
-                  <AppIcon name="route" color={colors.textPrimary} size={20} />
-                  <Text style={[styles.routeActionLabel, { color: colors.textPrimary }]}>
-                    View Route
+                  <AppIcon name="navigation" color={colors.textOnAccent} size={20} />
+                  <Text style={[styles.routeActionLabel, { color: colors.textOnAccent }]}>
+                    Navigate
                   </Text>
                 </View>
               </AppButton>
-              {upcoming[0] ? (
-                <AppButton
-                  loading={navigationLaunching}
-                  onPress={() => void launchStop(upcoming[0])}
-                  size="compact"
-                  style={styles.nextStopAction}
-                  variant="tertiary"
-                >
-                  <View style={styles.routeActionContent}>
-                    <AppIcon name="navigation" color={colors.accentStrong} size={20} />
-                    <Text style={[styles.routeActionLabel, { color: colors.accentStrong }]}>
-                      Navigate
-                    </Text>
-                  </View>
-                </AppButton>
-              ) : null}
-            </View>
+            ) : null}
           </View>
         </View>
       ) : (
@@ -861,11 +1182,10 @@ const styles = StyleSheet.create({
     width: 36,
   },
   fitRouteButton: {
-    bottom: 198,
+    bottom: 166,
     position: "absolute",
     right: Spacing.md,
   },
-  fitRouteButtonLargeText: { bottom: 272 },
   fitRouteContent: {
     alignItems: "center",
     flexDirection: "row",
@@ -876,34 +1196,81 @@ const styles = StyleSheet.create({
     borderRadius: Radius.large,
     borderWidth: Borders.thin,
     bottom: Spacing.sm,
-    gap: Spacing.sm,
+    gap: Spacing.xs,
     left: Spacing.sm,
-    minHeight: 178,
+    minHeight: 146,
     padding: Spacing.sm,
     position: "absolute",
     right: Spacing.sm,
   },
   nextStopSheetLargeText: {
-    minHeight: 252,
+    minHeight: 208,
   },
   nextStopSheetContent: { flex: 1, justifyContent: "center" },
   nextStopCopyRow: { alignItems: "center", flexDirection: "row", gap: Spacing.sm },
+  nextStopSummary: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: Spacing.sm,
+    minWidth: 0,
+  },
+  nextStopDisclosure: {
+    alignItems: "center",
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
   nextStopPosition: {
     alignItems: "center",
-    borderRadius: 24,
-    height: 48,
+    borderRadius: 21,
+    height: 42,
     justifyContent: "center",
-    width: 48,
+    width: 42,
   },
-  nextStopPositionText: { fontSize: 22, fontWeight: "900" },
+  nextStopPositionText: { fontSize: 20, fontWeight: "900" },
   nextStopCopy: { flex: 1, gap: 2 },
   nextStopEyebrow: { ...Typography.operationalLabel, fontWeight: "800" },
   nextStopName: { ...Typography.buttonLabel },
   nextStopAddress: { ...Typography.supporting },
+  nextStopCoreIntel: {
+    borderTopWidth: Borders.thin,
+    gap: Spacing.xs,
+    paddingTop: Spacing.sm,
+  },
+  nextStopCoreIntelHeading: {
+    ...Typography.operationalLabel,
+    letterSpacing: 0.8,
+  },
+  nextStopCoreIntelGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    rowGap: Spacing.sm,
+  },
+  nextStopCoreIntelItem: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: Spacing.xs,
+    minWidth: 0,
+    paddingRight: Spacing.xs,
+    width: "50%",
+  },
+  nextStopCoreIntelItemLargeText: {
+    alignItems: "flex-start",
+    width: "100%",
+  },
+  nextStopCoreIntelIcon: {
+    alignItems: "center",
+    borderRadius: 10,
+    height: 34,
+    justifyContent: "center",
+    width: 34,
+  },
+  nextStopCoreIntelCopy: { flex: 1, minWidth: 0 },
+  nextStopCoreIntelLabel: { ...Typography.operationalLabel },
+  nextStopCoreIntelValue: { ...Typography.body, fontWeight: "800" },
   allCompleteSheetCopy: { alignItems: "center", flexDirection: "row", gap: Spacing.sm },
-  nextStopActions: { flexDirection: "row", gap: Spacing.xs },
-  nextStopActionsLargeText: { flexDirection: "column" },
-  nextStopAction: { flex: 1 },
+  nextStopInfoPressed: { opacity: 0.65 },
   listContent: { padding: Spacing.md, paddingBottom: Spacing.xxl },
   listHeader: { marginBottom: Spacing.sm },
   sectionTitle: { ...Typography.sectionTitle, marginTop: Spacing.sm },

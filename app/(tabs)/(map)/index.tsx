@@ -165,7 +165,7 @@ type ReportStats = {
   backInRequired: boolean | null;
 };
 
-type DeliveryZoneInspectionSource = "preview" | "stop-intel";
+type DeliveryZoneInspectionSource = "preview" | "route" | "stop-intel";
 
 const PINS_KEY = "mfi:pins:v1";
 const VIEW_CACHE_KEY = "mfi:view-cache:v1";
@@ -562,6 +562,7 @@ export default function HomeScreen() {
   const [mapToolsOpen, setMapToolsOpen] = useState(false);
   const [nearbyStops, setNearbyStops] = useState<Pin[]>([]);
   const [previewVisible, setPreviewVisible] = useState(true);
+  const [routePreviewReturnView, setRoutePreviewReturnView] = useState<"list" | "map" | null>(null);
   const [entranceHighlightOn, setEntranceHighlightOn] = useState(false);
   const [deliveryZoneInspectionSource, setDeliveryZoneInspectionSource] =
     useState<DeliveryZoneInspectionSource | null>(null);
@@ -1070,10 +1071,14 @@ export default function HomeScreen() {
           : undefined;
 
         if (typeof entranceLat === "number" && typeof entranceLng === "number") {
-          enterDeliveryZoneInspection("stop-intel", targetPin, {
-            lat: entranceLat,
-            lng: entranceLng,
-          });
+          enterDeliveryZoneInspection(
+            String(params.returnToRoute ?? "") === "1" ? "route" : "stop-intel",
+            targetPin,
+            {
+              lat: entranceLat,
+              lng: entranceLng,
+            },
+          );
         } else {
           const next: Region = {
             latitude: targetPin.lat,
@@ -1109,6 +1114,7 @@ export default function HomeScreen() {
     params.showEntrance,
     params.hidePreview,
     params.revealAt,
+    params.returnToRoute,
     pins,
   ]);
 
@@ -1863,6 +1869,14 @@ export default function HomeScreen() {
       return;
     }
 
+    if (source === "route") {
+      router.replace({
+        pathname: "/(tabs)/route",
+        params: { routeView: "map" },
+      });
+      return;
+    }
+
     if (source === "stop-intel") {
       if (!stop) return;
 
@@ -1882,6 +1896,7 @@ export default function HomeScreen() {
   }
 
   async function selectStop(p: Pin, options?: { skipNearbyChoice?: boolean }) {
+    setRoutePreviewReturnView(null);
     setDeliveryZoneInspectionSource(null);
     setShowSelectedEntrance(false);
     setSelectedStopId(p.id);
@@ -2037,9 +2052,10 @@ export default function HomeScreen() {
     const id = String(params.collectionStopId ?? "").trim();
     const lat = Number(params.collectionStopLat);
     const lng = Number(params.collectionStopLng);
+    const openedAt = String(params.collectionOpenAt ?? "").trim();
     if (!id || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-    const key = `${id}:${lat}:${lng}`;
+    const key = `${id}:${lat}:${lng}:${openedAt}`;
     if (handledCollectionStopKeyRef.current === key) return;
     handledCollectionStopKeyRef.current = key;
 
@@ -2051,12 +2067,22 @@ export default function HomeScreen() {
       lng,
     };
     openCollectionStopRef.current(stop);
+    setRoutePreviewReturnView(
+      String(params.returnToRoute ?? "") === "1"
+        ? String(params.returnToRouteView ?? "") === "list"
+          ? "list"
+          : "map"
+        : null,
+    );
   }, [
+    params.collectionOpenAt,
     params.collectionStopAddress,
     params.collectionStopId,
     params.collectionStopLat,
     params.collectionStopLng,
     params.collectionStopName,
+    params.returnToRoute,
+    params.returnToRouteView,
   ]);
 
   async function startDropAtCenter() {
@@ -2889,6 +2915,7 @@ export default function HomeScreen() {
   }
 
   function dismissPreviewCard() {
+    const returnToRouteView = routePreviewReturnView;
     setPreviewVisible(false);
     setSelectedStop(null);
     setSelectedStopId(null);
@@ -2896,8 +2923,12 @@ export default function HomeScreen() {
     setShowSelectedEntrance(false);
     setDeliveryZoneInspectionSource(null);
     setTempSearchPin(null);
-    if (String(params.returnToRoute ?? "") === "1") {
-      router.replace("/(tabs)/route");
+    setRoutePreviewReturnView(null);
+    if (returnToRouteView) {
+      router.replace({
+        pathname: "/(tabs)/route",
+        params: { routeView: returnToRouteView },
+      });
       return;
     }
     if (String(params.returnToCollection ?? "") === "1") {
@@ -3568,16 +3599,30 @@ export default function HomeScreen() {
             Elevation.sheet,
           ]}
         >
-          <AppButton
-            accessibilityLabel="Close stop preview"
-            hitSlop={6}
-            size="icon"
-            style={styles.previewCloseBtn}
-            onPress={dismissPreviewCard}
-            variant="secondary"
-          >
-            <AppIcon name="close" color={colors.textSecondary} />
-          </AppButton>
+          {routePreviewReturnView ? (
+            <AppButton
+              accessibilityLabel={`Back to Route ${routePreviewReturnView === "list" ? "List" : "Map"}`}
+              onPress={dismissPreviewCard}
+              size="compact"
+              style={styles.routePreviewBackBtn}
+              variant="tertiary"
+            >
+              <Text style={[styles.routePreviewBackText, { color: colors.accentStrong }]}>
+                ‹ Route {routePreviewReturnView === "list" ? "List" : "Map"}
+              </Text>
+            </AppButton>
+          ) : (
+            <AppButton
+              accessibilityLabel="Close stop preview"
+              hitSlop={6}
+              size="icon"
+              style={styles.previewCloseBtn}
+              onPress={dismissPreviewCard}
+              variant="secondary"
+            >
+              <AppIcon name="close" color={colors.textSecondary} />
+            </AppButton>
+          )}
 
           <ScrollView
             bounces={usesAccessibilityLayout}
@@ -3991,12 +4036,16 @@ export default function HomeScreen() {
 
       {deliveryZoneInspectionSource ? (
         <Pressable
-          accessibilityLabel="Return to stop"
+          accessibilityLabel={
+            deliveryZoneInspectionSource === "route" ? "Back to Route Map" : "Return to stop"
+          }
           accessibilityRole="button"
           style={styles.deliveryZoneReturnPill}
           onPress={exitDeliveryZoneInspection}
         >
-          <Text style={styles.deliveryZoneReturnTitle}>← Back to Stop</Text>
+          <Text style={styles.deliveryZoneReturnTitle}>
+            {deliveryZoneInspectionSource === "route" ? "← Back to Route Map" : "← Back to Stop"}
+          </Text>
           <Text style={styles.deliveryZoneReturnSubtitle}>Viewing Delivery Zone</Text>
         </Pressable>
       ) : null}
@@ -4792,6 +4841,15 @@ const styles = StyleSheet.create({
     top: 12,
     right: 12,
     zIndex: 2,
+  },
+
+  routePreviewBackBtn: {
+    alignSelf: "flex-start",
+  },
+
+  routePreviewBackText: {
+    fontSize: 15,
+    fontWeight: "800",
   },
 
   previewTitle: {
