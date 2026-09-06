@@ -596,10 +596,12 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 - [x] Add conservative shared-sensitive-information safeguards that warn on explicit gate-code,
   password, passcode, and contextual access-PIN wording and offer an authenticated handoff to
   Locked Personal Intel without losing unrelated report edits; accept on iPhone and Pixel.
-- [ ] [Operations Board](design/OperationsBoard.md): create a geographically organized,
-  self-expiring stream of short operational updates for road conditions, delivery access,
-  construction, hazards, services, and customer notices. Keep it professional and focused by
-  excluding comments, likes, and off-topic discussion.
+- [x] [Operations Board V1](build-specs/FreightIQOperationsBoardV1BuildSpec.md): implemented and
+  accepted for the six broad pilot regions with self-expiring conditions, eligible Founding Driver
+  contributions, map pins, foreground nearby confirmation, offline recovery, reporting, private
+  moderation, and lifecycle handling. Committed in `7d6e9c7`; iOS build 47 and Android code 29 were
+  created from follow-up commit `5018117`. Installed-candidate acceptance and broader distribution
+  remain release gates in `docs/CurrentBuild.md`.
 - [x] [Route Builder V1](build-specs/FreightIQRouteBuilderV1BuildSpec.md): accepted on physical
   iPhone and Pixel, committed, and pushed in `8d3280b`.
 - [x] [Route Overview Map V1](build-specs/FreightIQRouteOverviewMapV1BuildSpec.md): accepted on

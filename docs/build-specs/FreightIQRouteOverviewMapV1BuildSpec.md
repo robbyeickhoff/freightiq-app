@@ -1,6 +1,6 @@
 # FreightIQ Route Overview Map V1 — Focused Build Specification
 
-> **Status: Approved for implementation**
+> **Status: Complete and accepted**
 >
 > This specification is the proposed implementation contract for a map-first view of the driver's
 > manually ordered Today's Route. It does not add optimization or road-valid routing.
@@ -12,8 +12,9 @@
 - **Repository path:** `docs/build-specs/FreightIQRouteOverviewMapV1BuildSpec.md`
 - **Operating mode:** Product → Build Specification
 - **Repository status:** Approved controlling Build Specification
-- **Implementation status:** Complete and accepted on physical iPhone and Pixel; committed in
-  `66a9834`
+- **Implementation status:** Complete and accepted on physical iPhone and Pixel; original map
+  implementation committed in `66a9834`, with the accepted September 5 interaction refinement in
+  `5018117`
 - **Visual direction:** Product Owner selected generated Option 1, Map-First Route Overview, on
   2026-08-23
 - **Foundation:** `docs/build-specs/FreightIQRouteBuilderV1BuildSpec.md`
@@ -27,6 +28,17 @@ stop, and reveal the full ordered route list.
 
 The map is an inspection surface. FreightIQ does not calculate, recommend, validate, or draw the
 road path between stops in this version.
+
+### Accepted September 5 Interaction Refinement
+
+Physical-device follow-up established the final V1 interaction details. Route List and Route Map
+stop previews reopen reliably and return to their originating route view with explicit back labels.
+The Route Map provides a compact List control; tapping the active Route tab or the Next Stop
+information returns to Route List; Navigate remains the primary action; and the Next Stop card
+expands to show Truck Fit, Delivery Zone, Delivery Type, and Back In. Missing values use **Not
+reported**, large text uses a single-column layout, and Delivery Zone is tappable for map context.
+The Product Owner accepted this bounded refinement after physical-device review. TypeScript and all
+ten focused route tests passed.
 
 ## 2. Product Principles
 

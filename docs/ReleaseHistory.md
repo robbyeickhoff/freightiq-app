@@ -6,6 +6,31 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-09-05 — Operations Board V1 and Route Map Interaction Candidates
+
+Production-profile candidates were created from clean, pushed `clean-main` commit `5018117` after
+Operations Board V1 and the accepted Route Map interaction follow-up passed their applicable local
+and physical-device checks.
+
+- iOS version 1.0.1 build 47: EAS build `f9fe67d4-de8d-4ead-bd32-53bbe25c7e1e`
+- Android version 1.0.1 code 29: EAS build `e17b68b1-2dbf-406d-bec5-aba817aed041`
+- Android AAB: `/Users/robbyeickhoff/FreightIQ/Play Store Build Files/FreightIQ-1.0.1-android-v29-5018117.aab`
+- Android AAB SHA-256: `3038e5d40808e73463d105d6e4bf84d1fd095057233799ca37907e74b2d2afd3`
+
+Both builds completed successfully. iOS build 47 was uploaded to App Store Connect, and the Product
+Owner subsequently assigned it to the intended TestFlight groups. The Android AAB passed ZIP
+integrity verification, and the Product Owner uploaded it to Google Play Closed testing — Alpha.
+The final Google Play review-submission outcome was not captured in the repository record.
+Installed-candidate acceptance, current platform processing/review state, broader tester expansion,
+and public release remain separate gates.
+
+Relative to the preceding candidates, this release adds Operations Board V1 and the accepted Route
+Map refinements: reliable repeated stop-preview selection, origin-aware return to Route List or
+Route Map, a direct List control, a simplified Next Stop action hierarchy, expandable Core Intel,
+and tappable Delivery Zone access. The final local checks reported 34 Operations tests and ten
+focused route tests passing, TypeScript passing, and lint with no errors and four existing
+`app/(tabs)/stop.tsx` warnings.
+
 ## 2026-09-03 — Tester Feedback Fixes Ready for Candidate Builds
 
 Mobile implementation commit `aa2499a` is included in pushed `clean-main` commit `4dc9a18`.

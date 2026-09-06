@@ -20,13 +20,17 @@ The Product Owner approved the bounded local implementation contract on Septembe
 Operations Board for current delivery conditions, eligible Founding Driver contributions,
 foreground-only nearby-condition confirmation, and Operations-update handling in the existing
 private moderation dashboard. It uses repository-backed additive Supabase migrations and local
-verification. Production database migration, deployment, mobile builds, tester distribution,
-commit, push, and release remain separately gated.
-The local candidate now includes the repository-backed database contract, Operations tab and active
+verification. Production database migration, website deployment, mobile repository synchronization,
+and production-candidate creation are complete. Tester assignment, installed-candidate acceptance,
+broader distribution, and public release remain separately gated.
+The accepted implementation includes the repository-backed database contract, Operations tab and active
 count, broad-area feed, eligible contribution flow, temporary Operations map, foreground nearby
 confirmation, offline cache and draft recovery, Operations reporting, and private moderation queue
 support. TypeScript, lint, iOS and Android production bundle exports, local migration application,
-and the website production build pass. Physical iPhone and Pixel checks are recorded below; the final return-to-app expiration check passed September 5. Production-profile install acceptance remains a later gate.
+and the website production build pass. Physical iPhone and Pixel checks are recorded below; the
+final return-to-app expiration check passed September 5. The implementation was committed in
+`7d6e9c7`, and the accepted Route Map interaction follow-up was committed in `5018117`.
+Production-profile install acceptance remains a later gate.
 The Product Owner approved **Active Conditions** as the shared current-feed label; **My Updates**
 continues to identify the signed-in driver's own seven-day posting history.
 The Product Owner separately approved the production database gate on September 3, 2026.
@@ -232,8 +236,8 @@ in the next return check. Its root cause remains unconfirmed. iPhone returned wi
 The Product Owner explicitly deferred VoiceOver/TalkBack for the pilot. Foreground/background
 location lifecycle in a production candidate, denied permission, reduced motion and real-route
 directional checks remain open. Search retry passed; the board's no-cache failure/retry state
-was not explicitly tested. No full diff acceptance, commit, push, deployment, production build,
-distribution or release is authorized by this consolidation.
+was not explicitly tested. The later accepted-candidate record below supersedes the former pending
+commit and production-build state. Distribution and public release remain separately gated.
 
 ### Completed Objective — Private Routing Lab Telluride Route Polygon Classification V1
 
@@ -415,6 +419,14 @@ Android map finished drawing, leaving the route map without markers. Android mar
 remains active until the overview map reports ready and receives a longer final render window;
 iPhone behavior is unchanged. The corrected Route map and markers then passed on Pixel, and the
 Product Owner rechecked iPhone successfully. Route Overview Map V1 is accepted.
+
+The September 5 interaction follow-up is accepted and committed in `5018117`. Route List and Route
+Map stop previews now reopen reliably and return to their originating view with explicit back
+labels. The Route Map adds a compact List control; the active Route tab and Next Stop information
+return to Route List; Navigate remains the primary action; and the expandable Next Stop card shows
+Truck Fit, Delivery Zone, Delivery Type, and Back In, with a single-column large-text layout and a
+tappable Delivery Zone. TypeScript and all ten focused route tests passed, and the Product Owner
+accepted the focused behavior on physical devices.
 
 Route Builder V1 is complete, accepted on physical iPhone and Pixel, committed, and pushed to
 `clean-main` in `8d3280b`. Its governing contract remains
@@ -1108,14 +1120,15 @@ special build is required solely for that check.
 
 ---
 
-## September 5 review follow-up — pending device acceptance
+## September 5 review follow-up — historical pre-acceptance record
 
 Implemented the three approved review fixes:
+
 - Regular map refreshes Operations every 60 seconds while focused/active, including when the first response has no pins. Current prompts expire locally; refreshed reports update/remove visible prompts without reopening dismissed reports. Focus cleanup stops polling and location subscriptions.
 - Operations map refreshes pins/cards every 60 seconds and removes expired pins/cards locally. Its reporting control uses the same posting-access RPC as the board.
 - Possibly-cleared reports now transition to expired in My Updates and generate the expiration notice; resolved/removed labels retain precedence.
 
-Changed files in this follow-up: `app/(tabs)/(map)/index.tsx`, `app/(tabs)/(map)/operations-map.tsx`, `utils/operations-board.ts`, `tests/operations-board.test.ts`, and this document. All remain uncommitted within the existing Operations candidate.
+Changed files in this follow-up: `app/(tabs)/(map)/index.tsx`, `app/(tabs)/(map)/operations-map.tsx`, `utils/operations-board.ts`, `tests/operations-board.test.ts`, and this document. At this checkpoint, all remained uncommitted within the existing Operations candidate; the accepted-candidate record below supersedes that state.
 
 Validation: 34 automated tests pass, including the possibly-cleared expiration regression. Lint reports no errors and the four existing stop.tsx warnings. Focused device acceptance still required for refresh without navigation and non-contributor map controls.
 
@@ -1125,17 +1138,24 @@ Website approval package remains four existing files in `freightiq-site`: `app/p
 
 Device observations: non-contributor map reporting control hidden (passed); new nearby hazard prompt appeared on Pixel in about 30 seconds without navigation (passed); resolving it on iPhone removed the Pixel prompt in about 30 seconds (passed). A second test entered possibly-cleared status and sent the author notice. With explicit approval, only test report `eec1168d-3adc-474d-9820-db76af8b4f7b` had expiration shortened to `2026-09-05T14:26:02.849426Z`. It left Active Conditions but retained the possibly-cleared history label until reload; user had switched apps. Expired label after reload is accepted; automatic return-to-app behavior is not yet accepted.
 
-Inspection found board polling/focus refresh without an AppState resume handler. Updated `app/(tabs)/(map)/operations.tsx` to refresh on foreground return, pause polling in background, and invalidate background/outdated focus requests before status notices/snapshot consumption. This document is the only other file changed in this follow-up. TypeScript and 34 automated tests pass; lint has no errors and the same four existing stop.tsx warnings. Physical return-to-app expiration check remains pending. Changes remain uncommitted; no additional database or deployment actions taken.
+Inspection found board polling/focus refresh without an AppState resume handler. Updated `app/(tabs)/(map)/operations.tsx` to refresh on foreground return, pause polling in background, and invalidate background/outdated focus requests before status notices/snapshot consumption. This document is the only other file changed in this follow-up. TypeScript and 34 automated tests pass; lint has no errors and the same four existing stop.tsx warnings. At this checkpoint, physical return-to-app expiration and commit remained pending; the accepted-candidate record below supersedes that state. No additional database or deployment actions were taken in this follow-up.
 
 ## September 5 accepted candidate and publishing approval
 
 The return-to-app test passed: report `924dadaa-71e5-4f80-896f-644cf7c93880` (Background expiration test) was possibly cleared, then expired at `2026-09-05T14:49:03.195067Z` while FreightIQ was backgrounded. On returning without reload, the iPhone showed the expiration notice and Expired history label. This supersedes the pending follow-up acceptance above. All three review fixes now have device confirmation.
 
-The Product Owner approved the mobile commit and website deployment package. Website commit `61545d3` (four policy/moderation files) was pushed to `main`; its automatic production deployment `dpl_Gogt5Jpuu5HBjmMUvywecZNqKhzc` is READY and aliased to `freightiqapp.com`. Live privacy and community-guidelines pages contain the new Operations wording. Previous production deployment `dpl_G49TCks3kQD7d3rMJHCWbnKKsbrq` remains the rollback reference. Mobile commit scope is the reviewed Operations implementation, tests, migration source files, help, and governing candidate documents. No production mobile build, store submission, or distribution is part of this approval.
+The Product Owner approved the mobile commit and website deployment package. Website commit `61545d3` (four policy/moderation files) was pushed to `main`; its automatic production deployment `dpl_Gogt5Jpuu5HBjmMUvywecZNqKhzc` is READY and aliased to `freightiqapp.com`. Live privacy and community-guidelines pages contain the new Operations wording. Previous production deployment `dpl_G49TCks3kQD7d3rMJHCWbnKKsbrq` remains the rollback reference. The reviewed Operations implementation was committed in `7d6e9c7`; the accepted Route Map interaction follow-up was committed in `5018117`. Both are pushed on synchronized `clean-main`.
+
+Production candidates were then created from `5018117`: iOS version 1.0.1 build 47 completed and
+was uploaded to App Store Connect, and Android version 1.0.1 code 29 completed as a verified AAB.
+The Product Owner subsequently assigned the iOS candidate to the intended TestFlight groups and
+uploaded the Android candidate to Google Play Closed testing — Alpha. Installed-candidate results,
+current platform review state, broader distribution, and public release must still be verified
+separately and are not inferred here.
 
 ## Next Safe Step
 
-Website publication verified; finish mobile repository synchronization. Next release gate
-is production-profile mobile build preparation/approval and installed-device verification before
-any distribution. Authenticated live moderation remains a distinct check; prior local moderation
-acceptance does not establish live acceptance.
+Install and complete focused acceptance of iOS 1.0.1 build 47 and Android 1.0.1 code 29, then record
+the actual platform and device outcomes. Authenticated live moderation remains a distinct check;
+prior local moderation acceptance does not establish live acceptance. Broader tester expansion and
+public release require separate approval.
