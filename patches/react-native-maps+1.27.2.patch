@@ -1,8 +1,8 @@
-diff --git a/node_modules/react-native-maps/ios/AirMaps/AIRMap.m b/node_modules/react-native-maps/ios/AirMaps/AIRMap.m
-index 07a4638..b5495b3 100644
---- a/node_modules/react-native-maps/ios/AirMaps/AIRMap.m
-+++ b/node_modules/react-native-maps/ios/AirMaps/AIRMap.m
-@@ -104,6 +104,10 @@ -(void)addSubview:(UIView *)view {
+diff --git a/node_modules/react-native-maps/ios/AirMaps/AIRMap.mm b/node_modules/react-native-maps/ios/AirMaps/AIRMap.mm
+index f7da1e0..a449468 100644
+--- a/node_modules/react-native-maps/ios/AirMaps/AIRMap.mm
++++ b/node_modules/react-native-maps/ios/AirMaps/AIRMap.mm
+@@ -126,6 +126,10 @@ -(void)addSubview:(UIView *)view {
  #pragma clang diagnostic push
  #pragma clang diagnostic ignored "-Wobjc-missing-super-calls"
  - (void)insertReactSubview:(id<RCTComponent>)subview atIndex:(NSInteger)atIndex {
@@ -13,7 +13,7 @@ index 07a4638..b5495b3 100644
      // Our desired API is to pass up markers/overlays as children to the mapview component.
      // This is where we intercept them and do the appropriate underlying mapview action.
      if ([subview isKindOfClass:[AIRMapMarker class]]) {
-@@ -135,7 +139,8 @@ - (void)insertReactSubview:(id<RCTComponent>)subview atIndex:(NSInteger)atIndex
+@@ -157,7 +161,8 @@ - (void)insertReactSubview:(id<RCTComponent>)subview atIndex:(NSInteger)atIndex
              [self insertReactSubview:(UIView *)childSubviews[i] atIndex:atIndex];
          }
      }

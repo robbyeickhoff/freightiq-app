@@ -13,7 +13,53 @@ answer one question:
 
 ## Current Objective
 
-### Active Objective — Operations Board V1
+### Active Objective — Expo SDK 57 Upgrade
+
+The Product Owner confirmed on September 7, 2026 that iOS 1.0.1 build 47 and Android 1.0.1 code 29
+are installed and accepted on the physical iPhone and Pixel. That closes the installed-candidate
+gate recorded below; authenticated live moderation remains a distinct operational check.
+
+The Product Owner then approved the isolated Expo SDK 54 to SDK 57 maintenance workstream defined
+in `docs/build-specs/FreightIQExpoSDK57UpgradeBuildSpec.md`. The scope is dependency and native
+compatibility only. It does not add product features or authorize Supabase, website, Routing Lab,
+EAS Update, development-build, production-build, tester, distribution, release, commit, or push
+changes. Physical SDK 57 acceptance will require a separately approved development build after
+local compatibility validation passes.
+
+The bounded local upgrade is complete on September 7, 2026. FreightIQ now resolves Expo 57.0.17,
+React Native 0.86.3, React 19.2.3, Expo Router 57.0.19, Reanimated 4.5.1, Worklets 0.10.1, and the
+Expo-aligned supporting packages. Required compatibility work removed obsolete config flags,
+registered the newly required static config plugins, migrated application React Navigation imports
+to supported Expo Router entry points, retained the accepted map insertion safety patch on
+react-native-maps 1.27.2, and made narrow TypeScript/API corrections without changing intended
+product behavior.
+
+Expo Doctor passes all 21 checks. TypeScript passes. Lint reports zero errors with the same four
+pre-existing `app/(tabs)/stop.tsx` warnings. All 34 focused tests pass. Local iOS and Android
+production JavaScript bundle exports and clean native prebuild regeneration pass. The production
+dependency audit reports 22 transitive findings; forced remediation proposes incompatible
+framework downgrades, so security remediation remains separate. No development or production
+build, distribution, production system, commit, or push action was taken at that checkpoint.
+
+The Product Owner then approved development-build creation. SDK 57 iOS development build
+`1650e2eb-797a-49ad-af8f-18583ab0f5cc` and Android development build
+`81073a88-0aad-4d39-9b74-03370e91c9cc` both finished successfully as internal installable
+artifacts. The iOS artifact uses the existing development bundle and ad hoc profile containing the
+Product Owner's registered iPhone; Android produced an APK. Completion does not establish
+installation or physical acceptance. No production candidate, store submission, tester change,
+commit, or push occurred.
+
+Physical SDK 57 acceptance completed September 8. The iPhone passed the full focused smoke test.
+The Android development artifact exposed a Hermes development-runtime failure, so Pixel acceptance
+continued on signed internal preview artifacts. Physical testing then found and accepted narrow
+compatibility fixes for stop-marker selection, the horizontal Preview Card action row, and Android
+Create Stop keyboard avoidance. After repeated cloud-build testing failed to resolve the keyboard
+case, a local EAS preview build using the project's existing Android signing credentials was
+installed in place on the connected Pixel. The Product Owner confirmed that the complete Create
+Stop card remains accessible above the keyboard and that the final Pixel checks pass. No production
+candidate, store submission, tester change, commit, or push occurred.
+
+### Completed Objective — Operations Board V1
 
 The Product Owner approved the bounded local implementation contract on September 3, 2026:
 `docs/build-specs/FreightIQOperationsBoardV1BuildSpec.md`. This slice adds an in-app, broad-region
@@ -1150,12 +1196,14 @@ Production candidates were then created from `5018117`: iOS version 1.0.1 build 
 was uploaded to App Store Connect, and Android version 1.0.1 code 29 completed as a verified AAB.
 The Product Owner subsequently assigned the iOS candidate to the intended TestFlight groups and
 uploaded the Android candidate to Google Play Closed testing — Alpha. Installed-candidate results,
-current platform review state, broader distribution, and public release must still be verified
-separately and are not inferred here.
+current platform review state, broader distribution, and public release were initially recorded as
+separate gates. On September 7, 2026, the Product Owner confirmed both candidates were installed and
+accepted on the physical iPhone and Pixel. Current platform review state, broader distribution, and
+public release remain separately gated and are not inferred here.
 
 ## Next Safe Step
 
-Install and complete focused acceptance of iOS 1.0.1 build 47 and Android 1.0.1 code 29, then record
-the actual platform and device outcomes. Authenticated live moderation remains a distinct check;
-prior local moderation acceptance does not establish live acceptance. Broader tester expansion and
+Review and separately approve the complete SDK 57 maintenance diff for commit and push to
+`clean-main`. Production builds, tester or distribution changes, and release remain separately
+gated. Authenticated live moderation remains a distinct check, and broader tester expansion and
 public release require separate approval.

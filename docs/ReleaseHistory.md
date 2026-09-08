@@ -20,9 +20,10 @@ and physical-device checks.
 Both builds completed successfully. iOS build 47 was uploaded to App Store Connect, and the Product
 Owner subsequently assigned it to the intended TestFlight groups. The Android AAB passed ZIP
 integrity verification, and the Product Owner uploaded it to Google Play Closed testing — Alpha.
-The final Google Play review-submission outcome was not captured in the repository record.
-Installed-candidate acceptance, current platform processing/review state, broader tester expansion,
-and public release remain separate gates.
+The final Google Play review-submission outcome was not captured in the repository record. On
+September 7, 2026, the Product Owner confirmed both candidates were installed and accepted on the
+physical iPhone and Pixel. Current platform processing/review state, broader tester expansion, and
+public release remain separate gates.
 
 Relative to the preceding candidates, this release adds Operations Board V1 and the accepted Route
 Map refinements: reliable repeated stop-preview selection, origin-aware return to Route List or

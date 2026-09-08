@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import * as Linking from "expo-linking";
 import { Stack, usePathname, useRouter } from "expo-router";
+import { DarkTheme, DefaultTheme, ThemeProvider } from "expo-router/react-navigation";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppState, Platform, StyleSheet, View } from "react-native";
@@ -349,11 +349,7 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: "modal", title: "Modal" }} />
       </Stack>
-      <StatusBar
-        animated
-        backgroundColor={colors.surface}
-        style={colorScheme === "dark" ? "light" : "dark"}
-      />
+      <StatusBar animated style={colorScheme === "dark" ? "light" : "dark"} />
       {!startupRouteApplied ? (
         <View
           accessibilityElementsHidden
@@ -377,7 +373,11 @@ function RootNavigator() {
 
 const styles = StyleSheet.create({
   privacyCover: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     zIndex: 999,
   },
 });

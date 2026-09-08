@@ -7,7 +7,6 @@
     "icon": "./assets/images/app-icon.png",
     "scheme": "mfi",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "buildNumber": "7",
       "icon": "./assets/images/app-icon.png",
@@ -15,14 +14,15 @@
       "bundleIdentifier": "com.robbyeickhof.mfi",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "LSApplicationQueriesSchemes": [
-          "comgooglemaps",
-          "waze"
-        ]
+        "LSApplicationQueriesSchemes": ["comgooglemaps", "waze"]
       }
     },
     "plugins": [
       "expo-router",
+      "expo-font",
+      "expo-image",
+      "expo-status-bar",
+      "expo-web-browser",
       [
         "expo-splash-screen",
         {
@@ -50,8 +50,6 @@
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.robbyeickhof.mfi"
     },

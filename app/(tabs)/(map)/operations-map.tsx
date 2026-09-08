@@ -6,7 +6,12 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppIcon } from "@/components/ui/app-icon";
 import { AppButton } from "@/components/ui/app-button";
-import { categoryLabel, filterCachedOperations, OPERATIONS_AREAS, type OperationsUpdate } from "@/utils/operations-board";
+import {
+  categoryLabel,
+  filterCachedOperations,
+  OPERATIONS_AREAS,
+  type OperationsUpdate,
+} from "@/utils/operations-board";
 import { supabase } from "@/utils/supabase";
 import { useAppTheme } from "@/context/theme-context";
 import { Borders, Elevation, Spacing, Typography } from "@/constants/theme";
@@ -82,21 +87,29 @@ export default function OperationsMapScreen() {
       },
     } as never);
   };
-  const loadUpdates = useCallback(async (isCurrent: () => boolean = () => true) => {
-    const { data, error } = await supabase.rpc("get_operations_board", {
-      p_area_slug: params.area || null,
-      p_include_history: false,
-    });
-    if (!isCurrent()) return;
-    if (error) {
-      setLoadError(true);
-      return;
-    }
-    const rows = filterCachedOperations((Array.isArray(data) ? data : []) as OperationsUpdate[], false);
-    setUpdates(rows);
-    setPicked((current) => current ? rows.find((row) => row.id === current.id) ?? null : null);
-    setLoadError(false);
-  }, [params.area]);
+  const loadUpdates = useCallback(
+    async (isCurrent: () => boolean = () => true) => {
+      const { data, error } = await supabase.rpc("get_operations_board", {
+        p_area_slug: params.area || null,
+        p_include_history: false,
+      });
+      if (!isCurrent()) return;
+      if (error) {
+        setLoadError(true);
+        return;
+      }
+      const rows = filterCachedOperations(
+        (Array.isArray(data) ? data : []) as OperationsUpdate[],
+        false,
+      );
+      setUpdates(rows);
+      setPicked((current) =>
+        current ? (rows.find((row) => row.id === current.id) ?? null) : null,
+      );
+      setLoadError(false);
+    },
+    [params.area],
+  );
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -108,7 +121,9 @@ export default function OperationsMapScreen() {
           const remaining = filterCachedOperations(current, false);
           return remaining.length === current.length ? current : remaining;
         });
-        setPicked((current) => current && filterCachedOperations([current], false).length ? current : null);
+        setPicked((current) =>
+          current && filterCachedOperations([current], false).length ? current : null,
+        );
       }, 1000);
       void supabase.rpc("can_post_operations_update").then(({ data, error }) => {
         if (active) setCanPost(!error && data === true);
@@ -327,7 +342,15 @@ const styles = StyleSheet.create({
   controlBar: { borderWidth: 1, borderRadius: 18, overflow: "hidden" },
   mapControlIconButton: { width: 54, height: 54, borderRadius: 0 },
   mapControlDivider: { height: 1, marginHorizontal: 8 },
-  crosshair: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
+  crosshair: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   crosshairRing: {
     width: 30,
     height: 30,

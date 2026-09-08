@@ -59,13 +59,13 @@ preparation for expanding the tester base.
 - [x] Complete and locally validate the bounded Telluride-route polygon implementation.
 - [x] Review and accept the bounded local implementation and diff.
 - [x] Separately approve, deploy, and technically verify isolated `classify-route-zones` version 12
-  with JWT verification retained and unsigned requests rejected with HTTP 401.
+      with JWT verification retained and unsigned requests rejected with HTTP 401.
 - [x] Reset only the preserved route's Zone Review checkpoint while retaining its manifest, setup,
-  and nine stops; verify no learned evidence existed or changed.
+      and nine stops; verify no learned evidence existed or changed.
 - [x] Complete signed-in acceptance on the preserved nine-stop September 2 Telluride route;
-  confirmed passed by the Product Owner on September 2, 2026.
+      confirmed passed by the Product Owner on September 2, 2026.
 - [x] Obtain separate Product Owner commit/push approval and push implementation commit `46bfba1`
-  to `clean-main` on September 2, 2026.
+      to `clean-main` on September 2, 2026.
 
 - [ ] Continue gathering tester feedback.
 - [ ] Observe real-world driver workflows.
@@ -121,10 +121,10 @@ changing their accepted behavior.
 ##### Active Tasks
 
 - [x] Polish the lower action area of the Welcome Back screen so Forgot Password, Create Account,
-  and Email Me a Login Code Instead use consistent alignment, spacing, sizing, and interaction
-  treatment.
+      and Email Me a Login Code Instead use consistent alignment, spacing, sizing, and interaction
+      treatment.
 - [x] Prevent duplicate usernames after trimming surrounding spaces and ignoring capitalization,
-  and show a friendly “That username is already taken” message.
+      and show a friendly “That username is already taken” message.
 
 ---
 
@@ -139,7 +139,7 @@ Continue refining FreightIQ's in-app documentation experience.
 - [x] Polish the Help Center cards and shared guide presentation.
 - [x] Update Help Center copy and educational content for Intel V2.
 - [x] Refresh Help Center guidance for City & Driver Search, App Lock, Locked Personal Intel, and
-  shared-sensitive-information warnings; accept the updated guides on iPhone and Pixel.
+      shared-sensitive-information warnings; accept the updated guides on iPhone and Pixel.
 - [ ] Validate Help Center effectiveness through real-world testing.
 - [ ] Continue improving overall Help Center user experience.
 
@@ -154,7 +154,7 @@ Create a navigation experience that feels consistent throughout the application.
 ##### Active Tasks
 
 - [x] Review and correct navigation consistency through Mobile Redesign V2 and the focused Stop
-  Preview Return workstream.
+      Preview Return workstream.
 - [ ] Validate navigation through continued real-world testing.
 
 ---
@@ -170,12 +170,12 @@ sequence or duplicating Routing Lab intelligence.
 
 - [x] Approve the focused [Route Builder V1 Build Specification](build-specs/FreightIQRouteBuilderV1BuildSpec.md).
 - [x] Implement the account-scoped local route, saved-stop addition, center Route tab,
-  accessible manual ordering, completion, next-stop navigation, stale-day handling, and safe stop
-  reconciliation.
+      accessible manual ordering, completion, next-stop navigation, stale-day handling, and safe stop
+      reconciliation.
 - [x] Pass TypeScript, focused route tests, lint with only the existing warning baseline, and local
-  iOS and Android production bundles.
+      iOS and Android production bundles.
 - [x] Complete focused physical iPhone and Pixel acceptance and approve the implementation for
-  commit and push.
+      commit and push.
 
 ---
 
@@ -193,7 +193,7 @@ Validate the completed Intel V2 experience through real-world driver use before 
 - [x] Validate Intel V2 on Android and additional screen sizes.
 - [x] Update Help Center guidance to reflect Intel V2 before the next broader tester release.
 - [x] Collapse saved Contact / Check-In cards into compact summaries that expand individually for
-  editing, with newly added contacts opening automatically; accept on iPhone and Pixel.
+      editing, with newly added contacts opening automatically; accept on iPhone and Pixel.
 
 ### Map
 
@@ -238,11 +238,11 @@ Continue improving FreightIQ's public presence through a professional, trustwort
 #### User Experience
 
 - [x] Add, visually accept, and deploy the public `/why` page telling FreightIQ's founder story,
-  linked from the homepage and footer and included in the sitemap.
+      linked from the homepage and footer and included in the sitemap.
 - [x] Add, visually accept, and deploy the public `/faq` page with common driver questions, a
-  compact collapsible layout, a footer link, and sitemap coverage.
+      compact collapsible layout, a footer link, and sitemap coverage.
 - [ ] Continue production monitoring of the completed Sunrise System website and its Contact and
-  Early Access forms.
+      Early Access forms.
 
 ## Security & Trust
 
@@ -262,7 +262,7 @@ Strengthen the systems, infrastructure, and safeguards that quietly build user c
 - [x] Restrict anonymous business contact and check-in field access.
 - [x] Constrain Early Access inserts to applicant-controlled fields.
 - [x] Make the legacy entrance-photo bucket private, remove app-user policies, and preserve its
-  archived objects without exposing them in the app.
+      archived objects without exposing them in the app.
 - [x] Remove obsolete token-bearing Auth URL session handling while preserving in-app code flows.
 - [ ] Review anonymous and authenticated execution access to `public.rls_auto_enable()`.
 - [ ] Review Authentication permissions and enable leaked-password protection when supported.
@@ -343,7 +343,7 @@ Establish a consistent, repeatable release process that produces reliable builds
 #### Build Verification
 
 - [x] Prepare the approved replacement iPhone and Android candidates and place them in TestFlight
-  and Google Play Closed testing – Alpha for installed-build validation.
+      and Google Play Closed testing – Alpha for installed-build validation.
 - [ ] Verify the corrected Android launcher assets in the next Android candidate build.
 - [x] Verify Navigation App Choice installed-app detection in native iPhone and Android candidates.
 - [x] Verify standalone iPhone stability and dynamic text-size behavior outside Expo Go.
@@ -380,7 +380,10 @@ Maintain a reliable, maintainable, and well-engineered codebase while continuing
 
 #### Expo & Dependencies
 
-- [ ] Keep Expo SDK and supporting packages current.
+- [x] Complete the approved isolated Expo SDK 54 to SDK 57 upgrade and physical iPhone/Pixel
+      acceptance defined in
+      [FreightIQExpoSDK57UpgradeBuildSpec.md](build-specs/FreightIQExpoSDK57UpgradeBuildSpec.md).
+- [ ] Keep Expo SDK and supporting packages current after the SDK 57 upgrade.
 - [ ] Verify iOS after dependency updates.
 - [ ] Verify Android after dependency updates.
 - [ ] Separate maintenance updates from feature work.
@@ -399,8 +402,8 @@ Maintain a reliable, maintainable, and well-engineered codebase while continuing
 #### Code Quality
 
 - [x] Resolve the false website demo import failures by excluding the separate nested website
-  repository from the mobile TypeScript project; verify mobile TypeScript plus website TypeScript
-  and lint independently.
+      repository from the mobile TypeScript project; verify mobile TypeScript plus website TypeScript
+      and lint independently.
 - [ ] Continue reducing technical debt where appropriate.
 - [ ] Continue simplifying implementations without changing behavior.
 - [ ] Continue protecting stable production code during refactors.
@@ -418,36 +421,36 @@ Field-trial readiness is measured against the
 [Routing Lab Field Metrics](routing/RoutingLabFieldMetrics.md) scorecard.
 
 - [ ] Complete the approved canonical physical-address learning fallback through its separately
-  approved database, Edge Function, website, and live-acceptance gates.
+      approved database, Edge Function, website, and live-acceptance gates.
   - [x] Deploy and verify the isolated Routing Lab database migration, canonical-key backfill, and
-    legacy website save compatibility.
+        legacy website save compatibility.
   - [x] Deploy and verify `classify-route-zones` version 5 with JWT verification retained.
   - [x] Deploy and technically verify Routing Lab production deployment
-    `dpl_29rwuJbqjkKArAgPxGdzuoDbSeoZ`.
+        `dpl_29rwuJbqjkKArAgPxGdzuoDbSeoZ`.
   - [ ] Complete signed-in live acceptance with a genuinely new Test Route.
 
 ### Active Tasks
 
 - [x] Review and approve the focused [Grand Junction Geocoding and Polygon Classification V1 Build
-  Specification](build-specs/FreightIQRoutingLabGrandJunctionGeocodingPolygonClassificationV1BuildSpec.md).
+      Specification](build-specs/FreightIQRoutingLabGrandJunctionGeocodingPolygonClassificationV1BuildSpec.md).
 - [x] Verify Mapbox Permanent Geocoding billing readiness and configure the isolated server-only
-  `MAPBOX_GEOCODING_TOKEN` secret; replace the mismatched stored value after a direct permanent-
-  geocoding request proved the working token and verify the remote fingerprint.
+      `MAPBOX_GEOCODING_TOKEN` secret; replace the mismatched stored value after a direct permanent-
+      geocoding request proved the working token and verify the remote fingerprint.
 - [x] Deploy and technically verify isolated `classify-route-zones` version 8 with JWT verification
-  retained.
+      retained.
 - [x] Deploy and technically verify Routing Lab production deployment
-  `dpl_FtkiZSShhAzugSfPYrXd7Qh99sny`.
+      `dpl_FtkiZSShhAzugSfPYrXd7Qh99sny`.
 - [x] Redeploy and technically verify the leading-suite address correction in isolated
-  `classify-route-zones` version 9 with JWT verification retained.
+      `classify-route-zones` version 9 with JWT verification retained.
 - [x] Repeat signed-in acceptance with a genuinely new Grand Junction Test Route and verify 12 of
-  13 stops receive proposals while one genuine Parent/Micro geometry conflict remains unresolved.
+      13 stops receive proposals while one genuine Parent/Micro geometry conflict remains unresolved.
 - [x] Convert the Product Owner's refined GJ master KMZ into the preserved `gj-v1` plus local
-  `gj-v2` geometry candidate; verify 519 Ligrani Lane resolves to Downtown / The Hole and Hole A
-  while retaining the boundary-adjacent safety flag.
+      `gj-v2` geometry candidate; verify 519 Ligrani Lane resolves to Downtown / The Hole and Hole A
+      while retaining the boundary-adjacent safety flag.
 - [x] Deploy and technically verify `gj-v2` in isolated `classify-route-zones` version 11 with JWT
-  verification retained and unsigned requests rejected with HTTP 401.
+      verification retained and unsigned requests rejected with HTTP 401.
 - [x] Repeat signed-in acceptance for `gj-v2` and verify 519 Ligrani Lane classifies as Downtown /
-  The Hole and Hole A after an approved one-route Zone Review reset.
+      The Hole and Hole A after an approved one-route Zone Review reset.
 - [ ] Advance through the separate Git gate.
 
 - [x] Establish the isolated Routing Lab application and validation boundary.
@@ -458,55 +461,55 @@ Field-trial readiness is measured against the
 - [x] Approve the expected GR-001 sandbox lesson.
 - [x] Rerun GR-001 and verify the approved lesson changes the next proposal.
 - [x] Verify fixture reset behavior and complete the Slice 1 acceptance matrix on the private
-  deployed phone experience.
+      deployed phone experience.
 - [x] Add ordered multi-photograph manifest intake with HEIC preparation and previews.
 - [x] Extract only the approved business or consignee, address, and optional PRO fields through the
-  server-only Routing Lab boundary.
+      server-only Routing Lab boundary.
 - [x] Propose driver-reviewed physical-stop groupings with uncertainty, editing, merging,
-  separation, removal, and manual addition.
+      separation, removal, and manual addition.
 - [x] Save private manifest photographs, extraction evidence, corrections, and confirmed stops;
-  restore unfinished work after refresh or sign-in and delete only the selected import.
+      restore unfinished work after refresh or sign-in and delete only the selected import.
 - [x] Complete the controlled two-photograph Slice 2 acceptance matrix and verify that production
-  FreightIQ, GR-001, and sandbox lessons remain unaffected.
+      FreightIQ, GR-001, and sandbox lessons remain unaffected.
 - [x] Complete Slice 3 Unit 1: separate reusable Test Route behavior from the frozen `GR-001`
-  fixture, introduce stable identifier-based domain types, and prove the accepted fixture remains
-  unchanged.
+      fixture, introduce stable identifier-based domain types, and prove the accepted fixture remains
+      unchanged.
 - [x] Complete Slice 3 Unit 2: hand confirmed manifest stops into a separate draft Test Route and
-  add persistent route setup.
+      add persistent route setup.
 - [x] Complete Slice 3 Unit 3: propose operational zones, expose uncertainty, and require driver
-  approval of every classification before sequencing.
+      approval of every classification before sequencing.
 - [x] Complete Slice 3 Unit 4: generate and validate the structured route proposal, then support
-  driver review and planned-correction reasons.
+      driver review and planned-correction reasons.
 - [x] Complete Slice 3 Unit 5: run manifest-derived routes through the reusable execution and
-  correction loop with refresh recovery.
+      correction loop with refresh recovery.
 - [x] Complete Slice 3 Unit 6: review real-route lessons, record driver-approved correction impact
-  and vehicle positioning, and verify scoped lesson replay.
+      and vehicle positioning, and verify scoped lesson replay.
 - [x] Complete the controlled Slice 3 acceptance matrix while preserving `GR-001`, manifest
-  evidence, and production FreightIQ isolation.
+      evidence, and production FreightIQ isolation.
 - [x] Approve the focused [Grand Junction Micro-Zone Learning Build Specification](build-specs/FreightIQRoutingLabGrandJunctionMicroZoneLearningBuildSpec.md), including the 19-zone candidate taxonomy, canonical `Downtown / The Hole` parent, and preferred-not-fixed sequence model.
 - [x] Complete the local Grand Junction Micro-Zone implementation: primary-parent setup context,
-  parent-first review, validated private exact-address evidence, learned proposals, preferred
-  baseline proposal context, compatibility, clean replay, and focused checks.
+      parent-first review, validated private exact-address evidence, learned proposals, preferred
+      baseline proposal context, compatibility, clean replay, and focused checks.
 - [x] Complete Product Owner diff and interface approval for Grand Junction Micro-Zone Learning.
 - [x] Separately approve, apply, and production-verify the one Grand Junction Micro-Zone Learning
-  migration without seeds or role changes.
+      migration without seeds or role changes.
 - [x] Separately approve, deploy, and verify `classify-route-zones` version 3 and
-  `propose-manifest-route` version 6 with JWT verification preserved.
+      `propose-manifest-route` version 6 with JWT verification preserved.
 - [x] Separately approve, deploy, and verify Vercel production deployment
-  `dpl_9RdZCdBuYctqZqvhT7ywmyMyYPkp` and its canonical production alias.
+      `dpl_9RdZCdBuYctqZqvhT7ywmyMyYPkp` and its canonical production alias.
 - [x] Complete signed-in live phone acceptance for primary-parent setup, parent/Micro Zone review,
-  cross-parent exceptions, save/reload, learned proposals, and preferred-but-overridable ordering.
+      cross-parent exceptions, save/reload, learned proposals, and preferred-but-overridable ordering.
 - [x] Approve and complete the
-  [Telluride-Area Micro-Zone Learning Build Specification](build-specs/FreightIQRoutingLabTellurideMicroZoneLearningBuildSpec.md):
-  add Ophir as Mountain Village's first preferred Micro Zone, expose all eight Mountain Village and
-  three Downtown Telluride Micro Zones through the shared review and exact-address learning system,
-  preserve historical parent-only routes, and keep Lawson Hill / Society as its own parent zone.
+      [Telluride-Area Micro-Zone Learning Build Specification](build-specs/FreightIQRoutingLabTellurideMicroZoneLearningBuildSpec.md):
+      add Ophir as Mountain Village's first preferred Micro Zone, expose all eight Mountain Village and
+      three Downtown Telluride Micro Zones through the shared review and exact-address learning system,
+      preserve historical parent-only routes, and keep Lawson Hill / Society as its own parent zone.
 - [x] Production-verify migration `20260823233000_extend_telluride_micro_zone_learning.sql`,
-  `classify-route-zones` version 4, `propose-manifest-route` version 7, and Vercel deployment
-  `dpl_8r2YFZ3eXYaHZ78XoHAFBwgejpiD`; complete signed-in phone acceptance including the focused
-  non-GJ picker-order correction.
+      `classify-route-zones` version 4, `propose-manifest-route` version 7, and Vercel deployment
+      `dpl_8r2YFZ3eXYaHZ78XoHAFBwgejpiD`; complete signed-in phone acceptance including the focused
+      non-GJ picker-order correction.
 - [ ] Run the first real-workday Routing Lab field trial and capture only observed friction,
-  incorrect behavior, or unreliable learning for focused follow-up.
+      incorrect behavior, or unreliable learning for focused follow-up.
 
 ## Feature Backlog
 
@@ -519,58 +522,58 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 #### Near-Term Search Expansion
 
 - [x] Implement [City & Driver Search V1](build-specs/FreightIQCityDriverSearchV1BuildSpec.md)
-  and push it to canonical `clean-main` in `30a608f`:
-  use the existing map-search entry point, grouped All results, and All / Stops / Cities / Drivers
-  scope controls.
+      and push it to canonical `clean-main` in `30a608f`:
+      use the existing map-search entry point, grouped All results, and All / Stops / Cities / Drivers
+      scope controls.
 - [x] Open city results as list-first FreightIQ stop collections with compact counts and an optional
-  Map view; focused physical-iPhone acceptance passed.
+      Map view; focused physical-iPhone acceptance passed.
 - [x] Open driver results as list-first collections of all visible, durably attributable shared
-  contributions with compact distinct-stop counts and an optional Map view.
+      contributions with compact distinct-stop counts and an optional Map view.
 - [x] Complete the focused City & Driver Search functional acceptance flow on physical iPhone and
-  Pixel, including grouped scopes, both collection types, List/Map, Preview Card, and return state.
+      Pixel, including grouped scopes, both collection types, List/Map, Preview Card, and return state.
 - [x] Complete remaining integrated acceptance for large text, VoiceOver, TalkBack, reduced motion,
-  and representative regression cases before commit, push, build, or release.
+      and representative regression cases before commit, push, build, or release.
 - [x] Correct and production-verify City collection Core Intel completeness so visible shared
-  Driver Report values and the saved Delivery Zone match the existing Preview Card; Alpine Lumber
-  now returns `4/4 Core Intel` with one visible Driver Report, and all 19 focused database tests
-  pass.
+      Driver Report values and the saved Delivery Zone match the existing Preview Card; Alpine Lumber
+      now returns `4/4 Core Intel` with one visible Driver Report, and all 19 focused database tests
+      pass.
 - [x] Define the approved V1 result labels, privacy boundaries, ranking direction, list-first
-  collections, and scope-control interaction; combined city/driver filtering remains outside V1.
+      collections, and scope-control interaction; combined city/driver filtering remains outside V1.
 - [x] Complete the authorized City & Driver Search V1 Phase 1 read-only production, repository,
-  provider, locality, attribution, and trust-boundary investigation.
+      provider, locality, attribution, and trust-boundary investigation.
 - [x] Review and approve the Phase 1 structured-locality, reviewed-backfill, authenticated-function,
-  permission, and future locality-capture contract before implementation.
+      permission, and future locality-capture contract before implementation.
 - [x] Prepare the read-only, stop-ID-specific existing-stop locality mapping: 223 of 237 visible
-  stops approved and 14 approved deletion candidates held out of the backfill.
+      stops approved and 14 approved deletion candidates held out of the backfill.
 - [x] Review and approve the exact existing-stop locality mapping before generating any production
-  backfill operation.
+      backfill operation.
 - [x] Complete the read-only production dependency audit for the 14 approved deletion candidates:
-  seven linked reports and one entrance-photo object require controlled cleanup.
+      seven linked reports and one entrance-photo object require controlled cleanup.
 - [x] Prepare the recoverable production cleanup procedure for the 14 deletion candidates.
 - [x] Review, separately approve, execute, and production-verify the complete cleanup procedure:
-  14 stops, seven linked reports, and one entrance-photo object removed; protected keep records
-  preserved.
+      14 stops, seven linked reports, and one entrance-photo object removed; protected keep records
+      preserved.
 - [x] Complete the focused Product Owner decision review for the 21 held locality exceptions: eight
-  resolved and thirteen marked as deletion candidates.
+      resolved and thirteen marked as deletion candidates.
 - [x] Implement the approved Telluride–Mountain Village discovery relationship locally without
-  rewriting factual Mountain Village locality values.
+      rewriting factual Mountain Village locality values.
 - [x] Review and approve the four stops created after the original locality snapshot: Sheridan
-  Opera House and Zinque Design as Telluride, La Piazza del Villaggio Ristorante as Mountain
-  Village, and Ouray County Road & Bridge as Ridgway.
+      Opera House and Zinque Design as Telluride, La Piazza del Villaggio Ristorante as Mountain
+      Village, and Ouray County Road & Bridge as Ridgway.
 - [x] Prepare the exact guarded 227-stop production locality backfill runbook and preserve its
-  separate execution approval gate.
+      separate execution approval gate.
 - [x] Complete City & Driver Search V1 Phase 2 local database readiness: clean replay, pre-Phase-2
-  removal, forward restoration, 18 focused tests, schema lint, and both advisors verified.
+      removal, forward restoration, 18 focused tests, schema lint, and both advisors verified.
 - [x] Prepare the exact production schema migration runbook and verify the linked dry run contains
-  only the one approved Phase 2 migration with no seed or role changes.
+      only the one approved Phase 2 migration with no seed or role changes.
 - [x] Resolve the production-backup gate by upgrading to Pro and verifying a completed physical
-  backup; apply and production-verify the separately approved Phase 2 schema migration with 227
-  visible stops preserved and zero locality rows populated.
+      backup; apply and production-verify the separately approved Phase 2 schema migration with 227
+      visible stops preserved and zero locality rows populated.
 - [x] Separately approve, execute, and production-verify the exact guarded 227-stop locality
-  backfill; all approved locality tuples match, no null or partial visible tuple remains, and both
-  existing stop search and new city search pass authenticated smoke checks.
+      backfill; all approved locality tuples match, no null or partial visible tuple remains, and both
+      existing stop search and new city search pass authenticated smoke checks.
 - [ ] Complete installed-build acceptance of City & Driver Search V1 in iOS build 40 and Android
-  version code 24 before broader tester expansion or public release.
+      version code 24 before broader tester expansion or public release.
 - [ ] Recent Cities.
 - [ ] Save Today's Stops.
 
@@ -589,31 +592,31 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 ### Driver Experience
 
 - [x] Build the approved Locked Personal Intel V1 contract: one owner-only stop note in a dedicated
-  Supabase table, strict Row Level Security, biometric confirmation on every protected open,
-  immediate concealment on exit/background, account-deletion cleanup, and conflict-safe stop
-  merging. The threat model is complete; V1 uses owner-only Supabase access plus device unlock and
-  makes no end-to-end or zero-knowledge encryption claim.
+      Supabase table, strict Row Level Security, biometric confirmation on every protected open,
+      immediate concealment on exit/background, account-deletion cleanup, and conflict-safe stop
+      merging. The threat model is complete; V1 uses owner-only Supabase access plus device unlock and
+      makes no end-to-end or zero-knowledge encryption claim.
 - [x] Add conservative shared-sensitive-information safeguards that warn on explicit gate-code,
-  password, passcode, and contextual access-PIN wording and offer an authenticated handoff to
-  Locked Personal Intel without losing unrelated report edits; accept on iPhone and Pixel.
+      password, passcode, and contextual access-PIN wording and offer an authenticated handoff to
+      Locked Personal Intel without losing unrelated report edits; accept on iPhone and Pixel.
 - [x] [Operations Board V1](build-specs/FreightIQOperationsBoardV1BuildSpec.md): implemented and
-  accepted for the six broad pilot regions with self-expiring conditions, eligible Founding Driver
-  contributions, map pins, foreground nearby confirmation, offline recovery, reporting, private
-  moderation, and lifecycle handling. Committed in `7d6e9c7`; iOS build 47 and Android code 29 were
-  created from follow-up commit `5018117`. Installed-candidate acceptance and broader distribution
-  remain release gates in `docs/CurrentBuild.md`.
+      accepted for the six broad pilot regions with self-expiring conditions, eligible Founding Driver
+      contributions, map pins, foreground nearby confirmation, offline recovery, reporting, private
+      moderation, and lifecycle handling. Committed in `7d6e9c7`; iOS build 47 and Android code 29 were
+      created from follow-up commit `5018117`. Installed-candidate acceptance and broader distribution
+      remain release gates in `docs/CurrentBuild.md`.
 - [x] [Route Builder V1](build-specs/FreightIQRouteBuilderV1BuildSpec.md): accepted on physical
-  iPhone and Pixel, committed, and pushed in `8d3280b`.
+      iPhone and Pixel, committed, and pushed in `8d3280b`.
 - [x] [Route Overview Map V1](build-specs/FreightIQRouteOverviewMapV1BuildSpec.md): accepted on
-  physical iPhone and Pixel and committed in `66a9834`. The selected map-first view shows numbered
-  upcoming stops, muted completed stops, fit-to-route framing, explicit list and navigation actions,
-  and direct Preview Card access without optimization or road-valid routing claims.
+      physical iPhone and Pixel and committed in `66a9834`. The selected map-first view shows numbered
+      upcoming stops, muted completed stops, fit-to-route framing, explicit list and navigation actions,
+      and direct Preview Card access without optimization or road-valid routing claims.
 - [ ] [Return to FreightIQ Live Activity](design/ReturnToFreightIQLiveActivity.md) — iOS: after
-  handing a stop off to Apple Maps, Google Maps, or Waze, provide a persistent Lock Screen and
-  Dynamic Island control that deep-links back to the active route context. Treat this as a one-tap
-  return experience, not automatic app reopening when navigation ends. Do not prepare a Build
-  Specification or begin implementation until Route Builder completes at least one week of
-  real-world field testing and the recurring return problem is confirmed.
+      handing a stop off to Apple Maps, Google Maps, or Waze, provide a persistent Lock Screen and
+      Dynamic Island control that deep-links back to the active route context. Treat this as a one-tap
+      return experience, not automatic app reopening when navigation ends. Do not prepare a Build
+      Specification or begin implementation until Route Builder completes at least one week of
+      real-world field testing and the recurring return problem is confirmed.
 - [ ] Improve Driver Reports consumption.
 - [ ] Continue refining route knowledge workflows.
 
@@ -654,19 +657,19 @@ Ideas in the Parking Lot are intentionally unscheduled. They may eventually move
 
 - [ ] Explore home-screen and Lock Screen widgets after Route Builder is functional.
 - [ ] Start with a small and medium **Next Stop Widget** showing the consignee, shortened address,
-  key non-sensitive notes or hazard flags, ETA or stop number, and a deep link to that stop in
-  FreightIQ.
+      key non-sensitive notes or hazard flags, ETA or stop number, and a deep link to that stop in
+      FreightIQ.
 - [ ] Consider a medium or large **Today's Route Snapshot** with completed and remaining stop
-  counts, the next two or three stops, and a rough time-remaining estimate.
+      counts, the next two or three stops, and a rough time-remaining estimate.
 - [ ] Consider **Stop Notes / Hazards**, **Daily Progress**, and **Quick Actions** widgets for
-  glanceable stop guidance, route progress, opening the next stop, adding a note, marking a stop
-  complete, and viewing the full route.
+      glanceable stop guidance, route progress, opening the next stop, adding a note, marking a stop
+      complete, and viewing the full route.
 - [ ] Consider Lock Screen accessory formats: circular stop count or initials, rectangular next
-  consignee plus a short note, and inline next-stop text.
+      consignee plus a short note, and inline next-stop text.
 - [ ] Keep private information such as gate codes off widgets while the device is locked. Show only
-  non-sensitive notes or a generic private-note indicator until the device is unlocked.
+      non-sensitive notes or a generic private-note indicator until the device is unlocked.
 - [ ] Use the Sunrise System visual language: charcoal background with restrained copper and
-  sunrise-orange highlights.
+      sunrise-orange highlights.
 
 ---
 

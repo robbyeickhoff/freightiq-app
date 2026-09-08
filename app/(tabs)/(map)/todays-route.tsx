@@ -1,6 +1,6 @@
-import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
-import { useNavigation, type ParamListBase } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import type { BottomTabNavigationProp } from "expo-router/js-tabs";
+import { useNavigation, type ParamListBase } from "expo-router/react-navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -293,9 +293,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
           summarizeCoreIntel(
             nextStopId,
             (reportsResult.data ?? []) as CoreIntelReportRow[],
-            deliveryZone
-              ? { lat: stop.entrance_lat, lng: stop.entrance_lng }
-              : null,
+            deliveryZone ? { lat: stop.entrance_lat, lng: stop.entrance_lng } : null,
           ),
         );
         setNextStopIntelStatus("resolved");
@@ -619,10 +617,8 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     );
   }
 
-  const currentNextStopIntel =
-    nextStopIntel?.stopId === nextStopId ? nextStopIntel : null;
-  const unresolvedIntelValue =
-    nextStopIntelStatus === "error" ? "Unavailable" : "Checking…";
+  const currentNextStopIntel = nextStopIntel?.stopId === nextStopId ? nextStopIntel : null;
+  const unresolvedIntelValue = nextStopIntelStatus === "error" ? "Unavailable" : "Checking…";
   const nextStopCoreIntel: {
     complete: boolean;
     icon: AppIconName;
@@ -870,7 +866,9 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
                       pressed && styles.nextStopInfoPressed,
                     ]}
                   >
-                    <View style={[styles.nextStopPosition, { backgroundColor: colors.accentMuted }]}>
+                    <View
+                      style={[styles.nextStopPosition, { backgroundColor: colors.accentMuted }]}
+                    >
                       <Text style={[styles.nextStopPositionText, { color: colors.accentStrong }]}>
                         1
                       </Text>
@@ -973,10 +971,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
                       </View>
                       <View style={styles.nextStopCoreIntelCopy}>
                         <Text
-                          style={[
-                            styles.nextStopCoreIntelLabel,
-                            { color: colors.textSecondary },
-                          ]}
+                          style={[styles.nextStopCoreIntelLabel, { color: colors.textSecondary }]}
                         >
                           {item.label}
                         </Text>
@@ -1147,7 +1142,7 @@ const styles = StyleSheet.create({
   staleTitle: { ...Typography.buttonLabel },
   staleCopy: { ...Typography.supporting },
   overviewContainer: { flex: 1 },
-  overviewMap: { ...StyleSheet.absoluteFillObject },
+  overviewMap: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
   mapUnavailable: {
     alignItems: "center",
     flex: 1,

@@ -5,8 +5,8 @@ import { SymbolViewProps, SymbolWeight } from "expo-symbols";
 import { ComponentProps } from "react";
 import { OpaqueColorValue, type StyleProp, type TextStyle } from "react-native";
 
-type IconMapping = Record<SymbolViewProps["name"], ComponentProps<typeof MaterialIcons>["name"]>;
-type IconSymbolName = keyof typeof MAPPING;
+type SFSymbolName = Extract<SymbolViewProps["name"], string>;
+type MaterialIconName = ComponentProps<typeof MaterialIcons>["name"];
 
 /**
  * Add your SF Symbols to Material Icons mappings here.
@@ -22,7 +22,9 @@ const MAPPING = {
   "list.bullet": "route",
   "exclamationmark.bubble.fill": "campaign",
   "person.fill": "person",
-} as IconMapping;
+} as const satisfies Partial<Record<SFSymbolName, MaterialIconName>>;
+
+type IconSymbolName = keyof typeof MAPPING;
 
 /**
  * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.

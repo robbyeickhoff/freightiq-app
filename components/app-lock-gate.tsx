@@ -108,7 +108,7 @@ export function AppLockGate({ onUnlock, userId }: AppLockGateProps) {
 }
 
 const styles = StyleSheet.create({
-  screen: { ...StyleSheet.absoluteFillObject, zIndex: 1000 },
+  screen: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, zIndex: 1000 },
   content: {
     flex: 1,
     justifyContent: "center",

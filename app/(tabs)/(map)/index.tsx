@@ -594,6 +594,35 @@ export default function HomeScreen() {
   const [newPinStateCode, setNewPinStateCode] = useState("");
   const [newPinCityUnknown, setNewPinCityUnknown] = useState(false);
   const [newPinLocalityEditing, setNewPinLocalityEditing] = useState(false);
+  const [createStopKeyboardTop, setCreateStopKeyboardTop] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS !== "android" || !newPinOpen) {
+      setCreateStopKeyboardTop(null);
+      return;
+    }
+
+    const showSubscription = Keyboard.addListener("keyboardDidShow", (event) => {
+      setCreateStopKeyboardTop(event.endCoordinates.screenY);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setCreateStopKeyboardTop(null);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [newPinOpen]);
+
+  const createStopKeyboardOverlap =
+    Platform.OS === "android" && createStopKeyboardTop !== null
+      ? Math.max(0, windowHeight - createStopKeyboardTop)
+      : 0;
+  const createStopCardMaxHeight =
+    Platform.OS === "android" && createStopKeyboardTop !== null
+      ? Math.max(280, createStopKeyboardTop - safeAreaInsets.top - 8)
+      : undefined;
 
   const [query, setQuery] = useState("");
   const [searchInputHeight, setSearchInputHeight] = useState(48);
@@ -616,6 +645,7 @@ export default function HomeScreen() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clusterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastMarkerPressAtRef = useRef(0);
   const lastRequestId = useRef(0);
   const mapboxSessionTokenRef = useRef<string | null>(null);
   const mapboxSessionStartedAtRef = useRef(0);
@@ -866,8 +896,11 @@ export default function HomeScreen() {
           void writeOperationsEncounters(userId, encounters);
           if (candidate) displayedUpdateId = candidate.update.id;
           if (candidate) setNearbyOperationsUpdate(candidate.update);
-          else if (!displayedUpdateId || !encounters[displayedUpdateId] ||
-            !ranked.some(({ update }) => update.id === displayedUpdateId)) {
+          else if (
+            !displayedUpdateId ||
+            !encounters[displayedUpdateId] ||
+            !ranked.some(({ update }) => update.id === displayedUpdateId)
+          ) {
             displayedUpdateId = null;
             setNearbyOperationsUpdate(null);
           }
@@ -878,21 +911,33 @@ export default function HomeScreen() {
           refreshing = true;
           try {
             const { data, error } = await supabase.rpc("get_operations_board", {
-              p_area_slug: null, p_include_history: false,
+              p_area_slug: null,
+              p_include_history: false,
             });
             if (!active) return;
-            pinned = error ? [] : filterCachedOperations(
-              (Array.isArray(data) ? data : []) as OperationsUpdate[], false,
-            ).filter((update) => update.latitude != null && update.longitude != null && !update.is_author);
+            pinned = error
+              ? []
+              : filterCachedOperations(
+                  (Array.isArray(data) ? data : []) as OperationsUpdate[],
+                  false,
+                ).filter(
+                  (update) =>
+                    update.latitude != null && update.longitude != null && !update.is_author,
+                );
             // Update or remove a visible prompt without reopening a dismissed one.
-            setNearbyOperationsUpdate((current) => current
-              ? pinned.find((update) => update.id === current.id) ?? null : null);
+            setNearbyOperationsUpdate((current) =>
+              current ? (pinned.find((update) => update.id === current.id) ?? null) : null,
+            );
             if (lastPosition) {
               if (Date.now() - lastPosition.timestamp < 60000) evaluatePosition(lastPosition);
               else {
                 try {
-                  evaluatePosition(await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }));
-                } catch { /* Wait for the location subscription before prompting. */ }
+                  evaluatePosition(
+                    await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
+                  );
+                } catch {
+                  /* Wait for the location subscription before prompting. */
+                }
               }
             }
           } catch {
@@ -908,8 +953,9 @@ export default function HomeScreen() {
         if (!active) return;
         refreshTimer = setInterval(() => void refresh(), 60000);
         expiryTimer = setInterval(() => {
-          setNearbyOperationsUpdate((current) => current && filterCachedOperations([current], false).length
-            ? current : null);
+          setNearbyOperationsUpdate((current) =>
+            current && filterCachedOperations([current], false).length ? current : null,
+          );
         }, 1000);
         try {
           const current = await Location.getCurrentPositionAsync({
@@ -2878,6 +2924,42 @@ export default function HomeScreen() {
     !showStopLayer && !!selectedStop && selectedStop.id !== "temp-search-result";
   const PREVIEW_COLLAPSED_Y = 165;
 
+  function openStopNearMapPress(coordinate: { latitude: number; longitude: number }) {
+    if (!showStopLayer || mapLayout.width <= 0 || mapLayout.height <= 0) return false;
+
+    const visibleStopIds = new Set(
+      clusterPoints
+        .filter((feature: any) => !feature.properties?.cluster)
+        .map((feature: any) => String(feature.properties?.stopId ?? "")),
+    );
+    const candidates = showRawPins
+      ? sanitizePins(pins)
+      : pins.filter((pin) => visibleStopIds.has(pin.id));
+
+    const closest = candidates
+      .map((pin) => ({
+        pin,
+        distance: Math.hypot(
+          ((pin.lng - coordinate.longitude) / region.longitudeDelta) * mapLayout.width,
+          ((pin.lat - coordinate.latitude) / region.latitudeDelta) * mapLayout.height,
+        ),
+      }))
+      .sort((left, right) => left.distance - right.distance)[0];
+
+    if (!closest || closest.distance > 30) return false;
+
+    lastMarkerPressAtRef.current = Date.now();
+    selectStop(closest.pin);
+    addToRecent({
+      id: closest.pin.id,
+      name: closest.pin.name,
+      address: closest.pin.address,
+      lat: closest.pin.lat,
+      lng: closest.pin.lng,
+    });
+    return true;
+  }
+
   const previewTranslateY = useRef(new Animated.Value(0)).current;
   const previewTranslateYRef = useRef(0);
   const [previewCollapsed, setPreviewCollapsed] = useState(false);
@@ -3079,6 +3161,8 @@ export default function HomeScreen() {
 
             const action = (e.nativeEvent as any)?.action;
             if (action === "marker-press" || action === "callout-press") return;
+            if (Date.now() - lastMarkerPressAtRef.current < 500) return;
+            if (openStopNearMapPress(e.nativeEvent.coordinate)) return;
             clearSelection();
           }}
         >
@@ -3091,8 +3175,10 @@ export default function HomeScreen() {
                     <Marker
                       key={`raw-stop-${p.id}`}
                       coordinate={{ latitude: p.lat, longitude: p.lng }}
+                      stopPropagation
                       tracksViewChanges={Platform.OS !== "android" || trackAndroidMarkerViewChanges}
                       onPress={(e) => {
+                        lastMarkerPressAtRef.current = Date.now();
                         e.stopPropagation();
                         selectStop(p);
                       }}
@@ -3114,10 +3200,14 @@ export default function HomeScreen() {
                       <Marker
                         key={`cluster-${f.id}`}
                         coordinate={{ latitude: lat, longitude: lng }}
+                        stopPropagation
                         tracksViewChanges={
                           Platform.OS !== "android" || trackAndroidMarkerViewChanges
                         }
-                        onPress={() => onPressCluster(f)}
+                        onPress={() => {
+                          lastMarkerPressAtRef.current = Date.now();
+                          onPressCluster(f);
+                        }}
                       >
                         <View style={styles.clusterBubble}>
                           <Text style={styles.clusterText}>{count}</Text>
@@ -3136,8 +3226,10 @@ export default function HomeScreen() {
                         hasIntel === null ? "checking" : hasIntel ? "intel" : "no-intel"
                       }-${reportCount}`}
                       coordinate={{ latitude: lat, longitude: lng }}
+                      stopPropagation
                       tracksViewChanges={Platform.OS !== "android" || trackAndroidMarkerViewChanges}
                       onPress={() => {
+                        lastMarkerPressAtRef.current = Date.now();
                         const p = pins.find((x) => x.id === stopId);
                         if (p) {
                           selectStop(p);
@@ -3166,8 +3258,10 @@ export default function HomeScreen() {
             <Marker
               key={`selected-stop-${selectedStop.id}`}
               coordinate={{ latitude: selectedStop.lat, longitude: selectedStop.lng }}
+              stopPropagation
               tracksViewChanges={Platform.OS !== "android" || trackAndroidMarkerViewChanges}
               onPress={(e) => {
+                lastMarkerPressAtRef.current = Date.now();
                 e.stopPropagation();
                 selectStop(selectedStop);
               }}
@@ -3189,10 +3283,12 @@ export default function HomeScreen() {
                 latitude: tempSearchPin.lat,
                 longitude: tempSearchPin.lng,
               }}
+              stopPropagation
               title={tempSearchPin.name}
               description={tempSearchPin.address ?? "Search result"}
               tracksViewChanges={Platform.OS !== "android" || trackAndroidMarkerViewChanges}
               onPress={() => {
+                lastMarkerPressAtRef.current = Date.now();
                 setSelectedStop(tempSearchPin);
                 setSelectedStopId(tempSearchPin.id);
                 resetSelectedEntranceState();
@@ -3913,13 +4009,7 @@ export default function HomeScreen() {
                       </Pressable>
                     </AppCard>
 
-                    <View
-                      style={[
-                        styles.previewActionShelf,
-                        usesAccessibilityLayout && styles.previewAccessibilityStack,
-                        { backgroundColor: colors.surface },
-                      ]}
-                    >
+                    <View style={[styles.previewActionShelf, { backgroundColor: colors.surface }]}>
                       <AppButton
                         accessibilityLabel="Navigate to this stop"
                         loading={navigationLaunching}
@@ -4329,15 +4419,25 @@ export default function HomeScreen() {
         <View style={styles.modalBackdrop}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={{ width: "100%", flex: 1, justifyContent: "flex-end" }}
+            style={[
+              styles.createStopKeyboardFrame,
+              createStopKeyboardOverlap > 0 && { paddingBottom: createStopKeyboardOverlap },
+            ]}
           >
-            <View style={[styles.modalCard, styles.createStopModalCard]}>
+            <View
+              style={[
+                styles.modalCard,
+                styles.createStopModalCard,
+                createStopCardMaxHeight !== undefined && { maxHeight: createStopCardMaxHeight },
+              ]}
+            >
               <Text style={styles.modalTitle}>Create Stop</Text>
               <Text style={styles.modalHelp}>Confirm the stop details.</Text>
 
               <ScrollView
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={styles.createStopFormContent}
+                style={styles.createStopFormScroll}
               >
                 <TextInput
                   value={newPinName}
@@ -5091,8 +5191,22 @@ const styles = StyleSheet.create({
   },
 
   createStopModalCard: {
+    flexShrink: 1,
     gap: 8,
     maxHeight: "88%",
+    minHeight: 0,
+  },
+
+  createStopKeyboardFrame: {
+    flex: 1,
+    justifyContent: "flex-end",
+    width: "100%",
+  },
+
+  createStopFormScroll: {
+    flexGrow: 0,
+    flexShrink: 1,
+    minHeight: 0,
   },
 
   createStopFormContent: {

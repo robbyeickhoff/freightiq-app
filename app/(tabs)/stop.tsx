@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useIsFocused } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useIsFocused } from "expo-router/react-navigation";
 import { type PropsWithChildren, useEffect, useMemo, useRef, useState } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import {
@@ -2242,7 +2242,7 @@ export default function StopScreen() {
                         pitchEnabled={false}
                         toolbarEnabled={false}
                         showsCompass={false}
-                        showsPointsOfInterest={false}
+                        showsPointsOfInterests={false}
                         showsScale={false}
                         loadingEnabled
                       >
