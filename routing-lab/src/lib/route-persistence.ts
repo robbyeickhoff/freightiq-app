@@ -15,7 +15,8 @@ import {
 import {
   buildAddressKey,
   buildCanonicalPhysicalAddressKey,
-  isMicroZoneParent,
+  isDocumentedOperationalZone,
+  isValidMicroZonePair,
 } from './zone-learning'
 
 export type ManifestRouteStop = RouteStop & {
@@ -226,16 +227,23 @@ export async function saveManifestZoneReview(
       .filter((item) => item.status === 'approved' && item.selectedZone)
       .map((item) => [item.stopId, item.selectedZone as string]),
   )
+  const approvedMicroZones = new Map(
+    zoneReview.map((item) => [item.stopId, item.selectedMicroZone]),
+  )
   const evidence = complete
     ? route.sourceStops.flatMap((stop) => {
         const approvedZone = approvedZones.get(stop.id)
-        if (!approvedZone || !isMicroZoneParent(approvedZone)) return []
+        if (!approvedZone || !isDocumentedOperationalZone(approvedZone)) return []
+        const selectedMicroZone = approvedMicroZones.get(stop.id)
         return [{
           address: stop.address,
           address_key: buildAddressKey(stop),
           canonical_address_key: buildCanonicalPhysicalAddressKey(stop),
           approved_zone: approvedZone,
-          approved_micro_zone: zoneReview.find((item) => item.stopId === stop.id)?.selectedMicroZone,
+          approved_micro_zone: selectedMicroZone &&
+              isValidMicroZonePair(approvedZone, selectedMicroZone)
+            ? selectedMicroZone
+            : null,
           city: stop.city,
           postal_code: stop.postalCode,
           state: stop.state,

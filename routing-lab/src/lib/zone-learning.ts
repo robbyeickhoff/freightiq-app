@@ -44,6 +44,12 @@ export function normalizeOperationalZoneName(value: string) {
   return legacyOperationalZoneNames[value as keyof typeof legacyOperationalZoneNames] ?? value
 }
 
+export function isDocumentedOperationalZone(
+  value: string,
+): value is DocumentedOperationalZone {
+  return documentedOperationalZones.includes(value as DocumentedOperationalZone)
+}
+
 export const grandJunctionMicroZones = {
   Fruita: ['Fruita A', 'Fruita B', 'Fruita C'],
   West: ['West A', 'West B', 'West C'],
@@ -94,7 +100,7 @@ export type LearnedZoneResolution = {
   confidence: 'high' | 'medium' | 'uncertain'
   evidence: string
   proposedMicroZone: MicroZone | null
-  proposedZone: MicroZoneParent | null
+  proposedZone: DocumentedOperationalZone | null
 }
 
 export function isMicroZoneParent(value: string): value is MicroZoneParent {
@@ -180,7 +186,7 @@ export function resolveLearnedZone(evidence: ZoneEvidence[]): LearnedZoneResolut
 
   const routesByZone = new Map<string, Set<string>>()
   for (const item of evidence) {
-    if (!isMicroZoneParent(item.approvedZone)) continue
+    if (!isDocumentedOperationalZone(item.approvedZone)) continue
     const routes = routesByZone.get(item.approvedZone) ?? new Set<string>()
     routes.add(item.sourceRouteId)
     routesByZone.set(item.approvedZone, routes)
@@ -204,7 +210,7 @@ export function resolveLearnedZone(evidence: ZoneEvidence[]): LearnedZoneResolut
       ? `${count} prior driver-approved exact-address reviews agree on ${zone}.`
       : `One prior driver-approved exact-address review assigned this stop to ${zone}.`,
     proposedMicroZone: null,
-    proposedZone: zone as MicroZoneParent,
+    proposedZone: zone as DocumentedOperationalZone,
   }
 }
 

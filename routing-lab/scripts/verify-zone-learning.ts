@@ -5,6 +5,7 @@ import {
   buildCanonicalPhysicalAddressKey,
   grandJunctionParentZones,
   grandJunctionMicroZones,
+  isDocumentedOperationalZone,
   isMicroZoneParent,
   isValidMicroZonePair,
   microZonesByParent,
@@ -29,6 +30,8 @@ assert.equal(selectableOperationalZones.includes('Ridgway North'), true)
 assert.equal(selectableOperationalZones.includes('Ridgway — North of Highway 62' as never), false)
 assert.equal(normalizeOperationalZoneName('Ridgway — North of Highway 62'), 'Ridgway North')
 assert.equal(normalizeOperationalZoneName('Ridgway Proper'), 'Ridgway Proper')
+assert.equal(isDocumentedOperationalZone('Ridgway Proper'), true)
+assert.equal(isDocumentedOperationalZone('Imaginary Zone'), false)
 assert.equal(Object.values(grandJunctionMicroZones).flat().length, 19)
 assert.equal(Object.values(microZonesByParent).flat().length, 30)
 assert.deepEqual(tellurideMicroZones['Mountain Village'], [
@@ -87,6 +90,25 @@ assert.deepEqual(resolveLearnedZone([
   evidence: 'One prior driver-approved exact-address review assigned this stop to West.',
   proposedMicroZone: null,
   proposedZone: 'West',
+})
+
+const ridgwayProperEvidence = [
+  { addressKey: '687 n cora', approvedZone: 'Ridgway Proper', sourceRouteId: 'route-1' },
+]
+assert.deepEqual(resolveLearnedMicroZone(ridgwayProperEvidence), {
+  confidence: 'medium',
+  evidence: 'One prior driver-approved exact-address review assigned this stop to Ridgway Proper.',
+  proposedMicroZone: null,
+  proposedZone: 'Ridgway Proper',
+})
+assert.deepEqual(resolveLearnedMicroZone([
+  ...ridgwayProperEvidence,
+  { addressKey: '687 n cora', approvedZone: 'Ridgway Proper', sourceRouteId: 'route-2' },
+]), {
+  confidence: 'high',
+  evidence: '2 prior driver-approved exact-address reviews agree on Ridgway Proper.',
+  proposedMicroZone: null,
+  proposedZone: 'Ridgway Proper',
 })
 assert.equal(resolveLearnedZone([
   { addressKey: 'one', approvedZone: 'West', sourceRouteId: 'route-1' },

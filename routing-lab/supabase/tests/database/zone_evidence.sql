@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(33);
+select plan(36);
 
 select is(public.routing_lab_canonical_address_key('123 Main Street, Suite 200', 'Grand Junction', 'Colorado', '81501-1234'), '123 main st|grand junction|co|81501', 'suite, suffix, state, and ZIP+4 normalize safely');
 select is(public.routing_lab_canonical_address_key('123 U.S. Highway 550', 'Montrose', 'CO', '81401'), '123 us 550|montrose|co|81401', 'US highway formatting normalizes safely');
@@ -118,6 +118,25 @@ select throws_ok($$
   values
     ('30000000-0000-4000-8000-000000000001', '32000000-0000-4000-8000-000000000002', 'bad-dt', '1 Test', 'Telluride', 'CO', '81435', 'bad-dt', '1 test|telluride|co|81435', 'Downtown Telluride', 'Ophir')
 $$, '23514', null, 'Downtown Telluride rejects a Mountain Village Micro Zone');
+
+select lives_ok($$
+  insert into public.routing_lab_zone_evidence
+    (user_id, source_route_id, source_stop_id, address, city, state, postal_code, address_key, canonical_address_key, approved_zone, approved_micro_zone)
+  values
+    ('30000000-0000-4000-8000-000000000001', '32000000-0000-4000-8000-000000000002', 'ridgway-proper-stop', '687 North Cora Street', 'Ridgway', 'CO', '81432', '687 north cora street|ridgway|co|81432', '687 n cora st|ridgway|co|81432', 'Ridgway Proper', null)
+$$, 'Ridgway Proper accepts Parent-Zone-only evidence');
+select throws_ok($$
+  insert into public.routing_lab_zone_evidence
+    (user_id, source_route_id, source_stop_id, address, city, state, postal_code, address_key, canonical_address_key, approved_zone, approved_micro_zone)
+  values
+    ('30000000-0000-4000-8000-000000000001', '32000000-0000-4000-8000-000000000002', 'bad-ridgway-micro', '1 Test', 'Ridgway', 'CO', '81432', 'bad-ridgway-micro', '1 test|ridgway|co|81432', 'Ridgway Proper', 'Ophir')
+$$, '23514', null, 'Ridgway Proper rejects Micro Zone evidence');
+select throws_ok($$
+  insert into public.routing_lab_zone_evidence
+    (user_id, source_route_id, source_stop_id, address, city, state, postal_code, address_key, canonical_address_key, approved_zone, approved_micro_zone)
+  values
+    ('30000000-0000-4000-8000-000000000001', '32000000-0000-4000-8000-000000000002', 'undocumented-zone', '1 Test', 'Ridgway', 'CO', '81432', 'undocumented-zone', '1 test|ridgway|co|81432', 'Imaginary Zone', null)
+$$, '23514', null, 'the database rejects undocumented Parent Zones');
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '30000000-0000-4000-8000-000000000002';
