@@ -14,9 +14,10 @@ function normalizeGrandJunctionParentBlock(flow: string[]) {
 }
 
 export function preservesVerifiedMacroFlow(candidateFlow: string[], expectedFlow: string[]) {
-  if (new Set(candidateFlow).size !== candidateFlow.length) return false
-  if (candidateFlow.length !== expectedFlow.length) return false
-  if (candidateFlow.some((zone) => !expectedFlow.includes(zone))) return false
+  const candidateZones = new Set(candidateFlow)
+  const expectedZones = new Set(expectedFlow)
+  if (candidateZones.size !== expectedZones.size) return false
+  if ([...candidateZones].some((zone) => !expectedZones.has(zone))) return false
 
   return JSON.stringify(normalizeGrandJunctionParentBlock(candidateFlow)) ===
     JSON.stringify(normalizeGrandJunctionParentBlock(expectedFlow))

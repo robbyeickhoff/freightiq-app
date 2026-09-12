@@ -508,8 +508,15 @@ Field-trial readiness is measured against the
       `classify-route-zones` version 4, `propose-manifest-route` version 7, and Vercel deployment
       `dpl_8r2YFZ3eXYaHZ78XoHAFBwgejpiD`; complete signed-in phone acceptance including the focused
       non-GJ picker-order correction.
-- [ ] Run the first real-workday Routing Lab field trial and capture only observed friction,
+- [x] Run the first real-workday Routing Lab field trial and capture only observed friction,
       incorrect behavior, or unreliable learning for focused follow-up.
+  - [x] Correct the false approved-lesson replay conflict for a legitimate return to a Grand
+        Junction parent zone while preserving the continuous Grand Junction macro-block guard.
+  - [x] Deploy and technically verify isolated `propose-manifest-route` version 12 with JWT
+        verification retained and unsigned requests rejected with HTTP 401.
+  - [x] Complete signed-in phone acceptance: **Replay with approved lessons** successfully
+        regenerated the completed September 11 Grand Junction route.
+  - [ ] Advance the accepted replay correction through the separate Git gate.
 
 ## Feature Backlog
 

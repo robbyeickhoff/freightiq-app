@@ -285,6 +285,21 @@ directional checks remain open. Search retry passed; the board's no-cache failur
 was not explicitly tested. The later accepted-candidate record below supersedes the former pending
 commit and production-build state. Distribution and public release remain separately gated.
 
+### Completed Objective — Routing Lab Grand Junction Lesson-Replay Validation Fix
+
+A September 11, 2026 real-workday Grand Junction route exposed a false replay conflict after the
+Product Owner completed the route and approved its lessons. The macro-flow validator treated a
+legitimate return to a previously visited Grand Junction parent zone as a prohibited duplicate,
+even though Grand Junction parent-zone order is route-specific and all Grand Junction parents remain
+one macro block. The bounded correction now allows repeated Grand Junction parent visits while still
+requiring every active zone and rejecting any route that splits the Grand Junction block around a
+non-Grand-Junction macro zone. Focused macro-flow regression coverage, TypeScript, lint, the complete
+Routing Lab focused check set, production build, dependency audit, and diff checks pass. The Product
+Owner accepted the local diff and separately approved deployment. Isolated
+`propose-manifest-route` version 12 is ACTIVE with JWT verification retained and rejects unsigned
+requests with HTTP 401. Signed-in phone acceptance passed when **Replay with approved lessons**
+successfully regenerated the completed route. Commit and push remain separately gated.
+
 ### Completed Objective — Private Routing Lab Telluride Route Polygon Classification V1
 
 The Product Owner approved the bounded implementation contract on September 2, 2026:

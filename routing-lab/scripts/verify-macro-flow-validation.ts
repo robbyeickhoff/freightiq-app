@@ -21,8 +21,8 @@ assert.equal(
 )
 assert.equal(
   preservesVerifiedMacroFlow(['Airport', 'West', 'Airport', 'River Road'], expectedGrandJunctionFlow),
-  false,
-  'an approved order may not split one parent zone into multiple visits',
+  true,
+  'a driver-approved route may revisit a Grand Junction parent zone',
 )
 assert.equal(
   preservesVerifiedMacroFlow(
@@ -64,6 +64,14 @@ assert.equal(
   ),
   false,
   'Grand Junction parent zones must remain one continuous route block',
+)
+assert.equal(
+  preservesVerifiedMacroFlow(
+    ['River Road', 'West', 'Delta', 'Airport', 'Montrose'],
+    ['Airport', 'West', 'River Road', 'Delta', 'Montrose'],
+  ),
+  false,
+  'revisiting Grand Junction may not split its block around another macro zone',
 )
 
 console.log('Macro-flow lesson validation passed.')
