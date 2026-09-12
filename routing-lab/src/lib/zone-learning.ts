@@ -7,6 +7,13 @@ export const grandJunctionParentZones = [
   'East',
 ] as const
 
+export const grandJunctionPreferredParentFlow = grandJunctionParentZones
+
+export function activeGrandJunctionParentFlow(activeZones: Iterable<string>) {
+  const active = new Set(activeZones)
+  return grandJunctionPreferredParentFlow.filter((zone) => active.has(zone))
+}
+
 export const legacyOperationalZoneNames = {
   'Ridgway — North of Highway 62': 'Ridgway North',
 } as const

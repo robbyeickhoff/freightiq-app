@@ -1,6 +1,7 @@
 import "@supabase/functions-js/edge-runtime.d.ts"
 import { withSupabase } from "@supabase/server"
 import {
+  activeGrandJunctionParentFlow,
   grandJunctionParentZones,
   isGrandJunctionParentZone,
   isMicroZoneParent,
@@ -154,15 +155,9 @@ function readOutputText(response: Record<string, unknown>) {
 
 function activeMacroFlow(stops: InputStop[]) {
   const activeZones = new Set(stops.map((stop) => stop.zone))
-  const grandJunctionFlow: string[] = []
-  for (const stop of stops) {
-    if (isGrandJunctionParentZone(stop.zone) && !grandJunctionFlow.includes(stop.zone)) {
-      grandJunctionFlow.push(stop.zone)
-    }
-  }
   return [
     ...(activeZones.has("Grand Junction") ? ["Grand Junction"] : []),
-    ...grandJunctionFlow,
+    ...activeGrandJunctionParentFlow(activeZones),
     ...DEFAULT_MACRO_FLOW.filter((zone) =>
       zone !== "Grand Junction" && !isGrandJunctionParentZone(zone) && activeZones.has(zone)),
   ]
@@ -215,11 +210,12 @@ Outside the Grand Junction parent zones, remove inactive delivery zones while pr
 
 Grand Junction parent-zone documents:
 - A normal Grand Junction trailer serves exactly one of Fruita, West, River Road, Airport, Downtown / The Hole, or East before returning to the yard.
-- The west-to-east geographic list is not a service sequence.
+- When more than one Grand Junction parent is active, the documented preferred perfect-load flow is Fruita → West → River Road → Airport → Downtown / The Hole → East. Skip inactive parents while preserving that relative order.
+- This mixed-parent flow is a preferred starting pattern, not a hard route restriction. Today's trailer loading, freight accessibility, appointments, customer access, pickups, road conditions, safety, or applicable approved lessons may justify a different driver-approved order.
 - Candidate Micro Zones are driver-approved for the current route. Their letter order is a Preferred geographic baseline, not a fixed daily sequence: Fruita A → B → C; West A → B → C; River Road A → B; Airport A → B → C; Hole A → B → C → D → E; East A → B → C. Skip inactive Micro Zones.
 - Current constraints, safety needs, and applicable approved Situational lessons may override that baseline. Trailer access is route-specific by default. Never infer trailer layout or freight position.
 - Preserve each stop's approved parent and Micro Zone even when operational order changes. Exact order inside a Micro Zone remains an estimate.
-- If the driver approved more than one Grand Junction parent zone, preserve the first-appearance order from the supplied current stops only as an unverified working order and add an operational exception requiring driver review. Never claim that order is documented.
+- Do not derive parent order from manifest or stop-array first appearance. A one-day departure must not silently rewrite the documented preferred flow.
 
 SouthPark.md documented internal preference:
 Two Rivers → County Road 63L → South Park Rd → Vance Dr → Nimbus. Complete inbound before Lawson Hill.
@@ -337,7 +333,7 @@ export default {
       const grandJunctionExceptions = grandJunctionZones.size > 1
         ? [applicable.length > 0
             ? "Multiple Grand Junction parent zones were driver-approved; their current working order comes from an approved route lesson and remains route-specific."
-            : "Multiple Grand Junction parent zones were driver-approved; their working order is unverified and needs driver review."]
+            : "Multiple Grand Junction parent zones follow the documented preferred flow; adjust it during route review if today's trailer or another operational constraint requires a different order."]
         : []
       const uncertainSequences = [...(result.uncertainSequences ?? [])]
       for (const zone of grandJunctionZones) {

@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 
 import {
+  activeGrandJunctionParentFlow,
   buildAddressKey,
   buildCanonicalPhysicalAddressKey,
+  grandJunctionPreferredParentFlow,
   grandJunctionParentZones,
   grandJunctionMicroZones,
   isDocumentedOperationalZone,
@@ -25,6 +27,28 @@ assert.deepEqual(grandJunctionParentZones, [
   'Downtown / The Hole',
   'East',
 ])
+assert.equal(grandJunctionPreferredParentFlow, grandJunctionParentZones)
+assert.deepEqual(activeGrandJunctionParentFlow(grandJunctionParentZones), [
+  'Fruita',
+  'West',
+  'River Road',
+  'Airport',
+  'Downtown / The Hole',
+  'East',
+])
+assert.deepEqual(activeGrandJunctionParentFlow([
+  'East',
+  'West',
+  'Airport',
+  'West',
+]), ['West', 'Airport', 'East'])
+assert.deepEqual(activeGrandJunctionParentFlow([
+  'Downtown / The Hole',
+  'Fruita',
+  'River Road',
+]), ['Fruita', 'River Road', 'Downtown / The Hole'])
+assert.deepEqual(activeGrandJunctionParentFlow(['Airport']), ['Airport'])
+assert.deepEqual(activeGrandJunctionParentFlow(['Montrose', 'Gateway']), [])
 assert.equal(selectableOperationalZones.includes('Grand Junction'), false)
 assert.equal(selectableOperationalZones.includes('Ridgway North'), true)
 assert.equal(selectableOperationalZones.includes('Ridgway — North of Highway 62' as never), false)

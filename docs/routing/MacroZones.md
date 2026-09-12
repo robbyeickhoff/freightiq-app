@@ -395,6 +395,37 @@ Do not reverse every Telluride zone merely because the larger West End loop is r
 
 ---
 
+# Grand Junction Multi-Parent Routes
+
+Grand Junction trailers normally concentrate on one parent zone. When a route contains stops in
+multiple Grand Junction parent zones, the preferred unconstrained flow is:
+
+```text
+Grand Junction yard
+→ Fruita
+→ West
+→ River Road
+→ Airport
+→ Downtown / The Hole
+→ East
+→ Grand Junction yard
+```
+
+Remove inactive parent zones while preserving the relative order of the active zones. Do not add
+empty-zone travel solely to reproduce the complete list.
+
+This is the preferred **perfect-load** flow, not a hard route constraint. Trailer loading and
+freight accessibility may force a different starting zone or parent-zone order. Appointments,
+receiving hours, pickups, road conditions, truck access, safety, and other current operational
+constraints may also justify a departure.
+
+A one-day departure does not prove that the preferred flow is wrong. Treat it as route-specific
+unless the driver explicitly identifies the correction as better durable route knowledge. Avoid
+unnecessary parent-zone re-entry, but allow it when the accessible freight or another current
+constraint requires it.
+
+---
+
 # Grand Junction Stops on a Mountain Route
 
 Grand Junction deliveries are uncommon on Telluride days.

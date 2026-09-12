@@ -431,6 +431,23 @@ Field-trial readiness is measured against the
 
 ### Active Tasks
 
+- [x] Review and approve the focused
+      [Grand Junction Multi-Parent Flow design](design/RoutingLabGrandJunctionMultiParentFlow.md).
+      The documented
+      perfect-load order is `Yard → Fruita → West → River Road → Airport → Downtown / The Hole → East → Yard`;
+      implementation must treat it as a soft, explainable preference and must not learn one-day
+      trailer-loading exceptions as permanent macro flow.
+- [x] Review and approve the bounded
+      [Grand Junction Multi-Parent Flow V1 Build Specification](build-specs/FreightIQRoutingLabGrandJunctionMultiParentFlowV1BuildSpec.md)
+      before any implementation begins.
+- [x] Complete and locally verify the approved Grand Junction Multi-Parent Flow V1 implementation.
+- [x] Review and approve the scoped Grand Junction Multi-Parent Flow V1 diff.
+- [x] Separately approve, deploy, and technically verify the isolated `propose-manifest-route`
+      update before signed-in live acceptance or any Git action.
+- [x] Complete signed-in live acceptance with a mixed-parent Grand Junction Test Route and verify
+      that the proposal follows the documented active-parent order rather than manifest order.
+- [x] Approve the separate Git gate for the accepted Grand Junction Multi-Parent Flow V1 work.
+
 - [x] Review and approve the focused [Grand Junction Geocoding and Polygon Classification V1 Build
       Specification](build-specs/FreightIQRoutingLabGrandJunctionGeocodingPolygonClassificationV1BuildSpec.md).
 - [x] Verify Mapbox Permanent Geocoding billing readiness and configure the isolated server-only
