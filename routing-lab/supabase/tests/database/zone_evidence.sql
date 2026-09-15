@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(36);
+select plan(39);
 
 select is(public.routing_lab_canonical_address_key('123 Main Street, Suite 200', 'Grand Junction', 'Colorado', '81501-1234'), '123 main st|grand junction|co|81501', 'suite, suffix, state, and ZIP+4 normalize safely');
 select is(public.routing_lab_canonical_address_key('123 U.S. Highway 550', 'Montrose', 'CO', '81401'), '123 us 550|montrose|co|81401', 'US highway formatting normalizes safely');
@@ -14,6 +14,7 @@ insert into auth.users (id, email, created_at, updated_at) values
 insert into public.routing_lab_manifest_imports (id, user_id, extraction, working_state) values
 ('31000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000001', '{}', '{}'),
 ('31000000-0000-4000-8000-000000000002', '30000000-0000-4000-8000-000000000001', '{}', '{}'),
+('31000000-0000-4000-8000-000000000004', '30000000-0000-4000-8000-000000000001', '{}', '{}'),
 ('31000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000002', '{}', '{}');
 
 insert into public.routing_lab_routes (id, user_id, manifest_import_id, source_stops, setup) values
@@ -21,6 +22,8 @@ insert into public.routing_lab_routes (id, user_id, manifest_import_id, source_s
  '[{"id":"stop-1","address":"123 Main St","city":"Grand Junction","state":"CO","postalCode":"81501"}]', '{}'),
 ('32000000-0000-4000-8000-000000000002', '30000000-0000-4000-8000-000000000001', '31000000-0000-4000-8000-000000000002',
  '[{"id":"stop-2","address":"123 Main St","city":"Grand Junction","state":"CO","postalCode":"81501"}]', '{}'),
+('32000000-0000-4000-8000-000000000004', '30000000-0000-4000-8000-000000000001', '31000000-0000-4000-8000-000000000004',
+ '[{"id":"parent-only-stop","address":"687 North Cora Street","city":"Ridgway","state":"CO","postalCode":"81432"}]', '{}'),
 ('32000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000002', '31000000-0000-4000-8000-000000000003',
  '[{"id":"other-stop","address":"123 Main St","city":"Grand Junction","state":"CO","postalCode":"81501"}]', '{}');
 
@@ -74,6 +77,17 @@ select public.save_routing_lab_zone_review(
 select is((select count(*) from public.routing_lab_zone_evidence where address_key = '123 main st|grand junction|co|81501'), 2::bigint, 'distinct routes preserve separate evidence for confidence and conflicts');
 select is((select count(distinct approved_zone) from public.routing_lab_zone_evidence where address_key = '123 main st|grand junction|co|81501'), 2::bigint, 'conflicting route approvals are retained');
 select is((select count(*) from public.routing_lab_zone_evidence where canonical_address_key = '123 main st|grand junction|co|81501'), 2::bigint, 'canonical collisions preserve every source-route evidence row');
+
+select lives_ok($$
+  select public.save_routing_lab_zone_review(
+    '32000000-0000-4000-8000-000000000004',
+    '[{"stopId":"parent-only-stop","status":"approved","selectedZone":"Ridgway Proper","selectedMicroZone":null}]',
+    '[{"stop_id":"parent-only-stop","address":"687 North Cora Street","city":"Ridgway","state":"CO","postal_code":"81432","address_key":"687 north cora street|ridgway|co|81432","canonical_address_key":"687 n cora st|ridgway|co|81432","approved_zone":"Ridgway Proper","approved_micro_zone":null}]',
+    true
+  )
+$$, 'an owner can approve matching Parent-Zone-only evidence');
+select is((select approved_micro_zone from public.routing_lab_zone_evidence where source_route_id = '32000000-0000-4000-8000-000000000004'), null, 'Parent-Zone-only evidence preserves the absent Micro Zone');
+select is((select status from public.routing_lab_routes where id = '32000000-0000-4000-8000-000000000004'), 'zone_approved', 'a Parent-Zone-only route advances atomically');
 
 select throws_ok($$
   select public.save_routing_lab_zone_review(
