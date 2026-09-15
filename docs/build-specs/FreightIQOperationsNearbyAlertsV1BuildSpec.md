@@ -2,12 +2,13 @@
 
 ## Status
 
-Draft for Product Owner review. Not approved for implementation.
+Approved by the Product Owner on September 15, 2026, for the bounded local implementation and
+local verification described in this specification.
 
 This document defines a proposed expansion of the accepted Operations Board V1 contract. The
-existing contract deliberately excludes push notifications and background location. Approval of
-this specification would authorize only the bounded local implementation and local verification
-described below. Native development builds, production builds, store declarations, Supabase
+existing contract deliberately excludes push notifications and background location. This approval
+authorizes only the bounded local implementation and local verification described below. Native
+development builds, production builds, store declarations, Supabase
 changes, website deployment, tester distribution, release, commit, and push remain separate
 approval gates.
 
