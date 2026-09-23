@@ -154,6 +154,15 @@ const streetTokenAliases: Record<string, string> = {
   southeast: 'se', southwest: 'sw',
 }
 
+const localityAliases: Record<string, string> = {
+  ridgeway: 'ridgway',
+}
+
+function normalizeLocality(value: string) {
+  const locality = normalizeAddressComponent(value).replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
+  return localityAliases[locality] ?? locality
+}
+
 function normalizeStreetAddress(value: string) {
   const withoutSecondary = value
     .toLocaleLowerCase('en-US')
@@ -182,7 +191,7 @@ export function buildCanonicalPhysicalAddressKey(stop: {
   const postalCode = stop.postalCode.match(/\b\d{5}\b/u)?.[0] ?? normalizeAddressComponent(stop.postalCode)
   return [
     normalizeStreetAddress(stop.address),
-    normalizeAddressComponent(stop.city).replace(/[^\p{L}\p{N}]+/gu, ' ').trim(),
+    normalizeLocality(stop.city),
     stateAbbreviations[normalizeAddressComponent(stop.state)] ?? state,
     postalCode,
   ].join('|')

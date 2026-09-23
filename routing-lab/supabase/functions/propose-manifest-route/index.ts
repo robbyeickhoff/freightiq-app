@@ -9,6 +9,10 @@ import {
   microZonesByParent,
 } from "../../../src/lib/zone-learning.ts"
 import { preservesVerifiedMacroFlow } from "../../../src/lib/macro-flow-validation.ts"
+import {
+  buildDeterministicTransitions,
+  enforceMacroZoneBlocks,
+} from "../../../src/lib/proposal-determinism.ts"
 
 const MODEL = "gpt-5.6-terra"
 const MAX_STOPS = 100
@@ -79,6 +83,16 @@ type RouteSetup = {
 }
 
 type Lesson = { id: string; sourceRouteId: string; text: string; scopeType: string; scopeValue: string; evidence: { sourceStopIds: string[]; afterStopIds: string[] } }
+
+type ProviderProposal = {
+  appliedLessonIds?: unknown[]
+  documentsUsed?: string[]
+  macroZoneFlow?: string[]
+  operationalExceptions?: string[]
+  orderedStopIds?: string[]
+  transitions?: Array<{ fromZone?: string; reason?: string; toZone?: string }>
+  uncertainSequences?: Array<{ zone?: string; reason?: string }>
+}
 
 function parseLessons(value: unknown): Lesson[] {
   if (!Array.isArray(value)) return []
@@ -255,61 +269,67 @@ export default {
     const lessons = parseLessons(body.lessons)
     if (!stops || !setup) return jsonError("Provide a valid approved route and setup.", 400)
 
-    let provider: Response
-    try {
-      provider = await fetch("https://api.openai.com/v1/responses", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: MODEL,
-          reasoning: { effort: "medium" },
-          input: [{ role: "user", content: [{ type: "input_text", text:
-            `${KNOWLEDGE_PACKET}\n\nBuild the structured proposal for this current route only:\n${JSON.stringify({
-              expectedMacroFlow: activeMacroFlow(stops),
-              multipleGrandJunctionParentZones: new Set(stops.map((stop) => stop.zone).filter(isGrandJunctionParentZone)).size > 1,
-              setup,
-              stops,
-              preferredMicroZoneOrder: microZonesByParent,
-            })}`,
-          }] }],
-          text: { format: { type: "json_schema", name: "routing_lab_manifest_route_proposal", strict: true, schema: proposalSchema } },
-        }),
-      })
-    } catch { return jsonError("The proposal service could not be reached. Try again.", 502) }
-    if (!provider.ok) {
-      console.error("Route proposal provider error", provider.status)
-      return jsonError("The proposal service could not build this route. Try again.", 502)
+    const sourceIds = stops.map((stop) => stop.id)
+    const expectedFlow = activeMacroFlow(stops)
+    const expectedTransitions = buildDeterministicTransitions(expectedFlow)
+    const expectedDocuments = requiredDocuments(stops)
+    let result: ProviderProposal | null = null
+    let ordered: string[] | null = null
+
+    for (let attempt = 1; attempt <= 2 && !result; attempt += 1) {
+      let provider: Response
+      try {
+        provider = await fetch("https://api.openai.com/v1/responses", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: MODEL,
+            reasoning: { effort: "medium" },
+            input: [{ role: "user", content: [{ type: "input_text", text:
+              `${KNOWLEDGE_PACKET}\n\nBuild the structured proposal for this current route only:\n${JSON.stringify({
+                expectedMacroFlow: expectedFlow,
+                multipleGrandJunctionParentZones: new Set(stops.map((stop) => stop.zone).filter(isGrandJunctionParentZone)).size > 1,
+                setup,
+                stops,
+                preferredMicroZoneOrder: microZonesByParent,
+              })}`,
+            }] }],
+            text: { format: { type: "json_schema", name: "routing_lab_manifest_route_proposal", strict: true, schema: proposalSchema } },
+          }),
+        })
+      } catch {
+        console.error("Route proposal attempt failed", { attempt, reason: "provider_unreachable" })
+        continue
+      }
+      if (!provider.ok) {
+        console.error("Route proposal attempt failed", { attempt, reason: "provider_error", status: provider.status })
+        continue
+      }
+
+      const outputText = readOutputText(await provider.json() as Record<string, unknown>)
+      if (!outputText) {
+        console.error("Route proposal attempt failed", { attempt, reason: "missing_structured_output" })
+        continue
+      }
+      try {
+        const candidate = JSON.parse(outputText) as ProviderProposal
+        const candidateOrder = enforceMacroZoneBlocks(candidate.orderedStopIds ?? [], stops, expectedFlow)
+        if (!candidateOrder) {
+          console.error("Route proposal attempt failed", { attempt, reason: "invalid_stop_membership" })
+          continue
+        }
+        result = candidate
+        ordered = candidateOrder
+      } catch {
+        console.error("Route proposal attempt failed", { attempt, reason: "invalid_structured_json" })
+      }
     }
 
-    const outputText = readOutputText(await provider.json() as Record<string, unknown>)
-    if (!outputText) return jsonError("No structured route proposal was returned. Try again.", 502)
+    if (!result || !ordered) {
+      return jsonError("The proposal service could not build a complete route. Try again.", 502)
+    }
+
     try {
-      const result = JSON.parse(outputText) as {
-        appliedLessonIds?: unknown[]
-        documentsUsed?: string[]
-        macroZoneFlow?: string[]
-        operationalExceptions?: string[]
-        orderedStopIds?: string[]
-        transitions?: Array<{ fromZone?: string; toZone?: string }>
-        uncertainSequences?: Array<{ zone?: string; reason?: string }>
-      }
-      let ordered = result.orderedStopIds ?? []
-      const sourceIds = stops.map((stop) => stop.id)
-      const expectedFlow = activeMacroFlow(stops)
-      const proposalFlow = result.macroZoneFlow ?? []
-      const expectedTransitions = expectedFlow.slice(0, -1).map((fromZone, index) => ({
-        fromZone,
-        toZone: expectedFlow[index + 1],
-      }))
-      if (
-        ordered.length !== sourceIds.length || new Set(ordered).size !== sourceIds.length ||
-        sourceIds.some((id) => !ordered.includes(id)) ||
-        JSON.stringify(proposalFlow) !== JSON.stringify(expectedFlow) ||
-        JSON.stringify(flowFromOrderedStops(ordered, stops)) !== JSON.stringify(expectedFlow) ||
-        JSON.stringify(result.transitions?.map(({ fromZone, toZone }) => ({ fromZone, toZone }))) !== JSON.stringify(expectedTransitions) ||
-        JSON.stringify(result.documentsUsed) !== JSON.stringify(requiredDocuments(stops)) ||
-        (result.appliedLessonIds?.length ?? 0) !== 0
-      ) return jsonError("The proposal failed stop or macro-flow validation. Try again.", 502)
       const applicable = lessons.filter((lesson) =>
         lesson.evidence.sourceStopIds.length === sourceIds.length &&
         lesson.evidence.sourceStopIds.every((id) => sourceIds.includes(id)) &&
@@ -320,7 +340,8 @@ export default {
       const finalLessons = [...routeGroups.values()].map((group) => group.at(-1) as Lesson)
       const distinctOrders = new Set(finalLessons.map((lesson) => JSON.stringify(lesson.evidence.afterStopIds)))
       if (distinctOrders.size > 1) {
-        return Response.json({ model: MODEL, ...result, appliedLessonIds: [],
+        return Response.json({ model: MODEL, ...result, orderedStopIds: ordered,
+          macroZoneFlow: expectedFlow, transitions: expectedTransitions, documentsUsed: expectedDocuments, appliedLessonIds: [],
           operationalExceptions: [...(result.operationalExceptions ?? []),
             `Conflicting approved lessons need driver review: ${applicable.map((lesson) => lesson.id).join(", ")}`] })
       }
@@ -345,6 +366,7 @@ export default {
         }
       }
       return Response.json({ model: MODEL, ...result, orderedStopIds: ordered,
+        macroZoneFlow: expectedFlow, transitions: expectedTransitions, documentsUsed: expectedDocuments,
         appliedLessonIds: applicable.map((lesson) => lesson.id),
         uncertainSequences,
         operationalExceptions: [

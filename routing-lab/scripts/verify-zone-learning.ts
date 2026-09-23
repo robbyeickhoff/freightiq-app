@@ -105,6 +105,10 @@ assert.notEqual(
   buildCanonicalPhysicalAddressKey({ address: '123 Main St Unit 2', city: 'Grand Junction', state: 'CO', postalCode: '81501' }),
   buildCanonicalPhysicalAddressKey({ address: '124 Main Street', city: 'Grand Junction', state: 'Colorado', postalCode: '81501-1234' }),
 )
+assert.equal(
+  buildCanonicalPhysicalAddressKey({ address: '630 N Cora St', city: 'RIDGEWAY', state: 'CO', postalCode: '81432' }),
+  buildCanonicalPhysicalAddressKey({ address: '630 North Cora Street', city: 'RIDGWAY', state: 'Colorado', postalCode: '81432-0000' }),
+)
 
 assert.equal(resolveLearnedZone([]), null)
 assert.deepEqual(resolveLearnedZone([
