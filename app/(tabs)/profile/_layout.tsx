@@ -21,6 +21,10 @@ export default function ProfileLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="settings" options={{ headerShown: true, title: "Settings" }} />
       <Stack.Screen
+        name="driving-alerts"
+        options={{ headerShown: true, title: "Driving Alerts" }}
+      />
+      <Stack.Screen
         name="refer-a-driver"
         options={{ headerShown: true, title: "Refer a Driver" }}
       />

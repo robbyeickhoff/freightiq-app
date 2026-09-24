@@ -31,6 +31,7 @@ import {
   type OperationsUpdate,
 } from "@/utils/operations-board";
 import { supabase } from "@/utils/supabase";
+import { refreshCurrentDrivingSnapshot } from "@/utils/operations-driving-alerts";
 
 type ExpirationChoice = "2h" | "4h" | "today" | "custom";
 type StopResult = {
@@ -99,7 +100,10 @@ export default function OperationsComposeScreen() {
     const field = focusedFieldRef.current;
     if (!field) return;
     scrollViewRef.current?.scrollTo({
-      y: Math.max(0, (field === "message" ? messageFieldYRef.current : stopSearchYRef.current) - 16),
+      y: Math.max(
+        0,
+        (field === "message" ? messageFieldYRef.current : stopSearchYRef.current) - 16,
+      ),
       animated: true,
     });
   };
@@ -268,6 +272,7 @@ export default function OperationsComposeScreen() {
       return;
     }
     if (userId) await writeOperationsDraft(userId, null);
+    void refreshCurrentDrivingSnapshot();
     router.replace({ pathname: "/(tabs)/operations", params: { area: areaSlug } } as never);
   };
   if (reviewing && !params.editId) {
@@ -461,7 +466,9 @@ export default function OperationsComposeScreen() {
             </View>
             <View
               style={styles.stopSearch}
-              onLayout={(event) => { stopSearchYRef.current = event.nativeEvent.layout.y; }}
+              onLayout={(event) => {
+                stopSearchYRef.current = event.nativeEvent.layout.y;
+              }}
             >
               <Text style={[styles.locationTitle, { color: colors.textPrimary }]}>
                 Or attach a FreightIQ stop

@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { supabase } from "@/utils/supabase";
+import { stopRouteDrivingAlerts } from "@/utils/operations-driving-alerts";
 import {
   addRouteStop,
   carryRouteForward,
@@ -89,9 +90,17 @@ export function TodayRouteProvider({ children }: PropsWithChildren) {
   const persist = useCallback(async (nextRoute: TodayRoute) => {
     const activeUserId = userIdRef.current;
     if (!activeUserId) throw new Error("Sign in to manage Today's Route.");
+    const hadUpcomingStops = routeRef.current.stops.some((stop) => stop.status === "upcoming");
+    const hadStops = routeRef.current.stops.length > 0;
     await writeStoredTodayRoute(activeUserId, nextRoute);
     routeRef.current = nextRoute;
     setRoute(nextRoute);
+    if (
+      hadStops &&
+      (nextRoute.stops.length === 0 ||
+        (hadUpcomingStops && nextRoute.stops.every((stop) => stop.status === "completed")))
+    )
+      await stopRouteDrivingAlerts(activeUserId);
   }, []);
 
   const addStop = useCallback(
@@ -117,6 +126,7 @@ export function TodayRouteProvider({ children }: PropsWithChildren) {
     const nextRoute = emptyTodayRoute();
     routeRef.current = nextRoute;
     setRoute(nextRoute);
+    await stopRouteDrivingAlerts(activeUserId);
   }, []);
   const completeStop = useCallback(
     async (stopId: string, completed: boolean) =>

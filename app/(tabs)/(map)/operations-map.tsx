@@ -15,13 +15,18 @@ import {
 import { supabase } from "@/utils/supabase";
 import { useAppTheme } from "@/context/theme-context";
 import { Borders, Elevation, Spacing, Typography } from "@/constants/theme";
+import {
+  markDrivingAlertRead,
+  setSelectedDrivingCondition,
+} from "@/utils/operations-driving-alerts";
 
 export default function OperationsMapScreen() {
   const router = useRouter();
   const mapRef = useRef<MapView | null>(null);
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const params = useLocalSearchParams<{ area?: string; pickLocation?: string }>();
+  const params = useLocalSearchParams<{ area?: string; pickLocation?: string; alertId?: string }>();
+  const handledAlert = useRef<string | null>(null);
   const fromCompose = params.pickLocation === "true";
   const [selectingLocation, setSelectingLocation] = useState(false);
   const isPickingLocation = fromCompose || selectingLocation;
@@ -30,6 +35,10 @@ export default function OperationsMapScreen() {
   const [canPost, setCanPost] = useState(false);
   const [updates, setUpdates] = useState<OperationsUpdate[]>([]);
   const [picked, setPicked] = useState<OperationsUpdate | null>(null);
+  useEffect(() => {
+    setSelectedDrivingCondition(picked?.id ?? null);
+    return () => setSelectedDrivingCondition(null);
+  }, [picked?.id]);
   const [markerEpoch, setMarkerEpoch] = useState(0);
   const [locating, setLocating] = useState(false);
   const [mapType, setMapType] = useState<"standard" | "hybrid">("standard");
@@ -96,6 +105,15 @@ export default function OperationsMapScreen() {
       if (!isCurrent()) return;
       if (error) {
         setLoadError(true);
+        if (params.alertId && handledAlert.current !== params.alertId) {
+          handledAlert.current = params.alertId;
+          Alert.alert("Condition unavailable", "Couldn’t load this nearby condition right now.", [
+            {
+              text: "Back to Operations",
+              onPress: () => router.replace("/(tabs)/operations" as never),
+            },
+          ]);
+        }
         return;
       }
       const rows = filterCachedOperations(
@@ -103,12 +121,45 @@ export default function OperationsMapScreen() {
         false,
       );
       setUpdates(rows);
+      if (params.alertId && handledAlert.current !== params.alertId) {
+        handledAlert.current = params.alertId;
+        const match = rows.find(
+          (row) => row.id === params.alertId && row.latitude != null && row.longitude != null,
+        );
+        if (match) {
+          setPicked(match);
+          mapRef.current?.animateToRegion(
+            {
+              latitude: match.latitude!,
+              longitude: match.longitude!,
+              latitudeDelta: 0.025,
+              longitudeDelta: 0.025,
+            },
+            350,
+          );
+          void supabase.auth.getSession().then(({ data: session }) => {
+            if (session.session?.user.id)
+              void markDrivingAlertRead(session.session.user.id, match.id);
+          });
+        } else {
+          void supabase.auth.getSession().then(({ data: session }) => {
+            if (session.session?.user.id)
+              void markDrivingAlertRead(session.session.user.id, params.alertId!);
+          });
+          Alert.alert("Condition unavailable", "This condition is no longer active.", [
+            {
+              text: "Back to Operations",
+              onPress: () => router.replace("/(tabs)/operations" as never),
+            },
+          ]);
+        }
+      }
       setPicked((current) =>
         current ? (rows.find((row) => row.id === current.id) ?? null) : null,
       );
       setLoadError(false);
     },
-    [params.area],
+    [params.area, params.alertId, router],
   );
   useFocusEffect(
     useCallback(() => {
@@ -193,7 +244,13 @@ export default function OperationsMapScreen() {
                   description={`${u.area_name}. Reported by ${u.username}. ${u.message}`}
                   pinColor="#f39a3f"
                   title={categoryLabel(u.category)}
-                  onPress={() => setPicked(u)}
+                  onPress={() => {
+                    setPicked(u);
+                    void supabase.auth.getSession().then(({ data }) => {
+                      if (data.session?.user.id)
+                        void markDrivingAlertRead(data.session.user.id, u.id);
+                    });
+                  }}
                 />
               ))}
         </MapView>
@@ -242,6 +299,7 @@ export default function OperationsMapScreen() {
                 variant="tertiary"
                 onPress={() => {
                   setPicked(null);
+                  handledAlert.current = null;
                   setMarkerEpoch((value) => value + 1);
                 }}
               >

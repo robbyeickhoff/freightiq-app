@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Linking from "expo-linking";
+import * as Notifications from "expo-notifications";
 import { Stack, usePathname, useRouter } from "expo-router";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "expo-router/react-navigation";
 import { StatusBar } from "expo-status-bar";
@@ -25,6 +26,26 @@ import {
   type AppLockBackgroundTimeout,
 } from "@/utils/app-lock";
 import { supabase } from "@/utils/supabase";
+import {
+  readDrivingAlerts,
+  refreshDrivingSnapshot,
+  selectedDrivingCondition,
+  stopPriorDrivingAccount,
+} from "@/utils/operations-driving-alerts";
+import "@/utils/operations-driving-alert-task";
+
+Notifications.setNotificationHandler({
+  handleNotification: async (notification) => ({
+    shouldShowBanner:
+      notification.request.content.data?.drivingAlert === true &&
+      notification.request.content.data?.conditionId !== selectedDrivingCondition(),
+    shouldShowList: true,
+    shouldPlaySound:
+      notification.request.content.data?.drivingAlert === true &&
+      notification.request.content.data?.conditionId !== selectedDrivingCondition(),
+    shouldSetBadge: false,
+  }),
+});
 
 const ONBOARDING_SEEN_KEY = "freightiq:onboarding-seen:v1";
 
@@ -46,6 +67,7 @@ function RootNavigator() {
   const [isAppLockEnabled, setIsAppLockEnabled] = useState(false);
   const [isAppLocked, setIsAppLocked] = useState(false);
   const [isAppContentCovered, setIsAppContentCovered] = useState(false);
+  const [pendingAlert, setPendingAlert] = useState<{ conditionId?: string } | null>(null);
   const appLockUserIdRef = useRef<string | null>(null);
   const isAppLockEnabledRef = useRef(false);
   const appLockBackgroundTimeoutRef = useRef<AppLockBackgroundTimeout>(
@@ -123,6 +145,7 @@ function RootNavigator() {
         if (sessionResult.error) {
           if (isInvalidStoredSessionError(sessionResult.error)) {
             await clearInvalidStoredSession();
+            await stopPriorDrivingAccount(null);
             if (mounted) {
               setInitialRouteName(onboardingValue === "true" ? "auth" : "onboarding");
             }
@@ -133,12 +156,14 @@ function RootNavigator() {
         }
 
         if (!sessionResult.data.session) {
+          await stopPriorDrivingAccount(null);
           setInitialRouteName(onboardingValue === "true" ? "auth" : "onboarding");
           return;
         }
 
         const userResult = await supabase.auth.getUser();
         if (userResult.error || !userResult.data.user) {
+          await stopPriorDrivingAccount(null);
           if (isInvalidStoredSessionError(userResult.error)) {
             await clearInvalidStoredSession();
           }
@@ -195,6 +220,12 @@ function RootNavigator() {
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
+        void supabase.auth.getSession().then(({ data }) => {
+          if (data.session?.user.id)
+            void readDrivingAlerts(data.session.user.id).then((state) => {
+              if (state.session) void refreshDrivingSnapshot(data.session!.user.id, true);
+            });
+        });
         const backgroundStartedAt = backgroundStartedAtRef.current;
         backgroundStartedAtRef.current = null;
         const backgroundTimeout = appLockBackgroundTimeoutRef.current;
@@ -218,6 +249,61 @@ function RootNavigator() {
 
     return () => subscription.remove();
   }, []);
+
+  useEffect(() => {
+    const accept = (response: Notifications.NotificationResponse | null) => {
+      const data = response?.notification.request.content.data;
+      if (data?.drivingAlert !== true) return;
+      setPendingAlert({
+        conditionId: typeof data.conditionId === "string" ? data.conditionId : undefined,
+      });
+    };
+    accept(Notifications.getLastNotificationResponse());
+    const subscription = Notifications.addNotificationResponseReceivedListener(accept);
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    if (
+      !pendingAlert ||
+      !startupRouteApplied ||
+      !initialRouteName ||
+      pathname === "/auth" ||
+      pathname === "/onboarding" ||
+      pathname === "/setup-profile" ||
+      isAppLocked ||
+      isAppContentCovered
+    )
+      return;
+    let current = true;
+    void supabase.auth.getSession().then(async ({ data }) => {
+      if (!current || !data.session?.user.id) return;
+      const state = await readDrivingAlerts(data.session.user.id);
+      if (!current) return;
+      const alert = state.unread.find((item) => item.id === pendingAlert.conditionId);
+      router.push(
+        alert
+          ? ({
+              pathname: "/(tabs)/operations/map",
+              params: { alertId: alert.id, area: alert.areaSlug },
+            } as never)
+          : ("/(tabs)/operations" as never),
+      );
+      Notifications.clearLastNotificationResponse();
+      setPendingAlert(null);
+    });
+    return () => {
+      current = false;
+    };
+  }, [
+    pendingAlert,
+    startupRouteApplied,
+    initialRouteName,
+    isAppLocked,
+    isAppContentCovered,
+    pathname,
+    router,
+  ]);
 
   useEffect(() => {
     if (!initialRouteName) return;
@@ -278,6 +364,7 @@ function RootNavigator() {
 
     const { data: authSubscription } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
+        void stopPriorDrivingAccount(null);
         appLockUserIdRef.current = null;
         isAppLockEnabledRef.current = false;
         appLockBackgroundTimeoutRef.current = DEFAULT_APP_LOCK_BACKGROUND_TIMEOUT_MS;
@@ -306,6 +393,7 @@ function RootNavigator() {
             setAppLockUserId(session.user.id);
             setIsAppLockEnabled(enabled);
             setIsAppLocked(false);
+            void stopPriorDrivingAccount(session.user.id);
             await routeSignedInUser(session.user.id);
           })().catch(() => router.replace("/auth"));
         }, 0);

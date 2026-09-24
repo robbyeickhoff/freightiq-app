@@ -46,6 +46,7 @@ import {
   writeOperationsEncounters,
 } from "@/utils/operations-board";
 import { evaluateOperationsEncounter } from "@/utils/operations-proximity";
+import { refreshCurrentDrivingSnapshot } from "@/utils/operations-driving-alerts";
 import {
   readSearchResultLocality,
   resolveConfirmedStopLocality,
@@ -4177,6 +4178,7 @@ export default function HomeScreen() {
                   return;
                 }
                 setNearbyOperationsUpdate(null);
+                void refreshCurrentDrivingSnapshot();
               }}
             >
               Yes
@@ -4194,6 +4196,7 @@ export default function HomeScreen() {
                   return;
                 }
                 setNearbyOperationsUpdate(null);
+                void refreshCurrentDrivingSnapshot();
               }}
             >
               No

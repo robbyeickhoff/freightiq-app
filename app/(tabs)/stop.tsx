@@ -320,6 +320,8 @@ function fitDeliveryZonePreviewMap(
 export default function StopScreen() {
   const scrollViewRef = useRef<ScrollView | null>(null);
   const additionalIntelScrollRef = useRef<ScrollView | null>(null);
+  const contactPhoneInputRefs = useRef(new Map<string, TextInput>());
+  const pendingContactPhoneFocusRef = useRef<string | null>(null);
   const deliveryZonePreviewMapRef = useRef<MapView | null>(null);
   const router = useRouter();
   const isFocused = useIsFocused();
@@ -1328,8 +1330,13 @@ export default function StopScreen() {
   }
 
   function addContactPhone(personIndex: number) {
+    if (contactPhoneCount() >= 5) return;
+
+    const phoneIndex = contactPeople[personIndex]?.phones.length;
+    if (phoneIndex === undefined) return;
+
+    pendingContactPhoneFocusRef.current = `${personIndex}-${phoneIndex}`;
     setContactPeople((previous) => {
-      if (contactPhoneCount(previous) >= 5) return previous;
       return previous.map((person, index) =>
         index === personIndex
           ? {
@@ -1340,6 +1347,17 @@ export default function StopScreen() {
       );
     });
   }
+
+  useEffect(() => {
+    const pendingKey = pendingContactPhoneFocusRef.current;
+    if (!pendingKey) return;
+
+    const input = contactPhoneInputRefs.current.get(pendingKey);
+    if (!input) return;
+
+    pendingContactPhoneFocusRef.current = null;
+    requestAnimationFrame(() => input.focus());
+  }, [contactPeople]);
 
   function updateContactPhone(
     personIndex: number,
@@ -3128,6 +3146,14 @@ export default function StopScreen() {
                                       </View>
                                       <View style={styles.contactPhoneInputRow}>
                                         <TextInput
+                                          ref={(input) => {
+                                            const key = `${personIndex}-${phoneIndex}`;
+                                            if (input) {
+                                              contactPhoneInputRefs.current.set(key, input);
+                                            } else {
+                                              contactPhoneInputRefs.current.delete(key);
+                                            }
+                                          }}
                                           placeholderTextColor={colors.textSecondary}
                                           keyboardAppearance={colorScheme}
                                           accessibilityLabel={`${person.name || `Contact ${personIndex + 1}`} ${phoneTypeLabel(phone.type)} phone number`}

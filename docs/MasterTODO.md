@@ -45,6 +45,17 @@ preparation for expanding the tester base.
 
 # Active Work
 
+## Operations Driving Alerts
+
+- [x] Approve the bounded [Operations Driving Alerts V1 specification](build-specs/FreightIQOperationsNearbyAlertsV1BuildSpec.md).
+- [x] Complete local app implementation, native configuration, and static verification.
+- [x] Review the scoped diff, approve development builds, and create iOS/Android internal artifacts.
+- [x] Accept the clean-install iPhone permission flow, stationary notification, tap-through, unread
+      state, session controls, and related Contact / Check-In and sign-in keyboard fixes.
+- [ ] Create and install a traceable standalone iOS preview artifact for movement testing.
+- [ ] Test foreground/background notification timing, permission recovery, battery, and unread state on iPhone and Pixel.
+- [ ] Complete separate privacy and store declaration work before external distribution.
+
 ## Real-World Testing
 
 ### Goals

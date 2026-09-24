@@ -18,6 +18,7 @@ import { AppCard } from "@/components/ui/app-card";
 import { Radius, Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { supabase } from "@/utils/supabase";
+import { refreshCurrentDrivingSnapshot } from "@/utils/operations-driving-alerts";
 
 const reasons = [
   ["incorrect_or_unsafe", "Incorrect or unsafe"],
@@ -69,6 +70,7 @@ export default function ReportContentScreen() {
       Alert.alert("Unable to block contributor", error.message);
       return;
     }
+    void refreshCurrentDrivingSnapshot();
 
     const hiddenContent =
       params.subjectType === "operations_update" ? "Operations updates" : "Driver Reports";

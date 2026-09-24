@@ -24,6 +24,25 @@
       "expo-status-bar",
       "expo-web-browser",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "FreightIQ uses your location on this device to show nearby map conditions and, when you start Driving Alerts, warn about nearby conditions.",
+          "locationAlwaysAndWhenInUsePermission": "During a Driving Alerts session, FreightIQ checks your location on this device for nearby conditions while you use other apps. Stop the session at any time in FreightIQ.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "androidForegroundServiceIcon": "./assets/images/android-icon-monochrome.png"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "operations-nearby-v1",
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#F39A3F"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",

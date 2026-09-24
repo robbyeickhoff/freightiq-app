@@ -8,6 +8,7 @@ import { AppCard } from "@/components/ui/app-card";
 import { Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { supabase } from "@/utils/supabase";
+import { refreshCurrentDrivingSnapshot } from "@/utils/operations-driving-alerts";
 
 type BlockedContributor = {
   id: string;
@@ -77,6 +78,7 @@ export default function BlockedContributorsScreen() {
     }
 
     setContributors((current) => current.filter((item) => item.id !== contributor.id));
+    void refreshCurrentDrivingSnapshot();
   }
 
   return (

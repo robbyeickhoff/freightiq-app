@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Keyboard,
@@ -33,7 +33,6 @@ type AuthMode = "password" | "code-request" | "code-verify";
 export default function AuthScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const scrollViewRef = useRef<ScrollView>(null);
   const [mode, setMode] = useState<AuthMode>("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,15 +44,6 @@ export default function AuthScreen() {
   const [message, setMessage] = useState("");
   const [biometricCapability, setBiometricCapability] = useState<AppLockCapability | null>(null);
   const [useBiometrics, setUseBiometrics] = useState(false);
-
-  const revealFormActions = useCallback(() => {
-    scrollViewRef.current?.scrollToEnd({ animated: true });
-  }, []);
-
-  useEffect(() => {
-    const keyboardSubscription = Keyboard.addListener("keyboardDidShow", revealFormActions);
-    return () => keyboardSubscription.remove();
-  }, [revealFormActions]);
 
   useEffect(() => {
     void getAppLockCapability().then(setBiometricCapability);
@@ -180,7 +170,6 @@ export default function AuthScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
-          ref={scrollViewRef}
           contentContainerStyle={styles.container}
           keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"

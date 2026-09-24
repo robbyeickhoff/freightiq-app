@@ -22,6 +22,7 @@ import { Radius, Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { supabase } from "@/utils/supabase";
 import { clearAppLockPreference } from "@/utils/app-lock";
+import { clearDrivingAlerts } from "@/utils/operations-driving-alerts";
 
 const DELETE_INPUT_ACCESSORY_ID = "delete-account-keyboard-toolbar";
 
@@ -62,6 +63,7 @@ export default function DeleteAccountScreen() {
       return;
     }
 
+    if (userId) await clearDrivingAlerts(userId).catch(() => undefined);
     await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
     if (userId) await clearAppLockPreference(userId).catch(() => undefined);
     await AsyncStorage.clear();
@@ -88,97 +90,106 @@ export default function DeleteAccountScreen() {
           keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
           keyboardShouldPersistTaps="handled"
         >
-        <Text style={[styles.title, { color: colors.textPrimary }]}>
-          Permanent account deletion
-        </Text>
-        <Text style={[styles.intro, { color: colors.textSecondary }]}>
-          Deleting your account removes your FreightIQ identity and user-linked contributions. You
-          will be signed out on this device and cannot recover the account.
-        </Text>
-
-        <AppCard contentStyle={styles.card}>
-          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-            What FreightIQ deletes
+          <Text style={[styles.title, { color: colors.textPrimary }]}>
+            Permanent account deletion
           </Text>
-          <Text style={[styles.copy, { color: colors.textSecondary }]}>
-            Your profile, Driver Reports, votes, contacts, notes, private images, Founding Driver
-            records, referrals, safety records, and contributor attribution.
+          <Text style={[styles.intro, { color: colors.textSecondary }]}>
+            Deleting your account removes your FreightIQ identity and user-linked contributions. You
+            will be signed out on this device and cannot recover the account.
           </Text>
-        </AppCard>
 
-        <AppCard contentStyle={styles.card}>
-          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>What may remain</Text>
-          <Text style={[styles.copy, { color: colors.textSecondary }]}>
-            Neutral business name, address, coordinates, and Delivery Zone may remain only after
-            they are disconnected from your account. Your authored notes and contact information do
-            not remain with that stop.
-          </Text>
-        </AppCard>
+          <AppCard contentStyle={styles.card}>
+            <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
+              What FreightIQ deletes
+            </Text>
+            <Text style={[styles.copy, { color: colors.textSecondary }]}>
+              Your profile, Driver Reports, votes, contacts, notes, private images, Founding Driver
+              records, referrals, safety records, and contributor attribution.
+            </Text>
+          </AppCard>
 
-        {!confirmed ? (
-          <AppButton onPress={beginConfirmation} variant="destructive">
-            Begin Account Deletion
-          </AppButton>
-        ) : (
-          <View
-            onLayout={(event) => {
-              confirmationYRef.current = event.nativeEvent.layout.y;
-            }}
-          >
-            <AppCard contentStyle={styles.confirmationCard}>
-              <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-                Type DELETE to confirm
-              </Text>
-              <TextInput
-                ref={confirmationInputRef}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                inputAccessoryViewID={Platform.OS === "ios" ? DELETE_INPUT_ACCESSORY_ID : undefined}
-                onChangeText={setConfirmationText}
-                onFocus={() => {
-                  setTimeout(() => {
-                    const inputHandle = findNodeHandle(confirmationInputRef.current);
-                    if (inputHandle) {
-                      scrollViewRef.current?.scrollResponderScrollNativeHandleToKeyboard(
-                        inputHandle,
-                        Platform.OS === "android" ? 96 : Spacing.md,
-                        true,
-                      );
-                      return;
-                    }
+          <AppCard contentStyle={styles.card}>
+            <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>What may remain</Text>
+            <Text style={[styles.copy, { color: colors.textSecondary }]}>
+              Neutral business name, address, coordinates, and Delivery Zone may remain only after
+              they are disconnected from your account. Your authored notes and contact information
+              do not remain with that stop.
+            </Text>
+          </AppCard>
 
-                    scrollViewRef.current?.scrollTo({
-                      animated: true,
-                      y: Math.max(0, confirmationYRef.current - Spacing.sm),
-                    });
-                  }, Platform.OS === "android" ? 300 : 150);
-                }}
-                placeholder="DELETE"
-                placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    color: colors.textPrimary,
-                  },
-                ]}
-                value={confirmationText}
-              />
-              <AppButton
-                disabled={confirmationText !== "DELETE"}
-                loading={deleting}
-                onPress={() => void deleteAccount()}
-                variant="destructive"
-              >
-                Permanently Delete Account
-              </AppButton>
-              <AppButton disabled={deleting} onPress={() => setConfirmed(false)} variant="tertiary">
-                Cancel
-              </AppButton>
-            </AppCard>
-          </View>
-        )}
+          {!confirmed ? (
+            <AppButton onPress={beginConfirmation} variant="destructive">
+              Begin Account Deletion
+            </AppButton>
+          ) : (
+            <View
+              onLayout={(event) => {
+                confirmationYRef.current = event.nativeEvent.layout.y;
+              }}
+            >
+              <AppCard contentStyle={styles.confirmationCard}>
+                <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
+                  Type DELETE to confirm
+                </Text>
+                <TextInput
+                  ref={confirmationInputRef}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  inputAccessoryViewID={
+                    Platform.OS === "ios" ? DELETE_INPUT_ACCESSORY_ID : undefined
+                  }
+                  onChangeText={setConfirmationText}
+                  onFocus={() => {
+                    setTimeout(
+                      () => {
+                        const inputHandle = findNodeHandle(confirmationInputRef.current);
+                        if (inputHandle) {
+                          scrollViewRef.current?.scrollResponderScrollNativeHandleToKeyboard(
+                            inputHandle,
+                            Platform.OS === "android" ? 96 : Spacing.md,
+                            true,
+                          );
+                          return;
+                        }
+
+                        scrollViewRef.current?.scrollTo({
+                          animated: true,
+                          y: Math.max(0, confirmationYRef.current - Spacing.sm),
+                        });
+                      },
+                      Platform.OS === "android" ? 300 : 150,
+                    );
+                  }}
+                  placeholder="DELETE"
+                  placeholderTextColor={colors.textSecondary}
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                      color: colors.textPrimary,
+                    },
+                  ]}
+                  value={confirmationText}
+                />
+                <AppButton
+                  disabled={confirmationText !== "DELETE"}
+                  loading={deleting}
+                  onPress={() => void deleteAccount()}
+                  variant="destructive"
+                >
+                  Permanently Delete Account
+                </AppButton>
+                <AppButton
+                  disabled={deleting}
+                  onPress={() => setConfirmed(false)}
+                  variant="tertiary"
+                >
+                  Cancel
+                </AppButton>
+              </AppCard>
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
 

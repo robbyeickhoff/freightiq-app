@@ -19,6 +19,12 @@ import MapView, { Marker, type Region } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { NavigationAppPicker } from "@/components/navigation-app-picker";
+import { OperationsDrivingAlertControl } from "@/components/operations-driving-alert-control";
+import {
+  drivingAlertStatus,
+  startDrivingAlerts,
+  recordDrivingFailure,
+} from "@/utils/operations-driving-alerts";
 import { AppButton } from "@/components/ui/app-button";
 import { AppCard } from "@/components/ui/app-card";
 import { AppIcon, type AppIconName } from "@/components/ui/app-icon";
@@ -174,6 +180,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     reorderStops,
     route,
     startFresh,
+    userId,
   } = useTodayRoute();
   const { fontScale } = useWindowDimensions();
   const usesAccessibilityLayout = fontScale >= 1.5;
@@ -420,7 +427,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     }
   }
 
-  async function launchStop(stop: TodayRouteStop, staleResolved = false) {
+  async function launchStop(stop: TodayRouteStop, staleResolved = false, alertChoiceMade = false) {
     if (navigationLaunching) return;
     if (unavailableStopIds.has(stop.id)) {
       Alert.alert(
@@ -431,6 +438,38 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     }
     if (isStale && !staleResolved) {
       showStaleRouteAlert(() => void launchStop(stop, true));
+      return;
+    }
+
+    if (userId && !alertChoiceMade && !(await drivingAlertStatus(userId)).active) {
+      Alert.alert(
+        "Driving Alerts for this route?",
+        "Get nearby-condition notifications while you use another app. Your location stays on this phone. This optional session uses more battery and can be stopped in FreightIQ.",
+        [
+          { text: "Continue Without Alerts", onPress: () => void launchStop(stop, true, true) },
+          {
+            text: "Start Driving Alerts",
+            onPress: () =>
+              void (async () => {
+                try {
+                  await startDrivingAlerts(userId, "route");
+                  void launchStop(stop, true, true);
+                } catch (error) {
+                  const reason =
+                    error instanceof Error ? error.message : "Check permissions in Settings.";
+                  await recordDrivingFailure(userId, reason);
+                  Alert.alert("Driving Alerts unavailable", reason, [
+                    { text: "Stay Here" },
+                    {
+                      text: "Continue Without Alerts",
+                      onPress: () => void launchStop(stop, true, true),
+                    },
+                  ]);
+                }
+              })(),
+          },
+        ],
+      );
       return;
     }
 
@@ -1022,6 +1061,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
           keyExtractor={(item) => item.id}
           ListHeaderComponent={
             <View style={styles.listHeader}>
+              <OperationsDrivingAlertControl origin="route" />
               {upcoming[0] ? (
                 <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Upcoming</Text>
               ) : (

@@ -158,9 +158,11 @@ network for operational delivery updates without becoming a social media platfor
 - The pilot should prioritize current information over chat-like behavior: refresh on screen open,
   manual pull-to-refresh, and timely post visibility are sufficient unless field use establishes a
   need for immediate live subscriptions.
-- Background proximity monitoring while Apple Maps, Google Maps, or Waze is foregrounded is not
-  part of the pilot. Evaluate it only after foreground field testing establishes enough value to
-  justify the additional notification, battery, privacy, permission, and platform requirements.
+- The approved optional Driving Alerts expansion is governed by
+  `docs/build-specs/FreightIQOperationsNearbyAlertsV1BuildSpec.md`. Its explicit, user-started
+  background-location session is separate from the foreground confirmation pilot above. Location
+  comparisons, unread state, and encounters remain device-local. Native distribution and store
+  disclosures are separately gated.
 
 ## Pilot Categories
 

@@ -13,7 +13,48 @@ answer one question:
 
 ## Current Objective
 
-### Active Objective — Expo SDK 57 Upgrade
+### Active Objective — Operations Driving Alerts V1
+
+On September 15, 2026, the Product Owner approved the bounded local build in
+`docs/build-specs/FreightIQOperationsNearbyAlertsV1BuildSpec.md`. Implement an explicit optional
+Driving Alerts session, local half-mile condition checks and notifications, account-scoped unread
+badge and board list, session controls, native configuration, and focused local validation. This
+approval does not authorize native builds, external distribution, store changes, deployment,
+database changes, commit, or push. Physical iPhone and Pixel acceptance follows a separately
+approved development build and must check timing, battery, permissions, and navigation-app handoff.
+
+The local candidate contains the explicit session controls, task-backed half-mile evaluator,
+account-scoped unread badge and board list, notification-to-map destination, category preferences,
+and local Help copy. The SDK 57 patch dependencies were aligned to satisfy Expo Doctor. TypeScript,
+all 41 unit tests, iOS/Android JavaScript exports, and a clean isolated native prebuild pass;
+lint has zero errors and the same four existing `app/(tabs)/stop.tsx` warnings.
+
+The Product Owner separately approved installed development-build creation on September 16, 2026.
+The first iOS attempt failed because its existing ad hoc profile lacked the Push Notifications
+entitlement added by `expo-notifications`. Expo's credential workflow enabled that capability for
+the development bundle and refreshed the ad hoc profile for the registered iPhone. The replacement
+iOS development build `51ed7c92-f635-4cc2-ab73-12040366494f` and Android development build
+`e2da693a-22fa-4d6e-b5be-c9ae632a36a8` both finished successfully as internal installable
+artifacts.
+
+On September 24, the Product Owner installed the corrected iOS development artifact and accepted
+the first bounded physical-iPhone pass. A clean install passed the user-started notification and
+location permission sequence, including the iOS delay needed to observe a newly saved **Always**
+authorization; session start, background persistence while the app was briefly away, and manual
+stop; foreground nearby-condition notification; notification-to-condition map handoff; account-
+scoped unread badge creation and clearing; and cleanup of the temporary condition and test-account
+eligibility. The same session physically accepted the Contact / Check-In new-phone keyboard fix and
+the sign-in email keyboard fix. TypeScript, lint, formatting, all 41 focused tests, and diff checks
+passed after the amendments. The Product Owner approved documentation, final review, commit/push,
+and creation of a traceable standalone iOS preview artifact from the accepted commit.
+
+Movement-triggered locked/background delivery, boundary timing, leave-and-return suppression,
+offline/stale recovery, navigation-app handoff, force-stop behavior, practical battery effect, and
+the complete Pixel contract remain pending. No production candidate, store submission, tester
+distribution, public release, database change, or privacy/store declaration change is authorized
+by this acceptance.
+
+### Completed Objective — Expo SDK 57 Upgrade
 
 The Product Owner confirmed on September 7, 2026 that iOS 1.0.1 build 47 and Android 1.0.1 code 29
 are installed and accepted on the physical iPhone and Pixel. That closes the installed-candidate

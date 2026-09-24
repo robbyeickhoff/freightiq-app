@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppIcon } from "@/components/ui/app-icon";
 import { AppButton } from "@/components/ui/app-button";
 import { AppCard } from "@/components/ui/app-card";
+import { OperationsDrivingAlertControl } from "@/components/operations-driving-alert-control";
 import { useAppTheme } from "@/context/theme-context";
 import {
   OPERATIONS_AREAS,
@@ -36,6 +37,13 @@ import {
   writeOperationsStatusSnapshot,
 } from "@/utils/operations-board";
 import { supabase } from "@/utils/supabase";
+import {
+  markAllDrivingAlertsRead,
+  readDrivingAlerts,
+  refreshDrivingSnapshot,
+  subscribeDrivingAlerts,
+  type UnreadDrivingAlert,
+} from "@/utils/operations-driving-alerts";
 
 function confirmationLabel(value: string) {
   const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60000));
@@ -75,6 +83,7 @@ export default function OperationsBoardScreen() {
   const [category, setCategory] = useState("");
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [unreadAlerts, setUnreadAlerts] = useState<UnreadDrivingAlert[]>([]);
   const isOperationsTab = pathname === "/operations";
   const visibleUpdates = useMemo(
     () => filterOperationsByCategory(updates, category),
@@ -124,6 +133,7 @@ export default function OperationsBoardScreen() {
         setOfflineAt(null);
         setLoadError(false);
         await writeOperationsCache(userId, area, history, rows);
+        void refreshDrivingSnapshot(userId).catch(() => undefined);
       }
       if (!isCurrent()) return;
       setCanPost(access.data === true);
@@ -145,13 +155,32 @@ export default function OperationsBoardScreen() {
   );
   useFocusEffect(
     useCallback(() => {
+      if (!userId) return;
+      let active = true;
+      const refreshUnread = () =>
+        void readDrivingAlerts(userId).then((state) => {
+          if (active) setUnreadAlerts(state.unread);
+        });
+      refreshUnread();
+      const unsubscribe = subscribeDrivingAlerts(refreshUnread);
+      return () => {
+        active = false;
+        unsubscribe();
+      };
+    }, [userId]),
+  );
+  useFocusEffect(
+    useCallback(() => {
       let focused = true;
       let generation = 0;
       let appState = AppState.currentState;
       let timer: ReturnType<typeof setInterval> | undefined;
       const refresh = (silent: boolean) => {
         const requestGeneration = ++generation;
-        void load(silent, () => focused && appState === "active" && generation === requestGeneration);
+        void load(
+          silent,
+          () => focused && appState === "active" && generation === requestGeneration,
+        );
       };
       const start = (silent: boolean) => {
         refresh(silent);
@@ -188,7 +217,10 @@ export default function OperationsBoardScreen() {
         onPress: async () => {
           const { error } = await supabase.rpc("resolve_operations_update", { p_update_id: id });
           if (error) Alert.alert("Could not resolve", error.message);
-          else void load();
+          else {
+            void refreshDrivingSnapshot(userId, true);
+            void load();
+          }
         },
       },
     ]);
@@ -198,7 +230,10 @@ export default function OperationsBoardScreen() {
       p_response: response,
     });
     if (error) Alert.alert("Could not confirm", error.message);
-    else void load(true);
+    else {
+      void refreshDrivingSnapshot(userId, true);
+      void load(true);
+    }
   };
 
   return (
@@ -501,6 +536,64 @@ export default function OperationsBoardScreen() {
             />
           }
           contentContainerStyle={styles.list}
+          ListHeaderComponent={
+            <View style={{ gap: 16 }}>
+              <OperationsDrivingAlertControl origin="operations" />
+              {unreadAlerts.length ? (
+                <AppCard contentStyle={{ gap: 10 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Text style={[styles.category, { color: colors.textPrimary }]}>
+                      Unread Nearby Alerts
+                    </Text>
+                    {unreadAlerts.length > 1 ? (
+                      <AppButton
+                        size="compact"
+                        variant="tertiary"
+                        onPress={() => userId && void markAllDrivingAlertsRead(userId)}
+                      >
+                        Mark All Read
+                      </AppButton>
+                    ) : null}
+                  </View>
+                  {unreadAlerts.map((alert) => (
+                    <Pressable
+                      key={`${alert.id}:${alert.alertedAt}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open ${categoryLabel(alert.category)} nearby alert`}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(tabs)/operations/map",
+                          params: { alertId: alert.id, area: alert.areaSlug },
+                        } as never)
+                      }
+                      style={{
+                        paddingVertical: 8,
+                        borderTopWidth: 1,
+                        borderTopColor: colors.border,
+                      }}
+                    >
+                      <Text style={{ color: colors.accentStrong, fontWeight: "700" }}>
+                        {categoryLabel(alert.category)} · {alert.stopName || alert.areaName}
+                      </Text>
+                      <Text style={{ color: colors.textPrimary }}>{alert.message}</Text>
+                      <Text style={{ color: colors.textSecondary }}>
+                        {new Date(alert.alertedAt).toLocaleTimeString([], {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </AppCard>
+              ) : null}
+            </View>
+          }
           ListEmptyComponent={
             loadError ? null : (
               <AppCard contentStyle={styles.emptyCard}>

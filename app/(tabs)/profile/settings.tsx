@@ -20,6 +20,7 @@ import { supabase } from "@/utils/supabase";
 import { navigationPreferenceLabel } from "@/utils/navigation-apps";
 import { clearAppLockPreference } from "@/utils/app-lock";
 import { clearStoredTodayRoute } from "@/utils/todays-route";
+import { stopDrivingAlerts } from "@/utils/operations-driving-alerts";
 
 type SettingsRowProps = {
   accessibilityHint?: string;
@@ -96,6 +97,7 @@ export default function SettingsScreen() {
   async function logOut() {
     const { data } = await supabase.auth.getSession();
     const userId = data.session?.user.id;
+    if (userId) await stopDrivingAlerts(userId);
     const { error } = await supabase.auth.signOut();
 
     if (error) {
@@ -152,6 +154,15 @@ export default function SettingsScreen() {
             onPress={() => router.push("/(tabs)/profile/navigation-app")}
             stacksValue
             value={navigationPreferenceLabel(navigationPreference)}
+          />
+          <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+          <SettingsRow
+            icon="location"
+            label="Driving Alerts"
+            value="Status and categories"
+            accessibilityHint="Opens optional nearby condition alerts"
+            stacksValue
+            onPress={() => router.push("/(tabs)/profile/driving-alerts" as Href)}
           />
         </AppCard>
 

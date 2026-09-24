@@ -7,6 +7,7 @@ import { Borders } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { useTodayRoute } from "@/context/todays-route-context";
 import { supabase } from "@/utils/supabase";
+import { unreadDrivingCount, subscribeDrivingAlerts } from "@/utils/operations-driving-alerts";
 
 export default function TabLayout() {
   const { colors } = useAppTheme();
@@ -18,17 +19,17 @@ export default function TabLayout() {
     useCallback(() => {
       let active = true;
       const refresh = async () => {
-        const { data, error } = await supabase.rpc("get_operations_board", {
-          p_area_slug: null,
-          p_include_history: false,
-        });
-        if (active && !error) setOperationsCount(Array.isArray(data) ? data.length : 0);
+        const { data } = await supabase.auth.getSession();
+        const count = data.session?.user.id ? await unreadDrivingCount(data.session.user.id) : 0;
+        if (active) setOperationsCount(count);
       };
       void refresh();
       const timer = setInterval(() => void refresh(), 60_000);
+      const unsubscribe = subscribeDrivingAlerts(() => void refresh());
       return () => {
         active = false;
         clearInterval(timer);
+        unsubscribe();
       };
     }, []),
   );
