@@ -54,8 +54,10 @@ preparation for expanding the tester base.
       state, session controls, and related Contact / Check-In and sign-in keyboard fixes.
 - [x] Create traceable standalone iOS preview build 7
       (`fa527c6c-eb8e-424d-bb0d-5dd0dc3822b7`) from accepted commit `ee85b5e`.
-- [ ] Install preview build 7 on the registered iPhone and complete the movement test.
-- [ ] Test foreground/background notification timing, permission recovery, battery, and unread state on iPhone and Pixel.
+- [x] Install preview build 7 on the registered iPhone and pass the real-world movement test with
+      three successful alerts along the driving route.
+- [ ] Test leave-and-return suppression, offline/stale recovery, navigation handoff, force-stop
+      behavior, practical battery effect, and the complete Pixel contract.
 - [ ] Complete separate privacy and store declaration work before external distribution.
 
 ## Real-World Testing
