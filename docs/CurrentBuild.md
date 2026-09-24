@@ -46,7 +46,10 @@ scoped unread badge creation and clearing; and cleanup of the temporary conditio
 eligibility. The same session physically accepted the Contact / Check-In new-phone keyboard fix and
 the sign-in email keyboard fix. TypeScript, lint, formatting, all 41 focused tests, and diff checks
 passed after the amendments. The Product Owner approved documentation, final review, commit/push,
-and creation of a traceable standalone iOS preview artifact from the accepted commit.
+and creation of a traceable standalone iOS preview artifact from the accepted commit. Commit
+`ee85b5e` was pushed to `origin/clean-main`, and standalone iOS preview build 7
+(`fa527c6c-eb8e-424d-bb0d-5dd0dc3822b7`) completed successfully from that exact commit for the
+movement test.
 
 Movement-triggered locked/background delivery, boundary timing, leave-and-return suppression,
 offline/stale recovery, navigation-app handoff, force-stop behavior, practical battery effect, and
