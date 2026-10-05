@@ -11,6 +11,10 @@ import {
   findOperationsDuplicates,
   findOperationsStatusNotice,
   operationsCacheScope,
+  operationsReadEpoch,
+  subscribeOperationsPrivacy,
+  invalidateOperationsReadCaches,
+  readOperationsCache,
   parseOperationsCache,
   parseOperationsDraft,
   validateOperationsDraft,
@@ -19,6 +23,88 @@ import {
 } from "../utils/operations-board.ts";
 
 process.env.TZ = "America/Denver";
+
+test("active saved copies cannot reappear during overlapping block cleanup or storage failure", async () => {
+  const saved = JSON.stringify({ savedAt: new Date().toISOString(), updates: [] });
+  const storage = { getItem: async () => saved };
+  const pending: (() => void)[] = [];
+  const cleanupStorage = {
+    getAllKeys: async () => ["mfi:operations:v1:race:cache:active:all"],
+    multiRemove: () => new Promise<void>((resolve) => pending.push(resolve)),
+  };
+  const first = invalidateOperationsReadCaches("race", cleanupStorage);
+  await Promise.resolve();
+  const second = invalidateOperationsReadCaches("race", cleanupStorage);
+  await Promise.resolve();
+  assert.equal(await readOperationsCache("race", "", false, storage), null);
+  assert.notEqual(await readOperationsCache("race", "", true, storage), null);
+  pending[0]();
+  await first;
+  assert.equal(await readOperationsCache("race", "", false, storage), null);
+  pending[1]();
+  await second;
+  assert.notEqual(await readOperationsCache("race", "", false, storage), null);
+  await assert.rejects(
+    invalidateOperationsReadCaches("race", {
+      getAllKeys: async () => {
+        throw new Error("storage unavailable");
+      },
+      multiRemove: async () => {},
+    }),
+  );
+  assert.equal(await readOperationsCache("race", "", false, storage), null);
+  await invalidateOperationsReadCaches("race", {
+    getAllKeys: async () => [],
+    multiRemove: async () => {},
+  });
+  assert.notEqual(await readOperationsCache("race", "", false, storage), null);
+});
+
+test("a saved-copy read started before a block cannot publish afterward", async () => {
+  let finish!: (value: string | null) => void;
+  const read = readOperationsCache("late", "", false, {
+    getItem: () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  });
+  await invalidateOperationsReadCaches("late", {
+    getAllKeys: async () => [],
+    multiRemove: async () => {},
+  });
+  finish(JSON.stringify({ savedAt: new Date().toISOString(), updates: [] }));
+  assert.equal(await read, null);
+});
+
+test("blocking invalidates active caches only and immediately cancels stale reads", async () => {
+  const before = operationsReadEpoch();
+  let notified = false;
+  const unsubscribe = subscribeOperationsPrivacy(() => {
+    notified = true;
+  });
+  const removed: string[] = [];
+  await invalidateOperationsReadCaches("me", {
+    getAllKeys: async () => {
+      assert.equal(notified, true);
+      assert.equal(operationsReadEpoch(), before + 1);
+      return [
+        "mfi:operations:v1:me:cache:active:all",
+        "mfi:operations:v1:me:cache:active:grand-junction",
+        "mfi:operations:v1:me:cache:history:all",
+        "mfi:operations:v1:me:draft",
+        "mfi:operations:v1:other:cache:active:all",
+      ];
+    },
+    multiRemove: async (keys) => {
+      removed.push(...keys);
+    },
+  });
+  unsubscribe();
+  assert.deepEqual(removed, [
+    "mfi:operations:v1:me:cache:active:all",
+    "mfi:operations:v1:me:cache:active:grand-junction",
+  ]);
+});
 
 const future = () => new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
 const baseDraft = {
@@ -212,16 +298,21 @@ test("builds author notices for each lifecycle transition and ignores the first 
   );
 });
 
-
 test("possibly cleared reports expire and notify their author", () => {
   const expiration = Date.parse("2026-09-05T12:00:00Z");
-  const update = makeUpdate({ status: "possibly_cleared", expires_at: new Date(expiration).toISOString() });
+  const update = makeUpdate({
+    status: "possibly_cleared",
+    expires_at: new Date(expiration).toISOString(),
+  });
   const before = buildOperationsStatusSnapshot([update], expiration - 1);
   assert.equal(before[update.id], "possibly_cleared");
   assert.equal(buildOperationsStatusSnapshot([update], expiration)[update.id], "expired");
   assert.equal(filterCachedOperations([update], false, expiration).length, 0);
   assert.equal(findOperationsStatusNotice(before, [update], expiration)?.status, "expired");
   for (const status of ["resolved", "removed"] as const) {
-    assert.equal(buildOperationsStatusSnapshot([{ ...update, status }], expiration)[update.id], status);
+    assert.equal(
+      buildOperationsStatusSnapshot([{ ...update, status }], expiration)[update.id],
+      status,
+    );
   }
 });

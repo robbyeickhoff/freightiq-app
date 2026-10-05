@@ -1,13 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker, type Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -16,7 +9,13 @@ import { AppCard } from "@/components/ui/app-card";
 import { AppSegmentedControl } from "@/components/ui/app-segmented-control";
 import { Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
-import { supabase } from "@/utils/supabase";
+import { readGuardedFreightIq } from "@/utils/freightiq-stop-reads";
+import {
+  appendCollectionPage,
+  COLLECTION_PAGE_SIZE,
+  parseCollectionPage,
+  type CollectionCursor,
+} from "@/utils/collection-pages";
 
 type CollectionKind = "city" | "driver";
 type CollectionView = "list" | "map";
@@ -89,7 +88,13 @@ export default function SearchCollectionScreen() {
   const safeAreaInsets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const mapRef = useRef<MapView | null>(null);
+  const mapReadyRef = useRef(false);
+  const attachMap = useCallback((instance: MapView | null) => {
+    mapRef.current = instance;
+    if (!instance) mapReadyRef.current = false;
+  }, []);
   const requestIdRef = useRef(0);
+  const requestInFlightRef = useRef(false);
 
   const kind: CollectionKind = firstParam(params.kind) === "driver" ? "driver" : "city";
   const city = firstParam(params.city);
@@ -97,38 +102,54 @@ export default function SearchCollectionScreen() {
   const countryCode = firstParam(params.countryCode) || "US";
   const contributorId = firstParam(params.contributorId);
   const username = firstParam(params.username);
-  const expectedCount = Number(firstParam(params.stopCount)) || 0;
 
   const [view, setView] = useState<CollectionView>("list");
   const [stops, setStops] = useState<CollectionStop[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<CollectionCursor | null>(null);
 
   const title = kind === "city" ? `${city}, ${stateCode}` : `Intel from ${username}`;
-  const subtitleCount = stops.length || expectedCount;
-  const subtitle = `${subtitleCount} visible FreightIQ ${subtitleCount === 1 ? "stop" : "stops"}`;
+  const subtitle = loading
+    ? "Loading stops…"
+    : `${stops.length} ${stops.length === 1 ? "stop" : "stops"} loaded${nextCursor ? " · More available" : ""}`;
   const initialRegion = useMemo(() => mapRegion(stops), [stops]);
+  const fitLoadedStops = useCallback(() => {
+    if (!mapReadyRef.current || stops.length < 2) return;
+    mapRef.current?.fitToCoordinates(
+      stops.map((stop) => ({ latitude: stop.lat, longitude: stop.lng })),
+      { animated: false, edgePadding: { top: 64, right: 48, bottom: 64, left: 48 } },
+    );
+  }, [stops]);
 
-  const loadCollection = useCallback(async () => {
-    const requestId = ++requestIdRef.current;
-    setLoading(true);
-    setErrorMessage(null);
+  useEffect(() => {
+    fitLoadedStops();
+  }, [fitLoadedStops]);
 
-    try {
-      if (kind === "city") {
-        if (!city || !stateCode || !countryCode) throw new Error("City details are incomplete.");
-        const { data, error } = await supabase.rpc("list_freightiq_city_stops", {
-          p_city: city,
-          p_state_code: stateCode,
-          p_country_code: countryCode,
-          p_result_limit: 100,
-          p_result_offset: 0,
-        });
-        if (error) throw error;
-        if (requestId !== requestIdRef.current) return;
+  const loadCollection = useCallback(
+    async (cursor: CollectionCursor | null = null) => {
+      const requestId = ++requestIdRef.current;
+      requestInFlightRef.current = true;
+      setLoading(cursor === null);
+      setLoadingMore(cursor !== null);
+      setErrorMessage(null);
 
-        setStops(
-          (data ?? []).map((row: Record<string, unknown>) => ({
+      try {
+        if (kind === "city") {
+          if (!city || !stateCode || !countryCode) throw new Error("City details are incomplete.");
+          const data = await readGuardedFreightIq<unknown>("city_page", {
+            p_city: city,
+            p_state_code: stateCode,
+            p_country_code: countryCode,
+            p_result_limit: COLLECTION_PAGE_SIZE,
+            p_cursor: cursor,
+          });
+          if (requestId !== requestIdRef.current) return;
+
+          const page = parseCollectionPage(data);
+          setNextCursor(page.nextCursor);
+          const rows = page.stops.map((row: Record<string, unknown>) => ({
             id: String(row.id),
             name: String(row.name ?? "Unknown"),
             address: row.address == null ? null : String(row.address),
@@ -141,20 +162,20 @@ export default function SearchCollectionScreen() {
             visibleReportCount: Number(row.visible_report_count),
             createdStop: null,
             contributedReport: null,
-          })),
-        );
-      } else {
-        if (!contributorId) throw new Error("Driver details are incomplete.");
-        const { data, error } = await supabase.rpc("list_freightiq_driver_stops", {
-          p_contributor_id: contributorId,
-          p_result_limit: 100,
-          p_result_offset: 0,
-        });
-        if (error) throw error;
-        if (requestId !== requestIdRef.current) return;
+          }));
+          setStops((previous) => (cursor ? appendCollectionPage(previous, rows) : rows));
+        } else {
+          if (!contributorId) throw new Error("Driver details are incomplete.");
+          const data = await readGuardedFreightIq<unknown>("driver_page", {
+            p_contributor_id: contributorId,
+            p_result_limit: COLLECTION_PAGE_SIZE,
+            p_cursor: cursor,
+          });
+          if (requestId !== requestIdRef.current) return;
 
-        setStops(
-          (data ?? []).map((row: Record<string, unknown>) => ({
+          const page = parseCollectionPage(data);
+          setNextCursor(page.nextCursor);
+          const rows = page.stops.map((row: Record<string, unknown>) => ({
             id: String(row.id),
             name: String(row.name ?? "Unknown"),
             address: row.address == null ? null : String(row.address),
@@ -167,19 +188,26 @@ export default function SearchCollectionScreen() {
             visibleReportCount: null,
             createdStop: Boolean(row.created_stop),
             contributedReport: Boolean(row.contributed_report),
-          })),
-        );
+          }));
+          setStops((previous) => (cursor ? appendCollectionPage(previous, rows) : rows));
+        }
+      } catch (error) {
+        if (requestId !== requestIdRef.current) return;
+        setErrorMessage(error instanceof Error ? error.message : "Could not load this collection.");
+      } finally {
+        if (requestId === requestIdRef.current) {
+          requestInFlightRef.current = false;
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
-    } catch (error) {
-      if (requestId !== requestIdRef.current) return;
-      setStops([]);
-      setErrorMessage(error instanceof Error ? error.message : "Could not load this collection.");
-    } finally {
-      if (requestId === requestIdRef.current) setLoading(false);
-    }
-  }, [city, contributorId, countryCode, kind, stateCode]);
+    },
+    [city, contributorId, countryCode, kind, stateCode],
+  );
 
   useEffect(() => {
+    setStops([]);
+    setNextCursor(null);
     void loadCollection();
     return () => {
       requestIdRef.current += 1;
@@ -227,16 +255,17 @@ export default function SearchCollectionScreen() {
         <Text style={[styles.stopAddress, { color: colors.textSecondary }]} numberOfLines={2}>
           {compactAddress(item.address)}
         </Text>
-        <Text style={[styles.stopSummary, { color: colors.textSecondary }]}>
-          {supportingText}
-        </Text>
+        <Text style={[styles.stopSummary, { color: colors.textSecondary }]}>{supportingText}</Text>
       </Pressable>
     );
   }
 
   return (
     <View
-      style={[styles.screen, { backgroundColor: colors.background, paddingTop: safeAreaInsets.top }]}
+      style={[
+        styles.screen,
+        { backgroundColor: colors.background, paddingTop: safeAreaInsets.top },
+      ]}
     >
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <AppButton
@@ -269,7 +298,7 @@ export default function SearchCollectionScreen() {
           <ActivityIndicator color={colors.accent} size="large" />
           <Text style={[styles.stateText, { color: colors.textSecondary }]}>Loading stops…</Text>
         </View>
-      ) : errorMessage ? (
+      ) : errorMessage && stops.length === 0 ? (
         <View style={styles.centerState}>
           <Text
             accessibilityRole="alert"
@@ -303,14 +332,10 @@ export default function SearchCollectionScreen() {
           <MapView
             initialRegion={initialRegion}
             onMapReady={() => {
-              if (stops.length > 1) {
-                mapRef.current?.fitToCoordinates(
-                  stops.map((stop) => ({ latitude: stop.lat, longitude: stop.lng })),
-                  { animated: false, edgePadding: { top: 64, right: 48, bottom: 64, left: 48 } },
-                );
-              }
+              mapReadyRef.current = true;
+              fitLoadedStops();
             }}
-            ref={mapRef}
+            ref={attachMap}
             style={StyleSheet.absoluteFill}
           >
             {stops.map((stop) => (
@@ -330,6 +355,39 @@ export default function SearchCollectionScreen() {
           </AppCard>
         </View>
       )}
+      {!loading && stops.length > 0 ? (
+        <View
+          style={[styles.controls, { paddingBottom: Math.max(safeAreaInsets.bottom, Spacing.sm) }]}
+        >
+          {errorMessage ? (
+            <Text
+              accessibilityRole="alert"
+              style={[styles.stateText, { color: colors.textSecondary }]}
+            >
+              {errorMessage} Your loaded stops are still available.
+            </Text>
+          ) : null}
+          {nextCursor ? (
+            <AppButton
+              disabled={loadingMore}
+              onPress={() => {
+                if (!requestInFlightRef.current) void loadCollection(nextCursor);
+              }}
+            >
+              {loadingMore ? "Loading more…" : "Load more stops"}
+            </AppButton>
+          ) : null}
+          <AppButton
+            variant="tertiary"
+            disabled={loadingMore}
+            onPress={() => {
+              if (!requestInFlightRef.current) void loadCollection();
+            }}
+          >
+            Refresh list
+          </AppButton>
+        </View>
+      ) : null}
     </View>
   );
 }

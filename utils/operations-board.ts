@@ -61,6 +61,32 @@ export type OperationsDraft = {
 export type OperationsLifecycleStatus = OperationsUpdate["status"] | "expired";
 const MAX_AREA_DISTANCE_METERS = 80467.2;
 const key = (userId: string, suffix: string) => `mfi:operations:v1:${userId}:${suffix}`;
+let readEpoch = 0;
+const privacyListeners = new Set<() => void>();
+// Reject active saved copies until the latest block's cleanup succeeds. A storage
+// failure stays fail-closed for this runtime instead of reviving blocked content.
+const untrustedActiveCaches = new Map<string, number>();
+export const operationsReadEpoch = () => readEpoch;
+export function subscribeOperationsPrivacy(listener: () => void) {
+  privacyListeners.add(listener);
+  return () => {
+    privacyListeners.delete(listener);
+  };
+}
+export async function invalidateOperationsReadCaches(
+  userId: string,
+  storage: Pick<typeof AsyncStorage, "getAllKeys" | "multiRemove"> = AsyncStorage,
+) {
+  ++readEpoch;
+  const epoch = readEpoch;
+  untrustedActiveCaches.set(userId, epoch);
+  for (const listener of privacyListeners) listener();
+  const keys = (await storage.getAllKeys()).filter((k) =>
+    k.startsWith(key(userId, "cache:active:")),
+  );
+  if (keys.length) await storage.multiRemove(keys);
+  if (untrustedActiveCaches.get(userId) === epoch) untrustedActiveCaches.delete(userId);
+}
 
 export function distanceMeters(
   a: { latitude: number; longitude: number },
@@ -150,7 +176,8 @@ export function operationsLifecycleStatus(
   if (
     (update.status === "active" || update.status === "possibly_cleared") &&
     new Date(update.expires_at).getTime() <= now
-  ) return "expired";
+  )
+    return "expired";
   return update.status;
 }
 
@@ -274,11 +301,16 @@ export async function readOperationsCache(
   userId: string,
   areaSlug: string,
   includeHistory: boolean,
+  storage: Pick<typeof AsyncStorage, "getItem"> = AsyncStorage,
 ) {
-  const value = await AsyncStorage.getItem(
+  if (!includeHistory && untrustedActiveCaches.has(userId)) return null;
+  const epoch = operationsReadEpoch();
+  const value = await storage.getItem(
     key(userId, `cache:${operationsCacheScope(areaSlug, includeHistory)}`),
   );
-  return parseOperationsCache(value, includeHistory);
+  return epoch === operationsReadEpoch() && (includeHistory || !untrustedActiveCaches.has(userId))
+    ? parseOperationsCache(value, includeHistory)
+    : null;
 }
 export function parseOperationsCache(value: string | null, includeHistory: boolean) {
   if (!value) return null;
@@ -313,10 +345,13 @@ export async function writeOperationsCache(
   includeHistory: boolean,
   updates: OperationsUpdate[],
 ) {
+  const epoch = operationsReadEpoch();
+  const cacheKey = key(userId, `cache:${operationsCacheScope(areaSlug, includeHistory)}`);
   await AsyncStorage.setItem(
-    key(userId, `cache:${operationsCacheScope(areaSlug, includeHistory)}`),
+    cacheKey,
     JSON.stringify({ savedAt: new Date().toISOString(), updates }),
   );
+  if (!includeHistory && epoch !== operationsReadEpoch()) await AsyncStorage.removeItem(cacheKey);
 }
 export async function readOperationsEncounters(userId: string) {
   const value = await AsyncStorage.getItem(key(userId, "encounters"));

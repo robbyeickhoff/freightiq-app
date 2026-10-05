@@ -13,7 +13,1007 @@ answer one question:
 
 ## Current Objective
 
-### Active Objective — Operations Driving Alerts V1
+### October 5 — mobile source publication approved
+
+Rob approved committing and pushing the exact47-path mobile package defined in
+scripts/fixtures/mobile-release-review-20261005.json. Refreshed origin confirms clean-main and
+origin/clean-main start at1ee63bc with no divergence; index empty. Runtime/test hashes must still
+match the review before staging. This approval is source publication only: no native builds,
+distribution, database/settings changes or final legacy-read closure. Excluded dirty files remain
+preserved and uncommitted. Commit/push success is reported only after Git confirms it.
+Next gate after verified source publication: separately approved iPhone/Pixel candidate builds,
+then focused installed acceptance before distribution.
+
+### October 5 — mobile source review complete; publish/build gates remain
+
+Release Mode, review/verification step. Reviewed the 26 changed mobile runtime/patch/packaging
+files and 17 changed mobile-only test files listed with SHA256 in
+scripts/fixtures/mobile-release-review-20261005.json against HEAD
+1ee63bcacd68695d8ec8ed4ff9a4678d47533b94 on clean-main. No new release-blocking defect identified
+in this scoped review; not a new full-repository security audit or production-protection claim.
+Includes guarded reads/writes, complete collection handling, saved-copy/error behavior, Operations
+privacy invalidation, existing Driving Alerts preservation, DZ touch fix, Create Stop name/modal
+fixes, Move Stop/cache/route integration, and the two narrow dependency patches.
+
+Fresh current-workspace tests177/177; independent mobile-only suite127/127; TypeScript passes;
+lint0errors/2existing unused tractorType warnings. Both dependency patches reverse-check cleanly
+against installed files (not a fresh-install replay). All133 mobile source/plugin/patch files still
+match each previously inspected iOS/Android archive exactly. Direct shared stop/report/vote table
+calls and legacy Operations/search/collection RPC patterns absent from app/components/context/utils.
+This source search is not proof that production legacy access is closed; it remains open by design.
+
+Proposed mobile publish scope: manifest's26 runtime entries +17 mobile-test entries +3 named
+documentation files +the manifest itself. Backend/Routing Lab/website, MasterTODO/ReleaseHistory,
+offline-outbox specification and other scripts remain untouched/unstaged. Three backend tests and
+two cross-client tests stay outside this mobile commit because they require separately versioned
+backend/website source; all were included in177-test workspace verification and none were weakened.
+
+Next explicit approval: commit/push only this reviewed mobile package, after fresh hash/staged-diff
+verification. Native builds/distribution and final legacy-read closure remain separate gates.
+Installed production-candidate acceptance must cover launch/deep links, ordinary heavy-use
+responsiveness, search/collections/preview, route order/navigation, Operations/Driving Alerts,
+offline/refusal recovery, DZ gestures and Move Stop preserving Intel/route across restart.
+No production/network-service changes, app code edits, staging, commit/push or builds this turn.
+Changed only this document, bot spec and the new manifest; all remain uncommitted.
+
+### October 5 — approved Move Stop backend installed
+
+Installed only the reviewed relocation migration on finjqunyuyfxiesumuxk after Rob's explicit
+approval. Hosted version20261005140608; source SHA2568c4e6b0117a934f74a6f855093a5faeceb142dcdd1b99911561e09d7e69b85c5.
+Four function definition hashes match the locally tested candidate; private definer/public invoker,
+empty search paths, authenticated-only execute confirmed. Two expected trigger WHEN clauses installed.
+Table/RLS/stop-column ACLs, unrelated triggers, all old functions/ACLs, bot guard and security
+configuration hashes unchanged. Anonymous denial and authenticated missing/non-owned-stop denials
+pass in rollback-only SQL; existing legacy route read returns1row. No actual stop move or data backfill.
+Security delivery health alltrue. Homepage/privacy200; private security route redirects signed-out
+users. Advisors unchanged ignoring observation timestamps (12INFO/1anon/35authenticated/password
+warning); no clean-security claim. No hosted HTTP move success or installed-phone acceptance claimed.
+Receipt: scripts/fixtures/stop-relocation-production-receipt.json. Pre-client rollback retained;
+not executed. No Routing Lab, policy/old-access closure, phone build, staging, commit or push.
+Updated receipt, CurrentBuild, Move Stop spec and ReleaseHistory; uncommitted. Next: scoped mobile
+source commit/release build approval and installed iPhone/Pixel acceptance before distribution.
+
+### October 5 — Move Stop backend preflight and rollback ready for approval
+
+Reviewed the exact existing relocation migration (SHA2568c4e6b0117a934f74a6f855093a5faeceb142dcdd1b99911561e09d7e69b85c5).
+Read-only live checks confirm four new functions absent and the two original DZ-credit triggers
+enabled. Captured exact live trigger definitions and dependency hashes. No production changes.
+Fresh34 relocation assertions pass. Local-only install/test/pre-client-rollback rehearsal passes;
+original local functions/ACLs/triggers/stop data/users/guard settings restored. Corrected a test-runner
+cast error before successful rerun; no migration/source behavior change.
+
+Prepared scripts/fixtures/stop-relocation-pre-client-rollback.sql and
+scripts/rehearse-stop-relocation-release.mjs. Exact proposed production procedure, lock timeouts,
+preservation checks, failure response and post-client recovery boundaries are in the Move Stop spec.
+Next approval: install only this Move Stop backend migration on finjqunyuyfxiesumuxk. No backfill,
+real stop move, read-access closure, policy change, Routing Lab work, commit/push or native build.
+Hosted HTTP/installed production-candidate acceptance remain pending. Changed the two new scripts,
+Move Stop spec and CurrentBuild; uncommitted and unstaged. Existing app access stays intact.
+
+### October 5 — mobile packaging preflight; relocation backend dependency remains
+
+Release Mode, preparation only. Fresh verification:177 app tests pass; TypeScript passes;
+full Expo lint passes with the two existing unused tractorType warnings; diff check passes.
+Using installed EAS CLI18.1.0 archive-only inspection (official Expo procedure), inspected
+/tmp/freightiq-mobile-audit-9UkegE/ios. No native build or upload started.
+
+Initial archive included backend/test fixtures and documentation. Tightened .easignore to exclude
+/supabase, /scripts/fixtures, /tests, /docs, /output and /tmp from mobile upload. No source deletion.
+Existing website/Routing Lab exclusions retained. New ios-reviewed and android-reviewed archives
+each preserve all133 files under app/components/context/utils/hooks/constants/plugins/patches by
+SHA256 comparison. Eight excluded roots absent in both. Existing .env has only the two public map
+variable names; no values printed. Production profile and runtime local-mode rejection unchanged.
+Archive inspection is not a native build or full release-code review.
+
+Read-only live pg_proc lookup confirms public.can_move_freightiq_stop_v1 and
+public.move_freightiq_stop_v1 are absent on finjqunyuyfxiesumuxk. The approved Move Stop UI calls
+both. The production receipt deliberately excluded 20261004190247_move_stop_location.sql.
+Therefore do not distribute this combined mobile candidate yet: separately review/rehearse and
+approve the narrow relocation backend deployment before installed-candidate acceptance. Do not
+remove the approved feature, push all migrations, or change legacy-access closure to work around it.
+Next: relocation release preflight/rollback, scoped commit approval, native build approval and
+installed iPhone/Pixel checks. Current production unchanged this turn. Changed .easignore,
+CurrentBuild and bot spec; uncommitted and unstaged, unrelated edits preserved.
+
+### October 5 — approved compatible website published and verified
+
+Rob approved accepting the measured 118.307ms added hosted database cost and moving remaining
+phone-network responsiveness acceptance into the required installed production-candidate phone
+checks before distribution/final old-access closure. This is an explicit verification-order change,
+not a claim that populated hosted HTTP/soak acceptance passed.
+
+Published isolated package /tmp/freightiq-compatible-site-EYjUpT; production READY deployment
+dpl_97XTsE6yPUKkgqyEuangYkp3rkPU, https://freightiq-site-nteszk8cs-freight-iq.vercel.app.
+freightiqapp.com alias verified after promotion. Next 16.3.8, hosted build phase 28.390 seconds.
+Hosted source comparison: exactly the six reviewed compatible-client source changes listed below,
+plus regenerated tsconfig.tsbuildinfo. Existing public content, privacy, operator and dependency
+patches retained. Base 32878d1 plus isolated changes; no exact release commit or git publish.
+
+Signed-in browser checks pass: driver dashboard/contribution names, admin queue, reviewed history,
+referrals (empty state), moderation and security review. No reward/moderation actions performed.
+Security page shows detection/email enabled, fresh worker and no queued alert. Public homepage and
+privacy HTTP200; signed-out driver/admin/security routes redirect to sign-in. Protection bypasses=0.
+Initial deployment-specific one-hour error query returned no entries; short observation only.
+Vercel team drains=0 (authenticated REST verification; connector lookup returned404).
+Refreshed UptimeRobot shows Up for32m45s, last check1m4s, every-minute schedule.
+Watchdog recovery inbox confirmation remains pending; existing monitor covers security mail health,
+not general website runtime errors.
+
+Website rollback target: dpl_5wLLBfBjf78ncQbKd4a2SvsAUsdx. Compatible website now depends on
+guarded APIs: do NOT apply the pre-client guard-disable rollback blindly. Roll back the website
+alias first if needed and assess backend policy separately. Existing phone clients' legacy grants
+remain open; final bypass closure and compatible native builds/distribution remain separate gates.
+No database/Routing Lab/relocation/native changes this turn. Updated CurrentBuild, bot spec and
+ReleaseHistory only; all canonical edits remain uncommitted. Next: reviewed mobile release package
+and applicable commit/build approvals, installed iPhone/Pixel acceptance, then final closure approval.
+
+### October 5 — populated hosted database check complete; compatible site prepared
+
+Rob approved continued verification. Added and locally validated
+scripts/fixtures/bot-hosted-operations-capacity-20261005.sql, then executed on
+finjqunyuyfxiesumuxk in one bounded transaction ending ROLLBACK. Reviewed relevant live triggers
+first; no external side effects identified. Fixture namespace fq-capacity-20261005-b89775.
+1,000 conditions, 20 authors plus reader, 1,000 linked stops and 5,000 confirmations; roughly
+1.04MB full JSON. Seven complete refreshes per path (warmup plus six measured), alternating order,
+authenticated SQL role, actual approved policy unchanged, no ANALYZE/planner/grant changes.
+
+Every guarded refresh returned ten complete pages and exactly matched all legacy content.
+Hosted database p95: guarded 160.7385ms, legacy 42.4315ms, added 118.307ms. Local preflight:
+48.015ms versus 10.896ms. This is a small database-execution sample, NOT 1,000-condition HTTP,
+concurrency/soak or phone-network acceptance. No new numerical performance pass threshold declared.
+Before/after configuration/function/case/outbox fingerprints match; independent fixture users,
+profiles, area, stops, conditions, confirmations, buckets and security minute counts all zero.
+Nothing appeared in the live feed. No live policy change or email sent by this check.
+
+Prepared isolated compatible website package at /tmp/freightiq-compatible-site-EYjUpT from the
+preserved privacy-release source. Exactly six intended source differences: data.ts, driver-data.ts,
+stop-data.ts, read-protocol.ts, founding-drivers/error.tsx and admin/referrals/page.tsx. Public content,
+operator page, policy and dependency patches retained. Reviewed batching/auth/error behavior;
+focused lint, TypeScript, production build (23 static pages), 21 protocol/wording tests and diff checks
+pass. Not uploaded, published or signed-in hosted acceptance tested. Canonical website source unchanged.
+
+Recommended verification-order adjustment, NOT yet approved: accept the measured 118ms added
+database cost without another optimization cycle; check remaining real network behavior in the
+already-required production-candidate phone smoke before distribution/final closure. No claim that
+this replaces a populated hosted HTTP benchmark. Alternative requires separately scoped isolated
+hosted test data/environment, not fake posts visible to drivers. Request this adjustment and isolated
+compatible website publication approval together; native commit/build and final access closure remain
+separate gates. Watchdog recovery inbox confirmation still pending (Up previously verified).
+Changed canonical files this turn: SQL fixture, CurrentBuild and bot spec; uncommitted, no git publish.
+
+### October 5 — compatibility-stage guards/detection enabled; HTTP smoke passed
+
+Rob's Proceed after the privacy release approved the next activation step. Release Mode:
+applied only the named columns in the three private guard/response configuration rows on
+finjqunyuyfxiesumuxk; exact readback at 2026-10-05 11:47:35.943167 UTC. Values match
+scripts/fixtures/bot-live-policy-candidate.json. Both new read guards and detection are now ON.
+Older clients' table/function access is preserved: this is NOT final scraping protection.
+
+Saved activation and pre-compatible-release rollback SQL under scripts/fixtures; locally exercised
+both in an outer rollback with original phone configuration fingerprint restored. Before/after
+hosted function/ACL, table/RLS, column ACL, salt, recipient, scheduler and existing-case fingerprints
+match. Mail settings and worker left intact. Health now enabled/healthy with all component checks true.
+UptimeRobot monitor 804172810 visibly Up; prior incident resolved after 9h5m29s. Recovery email inbox
+confirmation requested, not yet received in this checkpoint.
+
+New scripts/verify-hosted-bot-policy.mjs used disposable confirmed @example.invalid logins and
+read existing data only; no stop/report/profile/Operations mutations. First run failed a test-only
+null-versus-undefined assertion; its login was deleted. Corrected script passed actual hosted HTTP:
+anonymous denial; three complete 50-detail batches; next 50 new details HTTP429 with null data;
+repeat 50 details still accessible; legacy route reads still successful. Twelve sequential samples
+per path: guarded 50-stop route p95 518.422ms; legacy p95 3693.591ms; Operations p95 322.471ms.
+This small noisy sample is NOT evidence of speed improvement or full performance acceptance.
+Operations returned zero current conditions, so representative populated-feed performance remains held.
+
+Both disposable users, sessions, identities, library/Operations buckets, seen tokens, minute records
+and cases independently verified absent. Ordinary pseudonymous shadow observations retain their
+existing expiration schedule; no broad telemetry wipe. Security advisor matches previously recorded
+12 informational/1 anonymous-definer/35 authenticated-definer/1 password-policy findings; not clean.
+No schema/ACL changes or new advisor remediation attempted. Scripts syntax and diff checks pass.
+
+Changed: three new activation/rollback/HTTP-check scripts, policy JSON status, CurrentBuild, bot spec
+and ReleaseHistory. Uncommitted; no git publish, native builds, website release or Routing Lab change.
+Next engineering gate: representative hosted workload/performance acceptance plus recovery email
+confirmation; then separately approved compatible client release, followed by explicit old-access
+closure. No new phone test requested at this checkpoint.
+
+### October 5 — approved privacy-only publication complete
+
+Rob approved the security/privacy wording and optional Driving Alerts background-location correction.
+Published the policy with effective/updated date October 5, 2026. This changes disclosures, not
+location behavior, permissions, retention, guard settings or app access.
+
+Production READY: dpl_5wLLBfBjf78ncQbKd4a2SvsAUsdx,
+https://freightiq-site-k4nj1enpu-freight-iq.vercel.app; freightiqapp.com alias verified.
+Isolated source /tmp/freightiq-privacy-site-nBVu8d was copied from the preserved live source.
+All 92 previous source files matched live hashes before preparation. Hosted source comparison
+shows only app/privacy/page.tsx plus regenerated tsconfig.tsbuildinfo changed. The unrelated local
+privacy social-image change was excluded from deployment and preserved in the nested worktree.
+Rollback: dpl_DoFmagqMi5RWsDSK4sN5sjnTEgPS. No exact release commit; base remains 32878d1
+plus the previously recorded operator/dependency changes and this privacy amendment.
+
+Focused ESLint, TypeScript and isolated local/hosted production builds pass (Next 16.3.8,
+23 static pages; hosted deployment build phase 23.856 seconds). Seven approved wording checks
+pass against local rendered output and public /privacy (200); homepage 200; signed-out security
+route 307 to sign-in. Staged URL was protected (302); no protection bypass created, current bypass
+count zero. Deployment-specific initial one-hour error-log query returned no entries; this is a
+short observation, not a long-running reliability claim. Drains not rechecked; watchdog recovery
+remains outstanding. Hosted install emitted existing unrs-resolver install-script review warning.
+
+Changed canonical files: nested app/privacy/page.tsx, CurrentBuild, bot spec and ReleaseHistory.
+All repository edits remain uncommitted; no commit/push, native build, database or Routing Lab change.
+Guards/detection remain OFF and unrestricted legacy reads remain OPEN; privacy publication does
+not establish scraping protection. Next gate: explicitly approve exact live guard/detection settings
+and bounded hosted HTTP/performance verification, before compatible clients and final access closure.
+No physical-phone retest is needed for this text-only release.
+
+### October 5 — privacy candidate and focused release checks
+
+Prepared local-only freightiq-site/app/privacy/page.tsx security additions: coded identifiers,
+coarse map-area/search-length observation metrics, distinct short-counter versus 30-day observation/
+case retention, cleanup delay, account-deletion observation retention, separate email/provider/backup
+lifecycles, Resend security emails and UptimeRobot monitoring. No effective-date change or publication.
+The earlier spec draft underdescribed observation metrics; current code candidate corrects that.
+
+Reviewed the six compatible website files and installed Next error-boundary contract (16.3.8 supplies
+retry as used by the candidate). Reviewed mobile auth/router patches, read configuration and
+Operations block/cache/alert changes. This is a focused review, not a claim that every line of the
+large dirty mobile diff has received a new complete audit. Routing Lab migration and offline-outbox
+planning remain excluded; no staging occurred.
+
+Fresh verification: all 177 app tests pass; 861 bot SQL assertions pass with original definitions/
+grants/local phone settings restored; 34 relocation assertions pass with fixtures rolled back;
+mobile and website TypeScript pass; focused website ESLint and local production website build pass
+(23 static pages). Root and nested diff checks pass. Node module-type warnings remain unchanged.
+
+Provider documentation checked; do not promise inbox/provider copies follow database deletion.
+Existing policy's foreground-only summary needs an accurate Driving Alerts disclosure before
+publication. Proposed wording is in the bot spec; no location behavior/permission change authorized.
+Next user gate: approve the narrow policy wording including this correction and its isolated
+publication. Compatible website publication remains after guard configuration; no whole-checkout
+deploy. No backend activation, hosted mutation, native build/distribution, commit or push this turn.
+Changed this turn: nested privacy page and CurrentBuild/bot spec; all remain uncommitted.
+
+### October 5 — live-policy/release package prepared, not activated
+
+Added credential-free scripts/fixtures/bot-live-policy-candidate.json with the exact previously
+tested request/metadata/detail/Operations allowances and warning settings. Updated the bot spec
+with configuration-column scope, pre/post-release rollback differences, six remaining compatible
+website files, separate relocation migration gate, and update/cutoff ordering. No live changes.
+27 local protocol/health tests pass, including mobile/website parity and no old-read fallback.
+
+Privacy review found the general policy lacks specific security-accounting/provider wording;
+draft is in the spec only, not published. Provider/inbox retention and existing background-location
+wording need reconciliation before approved publication. Current source has no identified forced
+update flow; final closure must not assume old installations update automatically. Recommend an
+announced update cutoff after compatible versions are available, subject to Rob's approval.
+
+Next: complete privacy/provider review and exact release diff/package review before requesting
+the specific live-settings/publication/build gates. No new phone test requested now. No protection
+activation, website publication, native build/distribution, database change, commit or push this turn.
+Candidate JSON and both documentation files remain uncommitted.
+
+### October 5 — approved hosted rollback-only rehearsal PASSED
+
+Rob explicitly approved this bounded hosted test. Completed on finjqunyuyfxiesumuxk at
+2026-10-05 11:27:02 UTC (05:27:02 MDT). Reviewed live auth/stop trigger bodies first; seven relevant
+guard/security function hashes match local. Reran local candidate successfully before execution.
+Executed the complete reviewed SQL in one session, with known fresh random fixture IDs substituted
+for inline random generation and a post-rollback completion SELECT for observable execution evidence.
+All assertions passed: three complete 50-detail reads, null-data refusal for the next new detail,
+repeat detail readable, sustained-warning case and one eligible-recipient outbox entry.
+
+Independent post-test query confirms synthetic user/stops/buckets/seen/minutes/cases/outbox all zero.
+Before/after configuration, function definition/ACL, table/column permission fingerprints match;
+existing operator case stays version 2/unpaused and recipient count stays one. Mail worker fresh,
+backlog clear, recording/retention/recipient checks true. Guards and detection remain OFF.
+No test email dispatched, committed test data, app-access closure, builds, deployments or git publish.
+
+This passes hosted database behavior only—not authenticated HTTP, network performance, global
+activation, watchdog recovery, compatible release or final bypass closure. Next prepare the exact
+production guard/detection configuration and rollback scope alongside privacy/client compatibility
+gates; do not repeat phone testing or activate settings under this test approval. Documentation
+updated; existing candidate and all local edits remain uncommitted.
+
+### October 5 — rollback-only hosted rehearsal candidate prepared locally
+
+Build Mode / verification preparation. Source inspection confirms shared singleton guard settings;
+there is no test-account-only enablement. Do not claim an HTTP rehearsal is isolated while changing
+global settings. Rob's Proceed authorized engineering preparation; no hosted test writes this turn.
+
+Prepared scripts/fixtures/bot-hosted-rollback-rehearsal.sql and its strictly local runner,
+scripts/check-hosted-rollback-rehearsal.mjs. Local execution passed: one fictional account/151 stops,
+three complete 50-detail route reads, data-free 429 for the next new detail, repeat detail allowed,
+and a synthetic sustained-warning case. Queue row count matches eligible configured recipients;
+this is not a new email-delivery test. Accelerated minute history is explicitly synthetic.
+Rollback verified with before/after configuration/function fingerprints and relevant row counts.
+Docker Desktop was started for local verification; no Metro server or phone build was started.
+
+Next approval is specifically the same rollback-only transaction on finjqunyuyfxiesumuxk after
+live trigger/definition review and baseline capture. No commit, public fixtures, permission closure,
+global activation visible to other sessions, external email, Routing Lab change or actual-user mutation.
+Short row locks/load are still possible; use one-second lock timeout and bounded execution.
+This does not replace authenticated hosted HTTP/performance acceptance, watchdog recovery, compatible
+release or final closure. Those remain outstanding. Two scripts and current/spec documentation are
+uncommitted; no hosted execution is claimed.
+
+### October 5 morning — human operator acceptance passed; activation remains gated
+
+Rob's screenshots confirm Decision saved and the synthetic case pause until 05:02:46 MDT.
+He then confirmed Decision saved / No active moderator pause after Restore shared reading.
+Read-only production verification confirms case 3814e9ce-6a54-451c-95c4-f6da7302c66a:
+pause at 04:47:46 MDT (suspicious_collection, version 1), restore at 04:51:07 MDT
+(review_complete, version 2), paused_until NULL. This proves the operator actions and audit,
+not enforcement against a real driver. The exact synthetic case and its audit/outbox are retained.
+
+At 05:11:28 MDT, both guards remain disabled with capacities NULL; detection remains disabled.
+Mail is enabled, the dedicated one-minute worker job is active, and health reports worker_fresh,
+recipient_ready, backlog_clear, recording_ok and retention_ok true. Overall healthy/enabled remain
+false because detection is off. Watchdog recovery is NOT passed; do not bypass that requirement
+or enable detection solely to turn the monitor green. Synthetic email remains accepted, one attempt;
+actual inbox receipt was separately confirmed by Rob.
+
+Read-only local package verification passes all 18 reviewed hashes (17 installed bot files,
+one uninstalled relocation file). Existing migration receipt remains mandatory before any push.
+This turn made no live changes and no client builds, commits or pushes. Documentation is uncommitted.
+
+Next gate: a narrowly scoped hosted synthetic-account rehearsal, with bounded fixtures, exact
+cleanup and rollback evidence, before selecting/enabling live guard configuration. Existing local
+rehearsal scripts deliberately reject hosted targets; do not remove their safeguards or redirect them.
+Then finish privacy/release review, compatible client publication and separately approved old-read
+closure. Only the private operator website changes are published; other compatible website changes
+are not implied by that deployment. No further broad phone test is requested at this checkpoint.
+
+### October 5 morning — private security review page published and link verified
+
+Rob approved the narrowly scoped website dependency security maintenance and publication.
+Production deployment dpl_DoFmagqMi5RWsDSK4sN5sjnTEgPS is READY at
+https://freightiq-site-bvzp49xwb-freight-iq.vercel.app; promoted to freightiqapp.com and verified
+by CLI domain inspection and authenticated browser navigation. Hosted build took 44s.
+Base is the exact previous live commit 32878d1d8f1437025459e9092b4c013b58d5d7a9, not local HEAD.
+Only moderation/page.tsx, moderation/security/page.tsx, moderation/security/actions.ts,
+package.json and package-lock.json differ from the live source. Other dirty website changes and
+local-only content differences remain excluded. No commit or push.
+
+Next/eslint-config-next 16.3.0 -> 16.3.8; Sharp 0.35.5/libvips 1.3.4, nanoid 3.3.20,
+and compatible brace-expansion/js-yaml lockfile patches. Canonical nested package files updated.
+Production dependency audit: zero known findings. Full audit: five high development-only entries
+from braces -> micromatch -> fast-glob -> Next ESLint plugin/config remain; do not claim a clean
+full audit. Independent investigator and reviewer found no concrete runtime bypass/regression.
+No exploit or compromise was established; patched-version/audit checks are the security substitute,
+not a live RCE test. No platform security protections were relaxed.
+
+Verification: full ESLint and TypeScript pass; local and hosted production builds pass; ordinary
+PNG resizing/encoding succeeds and malformed bytes are rejected. Staged HTTP checks: homepage 200,
+logo optimizer 200, unapproved remote-image URL 400, unauthenticated security page 307 to sign-in,
+invalid unauthenticated profile-image request 404. Live security-page signed-out redirect rechecked.
+Signed-in existing moderator followed the exact email URL and reached the correct synthetic case
+3814e9ce-6a54-451c-95c4-f6da7302c66a, displaying email accepted/one attempt, no pause, detection off,
+queue enabled. No Apply pause/Restore action was submitted. New-deployment error-log query returned
+no logs at that check; this is limited observation, not proof of error-free operation.
+
+Vercel curl automatically created an automation-bypass token for staged verification. Its exact
+creation timestamp was matched and that token revoked after verification (HTTP 200); follow-up
+read shows zero automation bypasses. No secret was printed or retained in project source.
+Rollback target retained: dpl_5naZnDvfqcrhyvfcqMK3oV99a3Uz (previous framework remains vulnerable;
+rollback is emergency recovery, not a permanent security solution).
+
+Next: Rob visually confirms Security review from his email; controlled operator-action acceptance,
+watchdog recovery, guard configuration, compatible clients and final access closure remain gated.
+No phone build, database mutation, driver-limit enablement, case pause or Routing Lab change.
+All local source/documentation edits remain uncommitted.
+
+### October 5 morning — security review website release held before upload
+
+Rob approved publishing the private security review page and testing the alert link. Live route
+inspection returned 404; last night's synthetic email was received, but its link opened ordinary
+Content Moderation. Inbox delivery passed; operator-page acceptance has not passed.
+
+Verified Vercel production deployment dpl_5naZnDvfqcrhyvfcqMK3oV99a3Uz, URL
+freightiq-site-kyrc4s3wc-freight-iq.vercel.app, source commit
+32878d1d8f1437025459e9092b4c013b58d5d7a9. Local website HEAD b1d9be9 differs in unrelated
+content. Prepared an isolated export of the exact live source at
+/tmp/freightiq-security-site-5ijuAh, overlaying only moderation/page.tsx and
+moderation/security/{page.tsx,actions.ts}. Do not deploy the whole dirty nested website.
+Focused ESLint and TypeScript pass. Vercel dry-run lists 90 source files, excluding node_modules
+and .vercel. No upload, build deployment, domain promotion, commit or push occurred.
+
+Release hold: npm audit of the unchanged production lockfile reports 10 vulnerable packages
+(9 high, 1 critical); production-only audit reports next (critical), sharp and nanoid (high).
+Next 16.3.0 falls in vendor advisory ranges GHSA-2xp9-vwfh-vxw4, GHSA-vcvr-r3jv-pc5j and
+GHSA-p293-qw3h-jr36. This is version evidence, not proof of exploitability or compromise.
+No next/og usage found; image optimization is used, without configured remote patterns.
+Recommend a separately approved, narrowly scoped dependency security patch and repeat checks
+before resuming publication. Do not silently upgrade dependencies or waive the warning.
+
+Read-only hosted check: synthetic case 3814e9ce-6a54-451c-95c4-f6da7302c66a remains;
+get_security_read_cases_v1 exists; stop/Operations guards and detection are false. No database,
+notification, account-pause, phone build or Routing Lab changes in this session.
+
+### October 4 evening — additive production groundwork installed, protection OFF
+
+Rob explicitly approved the 17-file bot-only production preparation. Applied all 17 to
+finjqunyuyfxiesumuxk at October 5 01:47:46–01:48:15 UTC (October 4 MDT), with per-migration
+lock/statement timeouts of 5s/60s. This supersedes earlier "production unchanged" checkpoints below.
+No relocation migration, Routing Lab change, client deployment, commit or push.
+
+- Preserved all pre-existing 83 function definition/ACL fingerprints, 28 table ACL/RLS fingerprints,
+  249 column ACLs, 53 policies and 20 triggers. Read-only authenticated-role stop/report/search/
+  Operations probes execute; this is not a fresh physical production-app smoke test or write test.
+- Stop and Operations guards disabled; limits/refills NULL; detection/mail/warning thresholds off/
+  unconfigured; recipients, cases, outbox and guard counters empty. New guards correctly return
+  NOT_CONFIGURED without data. No account paused. Four retention jobs installed as reviewed.
+- All 13 new private tables have RLS; all 70 new functions deny anonymous EXECUTE. All 70 match
+  local effective anon/authenticated/service permissions. The one summary-definition difference
+  is now resolved locally: restored the exact reviewed 16-character display label, preserving its
+  ACL. Its hash now matches production (1943af64640eb4b4ffc3eea9580be96f), completing 70/70 definition
+  matches. Added an actual moderator-summary length regression; 861 local SQL assertions pass,
+  with definitions/grants and phone policies restored after tests. No production correction needed.
+- Security advisor reports expected authenticated SECURITY DEFINER interfaces and deny-by-default
+  private tables; pre-existing rls_auto_enable exposure and leaked-password warning remain.
+  Do not describe the hosted advisor as clean. See the bot spec for links and counts.
+- Receipt: scripts/fixtures/bot-rollout-production-receipt.json records hashes, assigned live versions,
+  baseline fingerprints and exclusions. Supabase assigned different timestamps than local filenames:
+  reconcile history before any future CLI push; never blindly reapply these original files.
+
+Next: reconcile deployment history mapping and prepare the bounded hosted verification,
+notification delivery/operator/health-monitor setup. Configuration, mail delivery, compatible
+app/site release and final access closure remain separately gated. Production is NOT protected
+by the new guards yet. Existing app access is intentionally retained.
+
+Notification readiness rechecked: hello@freightiqapp.com is confirmed and is not a
+moderator; an existing moderator is available. After Rob's next Proceed, the dedicated security
+worker and health Edge Functions were deployed as version 1 with gateway JWT verification enabled.
+Worker remains disabled/unconfigured: an anonymous-JWT request returns 503 disabled; health denies
+the missing separate secret with 401. Both reject requests without JWT at the gateway (401).
+26 focused handler/delivery tests pass. No recipient, secret or security worker cron was configured;
+both guards, detection and mail remain off, outbox empty. Existing six unrelated functions untouched.
+The Founding Driver email system is a sender, not proof of an independent outage monitor. Live notification setup and an
+independent monitor still require their explicit external-service/configuration gates.
+
+### October 4 watchdog connected — delivery/recovery acceptance incomplete
+
+Rob approved UptimeRobot Solo monthly and confirmed payment; dashboard shows Solo 10,
+60-second capability and next renewal November 4. Verified hello@freightiqapp.com as the
+saved up/down email channel. Existing public-site monitor remains unchanged.
+With explicit health-key approval, installed only SECURITY_HEALTH_SECRET in production.
+Actual endpoint probes: correct JWT plus health key -> 503 {healthy:false}; missing health
+key -> 401; missing JWT -> 401. Disabled delivery/absent worker/recipient explain unhealthy.
+No detection, mail, quota, recipient, scheduler, access grants or function code changed.
+Rob created monitor 804172810 (FreightIQ security alert delivery). Saved settings re-read:
+dedicated endpoint, one-minute interval, hello inbox, only HTTP 200 accepted, redirects off,
+public anon JWT bearer authentication and populated private health header. Refreshed dashboard
+shows Down with HTTP 503, incident 365327837653512850 starting October 4 20:42:23 MDT;
+this matches the intentionally disabled sender, not an outage of the driver app.
+Manual Test Notification returned 'Test notification sent'; Rob confirmed inbox receipt.
+Rob also confirmed receipt of the automatic Down email. Recovery acceptance remains unverified.
+The exact temporary local key file was removed after persisted settings and the real 503
+response were verified; the installed server secret and monitor header remain intact.
+No sender/detection/enforcement enablement occurred. Real recovery cannot pass while the
+sender is intentionally disabled; never manufacture a healthy result by weakening the check.
+
+### October 4 security sender configured — real inbox confirmation pending
+
+Rob approved proceeding with sender configuration and synthetic delivery. Installed dedicated
+SECURITY_ALERT_SECRET and SECURITY_ALERT_DELIVERY_ENABLED=true; private Vault entries
+freightiq_security_worker_secret / freightiq_security_worker_anon support dedicated cron job 7,
+freightiq-security-alert-every-minute (* * * * *). Configured existing Gmail moderator to receive
+mail at the confirmed hello@freightiqapp.com account, without adding moderator privileges.
+mail_enabled=true; detection_enabled=false and both read guards remain false. Existing six cron
+job command hashes/schedules/active states are unchanged. No function/client deployment or access
+closure. 26 focused notification tests pass.
+
+Synthetic case 3814e9ce-6a54-451c-95c4-f6da7302c66a uses a random actor key unrelated to a user,
+no pause, and counters 20/100/3. Outbox d2c74b89-624f-4d53-9120-efa8e96779da was accepted on
+attempt 1; real worker POST returned HTTP 200 accepted=1/held=0/retried=0. This is a transport
+test, not proof of automatic suspicious-read detection or operator-link readiness. Rob was told
+the normal subject represents a synthetic test. Preserve this named fixture until inbox/operator
+checks are resolved, then delete only the named case and its dependent outbox.
+Health now reports worker_fresh/recipient_ready/backlog_clear/recording_ok/retention_ok=true,
+but enabled/healthy=false because detection is intentionally off. Do not weaken health logic or
+enable detection merely to manufacture a recovery. Dedicated job 7 ran successfully at 02:47
+and 02:48 UTC October 5; last_worker_at advanced to 02:48:00.742165 UTC without manual invocation,
+and no pending mail remains. Actual inbox receipt and operator-link acceptance remain pending.
+Rollback of this sender phase: disable only job 7 using cron.alter_job, set mail_enabled=false,
+and SECURITY_ALERT_DELIVERY_ENABLED=false; leave prior jobs/guards/access unchanged.
+
+### October 4 approved release-fix sequence
+
+Build mode: local implementation/review/verification and production rollout preparation.
+Rob approved completing engineering without routine approval pauses. Production mutations,
+credentials/external services, commits/pushes and native build/distribution remain separate gates.
+The major Route Builder redesign and small-screen Operations redesign are excluded.
+
+- Create Stop now uses a retrieved Mapbox `feature_type === "poi"` to prefill a business name.
+  Address, street, city, unknown and missing types leave the name blank. Preview labels, matching,
+  address/locality, coordinates, required-name validation and save/navigation paths are unchanged.
+- Changed: `app/(tabs)/(map)/index.tsx`, new `utils/stop-name-prefill.ts` and its test file.
+  Eleven focused name/locality checks, TypeScript, focused ESLint and diff whitespace checks pass.
+  New files pass Prettier. The map screen has one pre-existing unrelated formatting difference in
+  the Operations filter around line 940; preserved rather than reformatting unrelated work.
+  One test is a source-wiring assertion, not a native UI test.
+- October 4 physical acceptance: both phones confirmed blank name for an address, required-name
+  rejection and business-name prefill for a POI. iPhone created `iPhone Move Test` at 305 Colorado
+  Avenue, saved Intel/DZ, and reopened the DZ with working map gestures. No speculative DZ rewrite.
+- Rob superseded the relocation rules: change address/stop pin, place DZ at the new property or
+  explicitly clear it, and keep existing Intel/reports/everything attached. No report versioning,
+  current-Intel exclusions or condition detachment. Creator/existing trusted-editor access remains.
+  The [Move Stop specification](build-specs/FreightIQMoveStopLocationV1BuildSpec.md) records this scope.
+  **Implemented locally:** address selection, stop/DZ placement or clearing, atomic move, preserved
+  Intel and cache/route refresh. 34 relocation SQL assertions, 860 bot-defense SQL assertions,
+  166 app tests, TypeScript, focused lint (two existing warnings), diff check and local security
+  advisor pass. Migration installed only in local Docker DB; stop/report/phone-policy fingerprints
+  preserved. No migration-history stamp; production deployment remains separate. iOS Metro bundle
+  includes the new flow. Both phones subsequently passed move 305 -> 205 Colorado Avenue, retained
+  truck/delivery Intel, new DZ placement/edit gestures, restart/reopen, cancellation, and move back
+  to 305 with explicit DZ clearing. iPhone Route updated in both directions. Pixel route-specific
+  display/order was not separately tested; automated route snapshot tests cover order/completion.
+  Operations records remain unchanged with independent coordinates/area; no scope expansion.
+
+All changes remain uncommitted. Only the local relocation database migration was installed.
+No production changes, native builds/distribution, hosted deployment or push.
+
+### October 4 evening local finishing and rollout preflight
+
+Physical follow-up: Rob confirmed Pixel reload/cold reopen and iPhone reload/cold reopen reached
+the map without the former pre-mount warning. Deep-link acceptance is still distinct. Offline
+preview check exposed another error: iPhone screenshot stack `_handleRequest` at bundle line
+168773 maps exactly to auth-js transport catch's unconditional console.error before throwing
+AuthRetryableFetchError. The existing auth-js patch now omits that duplicate console entry only
+for recognized fetch/network failure messages; unexpected failures remain logged, and all errors
+still propagate with their original type/message/retry behavior. No auth settings, credentials,
+backend access or session storage changed. New `tests/auth-offline-logging.test.ts` covers native
+iOS/Android strings, other standard fetch failures, unexpected-error logging and HTTP 401 refusal.
+Physical offline retest passed on both phones after reload: Show Stops -> Airplane Mode -> marker
+opened the preview without a red console error. iPhone explicitly showed Core Intel unavailable
+and "Could not load reports. Tap to retry." Pixel confirmed the same check. After reconnecting and
+closing/reopening the preview, both phones loaded Intel/reports normally. This does not establish
+durable offline Intel storage. Latest app test count is 177; TypeScript also passed.
+
+- Corrected long read waits to rounded-up minutes and singular one-second wording, without changing
+  the exact retry duration, limits or retry behavior. Mobile/website protocol copies remain equal.
+- Preview distinguishes checking, unavailable and actual zero reports. Missing summary rows no
+  longer become zero reports. Error label invites opening the existing guarded report screen.
+- Reproduced native Expo Router initial-link state notification before mount and after unmount.
+  A version-specific `patch-package` fix defers only initial-link bookkeeping until commit;
+  no warning suppression, dependency upgrade or deep-link routing rewrite. Six lifecycle tests pass.
+  Both-phone startup/reload acceptance passed; deep-link acceptance remains separate and untested.
+- Final checks: 175 app tests, 34 relocation + 860 bot-defense SQL assertions, 64 actual local HTTP
+  closure probes and 11 HTTP/concurrency/worker scenarios pass. Cleanup fingerprints confirm original
+  data, permissions and phone policies restored; only generated rehearsal fixtures were removed.
+  Mobile/website TypeScript, focused lint, website build, local security advisor, patch reverse-check
+  and diff checks pass. iOS/Android Metro bundles return 200 and contain all new fixes/local DB URL.
+- Reviewed live metadata read-only: production history ends at 20260904141244, PostgreSQL 17.6;
+  bot guard/case functions are not installed. No live mutation. Private-schema HTTP probe using
+  existing public website configuration returned 401, so exposed-schema parity is NOT established.
+- `scripts/fixtures/bot-rollout-manifest.json` records exact hashes of 17 additive bot migrations and
+  separately marks the relocation migration (which changes two existing DZ trigger conditions).
+  `node scripts/check-bot-rollout-package.mjs --local` verifies files without database access.
+  This is a reviewed local package, not live migration approval or a fresh full-history replay.
+
+After Rob signed in, read-only dashboard verification confirmed seven listed daily physical backups
+(September 28–October 4); newest October 4 10:47:28 UTC, with Restore controls available. PITR is not
+enabled. No restore was executed or recovery duration verified; a restore can lose later writes and
+does not restore Storage objects. Data API exposes public and graphql_public, not private. Automatic
+new-table exposure remains enabled; max rows is 1000, extra search path public/extensions. No settings
+changed. All 18 manifest hashes rechecked successfully. See the bot spec for exact evidence/boundaries.
+Next: separately approve the 17-file additive bot-defense production preparation, keeping existing
+client access and enforcement/detection/mail off. Relocation is a separate migration scope.
+Refresh live history and backup age immediately before execution. Supported deep-link and long-wait
+minute wording checks remain distinct; startup/offline recovery need not be repeated.
+Real inbox delivery, independent monitor,
+operator acceptance, privacy disclosure approval, compatible release and final bypass closure remain
+open. No repeat of the broad phone marathon. See the bot spec's evening handoff for details.
+
+### Active Objective — Stop-read bot defense
+
+**October 4 local finishing package verified (latest checkpoint).** Rob authorized completing
+safe local implementation and verification without routine approval pauses. Build mode, direct
+implementation/review/verification; production, credentials, external services, commits/pushes and
+native release remain separately gated. No broad phone re-test is requested by this package.
+
+- Closed the under-limit warning gap using admitted, deduplicated library charges, not repeated
+  returned rows. Separate metadata/detail windows warn without automatically pausing a driver.
+  An independent review caught spaced-burst evasion of the hourly minute condition; corrected and
+  regression-tested. No new identifiers or longer retention added.
+- Read-only production calibration found 399 stops / 414 reports. Historical Founding Driver events
+  for Rob's confirmed driving account cover August 11–September 9 and deduplicate same-stop/day
+  actions; they are not complete request traces. Proposed detail burst reduced from the earlier
+  provisional 600 to **150 records**, replenishing **15/minute**. Other candidate values and residual
+  extraction bounds are in the spec. Not enabled in production or substituted for phone-test policy.
+- Accelerated heavy-use accounting test passes 2,520 actual SQL-interface reads over a simulated
+  hour: 100 stop details, 500 reports, repeated 50-stop routes/map/stats/collection paging and 180
+  complete 1,000-condition refreshes. Zero throttles or warnings. Tight extraction is refused after
+  the initial detail allowance. This is synthetic coverage, not an hour-long soak or field telemetry.
+- Actual HTTP final-cutover rehearsal: **64 checks pass** with 22 legacy/intermediate read functions
+  and five shared tables closed. Exact effective ACLs, shared data and phone policy restored.
+- Notification inbox can differ from the existing moderator account without granting new access.
+  `hello@freightiqapp.com` and Rob's Gmail are confirmed; only Gmail is an existing moderator.
+  No hosted recipient was configured and no real mail sent. Added an independently callable,
+  authenticated delivery-health endpoint; external monitor setup still requires approval.
+- **860 database assertions, 155 app/notification tests**, mobile/website TypeScript, focused
+  website lint/build and local security advisor pass. Eleven HTTP/concurrency/worker/health
+  scenarios pass. Actual local Edge runtime rejects unauthorized health probes and reports the
+  disabled service unhealthy. Detection-enabled rich 1,000-condition benchmark adds **21.980 ms
+  server p95**, within the existing 25 ms gate; no repeat hour-long soak was run.
+
+Local detection/mail/warning thresholds remain off/unconfigured; zero recipients or active pauses.
+Original generous phone-test guard policies, sessions and user-created fixtures remain. Temporary
+Edge runtime verification server was stopped. All source changes are uncommitted. Production and
+Routing Lab are unchanged. The spec contains this package's file inventory, failed-test corrections,
+read-only hosted observations, numerical policy, privacy boundaries and ordered rollout gates.
+
+Next: the already-requested app fixes can proceed without another broad bot-defense phone marathon.
+Do not distribute a production client until its additive backend is installed/configured. Before
+claiming protection: approve and verify real inbox delivery plus an independent health monitor,
+confirm operator use, complete hosted configuration/parity checks, release compatible clients, then
+separately approve/read back final closure. Existing Pixel startup, countdown and preview-status
+release defects remain explicitly open. This supersedes the older “next phone step” entries below.
+
+**October 4 priority correction, approved by Rob:** end repetitive phone contribution testing.
+Focus completion on (1) verified closure of scraping bypasses, (2) actionable delivered alerts,
+(3) measured limits with room for heavy legitimate use. These are acceptance gates, not a claim
+that protection is deployed. Local engineering continues without routine approval pauses;
+hosted changes, real mail/scheduler setup, native builds/releases and commit/push remain gated.
+
+Latest results: both phones saved/reopened Intel during a pause and saw shared reports after early
+restore. Pixel DZ move/save confirmed, and a persisted DZ was verified directly (new-position
+reopen was not completed). Test case restored at version 7; no active test pause remains. Broader
+phone repetition is deferred. Startup warning, countdown wording and iPhone unavailable/empty
+status remain open release defects; do not count them as fixed.
+
+Added a transaction-only final guarded-cutover test covering 22 old/intermediate read functions and
+column/table reads. Its 205 assertions pass; full local security suite now **812 assertions** with
+original definitions/grants and phone allowances restored. This supersedes the older six-function
+closure rehearsal for scope, not for deployed evidence. Actual HTTP cutover, hosted parity and
+service/GraphQL/Realtime paths still need final verification. No deployment migration was added.
+
+Current development allowances are NOT proposed production limits. Calibration must measure
+normal-driver traces and extraction volume together, not just request speed. Current detection
+requires denials as well as volume/minutes, leaving under-limit collection outside its alert rule.
+This needs resolution before claiming Rob is notified about sustained scraping. Alert recipient
+requested; no real email, production detection or independent scheduler health alert enabled.
+
+**October 3 latest checkpoint — integrated local security response candidate.** The approved
+private case review, reversible shared-read pause/restore, and leased notification worker are now
+implemented locally. Existing driver contribution paths remain separate. Detection and email are
+OFF outside isolated rehearsals; no production thresholds, recipient, scheduler or real mail were
+enabled. The earlier mechanism-only proof below is historical, not the current integration state.
+
+Verification: 607 database assertions, 152 application/transport/worker tests, root and website
+TypeScript, focused lint and local database security advisor pass. The actual HTTP rehearsal passes
+ten scenarios, including concurrent read/action/worker requests, contributions during pause,
+lost-response mail recovery against a fake provider, restore and moderator revocation. Local website
+build and browser sign-in/review/pause/restore/audit/revocation checks pass. Two corrected rich
+1,000-condition capacity runs add 18.697 and 17.641 ms at p95 (existing target <=25 ms); earlier
+failures and benchmark-estimate correction are recorded in the build spec, not silently discarded.
+
+**Physical testing paused at Rob's request October 3:** both phones confirmed stop-search and
+Operations refresh refusal during the temporary pause, successful own Operations edits during it,
+and restored stop search after automatic expiry. Pixel also confirmed Operations recovery. Manual
+early restore, stop Intel/DZ contribution during this pause and human operator-page acceptance are
+still pending. Resume by adding Bot Defense IPhone Test to the iPhone route (not yet confirmed),
+then prepare the next bounded pause. Pixel startup produced an Expo Router pre-mount state-update
+warning; dismissal restored normal map use, but the cause/fix and repeat-start acceptance remain open.
+Long countdown wording also needs improvement. No new pause is active from this completed test.
+
+Next: targeted human acceptance of the new pause/restore behavior on the existing FreightIQ Dev
+iPhone and Pixel, plus the private operator screen. Do not repeat the already accepted broad app
+tests. Prepare only a named fictional case for the existing phone-test account when Rob is ready;
+do not promote that driver account to moderator. No new native build is needed for this local test.
+The temporary automated browser account and its case/audit were deleted; phone fixtures/sessions
+and generous local-only allowances remain. Metro and the loopback-only website preview remain
+running. No hosted/Routing Lab action, deployment, native build, commit or push. Full changed-file
+inventory, cleanup boundaries, evidence and remaining production gates are in the bot-defense spec.
+
+On September 30, 2026, Rob approved the expanded local protection design in
+`docs/build-specs/FreightIQBotScrapeProtectionV1BuildSpec.md`: account-wide read limits,
+actionable alerts and reversible read-specific restrictions, with contributions kept separate.
+Build mode; Direct Codex Edit in reviewable local packages. Production database changes, builds,
+release, commit and push remain separately gated. This updates the session's objective; it does
+not reopen or remove the previously completed Driving Alerts work.
+
+The first mechanism proof passed 13 local HTTP checks, including 100 concurrent mixed requests,
+persisted denials, session independence, batch disclosure accounting, safe internal failure,
+pause/expiry and actual stop/report writes during read restriction. Synthetic fixtures were removed
+and original stop/report/vote/private-note data, table grants and function definitions/grants matched
+the baseline. That proof is not deployed protection. The reusable local guard described below is
+the subsequent implementation; client integration and remaining contribution-read isolation still
+follow, then alerts/operator UI, calibration, performance and physical-device acceptance.
+
+The Intel save handler now skips the redundant shared-stop preflight and post-save report reload.
+Its existing write operation remains authoritative for availability and ownership; confirmed saves
+update the local cache and return to the map without another shared-library read. Handler tests
+cover successful saves during read failure and retained entries on write failure; 329 database
+assertions include missing/hidden-stop rejection. This is only save-path isolation: initial own-report
+loading still needs integration. That handler-only unit made no server or production change.
+
+The additive shared server guard is now implemented locally in
+`supabase/migrations/20260930204213_add_shared_stop_read_guard.sql`. Its static dispatcher covers
+all 15 existing bounded read operations while preserving their outputs and filtering. It shares
+atomic account request/disclosure budgets, returns committed 429 denials, stores keyed short-lived
+state, purges it, and removes it on account deletion. No production thresholds are selected: the
+local configuration is restored to disabled/unconfigured after testing. Existing app/website callers
+and old grants are deliberately unchanged, so this is not yet a non-bypassable system.
+
+Verification: 375 database assertions and six actual HTTP scenarios pass, including 100 concurrent
+mixed requests, session independence, contribution writes and correct denied-read telemetry.
+The local security advisor reports no issues. Synthetic rehearsal data was removed and original
+app-data fingerprints matched. Next: guarded client protocol and own-report loading, followed by
+the remaining operator/rollout gates. No production change, commit or push.
+
+The next bounded integration package now separates the Intel editor's own-report loading from
+shared reports. A new authenticated owner-only function returns just the caller's editor fields;
+it does not use the shared-read allowance or expose other drivers' reports, even to moderators.
+The editor treats a failed own-report lookup as unknown (not a new report), retains entries, offers
+manual retry, ignores stale responses and preserves an edit during shared refresh. Shared failures
+retain already-loaded reports and show an explicit refresh failure instead of an empty-success state.
+Only explicit cancellation/deletion discards an edit; changing stop/account resets scoped form state.
+
+Verification now passes 400 database assertions, 64 app tests, TypeScript and seven real local HTTP
+scenarios. The new HTTP scenario loads, updates and reopens the same owned report while shared reads
+are throttled. Focused lint has zero errors and two existing tractor-state warnings; the local security
+advisor reports no issues. Rehearsal fixtures were removed, original app-data fingerprints matched,
+and guard configuration returned to disabled with no limits. This package is uncommitted and needs
+targeted development-app acceptance. The candidate editor requires the additive own-report migration;
+do not release it against a server without that migration. App/website shared-read guard wiring is
+still next, not completed by this prerequisite. Production, Routing Lab and real-world limits remain
+unchanged. Detailed changed-file inventory and remaining gates are in the bot-defense build spec.
+
+The shared-read client integration is now a verified local candidate. Mobile map/search, collections,
+stop detail/reports/reputation/stats, route reads, nearby duplicate discovery and Operations stop
+search use the common guard; the website's shared stop summaries do too. No caller falls back to
+the old read API on denial. Owned Intel reads/writes remain separate. Mobile messages expose the
+server retry time, collection refusals preserve rows/cursors, route refusals preserve order, and
+website load failures have a manual recovery screen. Multi-batch reads stop at the first failure.
+
+Verification: 92 app/protocol/handler tests, 400 database assertions, eight actual local HTTP scenarios
+(including both installed Supabase client versions), mobile/website TypeScript and the local website
+build pass. Focused lint has zero errors and two existing mobile warnings; the local security advisor
+reports no issues. Synthetic fixtures were removed with original app-data fingerprints unchanged.
+The guard is again disabled/unconfigured: this candidate needs an explicit temporary local policy
+before normal development-app tests. No numeric production limits were chosen or enabled.
+
+Owner controls and owned Delivery Zone loading now use a small authenticated owner-only lookup,
+independent of shared browsing limits. It returns seven editing fields, never other owners' stops,
+and has no moderator override. Existing write permissions and map gestures are unchanged. Late
+responses are ignored after stop/account changes. Verification passes 98 app tests, 427 database
+assertions and nine actual local HTTP scenarios, including owned DZ read/write during throttle and
+other-owner refusal. TypeScript passes; lint has only the two existing warnings; local security
+advisor reports no issues. Synthetic data was removed, original data fingerprints matched, and
+the guard returned to disabled/unconfigured. Targeted physical-device acceptance is still pending.
+
+Repository review also confirmed that the Operations feed independently includes attached-stop
+names/addresses and post coordinates, with no explicit response-row bound or joined-stop moderation
+filter. This exposes an attached subset, not arbitrary stop lookup. No Operations/Driving Alerts
+behavior was changed; its contract and hosted definition need review before any closure claim.
+
+Operations dependency review is complete against repository code and the local database definition/
+grants; hosted parity remains unverified. The existing Operations transaction suite passed with
+rollback. The same feed serves board/map, foreground confirmation, Driving Alerts, duplicate checks
+and own-history editing. Simply applying the library allowance or truncating the response could
+interrupt contributions or silently discard alert conditions. The bot-defense specification now
+records a proposed separate Operations read allowance, complete bounded-page loading, isolated
+own-post/duplicate-check reads, residual scraping exposure and explicit acceptance gates. This
+Operations behavior amendment was subsequently approved by Rob ("Approved Proceed"). Local
+implementation is authorized; production and release remain separately gated.
+
+The first Operations prerequisite is now implemented in the local database: an author-only,
+single-post editor lookup returning eight explicit post fields, without joining shared stop metadata.
+It preserves current seven-day/active-area own-history visibility and does not alter write permissions.
+The editing screen now uses this lookup instead of downloading own history from the shared feed.
+Failed/missing/malformed loads keep editing locked with retry/back actions; account changes and
+late responses invalidate the loaded editor. Save checks the loaded post/account identity. All 104
+app tests, TypeScript and focused lint pass. Physical acceptance is pending. Shared feed protection,
+duplicate-check isolation and paging still follow; this is contribution isolation, not feed enforcement.
+Verification and this package's file inventory are recorded in the bot-defense specification.
+
+A private Operations active-feed paging prerequisite and pure complete-refresh assembler now pass
+local verification. Pages carry a deterministic content fingerprint and explicit completion; a changed
+eligible feed rejects continuation. The assembler rejects partial/mismatched/duplicate replies without
+publishing a partial array. Hidden-stop labels are suppressed in this new private reader while the
+independent condition remains. No client role can execute the reader, and no app caller uses it yet.
+This is not the separate Operations limiter. Full-feed fingerprinting per page needs capacity testing
+before public integration. Verification: 110 app tests, 474 database assertions and existing Operations
+suite pass; TypeScript/focused lint pass; local advisor reports no issues. Device/HTTP acceptance is
+pending. Details and changed files are in the bot-defense specification.
+
+The additive Operations server guard is now implemented locally, with separate account-wide request
+and returned-condition budgets. It wraps the private consistent-page reader, commits refusals with no
+condition data, rejects GET/rollback preferences and preserves the independent library allowance.
+Repeated returned conditions are charged again; thresholds still require normal-refresh calibration.
+No client is wired to it yet, and the old feed is still open. Both guards are disabled/unconfigured
+after rehearsal. Verification: 501 SQL assertions, existing Operations tests and 13 actual local HTTP
+scenarios pass, including 100 concurrent Operations requests, session independence and owned-post
+editing while refused. Original data fingerprints matched after cleanup; security advisor found no
+issues. This is a verified local server candidate, not deployed protection.
+
+Operations capacity gate found a paging inefficiency before integration. A rollback-only local SQL
+benchmark compared 30 warmed complete refreshes at each of 100/500/1,000 conditions. Candidate p95
+was 2.251/30.973/119.782 ms versus legacy 1.003/4.082/8.487 ms. Additional server time exceeds the
+25 ms target at 500 and 1,000 conditions. It repeatedly constructs/fingerprints the full feed per
+page. Controlled between-page mutation correctly returned conflict with no data. Original data,
+configuration and counters were unchanged after rollback. Do not wire this reader into alerts yet.
+
+The approved local performance fix now replaces full-feed JSON hashing with compact row-version
+checks, referenced dependency versions collected once per page, and full details built only for the
+requested page. No write triggers or contribution-path changes were added. The unchanged benchmark
+passes its 25 ms added-server-p95 target twice: 1,000-condition complete refresh p95 fell to
+30.806/30.183 ms (legacy 7.921/8.458 ms). This is a limited local synthetic result, not fleet or phone
+acceptance. Lightweight whole-feed scans remain; richer stop/confirmation workloads and churn/soak
+still need measurement before client integration. Physical table rewrites, unrelated changes to a
+referenced row, and the UTC day boundary can conservatively reject a cursor; no partial feed is
+published. Cursors never authorize access. All filters and permissions are rechecked per call.
+Verification: 513 SQL assertions, existing Operations suite, 110 app tests and 14 local HTTP
+scenarios pass, including an independently committed edit between pages. TypeScript/focused lint
+pass; local security advisor reports no issues. Test fixtures were removed and original data and
+disabled/unconfigured guard policies verified. Details and exact changed files are in the spec.
+
+The richer Operations capacity check now fails the performance gate at 1,000 conditions. Two local
+rollback-only runs used 20 authors, one attached visible stop per condition and five confirmations
+per condition (including current yes/no and obsolete revisions). Guarded complete-refresh p95 was
+72.498/83.405 ms versus legacy 9.919/9.791 ms, exceeding the 25 ms added-server target. Both runs
+matched every returned field/ID against the legacy result and rejected post, attached-stop,
+moderation, author-profile and effective-confirmation changes between pages with no data. The
+diagnostic query plan showed a nested-loop join rescanning the 1,000-row confirmation summary
+100 times per page (99,900 rejected comparisons); whole-feed version work also remains. This is
+not production capacity or phone latency. A repeat of the simpler fixture is recorded in the spec.
+Only benchmark/fixture/docs changed; all synthetic rows and temporary policy changes rolled back,
+verified using expanded fingerprints. The benchmark now exits unsuccessfully on a missed timing
+target instead of merely printing timings. App integration and the long soak remain on hold.
+
+The approved follow-up removed the page-to-full-confirmation-summary join. Page rows now use the
+existing indexed latest-yes lookup within the same statement snapshot. Candidate-area and scoped
+author membership checks are evaluated as sets, and whole-feed confirmation version checks use
+latest-yes lookups rather than grouping all matching confirmation records. No new indexes, write
+triggers, access rules, limits or retention. The measured repeated summary scan is gone, but the
+overall rich performance gate remains failed: two final rich runs at 1,000 conditions measured
+40.494/46.972 ms guarded p95 versus 9.599/10.291 ms legacy (added 30.895/36.681 ms; target <=25).
+The simple fixture still passes (29.567 vs 7.518 ms at 1,000). Content equality, churn rejection
+and rollback checks pass. Remaining costs are full-feed version/dependency checks repeated per page.
+Further query tweaks are paused for a consistency-design review; integration and soak stay held.
+Validation: 517 database assertions, existing Operations suite, 110 app tests and 14 HTTP scenarios
+pass; TypeScript and local security advisor pass. Full results and file inventory are in the spec.
+
+The follow-up design review selected a read-only, stateless verification-chain direction for further
+local work, not write-trigger invalidation or retained feed snapshots. A rollback-only prototype
+checks the whole source at the start/end and carries an account/area-bound signed rolling hash
+through bounded pages. It catches mixed downloads even if a temporary inserted row is removed
+before final validation. No intermediate page may be published. Existing candidate/app code remains
+unchanged; prototype helpers and the temporary reader replacement disappear at rollback/session end.
+Fresh-statistics diagnostics did not fix the original reader's performance. The final prototype
+passed content and 11 rejection scenarios, but its two rich 1,000-row added-p95 runs were
+24.451 ms (pass) and 27.480 ms (fail). This is a promising direction, not stable capacity acceptance.
+The proposed cursor protocol and later conflict detection require explicit contract review before
+promotion. Five changed proof/documentation files and all evidence are listed in the specification.
+
+The prototype follow-up now strictly validates cursor version, exact fields, JSON types, hashes,
+numeric bounds and lifetime before using continuation state. Expanded rollback tests cover missing/
+malformed and correctly signed invalid fields, key rotation, charged retries, varying page sizes,
+empty/single-page completion, timezone changes and expired source rows. Existing content equality
+and change/reversion checks still pass. Three new rich 1,000-row runs added 23.343, 24.152 and
+23.959 ms p95 (all under the unchanged 25 ms target). This is narrow local headroom, not a soak,
+network/concurrency or release pass; previous failures remain in the evidence. No app/migration
+was changed. Original definitions, grants, data and guard state were verified restored each time;
+the local security advisor reports no issues. Detailed protocol work remains before promotion.
+
+September 30 overnight continuation: Rob authorized finishing safe local implementation/checks
+without routine approval pauses before morning phone acceptance. The signed-chain contract is now
+implemented in the local candidate, with the guarded complete-feed adapter used by Operations board,
+map, foreground conditions and Driving Alerts. Own contribution history and boolean-only duplicate
+review remain independent of shared browsing limits. Blocking a contributor invalidates local active
+condition caches and stale refreshes; it clears old alert state without normally stopping the session.
+No new retention, contribution triggers, increased timing target or truncated feed was accepted.
+
+Current verification: 542 database assertions, existing Operations checks, 125 app tests, TypeScript,
+focused lint and local security advisor pass. iOS/Android JavaScript/Hermes exports pass (not native
+builds or device acceptance). Final rich 1,000-condition server runs add 21.442, 22.614 and 23.808 ms p95,
+within the unchanged 25 ms target. Twenty actual local HTTP scenarios pass. The completed one-hour
+soak FAILED its end-to-end speed gate: 120 complete refreshes over 3,600 seconds had no content or
+uniqueness errors, but guarded p95 was 165.279 ms versus 21.309 ms legacy, an added 143.970 ms
+(limit 100 ms; maximum guarded refresh 170.153 ms). Server-only timing did not predict total HTTP
+refresh cost. Phone-test readiness is HELD; the morning fixture setup was not run. Do not test this
+candidate as ready or increase the timing target to hide the miss.
+
+Cleanup verified original app-data fingerprints unchanged. October 1 follow-up independently
+confirmed both local guards disabled/unconfigured, all three bucket/seen tables empty, and no
+morning fixture user. Metro remains running on port 8081; Mac IP remains 192.168.1.160. The bounded
+overnight automation is paused. Rob resumed local completion in the morning. Page-level diagnostics
+reproduced idle-sensitive timing and confirmed the historical test compared an idle candidate with
+an immediately warmed legacy baseline. Giving both paths equal idle time raised the legacy result
+from about 21 to 49–52 ms. The local rehearsal now has a separate equal-idle, alternating-order SDK
+soak with the SAME 100 ms limit (also checked on paired differences). Historical results/mode remain
+preserved. This measurement correction changes no runtime protection, bounds, grants or database
+configuration. The corrected full soak also FAILED: 60 pairs over 3,613 seconds, candidate p95
+167.831 ms, legacy 50.740 ms, added 117.091 ms and paired added p95 121.536 ms. Content and cleanup
+checks passed. Output is saved at `/tmp/freightiq-balanced-soak-RbpNAZ`. Work continued rather than
+waiving the gate. Query-only migration `20261001113222_optimize_operations_read_queries.sql`
+removes repeated selection/serialization work and adds two partial read-order indexes; authorization,
+signed continuation, visibility and accounting are unchanged. Rollback experiments and installed
+candidate proofs preserve identical output and mutation rejection; installed rich 1,000-row server
+added p95 is 15.633 ms. All 542 database assertions and Operations checks pass. The subsequent
+six-pair idle HTTP diagnostic added 82.931 ms p95 (paired 88.291 ms), with all 20 HTTP scenarios
+and cleanup passing. However, the full optimized equal-idle soak FAILED: 60 pairs / 3,612 seconds,
+candidate p95 164.369 ms, legacy 51.159 ms, added 113.210 ms, paired added 121.727 ms. Content and
+cleanup passed; output `/tmp/freightiq-optimized-balanced-soak-20261001.log`. The short diagnostic
+queries database statistics immediately before the timed candidate and is not a reliable predictor
+of the untouched idle path. A six-pair `--balanced-profile` now collects statistics only after both
+timed reads, using the exact full-soak timing order. Investigation continues; phone setup is not run.
+A separate final cache-race correction now prevents active
+saved copies from being read while block cleanup is pending or has failed. Overlapping cleanup and
+late reads are tested. All 127 app tests, TypeScript, focused lint and final iOS/Android JS exports
+pass; no new native build or physical-device acceptance is implied.
+
+October 1 approved gate revision (supersedes the phone-readiness holds above): Rob explicitly
+approved documenting the performance miss and moving forward with local physical-phone testing.
+The 100 ms added-p95 target remains a recorded benchmark target, not a hard entry condition for
+this local phone-test phase. The latest full run FAILED that target: added 113.209667 ms
+(13.209667 ms over), with paired added p95 121.727292 ms (21.727292 ms over). Historical failures
+are not converted to passes; no new numerical threshold or production performance acceptance is
+implied. Security, authorization, complete/correct data and cleanup checks remain mandatory.
+Device responsiveness, freezes, errors and missing data remain acceptance checks. Stop further
+timing optimization for this phase and prepare the existing FreightIQ Dev apps for acceptance.
+Local phone setup now PASSED: existing fictional login, posting eligibility, all 201 synthetic
+Operations conditions without duplicates, and guarded stop search. Temporary generous local-only
+allowances are enabled intentionally for acceptance. Fixture expiry is October 2 at 14:27:25 UTC.
+Metro was found stopped and restarted from the canonical repo on 8081 in development/local-test
+mode, recording mode false, with local Supabase `http://192.168.1.160:54321`. Loopback/LAN Metro
+status and LAN auth health passed. Local setup is ready for the existing FreightIQ Dev apps;
+physical-phone acceptance is pending. Exact cleanup boundaries are in the build specification.
+
+October 3 acceptance reconciliation: physical iPhone and Pixel Operations browsing, synthetic-feed
+scrolling, category/map controls, confirmation, own post creation/edit/history, Driving Alerts
+start/stop/refresh/background-return, offline/reconnect and Route retention passed as reported by Rob.
+Both phones passed account-specific Operations throttling while own edits still saved, followed by
+recovery. Synthetic-author blocking passed list/map, restart, offline/reconnect, refused-refresh and
+recovery checks; the synthetic block was temporarily removed with Rob's knowledge for Pixel setup
+and is now present again. All temporary exhaustion helpers were stopped and allowances restored.
+The local guards remain enabled with generous test-only settings; this is not production calibration.
+The two small UI fixes are local/uncommitted: singular "1 second" and friendly My Updates errors.
+Pixel My Updates required an explicit Dev reload before its successful offline/retry retest.
+
+October 3 follow-up closed the targeted stop-library and saved-alert device gaps: both phones
+created an owned fictional stop, saved Core Intel and owned DZ edits under temporary library
+exhaustion, and recovered normal reads. Pixel later saves were repeated with verified active-helper
+timestamps after the first helper timed out; that ambiguous interval was not counted as proof.
+Both phones then generated an actual unread Local Alert Test entry, blocked its synthetic author,
+and confirmed removal while the Driving Alerts session remained active, including Home/return and
+refresh. Rob explicitly stopped alerts on both phones afterward. The test limits are removed;
+the synthetic contributor remains blocked. This does not prove all OS background notification
+delivery/dismissal cases or offline draft/outbox behavior, which remain separate from these checks.
+This phone-test batch is complete, not all bot-defense work. Next: continue the approved local
+operator-alert/response work and associated verification. The small-screen Operations layout improvement
+is explicitly queued after bot-defense work and before new builds, not mixed into these tests.
+The October 3 local regression subset passed 97 tests; earlier 127/542 counts are historical runs,
+not a new full-suite or database rerun. Detailed evidence and remaining gates are in the build spec.
+
+October 3 operator-alert prerequisite: an isolated security-email transport and 16 fake-provider tests
+now pass, along with TypeScript and focused lint. It sends no real mail and is not registered as an
+Edge Function or wired to any database. Stable delivery keys/payloads support retries after an uncertain
+send; automatic attempts stop at five and before the provider's 24-hour deduplication window expires.
+No driver identity, stop content or query details are included in its message. Provider acceptance is
+not inbox delivery. Persistent case creation, authorized recipient selection, atomic outbox claims,
+moderator case routing, pause/restore, cleanup and actual inbox verification remain to be implemented
+and tested. Existing phone fixtures, local guard settings, apps and production are unchanged.
+Exact integration obligations and files are recorded in the build specification.
+
+October 3 operator-response mechanism proof: 44 rollback-only database assertions now pass. It uses
+the existing moderator role (not Founding Driver admin), version-checked actions, fixed reason codes,
+15-minute/one-hour/24-hour expiring pauses, atomic action audit and immediate restore. Proof read
+wrappers return compatible no-data refusals; actual stop creation, Intel saving and owned DZ editing
+remain available. Case expiry, account deletion, revoked moderator access and simulated audit failure
+are covered. The original data/configuration/counter and definition/grant fingerprints matched after
+rollback. This is NOT installed pause enforcement: no app RPC, migration, scheduler or website was
+changed. Case identity/retention design, real guard integration, concurrency/HTTP checks, outbox and
+moderator UI remain next. The 16 email-transport unit tests also still pass. Details and changed files
+are in the specification; no further phone test is needed for this isolated proof.
+
+Actionable alerts/operator controls, production workload calibration, remaining device/browser acceptance,
+hosted parity and separately approved release/bypass closure remain unfinished. Old direct/legacy
+access is still open: this is not non-bypassable production protection. Production, Routing Lab,
+credentials and retention are unchanged. Work is uncommitted; no push, native build or deployment.
+
+### Previous Objective — Operations Driving Alerts V1
 
 On September 15, 2026, the Product Owner approved the bounded local build in
 `docs/build-specs/FreightIQOperationsNearbyAlertsV1BuildSpec.md`. Implement an explicit optional

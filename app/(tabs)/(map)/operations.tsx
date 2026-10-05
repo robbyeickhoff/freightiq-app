@@ -21,6 +21,8 @@ import { OperationsDrivingAlertControl } from "@/components/operations-driving-a
 import { useAppTheme } from "@/context/theme-context";
 import {
   OPERATIONS_AREAS,
+  operationsReadEpoch,
+  subscribeOperationsPrivacy,
   OPERATIONS_CATEGORIES,
   buildOperationsStatusSnapshot,
   categoryLabel,
@@ -37,6 +39,7 @@ import {
   writeOperationsStatusSnapshot,
 } from "@/utils/operations-board";
 import { supabase } from "@/utils/supabase";
+import { readActiveOperations } from "@/utils/operations-reads";
 import {
   markAllDrivingAlertsRead,
   readDrivingAlerts,
@@ -83,6 +86,7 @@ export default function OperationsBoardScreen() {
   const [category, setCategory] = useState("");
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [loadErrorMessage, setLoadErrorMessage] = useState("Couldn’t load current conditions.");
   const [unreadAlerts, setUnreadAlerts] = useState<UnreadDrivingAlert[]>([]);
   const isOperationsTab = pathname === "/operations";
   const visibleUpdates = useMemo(
@@ -100,32 +104,51 @@ export default function OperationsBoardScreen() {
       if (id && !params.area) setArea((await readOperationsPreference(id)) ?? "");
     });
   }, [params.area]);
+  useEffect(
+    () =>
+      subscribeOperationsPrivacy(() => {
+        if (!history) setUpdates([]);
+        setUnreadAlerts([]);
+        setOfflineAt(null);
+        setLoading(false);
+        setRefreshing(false);
+        setLoadError(true);
+        setLoadErrorMessage("Conditions changed. Refresh to load current updates.");
+      }),
+    [history],
+  );
   const load = useCallback(
-    async (silent = false, isCurrent: () => boolean = () => true) => {
+    async (silent = false, mayPublish: () => boolean = () => true) => {
+      const epoch = operationsReadEpoch();
+      const isCurrent = () => mayPublish() && epoch === operationsReadEpoch();
       if (!userId) return;
       if (!silent) setLoading(true);
       const [board, access, ownHistory] = await Promise.all([
-        supabase.rpc("get_operations_board", {
-          p_area_slug: area || null,
-          p_include_history: history,
-        }),
+        history
+          ? supabase.rpc("get_owned_operations_history_v1", {
+              p_area_slug: area || null,
+            })
+          : readActiveOperations(area || null, isCurrent),
         supabase.rpc("can_post_operations_update"),
-        supabase.rpc("get_operations_board", {
+        supabase.rpc("get_owned_operations_history_v1", {
           p_area_slug: null,
-          p_include_history: true,
         }),
       ]);
       if (!isCurrent()) return;
       if (board.error) {
+        const message = history
+          ? "Could not refresh My Updates. Please try again."
+          : board.error.message;
+        setLoadErrorMessage(message);
         const cached = await readOperationsCache(userId, area, history);
         if (!isCurrent()) return;
         if (cached) {
           setUpdates(cached.updates);
           setOfflineAt(cached.savedAt);
-          setLoadError(false);
+          setLoadError(true);
         } else {
           setLoadError(true);
-          if (!silent) Alert.alert("Operations unavailable", board.error.message);
+          if (!silent) Alert.alert("Operations unavailable", message);
         }
       } else {
         const rows = (Array.isArray(board.data) ? board.data : []) as OperationsUpdate[];
@@ -157,10 +180,12 @@ export default function OperationsBoardScreen() {
     useCallback(() => {
       if (!userId) return;
       let active = true;
-      const refreshUnread = () =>
+      const refreshUnread = () => {
+        const epoch = operationsReadEpoch();
         void readDrivingAlerts(userId).then((state) => {
-          if (active) setUnreadAlerts(state.unread);
+          if (active && epoch === operationsReadEpoch()) setUnreadAlerts(state.unread);
         });
+      };
       refreshUnread();
       const unsubscribe = subscribeDrivingAlerts(refreshUnread);
       return () => {
@@ -501,7 +526,7 @@ export default function OperationsBoardScreen() {
       </View>
       {offlineAt ? (
         <Text style={[styles.offline, { color: colors.warning }]}>
-          Offline copy · updated {new Date(offlineAt).toLocaleTimeString()}
+          Saved copy · updated {new Date(offlineAt).toLocaleTimeString()}
         </Text>
       ) : null}
       {loadError ? (
@@ -512,9 +537,7 @@ export default function OperationsBoardScreen() {
             { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
           ]}
         >
-          <Text style={[styles.errorText, { color: colors.textPrimary }]}>
-            Couldn’t load current conditions.
-          </Text>
+          <Text style={[styles.errorText, { color: colors.textPrimary }]}>{loadErrorMessage}</Text>
           <AppButton size="compact" variant="secondary" onPress={() => void load()}>
             Try Again
           </AppButton>
@@ -617,9 +640,9 @@ export default function OperationsBoardScreen() {
                 <Text style={{ color: colors.textSecondary }}>{item.area_name}</Text>
               </View>
               <Text style={[styles.message, { color: colors.textPrimary }]}>{item.message}</Text>
-              {item.stop_name ? (
+              {item.stop_id ? (
                 <Text style={{ color: colors.textSecondary }}>
-                  {item.stop_name}
+                  {item.stop_name || "Attached stop"}
                   {item.stop_address ? ` · ${operationsDisplayAddress(item.stop_address)}` : ""}
                 </Text>
               ) : null}

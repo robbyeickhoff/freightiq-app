@@ -1,0 +1,221 @@
+{
+  "date": "2026-10-05",
+  "status": "reviewed-mobile-source-publication-approved",
+  "base": "1ee63bcacd68695d8ec8ed4ff9a4678d47533b94",
+  "runtime": [
+    {
+      "path": ".easignore",
+      "sha256": "5a747fc49cdb34e2f0a8bcea3ebca9cf8530f1f7edee956a11a2b8702e3ddfb7"
+    },
+    {
+      "path": "app/(tabs)/(map)/index.tsx",
+      "sha256": "d4f691ef09936537303bab174d50117d134fae6846a9f4a2eeebcb7cb2ed65fe"
+    },
+    {
+      "path": "app/(tabs)/(map)/operations-compose.tsx",
+      "sha256": "844b710b6b026f01b1b098241b0dad253f52bd6d50355dfb02a3818d7fd29d75"
+    },
+    {
+      "path": "app/(tabs)/(map)/operations-map.tsx",
+      "sha256": "33ca61ad585c4ffa819c8a37a046fbee80d1ed28afc5962df0031d1e15d3b458"
+    },
+    {
+      "path": "app/(tabs)/(map)/operations.tsx",
+      "sha256": "d456aeae4e92e728111bc64ea71694fc363d6c9b7df7311bf97aee46de0e6fe9"
+    },
+    {
+      "path": "app/(tabs)/(map)/search-collection.tsx",
+      "sha256": "782aeec34316075fed6ee302304ec99912fbff1f89ddabb8c76e90c951324641"
+    },
+    {
+      "path": "app/(tabs)/(map)/todays-route.tsx",
+      "sha256": "ffe8f6a8d2ec811026efa563b411d082245780bd72088e9979f1678a67369761"
+    },
+    {
+      "path": "app/(tabs)/profile/report-content.tsx",
+      "sha256": "06daf13f4ffaec599bc3582fb895dbbc8a9b647e05fdc115b0ba0149b3d97a75"
+    },
+    {
+      "path": "app/(tabs)/stop.tsx",
+      "sha256": "54dc78ad5e53254e2ad1f1db355cf1e721711a1e94b8c6c59675b8f9714493fa"
+    },
+    {
+      "path": "components/move-stop-editor.tsx",
+      "sha256": "438934552ca0d643a19a317965b7c83d6c5115fbac5351bda0c5c8f9ee4a108c"
+    },
+    {
+      "path": "patches/@supabase+auth-js+2.98.0.patch",
+      "sha256": "cd04782c2916bead5c562c19ba8ff505ec80ebeb9c72e05a65648e78224575df"
+    },
+    {
+      "path": "patches/expo-router+57.0.23.patch",
+      "sha256": "4e0b29785c6933a5c1f5022f0de0af30513ad380e144b5f221c87e30558f53d1"
+    },
+    {
+      "path": "utils/collection-pages.ts",
+      "sha256": "c7e2e21061457912a3c07d58349f3b307315354a0abc00580b2af4a914998012"
+    },
+    {
+      "path": "utils/freightiq-read-protocol.ts",
+      "sha256": "f03be8a4edbea5e5bc1e57505fc15d81fb54bdb5d82c3a7b242e21112b252d53"
+    },
+    {
+      "path": "utils/freightiq-stop-reads.ts",
+      "sha256": "1ce3262a259424194c8ab6ff32550c2d729885f8a25b2148e4b4be80ad475709"
+    },
+    {
+      "path": "utils/freightiq-stop-writes.ts",
+      "sha256": "93c711d3b80375ec31c88c5876deddce80268e6fcf66d95b02f0116fbb8fa596"
+    },
+    {
+      "path": "utils/operations-board.ts",
+      "sha256": "0eb35fa941f3a1316ee31f6c8c1648daf5ed97a6c455bae0d33ec2a2e2317f5a"
+    },
+    {
+      "path": "utils/operations-driving-alerts.ts",
+      "sha256": "64e6997a7ddfe3d6aa8b03f38d82a24b60baa67c6ffe232cad0850ad0b480e92"
+    },
+    {
+      "path": "utils/operations-pages.ts",
+      "sha256": "83aed5a1a72febd1fc14528aac11917c5f0ed6b6a5c79aa8ab240bfc69672e49"
+    },
+    {
+      "path": "utils/operations-read-protocol.ts",
+      "sha256": "81b03730ddced05e85a3e62bdb25079f677450de507aa8619be4db970fdc80b7"
+    },
+    {
+      "path": "utils/operations-reads.ts",
+      "sha256": "1c3538a9510b1e82cd5ff8a70401acb7109a0258fc307723b5b6d58ac00d99c8"
+    },
+    {
+      "path": "utils/report-stats-preview.ts",
+      "sha256": "6771b76289c34d3b05e2e99e31bf247a6c82a2e9aaed14b9cb85bd6842b076ce"
+    },
+    {
+      "path": "utils/stop-name-prefill.ts",
+      "sha256": "e6f5793ca6ce62e4fd8338f6e7906e104168ee5548c02caebf372344e7c6a5c2"
+    },
+    {
+      "path": "utils/stop-relocation.ts",
+      "sha256": "050be2108f71691d7a65d604cc0eb41ce90ca4bd1d29efc359646361c9f9d5f9"
+    },
+    {
+      "path": "utils/supabase-config.ts",
+      "sha256": "4ef9dcf728a12a502f258013884bb614d89834fb5c2eaf6f55356b662193cf9d"
+    },
+    {
+      "path": "utils/supabase.ts",
+      "sha256": "73b7fa7b746fe95bb54d2fd9d9bf31295dbf4642358ee58f87076fb1b4cdec8b"
+    }
+  ],
+  "mobileTests": [
+    {
+      "path": "tests/auth-offline-logging.test.ts",
+      "sha256": "4a2764edab67f08f05b3795954025e59cd20ebce7580a48881c8ed707ca19f6d"
+    },
+    {
+      "path": "tests/collection-pages.test.ts",
+      "sha256": "bcfed4ccc9b0357f66ef91579468a8e616619126421919b936baa65fc2a248fa"
+    },
+    {
+      "path": "tests/guarded-collection-retention.test.ts",
+      "sha256": "f2ba120a00b057e329792bcecf188552386200ae0f059e907d8920368225067a"
+    },
+    {
+      "path": "tests/navigation-initial-link.test.ts",
+      "sha256": "3dd8a649eb30bab8034cbc2ba495012ddb366b12ae988a02d55ff2e931fceca1"
+    },
+    {
+      "path": "tests/operations-board.test.ts",
+      "sha256": "79109c830c718cf7a6788810593d6400353ee6a59bfb7d76caab0e133545b9f3"
+    },
+    {
+      "path": "tests/operations-duplicate-review.test.ts",
+      "sha256": "92ff764a64e46a8f2139119a102f3a2e9f152e4cf54d38faa73cb00c45a97fe0"
+    },
+    {
+      "path": "tests/operations-editor-load.test.ts",
+      "sha256": "c1e8514fc99d90b314e02fefcf8689c70b11e9a17a44ec28d9256ef9915d78bb"
+    },
+    {
+      "path": "tests/operations-pages.test.ts",
+      "sha256": "4b742798d5ca94f1c47fcec692e6bfd7d78096ac0d2a3ac2af194ba8335236b0"
+    },
+    {
+      "path": "tests/operations-read-protocol.test.ts",
+      "sha256": "ba0a599eb6cc546907d298e98476442f026da0f22333202c5d421b268889e4f2"
+    },
+    {
+      "path": "tests/operations-refresh-integration.test.ts",
+      "sha256": "5e428c0b0a03b66d7ef3e5933da47bd5c19ed7b237d342deb8b047656b5ab325"
+    },
+    {
+      "path": "tests/owned-report-load.test.ts",
+      "sha256": "aba2a06226de5cfbc98f0b94697b7d94736f1ae8bb3120b737cd33668ec966fb"
+    },
+    {
+      "path": "tests/owned-stop-editor.test.ts",
+      "sha256": "850a2c216f9780af8672428db5e2d12851ad7e0d0b87c10d94b7562f7f0186bd"
+    },
+    {
+      "path": "tests/read-status-wording.test.ts",
+      "sha256": "d137498a22b6a33bb1100e9dc4a14e76e5dbc79df6b23d0dc07c4cbbb6e2de9b"
+    },
+    {
+      "path": "tests/report-save-failure.test.ts",
+      "sha256": "fe71d319727a38e8b1628f1775dc30f28c6f26e577abe3175605a20e0a9a4a10"
+    },
+    {
+      "path": "tests/stop-name-prefill.test.ts",
+      "sha256": "a29720b85c434e50a60be5c13b60ecbdf30edc25ed0d72ce8bfaae13b0902a92"
+    },
+    {
+      "path": "tests/stop-relocation.test.ts",
+      "sha256": "5e2b9cd984cbfde3953af76cdab688844514fbd5f6c86e2bd0b1d6aa19427223"
+    },
+    {
+      "path": "tests/supabase-config.test.ts",
+      "sha256": "1e736e1740fc3285c33a9191658029b0aeff97a3947f5f4b747d59abe8bec20c"
+    }
+  ],
+  "documentation": [
+    "docs/CurrentBuild.md",
+    "docs/build-specs/FreightIQBotScrapeProtectionV1BuildSpec.md",
+    "docs/build-specs/FreightIQMoveStopLocationV1BuildSpec.md"
+  ],
+  "excluded": [
+    "routing-lab/**",
+    "freightiq-site/**",
+    "supabase/**",
+    "scripts/** except this manifest",
+    "tests/security-alert-*.test.ts",
+    "tests/freightiq-read-protocol.test.ts",
+    "tests/guarded-read-retention.test.ts",
+    "docs/MasterTODO.md",
+    "docs/ReleaseHistory.md",
+    "docs/build-specs/FreightIQOperationsOfflineOutboxV1BuildSpec.md"
+  ],
+  "excludedTestReason": "Three security-alert tests belong to backend; two cross-client tests require separately versioned website source. All five were run in the 177-test current-workspace check; none deleted or weakened.",
+  "verification": {
+    "currentWorkspaceTests": 177,
+    "independentMobileOnlyTests": 127,
+    "failed": 0,
+    "typecheck": "pass",
+    "lint": {
+      "errors": 0,
+      "existingWarnings": 2
+    },
+    "patchReverseChecks": "pass; not clean-install replay",
+    "archiveSourceComparison": {
+      "filesPerPlatform": 133,
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "mismatches": 0
+    },
+    "nativeBuild": false,
+    "installedCandidateAcceptance": false
+  },
+  "note": "Rob approved commit/push of only listed paths plus this manifest on October 5. Recheck hashes and review staged diff before committing. Native builds, distribution and legacy-read closure are not authorized by this source publication approval."
+}

@@ -8,11 +8,14 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { AppButton } from "@/components/ui/app-button";
 import {
   categoryLabel,
+  operationsReadEpoch,
+  subscribeOperationsPrivacy,
   filterCachedOperations,
   OPERATIONS_AREAS,
   type OperationsUpdate,
 } from "@/utils/operations-board";
 import { supabase } from "@/utils/supabase";
+import { readActiveOperations } from "@/utils/operations-reads";
 import { useAppTheme } from "@/context/theme-context";
 import { Borders, Elevation, Spacing, Typography } from "@/constants/theme";
 import {
@@ -43,6 +46,7 @@ export default function OperationsMapScreen() {
   const [locating, setLocating] = useState(false);
   const [mapType, setMapType] = useState<"standard" | "hybrid">("standard");
   const [loadError, setLoadError] = useState(false);
+  const [loadErrorMessage, setLoadErrorMessage] = useState("Couldn’t load mapped conditions.");
   const [region, setRegion] = useState<Region>({
     latitude: selected.latitude,
     longitude: selected.longitude,
@@ -96,14 +100,24 @@ export default function OperationsMapScreen() {
       },
     } as never);
   };
+  useEffect(
+    () =>
+      subscribeOperationsPrivacy(() => {
+        setUpdates([]);
+        setPicked(null);
+        setLoadError(true);
+        setLoadErrorMessage("Conditions changed. Refresh to load current updates.");
+      }),
+    [],
+  );
   const loadUpdates = useCallback(
-    async (isCurrent: () => boolean = () => true) => {
-      const { data, error } = await supabase.rpc("get_operations_board", {
-        p_area_slug: params.area || null,
-        p_include_history: false,
-      });
+    async (mayPublish: () => boolean = () => true) => {
+      const epoch = operationsReadEpoch();
+      const isCurrent = () => mayPublish() && epoch === operationsReadEpoch();
+      const { data, error } = await readActiveOperations(params.area || null, isCurrent);
       if (!isCurrent()) return;
       if (error) {
+        setLoadErrorMessage(error.message);
         setLoadError(true);
         if (params.alertId && handledAlert.current !== params.alertId) {
           handledAlert.current = params.alertId;
@@ -271,7 +285,7 @@ export default function OperationsMapScreen() {
             ]}
           >
             <Text style={[styles.errorText, { color: colors.textPrimary }]}>
-              Couldn’t load mapped conditions.
+              {loadErrorMessage}
             </Text>
             <AppButton size="compact" variant="secondary" onPress={() => void loadUpdates()}>
               Try Again

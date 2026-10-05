@@ -5,10 +5,13 @@ import { DeviceEventEmitter, Platform } from "react-native";
 
 import {
   OPERATIONS_CATEGORIES,
+  operationsReadEpoch,
+  invalidateOperationsReadCaches,
   type OperationsCategory,
   type OperationsUpdate,
 } from "./operations-board";
 import { supabase } from "./supabase";
+import { readActiveOperations } from "./operations-reads";
 import {
   evaluateNearby,
   notificationBatch,
@@ -215,16 +218,14 @@ function toCondition(row: OperationsUpdate): AlertCondition | null {
 }
 
 async function refreshDrivingSnapshotImpl(id: string, force: boolean) {
+  const epoch = operationsReadEpoch();
   try {
     const { data: auth } = await supabase.auth.getSession();
     if (auth.session?.user.id !== id) return false;
     const state = await readDrivingAlerts(id);
     if (!force && state.snapshot && Date.now() - state.snapshot.refreshedAt < 5 * 60_000)
       return true;
-    const { data, error } = await supabase.rpc("get_operations_board", {
-      p_area_slug: null,
-      p_include_history: false,
-    });
+    const { data, error } = await readActiveOperations(null);
     if (error || !Array.isArray(data)) return false;
     const { data: currentAuth } = await supabase.auth.getSession();
     if (currentAuth.session?.user.id !== id) return false;
@@ -232,7 +233,9 @@ async function refreshDrivingSnapshotImpl(id: string, force: boolean) {
       .map(toCondition)
       .filter((row): row is AlertCondition => !!row);
     await serialized(async () => {
+      if (epoch !== operationsReadEpoch()) throw new Error("Operations visibility changed");
       const current = await read(id);
+      if (epoch !== operationsReadEpoch()) throw new Error("Operations visibility changed");
       current.snapshot = { refreshedAt: Date.now(), conditions };
       const revisions = new Map(conditions.map((row) => [row.id, row.revision]));
       current.unread = reconcileUnread(current.unread, conditions);
@@ -257,6 +260,29 @@ export async function refreshCurrentDrivingSnapshot() {
   const { data } = await supabase.auth.getSession();
   if (data.session?.user.id) return refreshDrivingSnapshot(data.session.user.id, true);
   return false;
+}
+
+// Blocking is immediate even if the shared refresh is refused. Preserve the
+// running session; it has no usable snapshot until a fresh verified read succeeds.
+export async function invalidateOperationsAfterBlock(id: string) {
+  const results = await Promise.allSettled([
+    invalidateOperationsReadCaches(id),
+    serialized(async () => {
+      const current = await read(id);
+      current.snapshot = null;
+      current.unread = [];
+      current.encounters = {};
+      await write(id, current);
+    }),
+  ]);
+  const presented = await Notifications.getPresentedNotificationsAsync().catch(() => []);
+  await Promise.allSettled(
+    presented
+      .filter((item) => item.request.content.data?.drivingAlert === true)
+      .map((item) => Notifications.dismissNotificationAsync(item.request.identifier)),
+  );
+  if (results.some((result) => result.status === "rejected"))
+    throw new Error("Could not clear saved conditions");
 }
 
 async function channelsReady() {
@@ -414,6 +440,7 @@ export async function stopRouteDrivingAlerts(id: string) {
 }
 
 export async function handleDrivingLocation(point: AlertCoordinate) {
+  const epoch = operationsReadEpoch();
   const owner = await AsyncStorage.getItem(POINTER);
   if (!owner) return;
   const { data: auth } = await supabase.auth.getSession();
@@ -460,6 +487,7 @@ export async function handleDrivingLocation(point: AlertCoordinate) {
   const result = await serialized(async () => {
     const current = await read(owner);
     if (
+      epoch !== operationsReadEpoch() ||
       !current.session ||
       !current.snapshot ||
       !snapshotCurrent(current.snapshot.refreshedAt, now)
@@ -502,7 +530,8 @@ export async function handleDrivingLocation(point: AlertCoordinate) {
   });
   const batch = notificationBatch(result);
   for (const condition of batch.individual) {
-    await Notifications.scheduleNotificationAsync({
+    if (epoch !== operationsReadEpoch()) return;
+    const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
         title: `${OPERATIONS_CATEGORIES.find((item) => item.value === condition.category)?.label ?? "Condition"} nearby`,
         body: condition.message || `Condition reported near ${condition.areaName}.`,
@@ -511,9 +540,12 @@ export async function handleDrivingLocation(point: AlertCoordinate) {
       },
       trigger: null,
     });
+    if (epoch !== operationsReadEpoch())
+      await Notifications.dismissNotificationAsync(notificationId);
   }
   if (batch.additionalCount > 0) {
-    await Notifications.scheduleNotificationAsync({
+    if (epoch !== operationsReadEpoch()) return;
+    const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
         title: "More nearby conditions",
         body: `${batch.additionalCount} additional conditions near you.`,
@@ -522,5 +554,7 @@ export async function handleDrivingLocation(point: AlertCoordinate) {
       },
       trigger: null,
     });
+    if (epoch !== operationsReadEpoch())
+      await Notifications.dismissNotificationAsync(notificationId);
   }
 }

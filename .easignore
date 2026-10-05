@@ -57,3 +57,11 @@ app-example
 # Local Telluride drawing-reference artifacts are not mobile build inputs
 /output/pdf/Telluride-Zone-Boundary-Drawing-Reference.pdf
 /tmp/pdfs
+
+# Backend, rehearsal fixtures, and local output are not native build inputs.
+/supabase
+/scripts/fixtures
+/tests
+/docs
+/output
+/tmp

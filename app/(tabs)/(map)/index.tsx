@@ -47,6 +47,15 @@ import {
 } from "@/utils/operations-board";
 import { evaluateOperationsEncounter } from "@/utils/operations-proximity";
 import { refreshCurrentDrivingSnapshot } from "@/utils/operations-driving-alerts";
+import { operationsReadEpoch, subscribeOperationsPrivacy } from "@/utils/operations-board";
+import {
+  readFreightIqStop,
+  readGuardedFreightIq,
+  readFreightIqStopStats,
+  readFreightIqStopsInRegion,
+} from "@/utils/freightiq-stop-reads";
+import { createFreightIqStop } from "@/utils/freightiq-stop-writes";
+import { freightIqReadMessage, isFreightIqReadThrottled } from "@/utils/freightiq-read-protocol";
 import {
   readSearchResultLocality,
   resolveConfirmedStopLocality,
@@ -60,6 +69,10 @@ import {
   type NavigationProvider,
 } from "@/utils/navigation-apps";
 import { supabase } from "../../../utils/supabase";
+import { readActiveOperations } from "@/utils/operations-reads";
+import { stopNamePrefill } from "@/utils/stop-name-prefill";
+import { getStopLocationEpoch } from "@/utils/stop-relocation";
+import { reportStatsPreview } from "@/utils/report-stats-preview";
 
 type Pin = {
   id: string;
@@ -69,6 +82,7 @@ type Pin = {
   address?: string;
   suggestedCity?: string;
   suggestedStateCode?: string;
+  suggestedName?: string;
 };
 
 type PlaceResult = {
@@ -370,15 +384,6 @@ function searchRadiusMetersFromRegion(region: Region) {
   );
 }
 
-function pointInRegion(lat: number, lng: number, region: Region) {
-  const west = region.longitude - region.longitudeDelta / 2;
-  const east = region.longitude + region.longitudeDelta / 2;
-  const north = region.latitude + region.latitudeDelta / 2;
-  const south = region.latitude - region.latitudeDelta / 2;
-
-  return lat >= south && lat <= north && lng >= west && lng <= east;
-}
-
 function formatWhen(iso: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
@@ -596,6 +601,7 @@ export default function HomeScreen() {
   const [newPinCityUnknown, setNewPinCityUnknown] = useState(false);
   const [newPinLocalityEditing, setNewPinLocalityEditing] = useState(false);
   const [createStopKeyboardTop, setCreateStopKeyboardTop] = useState<number | null>(null);
+  const pendingCreatedStopNavigationRef = useRef<Pin | null>(null);
 
   useEffect(() => {
     if (Platform.OS !== "android" || !newPinOpen) {
@@ -642,6 +648,7 @@ export default function HomeScreen() {
   const [searching, setSearching] = useState(false);
   const [searchScope, setSearchScope] = useState<SearchScope>("all");
   const [failedSearchSources, setFailedSearchSources] = useState<string[]>([]);
+  const [searchReadMessage, setSearchReadMessage] = useState<string | null>(null);
   const [searchInputFocused, setSearchInputFocused] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -712,16 +719,17 @@ export default function HomeScreen() {
     const localMatch = findMatchingExistingStop(name, lat, lng, visibleCandidates);
     if (localMatch) return localMatch.pin;
 
-    const { data, error } = await supabase.rpc("match_nearby_mfi_stop", {
-      p_name: name,
-      p_address: address,
-      p_lat: lat,
-      p_lng: lng,
-      p_radius_meters: DUPLICATE_DISTANCE_FEET / 3.28084,
-    });
-
-    if (error) {
-      console.log("Nearby stop match failed", error.message);
+    let data: NearbyStopMatchRow[];
+    try {
+      data = await readGuardedFreightIq<NearbyStopMatchRow[]>("match_nearby", {
+        p_name: name,
+        p_address: address,
+        p_lat: lat,
+        p_lng: lng,
+        p_radius_meters: DUPLICATE_DISTANCE_FEET / 3.28084,
+      });
+    } catch {
+      // Duplicate discovery is best effort; a shared-read limit must not block creation.
       return null;
     }
 
@@ -849,6 +857,7 @@ export default function HomeScreen() {
       let active = true;
       let subscription: Location.LocationSubscription | null = null;
       let displayedUpdateId: string | null = null;
+      let unsubscribePrivacy: (() => void) | undefined;
       let refreshTimer: ReturnType<typeof setInterval> | undefined;
       let expiryTimer: ReturnType<typeof setInterval> | undefined;
       void (async () => {
@@ -856,6 +865,11 @@ export default function HomeScreen() {
         const userId = auth.data.user?.id;
         if (!active || !userId || !locationGranted) return;
         let pinned: OperationsUpdate[] = [];
+        unsubscribePrivacy = subscribeOperationsPrivacy(() => {
+          pinned = [];
+          displayedUpdateId = null;
+          setNearbyOperationsUpdate(null);
+        });
         let lastPosition: Location.LocationObject | null = null;
         const encounters = await readOperationsEncounters(userId);
         if (!active) return;
@@ -907,24 +921,30 @@ export default function HomeScreen() {
           }
         };
         let refreshing = false;
+        let lastVerifiedConditionsAt = 0;
         const refresh = async () => {
           if (!active || refreshing) return;
           refreshing = true;
+          const epoch = operationsReadEpoch();
           try {
-            const { data, error } = await supabase.rpc("get_operations_board", {
-              p_area_slug: null,
-              p_include_history: false,
-            });
-            if (!active) return;
-            pinned = error
-              ? []
-              : filterCachedOperations(
-                  (Array.isArray(data) ? data : []) as OperationsUpdate[],
-                  false,
-                ).filter(
-                  (update) =>
-                    update.latitude != null && update.longitude != null && !update.is_author,
-                );
+            const { data, error } = await readActiveOperations(null, () => active);
+            if (!active || epoch !== operationsReadEpoch()) return;
+            if (error) {
+              // Retain a verified feed only within the existing alert freshness window.
+              if (Date.now() - lastVerifiedConditionsAt > 30 * 60_000) {
+                pinned = [];
+                setNearbyOperationsUpdate(null);
+              }
+              return;
+            }
+            lastVerifiedConditionsAt = Date.now();
+            pinned = filterCachedOperations(
+              (Array.isArray(data) ? data : []) as OperationsUpdate[],
+              false,
+            ).filter(
+              (update) =>
+                update.latitude != null && update.longitude != null && !update.is_author,
+            );
             // Update or remove a visible prompt without reopening a dismissed one.
             setNearbyOperationsUpdate((current) =>
               current ? (pinned.find((update) => update.id === current.id) ?? null) : null,
@@ -982,6 +1002,7 @@ export default function HomeScreen() {
       return () => {
         active = false;
         subscription?.remove();
+        unsubscribePrivacy?.();
         clearInterval(refreshTimer);
         clearInterval(expiryTimer);
         setNearbyOperationsUpdate(null);
@@ -1243,186 +1264,26 @@ export default function HomeScreen() {
         return true;
       }
 
-      const { data: reports, error } = await supabase
-        .from("mfi_reports")
-        .select("id, stop_id, user_id, updated_at, delivery_type, truck_fit, back_in_required")
-        .in("stop_id", stopIds)
-        .order("updated_at", { ascending: false });
-
-      if (error) {
-        console.log("Report stats load failed", error.message);
-        return false;
-      }
-
-      const rows = reports ?? [];
-      const counts: Record<string, number> = {};
-      const latestUserByStop: Record<string, string> = {};
-
-      const deliveryTypeCounts: Record<
-        string,
-        {
-          Dock: number;
-          Forklift: number;
-          Liftgate: number;
-        }
-      > = {};
-
-      const truckFitCounts: Record<
-        string,
-        {
-          "53'": number;
-          "48'": number;
-          "40'": number;
-          "28'": number;
-        }
-      > = {};
-
-      const backInCounts: Record<string, { yes: number; no: number }> = {};
-
-      const reportIds = rows.map((r: any) => r.id);
+      const rows = await readFreightIqStopStats(stopIds);
+      const rowsByStopId = Object.fromEntries(rows.map((row) => [row.stop_id, row]));
+      // A missing result is not evidence of zero reports. Preserve the cache and
+      // show the unavailable state if the server did not account for every stop.
+      if (stopIds.some((id) => !rowsByStopId[id])) return false;
 
       const scoreMap: Record<string, { up: number; down: number }> = {};
-      stopIds.forEach((id) => {
-        scoreMap[id] = { up: 0, down: 0 };
-
-        deliveryTypeCounts[id] = {
-          Dock: 0,
-          Forklift: 0,
-          Liftgate: 0,
-        };
-
-        truckFitCounts[id] = {
-          "53'": 0,
-          "48'": 0,
-          "40'": 0,
-          "28'": 0,
-        };
-
-        backInCounts[id] = { yes: 0, no: 0 };
-      });
-
-      if (reportIds.length) {
-        const { data: votes, error: votesError } = await supabase
-          .from("mfi_report_votes")
-          .select("report_id, vote_value")
-          .in("report_id", reportIds);
-
-        if (votesError) {
-          console.log("Vote stats load failed", votesError.message);
-        } else {
-          const reportToStopId: Record<string, string> = {};
-          rows.forEach((r: any) => {
-            reportToStopId[r.id] = r.stop_id;
-          });
-
-          (votes ?? []).forEach((v: any) => {
-            const stopId = reportToStopId[v.report_id];
-            if (!stopId) return;
-
-            if (v.vote_value === 1) scoreMap[stopId].up += 1;
-            if (v.vote_value === -1) scoreMap[stopId].down += 1;
-          });
-        }
-      }
-
-      rows.forEach((r: any) => {
-        counts[r.stop_id] = (counts[r.stop_id] ?? 0) + 1;
-
-        if (!latestUserByStop[r.stop_id]) {
-          latestUserByStop[r.stop_id] = r.user_id;
-        }
-
-        if (
-          r.delivery_type === "Dock" ||
-          r.delivery_type === "Forklift" ||
-          r.delivery_type === "Liftgate"
-        ) {
-          const deliveryType = r.delivery_type as "Dock" | "Forklift" | "Liftgate";
-          deliveryTypeCounts[r.stop_id][deliveryType] += 1;
-        }
-
-        if (
-          r.truck_fit === "53'" ||
-          r.truck_fit === "48'" ||
-          r.truck_fit === "40'" ||
-          r.truck_fit === "28'"
-        ) {
-          const truckFit = r.truck_fit as "53'" | "48'" | "40'" | "28'";
-          truckFitCounts[r.stop_id][truckFit] += 1;
-        }
-
-        if (r.back_in_required === true) {
-          backInCounts[r.stop_id].yes += 1;
-        } else if (r.back_in_required === false) {
-          backInCounts[r.stop_id].no += 1;
-        }
-      });
-
-      const uniqueUserIds = [...new Set(Object.values(latestUserByStop))];
-
-      let usernameMap: Record<string, string> = {};
-      if (uniqueUserIds.length) {
-        const { data: profilesData } = await supabase
-          .from("profiles")
-          .select("id, username")
-          .in("id", uniqueUserIds);
-
-        usernameMap = Object.fromEntries((profilesData ?? []).map((p: any) => [p.id, p.username]));
-      }
 
       const next: Record<string, ReportStats> = {};
       stopIds.forEach((id) => {
         next[id] = {
-          count: counts[id] ?? 0,
-          latestUsername: latestUserByStop[id]
-            ? (usernameMap[latestUserByStop[id]] ?? "Driver")
-            : null,
-          deliveryType: (() => {
-            const types = deliveryTypeCounts[id];
-
-            const values = [
-              { type: "Dock", count: types.Dock },
-              { type: "Forklift", count: types.Forklift },
-              { type: "Liftgate", count: types.Liftgate },
-            ];
-
-            const maxCount = Math.max(...values.map((v) => v.count));
-
-            if (maxCount === 0) return null;
-
-            const winners = values.filter((v) => v.count === maxCount);
-
-            if (winners.length > 1) return "Mixed";
-
-            return winners[0].type as "Dock" | "Forklift" | "Liftgate";
-          })(),
-          truckFit: (() => {
-            const fits = truckFitCounts[id];
-
-            const values = [
-              { fit: "53'", count: fits["53'"] },
-              { fit: "48'", count: fits["48'"] },
-              { fit: "40'", count: fits["40'"] },
-              { fit: "28'", count: fits["28'"] },
-            ];
-
-            const maxCount = Math.max(...values.map((value) => value.count));
-
-            if (maxCount === 0) return null;
-
-            const winners = values.filter((value) => value.count === maxCount);
-
-            if (winners.length > 1) return "Mixed";
-
-            return winners[0].fit as "53'" | "48'" | "40'" | "28'";
-          })(),
-          backInRequired: (() => {
-            const countsForStop = backInCounts[id];
-
-            if (countsForStop.yes === countsForStop.no) return null;
-
-            return countsForStop.yes > countsForStop.no;
-          })(),
+          count: Number(rowsByStopId[id]?.report_count ?? 0),
+          latestUsername: rowsByStopId[id]?.latest_username ?? null,
+          deliveryType: (rowsByStopId[id]?.delivery_type ?? null) as ReportStats["deliveryType"],
+          truckFit: (rowsByStopId[id]?.truck_fit ?? null) as ReportStats["truckFit"],
+          backInRequired: rowsByStopId[id]?.back_in_required ?? null,
+        };
+        scoreMap[id] = {
+          up: Number(rowsByStopId[id]?.vote_up_count ?? 0),
+          down: Number(rowsByStopId[id]?.vote_down_count ?? 0),
         };
       });
 
@@ -1430,45 +1291,31 @@ export default function HomeScreen() {
       setReportStatsByStopId((previous) => ({ ...previous, ...next }));
       return true;
     } catch (e) {
+      if (isFreightIqReadThrottled(e)) return false;
       console.log("Report stats load failed", e);
       return false;
     }
   }
 
   async function loadStopsInView(viewRegion: Region) {
+    const locationEpoch = getStopLocationEpoch();
     try {
-      const { data, error } = await supabase
-        .from("mfi_stops")
-        .select("id, name, lat, lng, address");
-
-      if (error) {
-        console.log("Stops in view load failed", error.message);
-        return;
-      }
+      const data = await readFreightIqStopsInRegion(viewRegion);
 
       const visiblePins: Pin[] = sanitizePins(
-        (data ?? [])
-          .filter((row: any) => {
-            const lat = Number(row.lat);
-            const lng = Number(row.lng);
-
-            if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-              return false;
-            }
-
-            return pointInRegion(lat, lng, viewRegion);
-          })
-          .map((row: any) => ({
-            id: String(row.id),
-            name: row.name ?? "Unknown",
-            lat: Number(row.lat),
-            lng: Number(row.lng),
-            address: row.address ?? undefined,
-          })),
+        data.map((row) => ({
+          id: String(row.id),
+          name: row.name ?? "Unknown",
+          lat: Number(row.lat),
+          lng: Number(row.lng),
+          address: row.address ?? undefined,
+        })),
       );
 
       const rawExistingPins = await AsyncStorage.getItem(PINS_KEY);
       const rawExistingViewPins = await AsyncStorage.getItem(VIEW_CACHE_KEY);
+
+      if (locationEpoch !== getStopLocationEpoch()) return;
 
       const existingPins = sanitizePins(rawExistingPins ? JSON.parse(rawExistingPins) : []);
       const existingViewPins = sanitizePins(
@@ -1488,10 +1335,16 @@ export default function HomeScreen() {
         `${visiblePins.length} stop${visiblePins.length === 1 ? "" : "s"} added from this view.`,
       );
     } catch (e) {
+      if (isFreightIqReadThrottled(e)) {
+        Alert.alert("Please wait", e.message);
+        return;
+      }
+      if (locationEpoch !== getStopLocationEpoch()) return;
       console.log("Stops in view load failed", e);
 
       try {
         const raw = await AsyncStorage.getItem(VIEW_CACHE_KEY);
+        if (locationEpoch !== getStopLocationEpoch()) return;
         const cachedPins = sanitizePins(raw ? JSON.parse(raw) : []);
 
         if (cachedPins.length) {
@@ -1728,36 +1581,18 @@ export default function HomeScreen() {
     setStopLayerLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from("mfi_stops")
-        .select("id, name, lat, lng, address");
+      const data = await readFreightIqStopsInRegion(region);
 
       if (requestId !== stopLayerRequestIdRef.current) return;
 
-      if (error) {
-        console.log("Stops in view load failed", error.message);
-        return;
-      }
-
       const visiblePins: Pin[] = sanitizePins(
-        (data ?? [])
-          .filter((row: any) => {
-            const lat = Number(row.lat);
-            const lng = Number(row.lng);
-
-            if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-              return false;
-            }
-
-            return pointInRegion(lat, lng, region);
-          })
-          .map((row: any) => ({
-            id: String(row.id),
-            name: row.name ?? "Unknown",
-            lat: Number(row.lat),
-            lng: Number(row.lng),
-            address: row.address ?? undefined,
-          })),
+        data.map((row) => ({
+          id: String(row.id),
+          name: row.name ?? "Unknown",
+          lat: Number(row.lat),
+          lng: Number(row.lng),
+          address: row.address ?? undefined,
+        })),
       );
 
       setClusterPoints([]);
@@ -1771,11 +1606,14 @@ export default function HomeScreen() {
         "Stops shown",
         `${visiblePins.length} stop${visiblePins.length === 1 ? "" : "s"} shown in this view.`,
       );
-    } catch {
+    } catch (error) {
       if (requestId !== stopLayerRequestIdRef.current) return;
 
       setShowingStops(false);
-      Alert.alert("Refresh failed", "Could not load stops in view.");
+      Alert.alert(
+        "Could not refresh stops",
+        freightIqReadMessage(error, "Could not load stops in view."),
+      );
     } finally {
       if (requestId === stopLayerRequestIdRef.current) {
         stopLayerLoadingRef.current = false;
@@ -1836,19 +1674,9 @@ export default function HomeScreen() {
 
     try {
       const raw = cachedRaw === undefined ? await AsyncStorage.getItem(stopKey(p.id)) : cachedRaw;
-      const { data, error } = await supabase
-        .from("mfi_stops")
-        .select("entrance_lat, entrance_lng")
-        .eq("id", p.id)
-        .maybeSingle();
+      const data = await readFreightIqStop(p.id);
 
       if (requestId !== selectedEntranceRequestIdRef.current) return;
-
-      if (error) {
-        console.log("Delivery zone load failed", error.message);
-        setSelectedEntranceStatus("error");
-        return;
-      }
 
       const nextEntrance =
         typeof data?.entrance_lat === "number" && typeof data?.entrance_lng === "number"
@@ -2136,7 +1964,7 @@ export default function HomeScreen() {
     if (!(await requireSignedIn())) return;
 
     if (tempSearchPin) {
-      setNewPinName(tempSearchPin.name ?? "");
+      setNewPinName(tempSearchPin.suggestedName ?? "");
       setNewPinAddress(tempSearchPin.address ?? "");
       setNewPinCity(tempSearchPin.suggestedCity ?? "");
       setNewPinStateCode(tempSearchPin.suggestedStateCode ?? "");
@@ -2172,28 +2000,35 @@ export default function HomeScreen() {
     } catch {}
 
     try {
-      const { error } = await supabase.from("mfi_stops").insert({
+      await createFreightIqStop({
         id: pin.id,
         name: pin.name,
         lat: pin.lat,
         lng: pin.lng,
         address: pin.address ?? null,
-        user_id: userId,
         city: locality?.city ?? null,
-        state_code: locality?.stateCode ?? null,
-        country_code: locality?.countryCode ?? null,
+        stateCode: locality?.stateCode ?? null,
+        countryCode: locality?.countryCode ?? null,
       });
-
-      if (error) {
-        Alert.alert("Stop sync error", error.message);
-        console.log("Stop sync error:", error.message);
-      }
-    } catch (e) {
-      console.log("Stop sync failed", e);
+    } catch (error: any) {
+      Alert.alert("Stop sync error", error?.message ?? "The stop could not be saved.");
+      console.log("Stop sync failed", error);
     }
 
+    pendingCreatedStopNavigationRef.current = pin;
+    Keyboard.dismiss();
     setNewPinOpen(false);
 
+    if (Platform.OS !== "ios") {
+      requestAnimationFrame(openPendingCreatedStop);
+    }
+  }
+
+  function openPendingCreatedStop() {
+    const pin = pendingCreatedStopNavigationRef.current;
+    if (!pin) return;
+
+    pendingCreatedStopNavigationRef.current = null;
     router.push({
       pathname: "/(tabs)/stop",
       params: {
@@ -2337,6 +2172,7 @@ export default function HomeScreen() {
     debounceRef.current = setTimeout(async () => {
       try {
         setSearching(true);
+        setSearchReadMessage(null);
 
         const searchCenter = {
           latitude: region.latitude,
@@ -2348,30 +2184,30 @@ export default function HomeScreen() {
 
         const freightIqRequest = (async (): Promise<FreightIqSearchRow[]> => {
           if (searchScope !== "all" && searchScope !== "stops") return [];
-          const { data, error } = await supabase
-            .rpc("search_mfi_stops", {
+          const data = await readGuardedFreightIq<FreightIqSearchRow[]>(
+            "search_stops",
+            {
               p_search_text: q,
               p_center_lat: searchCenter.latitude,
               p_center_lng: searchCenter.longitude,
               p_radius_meters: searchRadiusMeters,
               p_result_limit: 10,
-            })
-            .abortSignal(abortController.signal);
-
-          if (error) throw error;
+            },
+            abortController.signal,
+          );
           return (data ?? []) as FreightIqSearchRow[];
         })();
 
         const cityRequest = (async (): Promise<CitySearchRow[]> => {
           if (searchScope !== "all" && searchScope !== "cities") return [];
-          const { data, error } = await supabase
-            .rpc("search_freightiq_cities", {
+          const data = await readGuardedFreightIq(
+            "search_cities",
+            {
               p_search_text: q,
               p_result_limit: 10,
-            })
-            .abortSignal(abortController.signal);
-
-          if (error) throw error;
+            },
+            abortController.signal,
+          );
           return (data ?? []).map((row: Record<string, unknown>) => ({
             city: String(row.city),
             state_code: String(row.state_code),
@@ -2382,14 +2218,14 @@ export default function HomeScreen() {
 
         const driverRequest = (async (): Promise<DriverSearchRow[]> => {
           if (searchScope !== "all" && searchScope !== "drivers") return [];
-          const { data, error } = await supabase
-            .rpc("search_freightiq_drivers", {
+          const data = await readGuardedFreightIq(
+            "search_drivers",
+            {
               p_search_text: q,
               p_result_limit: 10,
-            })
-            .abortSignal(abortController.signal);
-
-          if (error) throw error;
+            },
+            abortController.signal,
+          );
           return (data ?? []).map((row: Record<string, unknown>) => ({
             contributor_id: String(row.contributor_id),
             username: String(row.username),
@@ -2454,6 +2290,10 @@ export default function HomeScreen() {
         if (requestId !== lastRequestId.current) return;
 
         const failedSources: string[] = [];
+        const refused = [freightIqOutcome, cityOutcome, driverOutcome].find(
+          (outcome) => outcome.status === "rejected" && isFreightIqReadThrottled(outcome.reason),
+        );
+        setSearchReadMessage(refused?.status === "rejected" ? refused.reason.message : null);
 
         if (freightIqOutcome.status === "rejected") {
           console.log("FreightIQ search failed", freightIqOutcome.reason);
@@ -2582,6 +2422,7 @@ export default function HomeScreen() {
         address: retrievedAddress || undefined,
         suggestedCity: suggestedLocality?.city,
         suggestedStateCode: suggestedLocality?.stateCode,
+        suggestedName: stopNamePrefill(props.feature_type, name),
       };
 
       const matchingStop = await findNearbyExistingStop(name, retrievedAddress, lat, lng);
@@ -3642,7 +3483,8 @@ export default function HomeScreen() {
 
               {failedSearchSources.length > 0 && !searching ? (
                 <Text style={[styles.partialFailureText, { color: colors.textSecondary }]}>
-                  {failedSearchSources.join(", ")} unavailable. Other results are still shown.
+                  {searchReadMessage ??
+                    `${failedSearchSources.join(", ")} unavailable. Other results are still shown.`}
                 </Text>
               ) : null}
 
@@ -3951,15 +3793,10 @@ export default function HomeScreen() {
                   <>
                     <AppCard clipContent contentStyle={styles.previewDetailList}>
                       <Pressable
-                        accessibilityLabel={
-                          selectedReportStatsLoading
-                            ? "Checking Driver Reports"
-                            : selectedReportStatsUnavailable
-                              ? "Driver Reports unavailable"
-                              : `Driver Reports, ${selectedReportStats.count} ${
-                                  selectedReportStats.count === 1 ? "report" : "reports"
-                                }`
-                        }
+                        accessibilityLabel={`Driver Reports. ${reportStatsPreview(
+                          selectedReportStatsStatus,
+                          selectedReportStats.count,
+                        )}`}
                         onPress={() =>
                           router.push({
                             pathname: "/(tabs)/stop",
@@ -3999,11 +3836,7 @@ export default function HomeScreen() {
                           <Text
                             style={[styles.previewDetailValue, { color: colors.textSecondary }]}
                           >
-                            {selectedReportStatsLoading || selectedReportStatsUnavailable
-                              ? "Unavailable"
-                              : `${selectedReportStats.count} ${
-                                  selectedReportStats.count === 1 ? "report" : "reports"
-                                }`}
+                            {reportStatsPreview(selectedReportStatsStatus, selectedReportStats.count)}
                           </Text>
                         </View>
                         <AppIcon name="chevronRight" color={colors.textSecondary} />
@@ -4414,6 +4247,7 @@ export default function HomeScreen() {
         visible={newPinOpen}
         transparent
         animationType={reduceMotionEnabled ? "none" : "slide"}
+        onDismiss={openPendingCreatedStop}
         onRequestClose={() => {
           Keyboard.dismiss();
           setNewPinOpen(false);

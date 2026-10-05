@@ -25,6 +25,9 @@ import MapView, { Marker, Region } from "react-native-maps";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { MapIcon } from "../../components/MapIcon";
 import { StopIntelSummary } from "../../components/stop-intel-summary";
+import { MoveStopEditor } from "../../components/move-stop-editor";
+import { useTodayRoute } from "../../context/todays-route-context";
+import { replaceMovedPin, replaceMovedDz, type StopDestination } from "../../utils/stop-relocation";
 import { QuickIntelSheet, type QuickIntelSectionKey } from "../../components/quick-intel-sheet";
 import { AppButton } from "../../components/ui/app-button";
 import { AppCard } from "../../components/ui/app-card";
@@ -33,6 +36,21 @@ import { Spacing, Typography } from "../../constants/theme";
 import { useAppTheme } from "../../context/theme-context";
 import { useReducedMotion } from "../../hooks/use-reduced-motion";
 import { recordFoundingDriverActivity } from "../../utils/founding-driver-activity";
+import {
+  readFreightIqReportReputation,
+  readFreightIqStop,
+  readFreightIqStopReports,
+  readOwnedFreightIqReport,
+  readOwnedFreightIqStopEditor,
+} from "../../utils/freightiq-stop-reads";
+import {
+  deleteOwnedFreightIqReport,
+  deleteOwnedFreightIqStop,
+  editFreightIqStop,
+  saveFreightIqReport,
+  setFreightIqReportVote,
+  setOwnedFreightIqDeliveryZone,
+} from "../../utils/freightiq-stop-writes";
 import {
   authenticateForAppLock,
   getAppLockCapability,
@@ -53,6 +71,7 @@ import {
   readStructuredContact,
 } from "../../utils/contact-check-in";
 import { supabase } from "../../utils/supabase";
+import { freightIqReadMessage } from "../../utils/freightiq-read-protocol";
 import {
   composeLockedIntelTransfer,
   findSensitiveSharedIntel,
@@ -139,6 +158,9 @@ type ReportRow = {
   updated_at: string;
   username?: string;
   tractor_type?: string | null;
+  vote_up_count?: number;
+  vote_down_count?: number;
+  caller_vote?: number;
 };
 
 const STOP_DISCLOSURE_MAX_FONT_MULTIPLIER = 1.8;
@@ -233,13 +255,6 @@ function getQuickIntelOrder(
     (first, second) => Number(completion[first]) - Number(completion[second]),
   );
 }
-
-type VoteRow = {
-  id: string;
-  report_id: string;
-  user_id: string;
-  vote_value: 1 | -1;
-};
 
 type ReportVoteStats = {
   up: number;
@@ -409,6 +424,12 @@ export default function StopScreen() {
   const [reports, setReports] = useState<ReportRow[]>([]);
   const [blockedContributorIds, setBlockedContributorIds] = useState<string[]>([]);
   const [reportsLoaded, setReportsLoaded] = useState(false);
+  const [ownReportLoaded, setOwnReportLoaded] = useState(false);
+  const [reportsLoadError, setReportsLoadError] = useState(false);
+  const [reportReadMessage, setReportReadMessage] = useState<string | null>(null);
+  const reportLoadRequestRef = useRef(0);
+  const entranceLoadRequestRef = useRef(0);
+  const reportEditorInitializedRef = useRef(false);
   const [voteStatsByReportId, setVoteStatsByReportId] = useState<Record<string, ReportVoteStats>>(
     {},
   );
@@ -467,6 +488,8 @@ export default function StopScreen() {
     ],
   );
   const [entranceLat, setEntranceLat] = useState<number | null>(null);
+  const reportEditorSnapshotRef = useRef({ currentReportSnapshot, savedReportSnapshot });
+  reportEditorSnapshotRef.current = { currentReportSnapshot, savedReportSnapshot };
   const [entranceLng, setEntranceLng] = useState<number | null>(null);
   const [previewStopLat, setPreviewStopLat] = useState(lat);
   const [previewStopLng, setPreviewStopLng] = useState(lng);
@@ -495,9 +518,11 @@ export default function StopScreen() {
   const [loading, setLoading] = useState(false);
   const [savingEntrance, setSavingEntrance] = useState(false);
   const [deletingStop, setDeletingStop] = useState(false);
-  const [manageStopView, setManageStopView] = useState<"menu" | "edit-name" | "edit-address">(
-    "menu",
-  );
+  const { refreshStops } = useTodayRoute();
+  const [moveBusy, setMoveBusy] = useState(false);
+  const [manageStopView, setManageStopView] = useState<
+    "menu" | "edit-name" | "edit-address" | "move"
+  >("menu");
   const [editedStopName, setEditedStopName] = useState(name);
   const [currentStopName, setCurrentStopName] = useState(name);
   const [savingName, setSavingName] = useState(false);
@@ -626,7 +651,7 @@ export default function StopScreen() {
     if (
       !openedAt ||
       !quickIntelRequested ||
-      !reportsLoaded ||
+      !ownReportLoaded ||
       !entranceLoaded ||
       handledQuickIntelRequestRef.current === openedAt
     ) {
@@ -652,31 +677,43 @@ export default function StopScreen() {
     entranceLoaded,
     openedAt,
     quickIntelRequested,
-    reportsLoaded,
+    ownReportLoaded,
     truckFit,
   ]);
 
   useEffect(() => {
-    if (!stopId) return;
-
     setStopOwnerId(null);
     setCanDeleteStop(false);
 
     setMergeMode(false);
     setMergeSourceStopId(null);
 
+    if (!stopId || !sessionUserId) return;
+    let active = true;
+
     (async () => {
-      const { data, error } = await supabase
-        .from("mfi_stops")
-        .select("id, user_id")
-        .eq("id", stopId)
-        .maybeSingle();
-
-      setStopOwnerId(data?.user_id ?? null);
-
-      const isOwner = !!data?.user_id && !!sessionUserId && data.user_id === sessionUserId;
-      setCanDeleteStop(isOwner);
+      try {
+        const owned = await readOwnedFreightIqStopEditor(stopId);
+        if (!active) return;
+        if (owned) {
+          setStopOwnerId(sessionUserId);
+          setCanDeleteStop(true);
+          return;
+        }
+        // Other-owner identity is shared content used by Report Stop Content.
+        // It stays guarded; it is never an ownership fallback.
+        const data = await readFreightIqStop(stopId);
+        if (!active) return;
+        setStopOwnerId(data?.user_id ?? null);
+      } catch {
+        if (!active) return;
+        setStopOwnerId(null);
+        setCanDeleteStop(false);
+      }
     })();
+    return () => {
+      active = false;
+    };
   }, [stopId, sessionUserId]);
 
   useEffect(() => {
@@ -714,13 +751,37 @@ export default function StopScreen() {
   }, [isFocused, openedAt, sessionUserId, stopId]);
 
   useEffect(() => {
-    if (!stopId || !sessionUserId) return;
-
     setReports([]);
     setReportsLoaded(false);
+    setOwnReportLoaded(false);
+    setReportsLoadError(false);
+    reportEditorInitializedRef.current = false;
+    setMyReportId(null);
+    setSavedReportSnapshot(null);
+    setDeliverFromType("");
+    setDeliverFromDetails("");
+    setDeliveryType("");
+    setApproachHint("");
+    setBackInRequired(null);
+    setTruckFit("");
+    setContactPeople([]);
+    setCheckInNotes("");
+    setNotes("");
+    setAdditionalIntelOpen(false);
+    setQuickIntelOpen(false);
     setEntranceLoaded(false);
-    loadReports();
-    loadEntrance();
+    setEntranceLat(null);
+    setEntranceLng(null);
+    setPreviewStopLat(lat);
+    setPreviewStopLng(lng);
+    if (stopId && sessionUserId) {
+      void loadReports();
+      void loadEntrance();
+    }
+    return () => {
+      reportLoadRequestRef.current += 1;
+      entranceLoadRequestRef.current += 1;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stopId, sessionUserId]);
 
@@ -943,8 +1004,10 @@ export default function StopScreen() {
   }
 
   async function loadEntrance() {
+    const request = ++entranceLoadRequestRef.current;
     try {
       const localRaw = await AsyncStorage.getItem(stopKey(stopId));
+      if (request !== entranceLoadRequestRef.current) return;
       if (localRaw) {
         const parsed = JSON.parse(localRaw) as StopIntel;
         if (typeof parsed.entranceLat === "number" && typeof parsed.entranceLng === "number") {
@@ -959,11 +1022,12 @@ export default function StopScreen() {
         }
       }
 
-      const { data } = await supabase
-        .from("mfi_stops")
-        .select("lat, lng, entrance_lat, entrance_lng")
-        .eq("id", stopId)
-        .maybeSingle();
+      // Own editable coordinates do not require shared browsing allowance.
+      // A confirmed non-owner still uses the guarded shared read.
+      const owned = await readOwnedFreightIqStopEditor(stopId);
+      if (request !== entranceLoadRequestRef.current) return;
+      const data = owned ?? (await readFreightIqStop(stopId));
+      if (request !== entranceLoadRequestRef.current) return;
 
       const authoritativeStopLat = Number(data?.lat);
       const authoritativeStopLng = Number(data?.lng);
@@ -989,6 +1053,7 @@ export default function StopScreen() {
           delete localParsed.entranceLng;
           localParsed.updatedAt = new Date().toISOString();
           await AsyncStorage.setItem(stopKey(stopId), JSON.stringify(localParsed));
+          if (request !== entranceLoadRequestRef.current) return;
         }
 
         setEntranceLat(null);
@@ -1003,60 +1068,57 @@ export default function StopScreen() {
 
       setEntranceLoaded(true);
     } catch {
-      setEntranceLoaded(true);
+      if (request === entranceLoadRequestRef.current) setEntranceLoaded(true);
     }
   }
 
-  async function loadReports(ownerUserId = sessionUserId) {
+  async function loadReports(ownerUserId = sessionUserId, discardEdits = false) {
+    const request = ++reportLoadRequestRef.current;
+    setOwnReportLoaded(false);
     try {
-      const [{ data: blockedRows }, { data, error }] = await Promise.all([
-        supabase.from("blocked_contributors").select("blocked_user_id"),
-        supabase
-          .from("mfi_reports")
-          .select("*")
-          .eq("stop_id", stopId)
-          .order("updated_at", { ascending: false }),
+      const [owned, shared] = await Promise.allSettled([
+        readOwnedFreightIqReport(stopId),
+        readFreightIqStopReports(stopId),
       ]);
-      const nextBlockedContributorIds = (blockedRows ?? []).map((row) => row.blocked_user_id);
-      setBlockedContributorIds(nextBlockedContributorIds);
+      if (request !== reportLoadRequestRef.current) return;
+      const data = shared.status === "fulfilled" ? shared.value : [];
+      const hydrated = data.map((report) => ({
+        ...report,
+        contact_people: report.contact_people,
+        contact_phones: report.contact_phones,
+        username: report.username ?? "Driver",
+        tractor_type: report.profile_tractor_type ?? report.tractor_type ?? null,
+      })) as ReportRow[];
+      const uniqueUserIds = [...new Set(hydrated.map((report) => report.user_id))];
 
-      if (error) {
-        Alert.alert("Load failed", error.message);
+      setReportsLoadError(shared.status === "rejected");
+      setReportReadMessage(
+        shared.status === "rejected"
+          ? freightIqReadMessage(shared.reason, "Could not refresh shared reports.")
+          : null,
+      );
+      setReportsLoaded(true);
+      if (shared.status === "fulfilled") {
+        setBlockedContributorIds([]);
+        setReports(hydrated);
+        void Promise.all([loadVotesForReports(hydrated), loadReputationForUsers(uniqueUserIds)]);
+      }
+      if (owned.status === "rejected") throw owned.reason;
+      const mine = owned.value;
+      if (mine && mine.user_id !== ownerUserId) throw new Error("Report owner changed.");
+      const editor = reportEditorSnapshotRef.current;
+      if (
+        !discardEdits &&
+        reportEditorInitializedRef.current &&
+        editor.currentReportSnapshot !== editor.savedReportSnapshot
+      ) {
+        // Refreshing shared reports must not replace an in-progress Intel edit.
+        if ((mine?.id ?? null) !== myReportId) throw new Error("Report changed during editing.");
+        setOwnReportLoaded(true);
         return;
       }
-
-      const rows = ((data ?? []) as ReportRow[]).filter(
-        (report) => !nextBlockedContributorIds.includes(report.user_id),
-      );
-      const uniqueUserIds = [...new Set(rows.map((r) => r.user_id))];
-
-      let profileMap: Record<string, { username: string | null; tractor_type: string | null }> = {};
-      if (uniqueUserIds.length) {
-        const { data: profilesData } = await supabase
-          .from("profiles")
-          .select("id, username, tractor_type")
-          .in("id", uniqueUserIds);
-
-        profileMap = Object.fromEntries(
-          (profilesData ?? []).map((p: any) => [
-            p.id,
-            {
-              username: p.username,
-              tractor_type: p.tractor_type,
-            },
-          ]),
-        );
-      }
-
-      const hydrated = rows.map((r) => ({
-        ...r,
-        username: profileMap[r.user_id]?.username ?? "Driver",
-        tractor_type: profileMap[r.user_id]?.tractor_type ?? null,
-      }));
-
-      setReports(hydrated);
-
-      const mine = hydrated.find((r) => r.user_id === ownerUserId);
+      // A failed shared read must not clear the driver's own report ID or fields.
+      // Only freshly loaded shared data may supply inherited defaults.
       const sharedCoreIntel = getSharedCoreIntel(hydrated);
       const loadedDeliveryType =
         mine?.delivery_type === "Dock" ||
@@ -1128,11 +1190,28 @@ export default function StopScreen() {
         setNotes("");
       }
 
-      setReportsLoaded(true);
-      void Promise.all([loadVotesForReports(hydrated), loadReputationForUsers(uniqueUserIds)]);
+      reportEditorInitializedRef.current = true;
+      setOwnReportLoaded(true);
     } catch {
-      Alert.alert("Load failed", "Something went wrong loading reports.");
+      if (request !== reportLoadRequestRef.current) return;
+      Alert.alert(
+        "Couldn't load your Intel",
+        "We couldn't confirm your existing report. Your entries have not been cleared. Try again before saving.",
+        [
+          { text: "Not now", style: "cancel" },
+          { text: "Try again", onPress: () => void loadReports() },
+        ],
+      );
     }
+  }
+
+  function ensureOwnReportLoaded() {
+    if (ownReportLoaded) return true;
+    Alert.alert("Intel not ready", "Load your existing report before editing or saving.", [
+      { text: "Not now", style: "cancel" },
+      { text: "Try again", onPress: () => void loadReports() },
+    ]);
+    return false;
   }
 
   async function loadVotesForReports(reportRows: ReportRow[]) {
@@ -1142,36 +1221,14 @@ export default function StopScreen() {
         return;
       }
 
-      const reportIds = reportRows.map((r) => r.id);
-
-      const { data, error } = await supabase
-        .from("mfi_report_votes")
-        .select("id, report_id, user_id, vote_value")
-        .in("report_id", reportIds);
-
-      if (error) {
-        Alert.alert("Vote load failed", error.message);
-        return;
-      }
-
-      const votes = (data ?? []) as VoteRow[];
       const next: Record<string, ReportVoteStats> = {};
 
       for (const report of reportRows) {
-        next[report.id] = { up: 0, down: 0, myVote: 0 };
-      }
-
-      for (const vote of votes) {
-        if (!next[vote.report_id]) {
-          next[vote.report_id] = { up: 0, down: 0, myVote: 0 };
-        }
-
-        if (vote.vote_value === 1) next[vote.report_id].up += 1;
-        if (vote.vote_value === -1) next[vote.report_id].down += 1;
-
-        if (vote.user_id === sessionUserId) {
-          next[vote.report_id].myVote = vote.vote_value;
-        }
+        next[report.id] = {
+          up: Number(report.vote_up_count ?? 0),
+          down: Number(report.vote_down_count ?? 0),
+          myVote: report.caller_vote === 1 || report.caller_vote === -1 ? report.caller_vote : 0,
+        };
       }
 
       setVoteStatsByReportId(next);
@@ -1187,57 +1244,19 @@ export default function StopScreen() {
         return;
       }
 
-      const { data: allReports, error: reportsError } = await supabase
-        .from("mfi_reports")
-        .select("id, user_id")
-        .in("user_id", userIds);
-
-      if (reportsError) {
-        Alert.alert("Reputation load failed", reportsError.message);
-        return;
-      }
-
-      const reportOwnerById: Record<string, string> = {};
-      const reportIds: string[] = [];
-
-      (allReports ?? []).forEach((r: any) => {
-        reportOwnerById[r.id] = r.user_id;
-        reportIds.push(r.id);
-      });
-
-      if (!reportIds.length) {
-        const zeroMap: Record<string, number> = {};
-        userIds.forEach((id) => {
-          zeroMap[id] = 0;
-        });
-        setReputationByUserId(zeroMap);
-        return;
-      }
-
-      const { data: votes, error: votesError } = await supabase
-        .from("mfi_report_votes")
-        .select("report_id, vote_value")
-        .in("report_id", reportIds);
-
-      if (votesError) {
-        Alert.alert("Reputation load failed", votesError.message);
-        return;
-      }
-
       const repMap: Record<string, number> = {};
       userIds.forEach((id) => {
         repMap[id] = 0;
       });
-
-      (votes ?? []).forEach((v: any) => {
-        const ownerId = reportOwnerById[v.report_id];
-        if (!ownerId) return;
-        repMap[ownerId] = (repMap[ownerId] ?? 0) + (v.vote_value ?? 0);
+      const reputationRows = await readFreightIqReportReputation(userIds);
+      reputationRows.forEach((row) => {
+        repMap[row.user_id] = Number(row.reputation);
       });
 
       setReputationByUserId(repMap);
-    } catch {
-      Alert.alert("Reputation load failed", "Something went wrong loading reputation.");
+    } catch (error) {
+      setReportsLoadError(true);
+      setReportReadMessage(freightIqReadMessage(error, "Could not refresh report reputation."));
     }
   }
 
@@ -1439,14 +1458,9 @@ export default function StopScreen() {
           try {
             setDeletingReport(true);
 
-            const { error, data } = await supabase
-              .from("mfi_reports")
-              .delete()
-              .eq("id", myReportId)
-              .select("id");
-
-            if (error) {
-              Alert.alert("Delete failed", error.message);
+            const deleted = await deleteOwnedFreightIqReport(myReportId);
+            if (!deleted) {
+              Alert.alert("Delete failed", "Your report could not be found.");
               return;
             }
 
@@ -1462,7 +1476,7 @@ export default function StopScreen() {
             setNotes("");
 
             setReports([]);
-            await loadReports();
+            await loadReports(sessionUserId, true);
 
             Alert.alert("Deleted", "Your report was deleted.");
           } catch (err: any) {
@@ -1479,6 +1493,7 @@ export default function StopScreen() {
     const userId = await requireSignedIn();
 
     if (!userId) return;
+    if (userId !== sessionUserId || !ensureOwnReportLoaded()) return;
 
     if (!options.sensitiveReviewAccepted) {
       const sensitiveMatches = findSensitiveSharedIntel({
@@ -1577,40 +1592,21 @@ export default function StopScreen() {
         notes: notes || null,
         updated_at: new Date().toISOString(),
       };
-      const newReportPayload = {
-        ...reportFields,
-        stop_id: stopId,
-        user_id: userId,
-      };
-
-      // Ensure stop exists in Supabase before saving report
-      const { data: existingStop } = await supabase
-        .from("mfi_stops")
-        .select("id")
-        .eq("id", stopId)
-        .single();
-
-      if (!existingStop) {
+      let savedReportId: string;
+      try {
+        // The write RPC validates stop availability and report ownership itself.
+        // A shared-library read limit must not prevent an authorized contribution.
+        savedReportId = await saveFreightIqReport(stopId, myReportId, reportFields);
+      } catch (error: any) {
+        Alert.alert(
+          "Could not confirm save",
+          "Your entries are still here. Check your connection and try again. If the connection dropped while saving, check your report before resubmitting." +
+            (error?.message ? `\n\n${error.message}` : ""),
+        );
         return;
       }
 
-      const saveResult = myReportId
-        ? await supabase
-            .from("mfi_reports")
-            .update(reportFields)
-            .eq("id", myReportId)
-            .eq("user_id", userId)
-            .select("id")
-            .single()
-        : await supabase.from("mfi_reports").insert(newReportPayload).select("id").single();
-      const { data: savedReport, error } = saveResult;
-
-      if (error) {
-        Alert.alert("Save failed", error.message);
-        return;
-      }
-
-      setMyReportId(savedReport.id);
+      setMyReportId(savedReportId);
       void recordFoundingDriverActivity("intel_contributed", stopId);
 
       const localRaw = await AsyncStorage.getItem(stopKey(stopId));
@@ -1637,7 +1633,8 @@ export default function StopScreen() {
       setAdditionalIntelOpen(false);
       setQuickIntelOpen(false);
       Alert.alert("Saved", myReportId ? "Report updated." : "Report posted.");
-      await loadReports(userId);
+      // We return to the map; do not make a confirmed save depend on another
+      // shared-library read. The normal screen load refreshes reports on return.
       returnToMap();
     } finally {
       setLoading(false);
@@ -1645,6 +1642,7 @@ export default function StopScreen() {
   }
 
   async function saveQuickIntel() {
+    if (!ensureOwnReportLoaded()) return;
     const inheritedCoreIntel = inheritedCoreIntelRef.current;
     const hasReportCoreIntel =
       (Boolean(truckFit) && inheritedCoreIntel.truckFit !== truckFit) ||
@@ -1662,6 +1660,7 @@ export default function StopScreen() {
 
   async function openQuickIntelFromSummary() {
     if (!(await requireSignedIn())) return;
+    if (!ensureOwnReportLoaded()) return;
 
     setQuickIntelOrder(
       getQuickIntelOrder(
@@ -1676,7 +1675,7 @@ export default function StopScreen() {
 
   async function cancelQuickIntel() {
     setQuickIntelOpen(false);
-    await loadReports();
+    await loadReports(sessionUserId, true);
     returnToMap();
   }
 
@@ -1687,34 +1686,7 @@ export default function StopScreen() {
 
     try {
       const current = voteStatsByReportId[reportId]?.myVote ?? 0;
-
-      if (current === voteValue) {
-        const { error } = await supabase
-          .from("mfi_report_votes")
-          .delete()
-          .eq("report_id", reportId)
-          .eq("user_id", userId);
-
-        if (error) {
-          Alert.alert("Vote failed", error.message);
-          return;
-        }
-      } else {
-        const { error } = await supabase.from("mfi_report_votes").upsert(
-          {
-            report_id: reportId,
-            user_id: userId,
-            vote_value: voteValue,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "report_id,user_id" },
-        );
-
-        if (error) {
-          Alert.alert("Vote failed", error.message);
-          return;
-        }
-      }
+      await setFreightIqReportVote(reportId, current === voteValue ? null : voteValue);
 
       await loadReports();
     } catch {
@@ -1786,29 +1758,16 @@ export default function StopScreen() {
       return { saved: true, error: null };
     }
 
-    const { data: updatedStop, error } = await supabase
-      .from("mfi_stops")
-      .update({
-        entrance_lat: nextLat,
-        entrance_lng: nextLng,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", stopId)
-      .select("id")
-      .maybeSingle();
-
-    if (error) {
-      return { saved: false, error: error.message };
-    }
-
-    if (!updatedStop) {
+    try {
+      const updated = await setOwnedFreightIqDeliveryZone(stopId, nextLat, nextLng);
+      if (updated) return { saved: true, error: null };
       return {
         saved: false,
         error: "Only the stop owner can change this Delivery Zone.",
       };
+    } catch (error: any) {
+      return { saved: false, error: error?.message ?? "The Delivery Zone could not be saved." };
     }
-
-    return { saved: true, error: null };
   }
 
   async function saveEntranceAtCurrentCenter() {
@@ -1926,56 +1885,8 @@ export default function StopScreen() {
     try {
       setDeletingStop(true);
 
-      let reportIds: string[] = [];
-
-      const { data: reportRows, error: reportsReadError } = await supabase
-        .from("mfi_reports")
-        .select("id")
-        .eq("stop_id", stopId);
-
-      if (reportsReadError) {
-        Alert.alert("Delete failed", reportsReadError.message);
-        return;
-      }
-
-      reportIds = (reportRows ?? []).map((r: any) => String(r.id));
-
-      if (reportIds.length) {
-        const { error: votesDeleteError } = await supabase
-          .from("mfi_report_votes")
-          .delete()
-          .in("report_id", reportIds);
-
-        if (votesDeleteError) {
-          Alert.alert("Delete failed", votesDeleteError.message);
-          return;
-        }
-      }
-
-      const { error: reportsDeleteError } = await supabase
-        .from("mfi_reports")
-        .delete()
-        .eq("stop_id", stopId);
-
-      if (reportsDeleteError) {
-        Alert.alert("Delete failed", reportsDeleteError.message);
-        return;
-      }
-
-      const stopDeleteQuery = supabase
-        .from("mfi_stops")
-        .delete()
-        .eq("id", stopId)
-        .eq("user_id", userId);
-
-      const { error: stopDeleteError, data: deletedStopRows } = await stopDeleteQuery.select("id");
-
-      if (stopDeleteError) {
-        Alert.alert("Delete failed", stopDeleteError.message);
-        return;
-      }
-
-      if (!deletedStopRows || deletedStopRows.length === 0) {
+      const deleted = await deleteOwnedFreightIqStop(stopId);
+      if (!deleted) {
         Alert.alert("Delete failed", "No stop row was deleted.");
         return;
       }
@@ -2044,6 +1955,48 @@ export default function StopScreen() {
     await AsyncStorage.setItem(VIEW_CACHE_KEY, JSON.stringify(nextViewPins));
   }
 
+  async function finishStopMove(location: StopDestination) {
+    entranceLoadRequestRef.current += 1;
+    for (const key of [PINS_KEY, VIEW_CACHE_KEY]) {
+      const raw = await AsyncStorage.getItem(key);
+      const pins: Pin[] = raw ? JSON.parse(raw) : [];
+      await AsyncStorage.setItem(key, JSON.stringify(replaceMovedPin(pins, stopId, location)));
+    }
+    const rawIntel = await AsyncStorage.getItem(stopKey(stopId));
+    await AsyncStorage.setItem(
+      stopKey(stopId),
+      JSON.stringify(replaceMovedDz(rawIntel ? JSON.parse(rawIntel) : {}, location)),
+    );
+    await refreshStops([
+      {
+        id: stopId,
+        name: currentStopName,
+        address: location.address,
+        lat: location.lat,
+        lng: location.lng,
+      },
+    ]);
+    setEntranceLat(location.entrance_lat);
+    setEntranceLng(location.entrance_lng);
+    setEntranceLoaded(true);
+    setPreviewStopLat(location.lat);
+    setPreviewStopLng(location.lng);
+    setCurrentStopAddress(location.address);
+    setEditedStopAddress(location.address);
+    router.setParams({
+      lat: String(location.lat),
+      lng: String(location.lng),
+      address: location.address,
+      returnToPreview: "1",
+    });
+    setShowManageStop(false);
+    setManageStopView("menu");
+    Alert.alert(
+      "Stop moved",
+      "The address, stop pin and Delivery Zone were saved. Your Intel and reports are unchanged.",
+    );
+  }
+
   async function saveStopName() {
     if (!(await requireSignedIn())) return;
 
@@ -2058,16 +2011,9 @@ export default function StopScreen() {
       setSavingName(true);
       Keyboard.dismiss();
 
-      const { error } = await supabase
-        .from("mfi_stops")
-        .update({
-          name: trimmed,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", stopId);
-
-      if (error) {
-        Alert.alert("Save failed", error.message);
+      const updated = await editFreightIqStop(stopId, { name: trimmed });
+      if (!updated) {
+        Alert.alert("Save failed", "You do not have permission to update this stop.");
         return;
       }
 
@@ -2099,16 +2045,9 @@ export default function StopScreen() {
       setSavingAddress(true);
       Keyboard.dismiss();
 
-      const { error } = await supabase
-        .from("mfi_stops")
-        .update({
-          address: trimmed,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", stopId);
-
-      if (error) {
-        Alert.alert("Save failed", error.message);
+      const updated = await editFreightIqStop(stopId, { address: trimmed });
+      if (!updated) {
+        Alert.alert("Save failed", "You do not have permission to update this stop.");
         return;
       }
 
@@ -2223,6 +2162,7 @@ export default function StopScreen() {
               typeof entranceLng === "number" ? (
                 <>
                   <View
+                    pointerEvents="none"
                     style={[
                       styles.deliveryZonePreviewWrap,
                       { borderColor: colors.border, backgroundColor: colors.surface },
@@ -2232,7 +2172,6 @@ export default function StopScreen() {
                       <MapView
                         key={`delivery-zone-preview-${previewStopLat}-${previewStopLng}-${entranceLat}-${entranceLng}`}
                         ref={deliveryZonePreviewMapRef}
-                        pointerEvents="none"
                         style={styles.deliveryZonePreviewMap}
                         mapType="satellite"
                         initialRegion={deliveryZonePreviewRegion}
@@ -2365,6 +2304,7 @@ export default function StopScreen() {
                   usesAccessibilityLayout ? STOP_DISCLOSURE_MAX_FONT_MULTIPLIER : undefined
                 }
                 onPress={() => {
+                  if (!ensureOwnReportLoaded()) return;
                   setExpandedContactIndex(null);
                   setAdditionalIntelOpen(true);
                 }}
@@ -2483,6 +2423,16 @@ export default function StopScreen() {
                 </View>
               </Pressable>
 
+              {reportsExpanded && reportsLoadError ? (
+                <View style={styles.reportsLoadingState}>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                    {reportReadMessage} Any reports already loaded are still shown.
+                  </Text>
+                  <AppButton onPress={() => void loadReports()} variant="secondary">
+                    Try again
+                  </AppButton>
+                </View>
+              ) : null}
               {reportsExpanded ? (
                 !reportsLoaded ? (
                   <View style={styles.reportsLoadingState}>
@@ -2491,7 +2441,8 @@ export default function StopScreen() {
                       Loading driver reports…
                     </Text>
                   </View>
-                ) : sortedReports.length === 0 ? (
+                ) : sortedReports.length === 0 && reportsLoadError ? null : sortedReports.length ===
+                  0 ? (
                   <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                     No reports yet. Be the first driver to add intel.
                   </Text>
@@ -3303,198 +3254,218 @@ export default function StopScreen() {
           <Modal
             visible={showManageStop}
             animationType={reduceMotionEnabled ? "none" : "slide"}
-            onRequestClose={closeManageStop}
+            onRequestClose={() => {
+              if (!moveBusy) closeManageStop();
+            }}
           >
             <ModalSafeAreaScreen>
-              <KeyboardAvoidingView
-                style={styles.additionalIntelScreen}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-              >
-                <ScrollView
-                  contentContainerStyle={styles.additionalIntelContainer}
-                  keyboardShouldPersistTaps="handled"
-                  keyboardDismissMode="on-drag"
+              {manageStopView === "move" ? (
+                <MoveStopEditor
+                  key={stopId}
+                  stopId={stopId}
+                  name={currentStopName}
+                  onBusyChange={setMoveBusy}
+                  onCancel={() => setManageStopView("menu")}
+                  onSaved={finishStopMove}
+                />
+              ) : (
+                <KeyboardAvoidingView
+                  style={styles.additionalIntelScreen}
+                  behavior={Platform.OS === "ios" ? "padding" : "height"}
                 >
-                  {manageStopView === "menu" ? (
-                    <>
-                      <View style={styles.additionalIntelHeader}>
-                        <Text style={styles.additionalIntelTitle}>Manage Stop</Text>
-                        <Text style={styles.additionalIntelStopName}>{title}</Text>
-                        {currentStopAddress ? (
-                          <Text style={styles.additionalIntelAddress}>{displayAddress}</Text>
-                        ) : null}
-                      </View>
+                  <ScrollView
+                    contentContainerStyle={styles.additionalIntelContainer}
+                    keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode="on-drag"
+                  >
+                    {manageStopView === "menu" ? (
+                      <>
+                        <View style={styles.additionalIntelHeader}>
+                          <Text style={styles.additionalIntelTitle}>Manage Stop</Text>
+                          <Text style={styles.additionalIntelStopName}>{title}</Text>
+                          {currentStopAddress ? (
+                            <Text style={styles.additionalIntelAddress}>{displayAddress}</Text>
+                          ) : null}
+                        </View>
 
-                      <Pressable style={styles.secondaryBtn} onPress={closeManageStop}>
-                        <Text style={styles.secondaryBtnText}>← Back to Intel</Text>
-                      </Pressable>
-
-                      <View style={styles.card}>
-                        <Pressable
-                          style={styles.secondaryBtn}
-                          onPress={async () => {
-                            if (!(await requireSignedIn())) return;
-                            setEditedStopName(currentStopName);
-                            setManageStopView("edit-name");
-                          }}
-                        >
-                          <Text style={styles.secondaryBtnText}>Edit Business Name</Text>
+                        <Pressable style={styles.secondaryBtn} onPress={closeManageStop}>
+                          <Text style={styles.secondaryBtnText}>← Back to Intel</Text>
                         </Pressable>
 
-                        <Pressable
-                          style={styles.secondaryBtn}
-                          onPress={async () => {
-                            if (!(await requireSignedIn())) return;
-                            setEditedStopAddress(currentStopAddress);
-                            setManageStopView("edit-address");
-                          }}
-                        >
-                          <Text style={styles.secondaryBtnText}>Edit Address</Text>
-                        </Pressable>
+                        <View style={styles.card}>
+                          <Pressable
+                            style={styles.secondaryBtn}
+                            onPress={async () => {
+                              if (!(await requireSignedIn())) return;
+                              setEditedStopName(currentStopName);
+                              setManageStopView("edit-name");
+                            }}
+                          >
+                            <Text style={styles.secondaryBtnText}>Edit Business Name</Text>
+                          </Pressable>
 
-                        <Pressable
-                          style={styles.secondaryBtn}
-                          onPress={async () => {
-                            if (!(await requireSignedIn())) return;
+                          <Pressable
+                            style={styles.secondaryBtn}
+                            onPress={async () => {
+                              if (!(await requireSignedIn())) return;
+                              setEditedStopAddress(currentStopAddress);
+                              setManageStopView("edit-address");
+                            }}
+                          >
+                            <Text style={styles.secondaryBtnText}>Correct Address Text</Text>
+                          </Pressable>
 
-                            if (!canDeleteStop) {
+                          <Pressable
+                            style={styles.secondaryBtn}
+                            onPress={() => setManageStopView("move")}
+                          >
+                            <Text style={styles.secondaryBtnText}>Move Stop to New Location</Text>
+                          </Pressable>
+
+                          <Pressable
+                            style={styles.secondaryBtn}
+                            onPress={async () => {
+                              if (!(await requireSignedIn())) return;
+
+                              if (!canDeleteStop) {
+                                Alert.alert(
+                                  "Merge blocked",
+                                  "Only the driver who created this stop can merge it.",
+                                );
+                                return;
+                              }
+
                               Alert.alert(
-                                "Merge blocked",
-                                "Only the driver who created this stop can merge it.",
-                              );
-                              return;
-                            }
+                                "Start merge?",
+                                "You are starting from the stop you want to get rid of. Next you will choose the stop you want to keep.",
+                                [
+                                  { text: "Cancel", style: "cancel" },
+                                  {
+                                    text: "Continue",
+                                    onPress: () => {
+                                      setMergeSourceStopId(stopId);
+                                      setMergeMode(true);
+                                      setShowManageStop(false);
+                                      setManageStopView("menu");
 
-                            Alert.alert(
-                              "Start merge?",
-                              "You are starting from the stop you want to get rid of. Next you will choose the stop you want to keep.",
-                              [
-                                { text: "Cancel", style: "cancel" },
-                                {
-                                  text: "Continue",
-                                  onPress: () => {
-                                    setMergeSourceStopId(stopId);
-                                    setMergeMode(true);
-                                    setShowManageStop(false);
-                                    setManageStopView("menu");
-
-                                    router.push({
-                                      pathname: "/(tabs)/(map)",
-                                      params: {
-                                        mergeMode: "1",
-                                        mergeSourceStopId: stopId,
-                                        hidePreview: "1",
-                                      },
-                                    });
+                                      router.push({
+                                        pathname: "/(tabs)/(map)",
+                                        params: {
+                                          mergeMode: "1",
+                                          mergeSourceStopId: stopId,
+                                          hidePreview: "1",
+                                        },
+                                      });
+                                    },
                                   },
-                                },
-                              ],
-                            );
-                          }}
-                        >
-                          <Text style={styles.secondaryBtnText}>Merge Duplicate Stop</Text>
-                        </Pressable>
+                                ],
+                              );
+                            }}
+                          >
+                            <Text style={styles.secondaryBtnText}>Merge Duplicate Stop</Text>
+                          </Pressable>
 
-                        <Pressable
-                          style={styles.deleteBtn}
-                          onPress={confirmDeleteStop}
-                          disabled={deletingStop}
-                        >
-                          <Text style={styles.deleteBtnText}>
-                            {deletingStop ? "Deleting..." : "Delete This Stop"}
-                          </Text>
-                        </Pressable>
-                      </View>
-                    </>
-                  ) : manageStopView === "edit-name" ? (
-                    <>
-                      <View style={styles.additionalIntelHeader}>
-                        <Text style={styles.additionalIntelTitle}>Edit Business Name</Text>
-                        <Text style={styles.additionalIntelStopName}>{title}</Text>
-                        {currentStopAddress ? (
-                          <Text style={styles.additionalIntelAddress}>{displayAddress}</Text>
-                        ) : null}
-                      </View>
-
-                      <Pressable style={styles.secondaryBtn} onPress={returnToManageStopMenu}>
-                        <Text style={styles.secondaryBtnText}>← Back to Manage Stop</Text>
-                      </Pressable>
-
-                      <View style={styles.card}>
-                        <Text style={styles.sectionLabel}>Business Name</Text>
-                        <TextInput
-                          ref={editNameInputRef}
-                          value={editedStopName}
-                          onChangeText={setEditedStopName}
-                          placeholder="Enter business name"
-                          style={styles.input}
-                          autoCapitalize="words"
-                          returnKeyType="done"
-                        />
-
-                        <Pressable
-                          style={styles.saveBtn}
-                          onPress={saveStopName}
-                          disabled={savingName}
-                        >
-                          <Text style={styles.saveBtnText}>
-                            {savingName ? "Saving..." : "Save Name"}
-                          </Text>
-                        </Pressable>
+                          <Pressable
+                            style={styles.deleteBtn}
+                            onPress={confirmDeleteStop}
+                            disabled={deletingStop}
+                          >
+                            <Text style={styles.deleteBtnText}>
+                              {deletingStop ? "Deleting..." : "Delete This Stop"}
+                            </Text>
+                          </Pressable>
+                        </View>
+                      </>
+                    ) : manageStopView === "edit-name" ? (
+                      <>
+                        <View style={styles.additionalIntelHeader}>
+                          <Text style={styles.additionalIntelTitle}>Edit Business Name</Text>
+                          <Text style={styles.additionalIntelStopName}>{title}</Text>
+                          {currentStopAddress ? (
+                            <Text style={styles.additionalIntelAddress}>{displayAddress}</Text>
+                          ) : null}
+                        </View>
 
                         <Pressable style={styles.secondaryBtn} onPress={returnToManageStopMenu}>
-                          <Text style={styles.secondaryBtnText}>Cancel</Text>
+                          <Text style={styles.secondaryBtnText}>← Back to Manage Stop</Text>
                         </Pressable>
-                      </View>
-                    </>
-                  ) : (
-                    <>
-                      <View style={styles.additionalIntelHeader}>
-                        <Text style={styles.additionalIntelTitle}>Edit Address</Text>
-                        <Text style={styles.additionalIntelStopName}>{title}</Text>
-                        {currentStopAddress ? (
-                          <Text style={styles.additionalIntelAddress}>{displayAddress}</Text>
-                        ) : null}
-                      </View>
 
-                      <Pressable style={styles.secondaryBtn} onPress={returnToManageStopMenu}>
-                        <Text style={styles.secondaryBtnText}>← Back to Manage Stop</Text>
-                      </Pressable>
+                        <View style={styles.card}>
+                          <Text style={styles.sectionLabel}>Business Name</Text>
+                          <TextInput
+                            ref={editNameInputRef}
+                            value={editedStopName}
+                            onChangeText={setEditedStopName}
+                            placeholder="Enter business name"
+                            style={styles.input}
+                            autoCapitalize="words"
+                            returnKeyType="done"
+                          />
 
-                      <View style={styles.card}>
-                        <Text style={styles.sectionLabel}>Address</Text>
-                        <TextInput
-                          ref={editAddressInputRef}
-                          value={editedStopAddress}
-                          onChangeText={setEditedStopAddress}
-                          placeholder="Enter stop address"
-                          style={styles.input}
-                          autoCapitalize="words"
-                          returnKeyType="done"
-                        />
-                        <Text style={styles.cardHelp}>
-                          This corrects the displayed address only. It does not move the stop or its
-                          Delivery Zone.
-                        </Text>
+                          <Pressable
+                            style={styles.saveBtn}
+                            onPress={saveStopName}
+                            disabled={savingName}
+                          >
+                            <Text style={styles.saveBtnText}>
+                              {savingName ? "Saving..." : "Save Name"}
+                            </Text>
+                          </Pressable>
 
-                        <Pressable
-                          style={styles.saveBtn}
-                          onPress={saveStopAddress}
-                          disabled={savingAddress}
-                        >
-                          <Text style={styles.saveBtnText}>
-                            {savingAddress ? "Saving..." : "Save Address"}
-                          </Text>
-                        </Pressable>
+                          <Pressable style={styles.secondaryBtn} onPress={returnToManageStopMenu}>
+                            <Text style={styles.secondaryBtnText}>Cancel</Text>
+                          </Pressable>
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <View style={styles.additionalIntelHeader}>
+                          <Text style={styles.additionalIntelTitle}>Edit Address</Text>
+                          <Text style={styles.additionalIntelStopName}>{title}</Text>
+                          {currentStopAddress ? (
+                            <Text style={styles.additionalIntelAddress}>{displayAddress}</Text>
+                          ) : null}
+                        </View>
 
                         <Pressable style={styles.secondaryBtn} onPress={returnToManageStopMenu}>
-                          <Text style={styles.secondaryBtnText}>Cancel</Text>
+                          <Text style={styles.secondaryBtnText}>← Back to Manage Stop</Text>
                         </Pressable>
-                      </View>
-                    </>
-                  )}
-                </ScrollView>
-              </KeyboardAvoidingView>
+
+                        <View style={styles.card}>
+                          <Text style={styles.sectionLabel}>Address</Text>
+                          <TextInput
+                            ref={editAddressInputRef}
+                            value={editedStopAddress}
+                            onChangeText={setEditedStopAddress}
+                            placeholder="Enter stop address"
+                            style={styles.input}
+                            autoCapitalize="words"
+                            returnKeyType="done"
+                          />
+                          <Text style={styles.cardHelp}>
+                            This corrects the displayed address only. It does not move the stop or
+                            its Delivery Zone.
+                          </Text>
+
+                          <Pressable
+                            style={styles.saveBtn}
+                            onPress={saveStopAddress}
+                            disabled={savingAddress}
+                          >
+                            <Text style={styles.saveBtnText}>
+                              {savingAddress ? "Saving..." : "Save Address"}
+                            </Text>
+                          </Pressable>
+
+                          <Pressable style={styles.secondaryBtn} onPress={returnToManageStopMenu}>
+                            <Text style={styles.secondaryBtnText}>Cancel</Text>
+                          </Pressable>
+                        </View>
+                      </>
+                    )}
+                  </ScrollView>
+                </KeyboardAvoidingView>
+              )}
             </ModalSafeAreaScreen>
           </Modal>
 
@@ -3606,6 +3577,10 @@ export default function StopScreen() {
               <View style={styles.pickerMapWrap}>
                 <MapView
                   style={styles.pickerMap}
+                  // The native map wrapper resets its props when recycled but can retain
+                  // disabled UIKit hit testing from a prior read-only preview. A non-default
+                  // pointer mode forces re-enabling it while passing touches to MapKit.
+                  pointerEvents="box-none"
                   mapType={pickerMapType}
                   region={entranceRegion}
                   onRegionChangeComplete={setEntranceRegion}

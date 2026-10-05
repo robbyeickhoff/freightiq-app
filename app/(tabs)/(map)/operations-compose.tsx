@@ -22,15 +22,14 @@ import {
   operationsDisplayAddress,
   endOfLocalDay,
   expirationAfterHours,
-  findOperationsDuplicates,
   readOperationsDraft,
   validateOperationsDraft,
   writeOperationsDraft,
   type OperationsCategory,
   type OperationsDraft,
-  type OperationsUpdate,
 } from "@/utils/operations-board";
 import { supabase } from "@/utils/supabase";
+import { readGuardedFreightIq } from "@/utils/freightiq-stop-reads";
 import { refreshCurrentDrivingSnapshot } from "@/utils/operations-driving-alerts";
 
 type ExpirationChoice = "2h" | "4h" | "today" | "custom";
@@ -86,9 +85,22 @@ export default function OperationsComposeScreen() {
   const [searchingStops, setSearchingStops] = useState(false);
   const [searchedStops, setSearchedStops] = useState(false);
   const [reviewing, setReviewing] = useState(false);
-  const [duplicates, setDuplicates] = useState<OperationsUpdate[]>([]);
+  const [hasSimilarUpdate, setHasSimilarUpdate] = useState(false);
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false);
+  const duplicateCheckBusy = useRef(false);
+  const duplicateCheckMounted = useRef(true);
+  useEffect(() => {
+    duplicateCheckMounted.current = true;
+    return () => {
+      duplicateCheckMounted.current = false;
+    };
+  }, []);
   const [saving, setSaving] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
+  const [editLoadError, setEditLoadError] = useState<string | null>(null);
+  const [editLoadAttempt, setEditLoadAttempt] = useState(0);
+  const [loadedEditId, setLoadedEditId] = useState<string | null>(null);
+  const loadedEditRef = useRef<{ id: string; userId: string } | null>(null);
   const [messageFocused, setMessageFocused] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const messageFieldYRef = useRef(0);
@@ -119,41 +131,98 @@ export default function OperationsComposeScreen() {
     };
   }, []);
   useEffect(() => {
+    const editId = params.editId;
+    if (!editId) return;
+    let active = true;
+    let ownerId: string | undefined;
+    let observedAuthId: string | undefined;
+    loadedEditRef.current = null;
+    setLoadedEditId(null);
+    setDraftReady(false);
+    setEditLoadError(null);
+    setReviewing(false);
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      observedAuthId = session?.user.id ?? "";
+      if (ownerId !== undefined && observedAuthId !== ownerId) {
+        active = false;
+        loadedEditRef.current = null;
+        setLoadedEditId(null);
+        setDraftReady(false);
+        setUserId("");
+        setEditLoadError("Your signed-in account changed. Try again to load this update.");
+      }
+    });
+    void (async () => {
+      try {
+        const auth = await supabase.auth.getUser();
+        if (!active) return;
+        ownerId = auth.data.user?.id ?? "";
+        if (auth.error || !ownerId || (observedAuthId !== undefined && observedAuthId !== ownerId))
+          throw new Error("Authentication unavailable");
+        const { data: current, error } = await supabase.rpc("get_owned_operations_editor_v1", {
+          p_update_id: editId,
+        });
+        if (!active) return;
+        if (error) throw error;
+        if (current === null) {
+          setEditLoadError("This update is no longer available to edit with this account.");
+          return;
+        }
+        if (
+          !current ||
+          current.id !== editId ||
+          typeof current.area_slug !== "string" ||
+          !OPERATIONS_CATEGORIES.some((item) => item.value === current.category) ||
+          typeof current.message !== "string" ||
+          typeof current.expires_at !== "string" ||
+          !Number.isFinite(Date.parse(current.expires_at)) ||
+          !(current.stop_id === null || typeof current.stop_id === "string") ||
+          !(
+            (current.latitude === null && current.longitude === null) ||
+            (typeof current.latitude === "number" &&
+              Number.isFinite(current.latitude) &&
+              Math.abs(current.latitude) <= 90 &&
+              typeof current.longitude === "number" &&
+              Number.isFinite(current.longitude) &&
+              Math.abs(current.longitude) <= 180)
+          )
+        )
+          throw new Error("Invalid editor response");
+        setUserId(ownerId);
+        setAreaSlug(current.area_slug);
+        setCategory(current.category);
+        setMessage(current.message);
+        setExpiresAt(current.expires_at);
+        setExpirationChoice("custom");
+        setLatitude(current.latitude ?? undefined);
+        setLongitude(current.longitude ?? undefined);
+        setStopId(current.stop_id ?? undefined);
+        setStopName(undefined);
+        setStopAddress(undefined);
+        loadedEditRef.current = { id: editId, userId: ownerId };
+        setLoadedEditId(editId);
+        setDraftReady(true);
+      } catch {
+        if (active)
+          setEditLoadError("Could not load your update. Check your connection and try again.");
+      }
+    })();
+    return () => {
+      active = false;
+      loadedEditRef.current = null;
+      subscription.subscription.unsubscribe();
+    };
+  }, [params.editId, editLoadAttempt]);
+  useEffect(() => {
+    if (params.editId) return;
+    let active = true;
     void supabase.auth.getUser().then(async ({ data }) => {
+      if (!active) return;
       const id = data.user?.id ?? "";
       setUserId(id);
-      if (id && params.editId) {
-        const board = await supabase.rpc("get_operations_board", {
-          p_area_slug: null,
-          p_include_history: true,
-        });
-        const current = (
-          (Array.isArray(board.data) ? board.data : []) as {
-            id: string;
-            area_slug: string;
-            category: OperationsCategory;
-            message: string;
-            expires_at: string;
-            stop_id: string | null;
-            latitude: number | null;
-            longitude: number | null;
-          }[]
-        ).find((item) => item.id === params.editId);
-        if (current) {
-          setAreaSlug(current.area_slug);
-          setCategory(current.category);
-          setMessage(current.message);
-          setExpiresAt(current.expires_at);
-          setExpirationChoice("custom");
-          setLatitude(current.latitude ?? undefined);
-          setLongitude(current.longitude ?? undefined);
-          setStopId(current.stop_id ?? undefined);
-        }
-        setDraftReady(true);
-        return;
-      }
       if (id) {
         const draft = await readOperationsDraft(id);
+        if (!active) return;
         if (draft) {
           setAreaSlug(params.area || draft.areaSlug);
           setCategory(draft.category);
@@ -169,6 +238,9 @@ export default function OperationsComposeScreen() {
       }
       setDraftReady(true);
     });
+    return () => {
+      active = false;
+    };
   }, [params.area, params.editId, params.latitude, params.longitude]);
   const draft = useMemo<OperationsDraft>(
     () => ({
@@ -184,6 +256,10 @@ export default function OperationsComposeScreen() {
     }),
     [areaSlug, category, message, expiresAt, latitude, longitude, stopId, stopName, stopAddress],
   );
+  const latestDraft = useRef(draft);
+  useEffect(() => {
+    latestDraft.current = draft;
+  }, [draft]);
   useEffect(() => {
     if (draftReady && userId && !params.editId) void writeOperationsDraft(userId, draft);
   }, [draft, draftReady, params.editId, userId]);
@@ -208,42 +284,72 @@ export default function OperationsComposeScreen() {
     const center = OPERATIONS_AREAS.find((item) => item.slug === areaSlug) ?? OPERATIONS_AREAS[0];
     setSearchingStops(true);
     setSearchedStops(true);
-    const { data, error } = await supabase.rpc("search_mfi_stops", {
-      p_search_text: query,
-      p_center_lat: center.latitude,
-      p_center_lng: center.longitude,
-      p_radius_meters: 80467.2,
-      p_result_limit: 8,
-    });
-    setSearchingStops(false);
-    if (error) {
+    try {
+      const data = await readGuardedFreightIq<StopResult[]>("search_stops", {
+        p_search_text: query,
+        p_center_lat: center.latitude,
+        p_center_lng: center.longitude,
+        p_radius_meters: 80467.2,
+        p_result_limit: 8,
+      });
+      setStopResults(data);
+    } catch (error) {
       setSearchedStops(false);
-      Alert.alert("Could not search stops", error.message);
-      return;
+      Alert.alert(
+        "Could not search stops",
+        error instanceof Error ? error.message : "Please try again.",
+      );
+    } finally {
+      setSearchingStops(false);
     }
-    setStopResults((data ?? []) as StopResult[]);
   };
   const prepareReview = async () => {
+    if (duplicateCheckBusy.current || !userId) return;
     const validation = validateOperationsDraft(draft);
     if (validation) {
       Alert.alert("Check your update", validation);
       return;
     }
-    const { data, error } = await supabase.rpc("get_operations_board", {
-      p_area_slug: areaSlug,
-      p_include_history: false,
-    });
-    if (error) {
-      Alert.alert("Could not check active updates", "Reconnect and try again before posting.");
-      return;
+    duplicateCheckBusy.current = true;
+    setCheckingDuplicates(true);
+    try {
+      const { data, error } = await supabase.rpc("has_similar_operations_update_v1", {
+        p_area_slug: areaSlug,
+        p_category: category,
+        p_stop_id: stopId ?? null,
+        p_latitude: latitude ?? null,
+        p_longitude: longitude ?? null,
+      });
+      const { data: auth } = await supabase.auth.getSession();
+      if (
+        !duplicateCheckMounted.current ||
+        auth.session?.user.id !== userId ||
+        latestDraft.current !== draft
+      )
+        return;
+      if (error || typeof data !== "boolean") throw new Error("Duplicate check unavailable");
+      setHasSimilarUpdate(data);
+      Keyboard.dismiss();
+      setReviewing(true);
+    } catch {
+      if (duplicateCheckMounted.current)
+        Alert.alert(
+          "Could not check active updates",
+          "Your draft is still here. Reconnect and try again before posting.",
+        );
+    } finally {
+      duplicateCheckBusy.current = false;
+      if (duplicateCheckMounted.current) setCheckingDuplicates(false);
     }
-    setDuplicates(
-      findOperationsDuplicates(draft, (Array.isArray(data) ? data : []) as OperationsUpdate[]),
-    );
-    Keyboard.dismiss();
-    setReviewing(true);
   };
   const submit = async () => {
+    if (
+      params.editId &&
+      (!draftReady ||
+        loadedEditRef.current?.id !== params.editId ||
+        loadedEditRef.current.userId !== userId)
+    )
+      return;
     const validation = validateOperationsDraft(draft);
     if (validation) {
       Alert.alert("Check your update", validation);
@@ -275,26 +381,44 @@ export default function OperationsComposeScreen() {
     void refreshCurrentDrivingSnapshot();
     router.replace({ pathname: "/(tabs)/operations", params: { area: areaSlug } } as never);
   };
+  if (params.editId && (!draftReady || loadedEditId !== params.editId)) {
+    return (
+      <View style={[styles.screen, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+        <View style={styles.content}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Edit Update</Text>
+          <Text accessibilityLiveRegion="polite" style={{ color: colors.textSecondary }}>
+            {editLoadError ?? "Loading your update…"}
+          </Text>
+          {editLoadError ? (
+            <AppButton onPress={() => setEditLoadAttempt((attempt) => attempt + 1)}>
+              Try Again
+            </AppButton>
+          ) : null}
+          <AppButton
+            variant="secondary"
+            onPress={() => router.replace("/(tabs)/operations" as never)}
+          >
+            Back to Operations
+          </AppButton>
+        </View>
+      </View>
+    );
+  }
   if (reviewing && !params.editId) {
     const areaName = OPERATIONS_AREAS.find((item) => item.slug === areaSlug)?.name ?? areaSlug;
     return (
       <View style={[styles.screen, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>Review Update</Text>
-          {duplicates.length ? (
+          {hasSimilarUpdate ? (
             <AppCard contentStyle={styles.reviewCard}>
               <Text style={[styles.reviewHeading, { color: colors.warning }]}>
                 Possibly already reported
               </Text>
               <Text style={{ color: colors.textSecondary }}>
-                Check these active {categoryLabel(category).toLowerCase()} updates before posting
-                another.
+                A similar {categoryLabel(category).toLowerCase()} update is active. Review the board
+                before posting another.
               </Text>
-              {duplicates.slice(0, 3).map((item) => (
-                <Text key={item.id} style={{ color: colors.textPrimary }}>
-                  • {item.message}
-                </Text>
-              ))}
               <AppButton
                 variant="secondary"
                 onPress={() =>
@@ -330,7 +454,7 @@ export default function OperationsComposeScreen() {
               Edit
             </AppButton>
             <AppButton loading={saving} onPress={() => void submit()}>
-              {duplicates.length ? "Post Anyway" : "Post Update"}
+              {hasSimilarUpdate ? "Post Anyway" : "Post Update"}
             </AppButton>
           </View>
         </ScrollView>
@@ -604,7 +728,7 @@ export default function OperationsComposeScreen() {
             Cancel
           </AppButton>
           <AppButton
-            loading={saving}
+            loading={saving || checkingDuplicates}
             onPress={() => void (params.editId ? submit() : prepareReview())}
           >
             {params.editId ? "Save Changes" : "Review Update"}

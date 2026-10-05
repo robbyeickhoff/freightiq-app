@@ -18,7 +18,11 @@ import { AppCard } from "@/components/ui/app-card";
 import { Radius, Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { supabase } from "@/utils/supabase";
-import { refreshCurrentDrivingSnapshot } from "@/utils/operations-driving-alerts";
+import {
+  invalidateOperationsAfterBlock,
+  refreshCurrentDrivingSnapshot,
+  stopDrivingAlerts,
+} from "@/utils/operations-driving-alerts";
 
 const reasons = [
   ["incorrect_or_unsafe", "Incorrect or unsafe"],
@@ -68,6 +72,16 @@ export default function ReportContentScreen() {
 
     if (error && error.code !== "23505") {
       Alert.alert("Unable to block contributor", error.message);
+      return;
+    }
+    try {
+      await invalidateOperationsAfterBlock(data.user.id);
+    } catch {
+      await stopDrivingAlerts(data.user.id).catch(() => undefined);
+      Alert.alert(
+        "Contributor blocked",
+        "The block was saved, but saved conditions could not be cleared. Close FreightIQ and reopen it online before using Operations.",
+      );
       return;
     }
     void refreshCurrentDrivingSnapshot();

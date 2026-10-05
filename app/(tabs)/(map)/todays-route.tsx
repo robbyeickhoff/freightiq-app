@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { BottomTabNavigationProp } from "expo-router/js-tabs";
 import { useNavigation, type ParamListBase } from "expo-router/react-navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type Ref } from "react";
 import {
   Alert,
   Platform,
@@ -15,7 +15,7 @@ import DraggableFlatList, {
   ScaleDecorator,
   type RenderItemParams,
 } from "react-native-draggable-flatlist";
-import MapView, { Marker, type Region } from "react-native-maps";
+import MapView, { Marker, type MapViewProps, type Region } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { NavigationAppPicker } from "@/components/navigation-app-picker";
@@ -34,6 +34,8 @@ import { useAppTheme } from "@/context/theme-context";
 import { useTodayRoute } from "@/context/todays-route-context";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { recordFoundingDriverActivity } from "@/utils/founding-driver-activity";
+import { readFreightIqRouteStops, readFreightIqStopReports } from "@/utils/freightiq-stop-reads";
+import { freightIqReadMessage } from "@/utils/freightiq-read-protocol";
 import {
   availableNavigationProviders,
   navigationProviderLabel,
@@ -47,7 +49,28 @@ import {
   routeOverviewMarkerSignature,
   type RouteOverviewMarker,
 } from "@/utils/route-overview";
-import { supabase } from "@/utils/supabase";
+
+function RouteOverviewMap({
+  mapRef,
+  mapPadding,
+  onMapReady,
+  ...props
+}: MapViewProps & { mapRef: Ref<MapView> }) {
+  // Readiness belongs to this map instance, not the longer-lived route screen.
+  // Android's native padding setter dereferences GoogleMap before checking readiness.
+  const [isReady, setIsReady] = useState(false);
+  return (
+    <MapView
+      {...props}
+      {...(Platform.OS !== "android" || isReady ? { mapPadding } : {})}
+      onMapReady={(event) => {
+        setIsReady(true);
+        onMapReady?.(event);
+      }}
+      ref={mapRef}
+    />
+  );
+}
 
 function compactAddress(address: string) {
   return (
@@ -196,6 +219,8 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     [],
   );
   const [unavailableStopIds, setUnavailableStopIds] = useState<Set<string>>(new Set());
+  const [routeReadError, setRouteReadError] = useState<string | null>(null);
+  const [routeReadRetry, setRouteReadRetry] = useState(0);
   const [nextStopExpanded, setNextStopExpanded] = useState(false);
   const [nextStopIntel, setNextStopIntel] = useState<RouteCoreIntel | null>(null);
   const [nextStopIntelStatus, setNextStopIntelStatus] = useState<
@@ -230,17 +255,16 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     const ids = route.stops.map((stop) => stop.id);
     if (ids.length === 0) {
       setUnavailableStopIds(new Set());
+      setRouteReadError(null);
       return;
     }
 
     let mounted = true;
-    void supabase
-      .from("mfi_stops")
-      .select("id, name, address, lat, lng")
-      .in("id", ids)
-      .then(({ data, error }) => {
-        if (!mounted || error) return;
-        const rows = (data ?? []).map((row) => ({
+    void readFreightIqRouteStops(ids)
+      .then((data) => {
+        if (!mounted) return;
+        setRouteReadError(null);
+        const rows = data.map((row) => ({
           address: row.address ?? "",
           id: row.id,
           lat: Number(row.lat),
@@ -249,12 +273,16 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
         }));
         setUnavailableStopIds(new Set(ids.filter((id) => !rows.some((row) => row.id === id))));
         void refreshStops(rows).catch(() => undefined);
+      })
+      .catch((error) => {
+        if (mounted)
+          setRouteReadError(freightIqReadMessage(error, "Could not refresh stop information."));
       });
 
     return () => {
       mounted = false;
     };
-  }, [refreshStops, route.stops]);
+  }, [refreshStops, route.stops, routeReadRetry]);
 
   const upcoming = useMemo(
     () => route.stops.filter((stop) => stop.status === "upcoming"),
@@ -278,30 +306,18 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     let active = true;
     setNextStopIntelStatus("loading");
 
-    void Promise.all([
-      supabase
-        .from("mfi_reports")
-        .select("delivery_type, truck_fit, back_in_required")
-        .eq("stop_id", nextStopId),
-      supabase
-        .from("mfi_stops")
-        .select("entrance_lat, entrance_lng")
-        .eq("id", nextStopId)
-        .maybeSingle(),
-    ])
-      .then(([reportsResult, stopResult]) => {
+    void Promise.all([readFreightIqStopReports(nextStopId), readFreightIqRouteStops([nextStopId])])
+      .then(([reports, stops]) => {
         if (!active) return;
-        if (reportsResult.error || stopResult.error) throw reportsResult.error ?? stopResult.error;
-
-        const stop = stopResult.data;
+        const stop = stops[0];
+        const entranceLat = stop?.entrance_lat;
+        const entranceLng = stop?.entrance_lng;
         const deliveryZone =
-          typeof stop?.entrance_lat === "number" && typeof stop?.entrance_lng === "number";
+          typeof entranceLat === "number" && typeof entranceLng === "number"
+            ? { lat: entranceLat, lng: entranceLng }
+            : null;
         setNextStopIntel(
-          summarizeCoreIntel(
-            nextStopId,
-            (reportsResult.data ?? []) as CoreIntelReportRow[],
-            deliveryZone ? { lat: stop.entrance_lat, lng: stop.entrance_lng } : null,
-          ),
+          summarizeCoreIntel(nextStopId, reports as CoreIntelReportRow[], deliveryZone),
         );
         setNextStopIntelStatus("resolved");
       })
@@ -333,7 +349,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
   }, [overviewMarkers]);
 
   const fitRoute = useCallback(() => {
-    if (!mapRef.current || overviewMarkers.length === 0) return;
+    if (!isOverviewMapReady || !mapRef.current || overviewMarkers.length === 0) return;
 
     if (overviewMarkers.length === 1) {
       const coordinate = overviewMarkers[0].coordinate;
@@ -355,7 +371,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
         edgePadding: { top: 56, right: 40, bottom: nextStopSheetHeight + 56, left: 40 },
       },
     );
-  }, [nextStopSheetHeight, overviewMarkers, reduceMotionEnabled]);
+  }, [isOverviewMapReady, nextStopSheetHeight, overviewMarkers, reduceMotionEnabled]);
 
   useEffect(() => {
     if (
@@ -776,6 +792,16 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
         ) : null}
       </View>
 
+      {routeReadError ? (
+        <View style={styles.staleBanner}>
+          <Text accessibilityRole="alert" style={{ color: colors.textSecondary }}>
+            {routeReadError} Your route and stop order are unchanged.
+          </Text>
+          <AppButton variant="tertiary" onPress={() => setRouteReadRetry((value) => value + 1)}>
+            Try again
+          </AppButton>
+        </View>
+      ) : null}
       {isStale ? (
         <Pressable
           accessibilityRole="button"
@@ -803,7 +829,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
       ) : isTab && !showRouteList ? (
         <View style={styles.overviewContainer}>
           {overviewInitialRegion ? (
-            <MapView
+            <RouteOverviewMap
               initialRegion={overviewInitialRegion}
               legalLabelInsets={{
                 top: 0,
@@ -819,9 +845,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
               }}
               mapType="standard"
               onMapReady={() => setIsOverviewMapReady(true)}
-              ref={(instance) => {
-                mapRef.current = instance;
-              }}
+              mapRef={mapRef}
               rotateEnabled={false}
               showsCompass={false}
               style={styles.overviewMap}
@@ -846,7 +870,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
                   )}
                 </Marker>
               ))}
-            </MapView>
+            </RouteOverviewMap>
           ) : (
             <View style={[styles.mapUnavailable, { backgroundColor: colors.surface }]}>
               <AppIcon name="map" color={colors.textSecondary} size={36} />

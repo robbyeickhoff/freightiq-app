@@ -10,6 +10,23 @@ index 2100d7d..aef4dbf 100644
                          if (!(0, errors_1.isAuthRetryableFetchError)(error)) {
                              this._debug(debugName, 'refresh failed with a non-retryable error, removing the session', error);
                              await this._removeSession();
+diff --git a/node_modules/@supabase/auth-js/dist/main/lib/fetch.js b/node_modules/@supabase/auth-js/dist/main/lib/fetch.js
+index a7dd9d8..32fa6cb 100644
+--- a/node_modules/@supabase/auth-js/dist/main/lib/fetch.js
++++ b/node_modules/@supabase/auth-js/dist/main/lib/fetch.js
+@@ -101,7 +101,11 @@ async function _handleRequest(fetcher, method, url, options, parameters, body) {
+         result = await fetcher(url, Object.assign({}, requestParams));
+     }
+     catch (e) {
+-        console.error(e);
++        // Expected transport failures still propagate as AuthRetryableFetchError.
++        // Avoid a duplicate native LogBox error; keep unexpected failures visible.
++        if (!/^(?:(?:TypeError|Error): )?(?:fetch failed\b|Failed to fetch$|Network request failed$|Load failed$)/i.test(_getErrorMessage(e))) {
++            console.error(e);
++        }
+         // fetch failed, likely due to a network or CORS error
+         throw new errors_1.AuthRetryableFetchError(_getErrorMessage(e), 0);
+     }
 diff --git a/node_modules/@supabase/auth-js/dist/module/GoTrueClient.js b/node_modules/@supabase/auth-js/dist/module/GoTrueClient.js
 index 7944e8d..8565562 100644
 --- a/node_modules/@supabase/auth-js/dist/module/GoTrueClient.js
@@ -22,3 +39,20 @@ index 7944e8d..8565562 100644
                          if (!isAuthRetryableFetchError(error)) {
                              this._debug(debugName, 'refresh failed with a non-retryable error, removing the session', error);
                              await this._removeSession();
+diff --git a/node_modules/@supabase/auth-js/dist/module/lib/fetch.js b/node_modules/@supabase/auth-js/dist/module/lib/fetch.js
+index 7cc9e71..6b90cdf 100644
+--- a/node_modules/@supabase/auth-js/dist/module/lib/fetch.js
++++ b/node_modules/@supabase/auth-js/dist/module/lib/fetch.js
+@@ -91,7 +91,11 @@ async function _handleRequest(fetcher, method, url, options, parameters, body) {
+         result = await fetcher(url, Object.assign({}, requestParams));
+     }
+     catch (e) {
+-        console.error(e);
++        // Expected transport failures still propagate as AuthRetryableFetchError.
++        // Avoid a duplicate native LogBox error; keep unexpected failures visible.
++        if (!/^(?:(?:TypeError|Error): )?(?:fetch failed\b|Failed to fetch$|Network request failed$|Load failed$)/i.test(_getErrorMessage(e))) {
++            console.error(e);
++        }
+         // fetch failed, likely due to a network or CORS error
+         throw new AuthRetryableFetchError(_getErrorMessage(e), 0);
+     }

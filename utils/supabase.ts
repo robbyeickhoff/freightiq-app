@@ -1,63 +1,21 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 import "react-native-url-polyfill/auto";
+import { resolveSupabaseConfig as resolveConfig } from "./supabase-config";
 
-const PRODUCTION_SUPABASE_URL = "https://finjqunyuyfxiesumuxk.supabase.co";
-const PRODUCTION_SUPABASE_ANON_KEY = "sb_publishable_VqMhpn0vzkrR4GnrzUnBQw_qRYZKqPq";
+export { resolveSupabaseConfig } from "./supabase-config";
 
-type SupabaseConfig = {
-  url: string;
-  anonKey: string;
-  recordingMode: boolean;
-};
-
-export function resolveSupabaseConfig(
-  isDevelopment: boolean,
-  environment: Record<string, string | undefined>,
-): SupabaseConfig {
-  const recordingRequested = environment.EXPO_PUBLIC_RECORDING_MODE === "true";
-
-  if (!recordingRequested) {
-    return {
-      url: PRODUCTION_SUPABASE_URL,
-      anonKey: PRODUCTION_SUPABASE_ANON_KEY,
-      recordingMode: false,
-    };
-  }
-
-  if (!isDevelopment) {
-    throw new Error("FreightIQ recording mode is available only in development builds.");
-  }
-
-  const url = environment.EXPO_PUBLIC_SUPABASE_URL;
-  const anonKey = environment.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) {
-    throw new Error("FreightIQ recording mode requires a local Supabase URL and key.");
-  }
-
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(url);
-  } catch {
-    throw new Error("FreightIQ recording mode requires a valid local Supabase URL.");
-  }
-
-  const isLoopback = parsedUrl.hostname === "127.0.0.1" || parsedUrl.hostname === "localhost";
-  if (parsedUrl.protocol !== "http:" || !isLoopback || parsedUrl.port !== "54321") {
-    throw new Error(
-      "FreightIQ recording mode is restricted to local Supabase at port 54321.",
-    );
-  }
-
-  return { url: parsedUrl.toString().replace(/\/$/, ""), anonKey, recordingMode: true };
-}
-
-const supabaseConfig = resolveSupabaseConfig(__DEV__, process.env);
+const supabaseConfig = resolveConfig(__DEV__, {
+  EXPO_PUBLIC_RECORDING_MODE: process.env.EXPO_PUBLIC_RECORDING_MODE,
+  EXPO_PUBLIC_LOCAL_TEST_MODE: process.env.EXPO_PUBLIC_LOCAL_TEST_MODE,
+  EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+  EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+});
 
 export const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey, {
   auth: {
     storage: AsyncStorage,
+    ...(supabaseConfig.localTestMode ? { storageKey: "freightiq-local-test-auth" } : {}),
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
