@@ -7,6 +7,7 @@ import {
   Modal,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -73,6 +74,7 @@ export default function OperationsBoardScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const { fontScale } = useWindowDimensions();
+  const largeText = fontScale >= 1.5;
   const params = useLocalSearchParams<{ area?: string }>();
   const [userId, setUserId] = useState("");
   const [area, setArea] = useState(params.area ?? "");
@@ -261,8 +263,8 @@ export default function OperationsBoardScreen() {
     }
   };
 
-  return (
-    <View style={[styles.screen, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+  const controls = (
+    <View key={`controls-${fontScale}`} style={styles.controls}>
       <View key={`header-${fontScale}`} style={styles.header}>
         {isOperationsTab ? null : (
           <Pressable onPress={() => router.back()} accessibilityRole="button">
@@ -270,14 +272,22 @@ export default function OperationsBoardScreen() {
           </Pressable>
         )}
         <View style={styles.titleBlock}>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>Operations</Text>
+          <Text
+            style={[
+              styles.title,
+              largeText && styles.largeTextTitle,
+              { color: colors.textPrimary },
+            ]}
+          >
+            Operations
+          </Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Current conditions from local drivers
           </Text>
         </View>
         {!isOperationsTab ? <View style={{ width: 52 }} /> : null}
       </View>
-      <View style={styles.areaHeader}>
+      <View style={[styles.areaHeader, largeText && styles.stackedHeader]}>
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>AREA</Text>
         <Pressable
           accessibilityLabel="View active conditions on the Operations map"
@@ -303,10 +313,7 @@ export default function OperationsBoardScreen() {
             { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
           ]}
         >
-          <Text
-            numberOfLines={1}
-            style={[styles.conditionButtonLabel, { color: colors.textPrimary }]}
-          >
+          <Text style={[styles.conditionButtonLabel, { color: colors.textPrimary }]}>
             {selectedAreaLabel}
           </Text>
           <AppIcon
@@ -348,28 +355,30 @@ export default function OperationsBoardScreen() {
                 <Text style={[styles.pickerDone, { color: colors.accentStrong }]}>Done</Text>
               </Pressable>
             </View>
-            {[{ slug: "", name: "All Areas" }, ...OPERATIONS_AREAS].map((item) => {
-              const selected = area === item.slug;
-              return (
-                <Pressable
-                  accessibilityRole="menuitem"
-                  accessibilityState={{ selected }}
-                  key={item.slug}
-                  onPress={() => {
-                    void chooseArea(item.slug);
-                    setAreaPickerOpen(false);
-                  }}
-                  style={[styles.pickerOption, { borderTopColor: colors.border }]}
-                >
-                  <Text style={[styles.pickerOptionLabel, { color: colors.textPrimary }]}>
-                    {item.name}
-                  </Text>
-                  {selected ? (
-                    <Text style={[styles.pickerCheck, { color: colors.accentStrong }]}>✓</Text>
-                  ) : null}
-                </Pressable>
-              );
-            })}
+            <ScrollView>
+              {[{ slug: "", name: "All Areas" }, ...OPERATIONS_AREAS].map((item) => {
+                const selected = area === item.slug;
+                return (
+                  <Pressable
+                    accessibilityRole="menuitem"
+                    accessibilityState={{ selected }}
+                    key={item.slug}
+                    onPress={() => {
+                      void chooseArea(item.slug);
+                      setAreaPickerOpen(false);
+                    }}
+                    style={[styles.pickerOption, { borderTopColor: colors.border }]}
+                  >
+                    <Text style={[styles.pickerOptionLabel, { color: colors.textPrimary }]}>
+                      {item.name}
+                    </Text>
+                    {selected ? (
+                      <Text style={[styles.pickerCheck, { color: colors.accentStrong }]}>✓</Text>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -386,10 +395,7 @@ export default function OperationsBoardScreen() {
             { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
           ]}
         >
-          <Text
-            numberOfLines={1}
-            style={[styles.conditionButtonLabel, { color: colors.textPrimary }]}
-          >
+          <Text style={[styles.conditionButtonLabel, { color: colors.textPrimary }]}>
             {selectedCategoryLabel}
           </Text>
           <AppIcon
@@ -431,28 +437,30 @@ export default function OperationsBoardScreen() {
                 <Text style={[styles.pickerDone, { color: colors.accentStrong }]}>Done</Text>
               </Pressable>
             </View>
-            {[{ value: "", label: "All Conditions" }, ...OPERATIONS_CATEGORIES].map((item) => {
-              const selected = category === item.value;
-              return (
-                <Pressable
-                  accessibilityRole="menuitem"
-                  accessibilityState={{ selected }}
-                  key={item.value}
-                  onPress={() => {
-                    setCategory(item.value);
-                    setCategoryPickerOpen(false);
-                  }}
-                  style={[styles.pickerOption, { borderTopColor: colors.border }]}
-                >
-                  <Text style={[styles.pickerOptionLabel, { color: colors.textPrimary }]}>
-                    {item.label}
-                  </Text>
-                  {selected ? (
-                    <Text style={[styles.pickerCheck, { color: colors.accentStrong }]}>✓</Text>
-                  ) : null}
-                </Pressable>
-              );
-            })}
+            <ScrollView>
+              {[{ value: "", label: "All Conditions" }, ...OPERATIONS_CATEGORIES].map((item) => {
+                const selected = category === item.value;
+                return (
+                  <Pressable
+                    accessibilityRole="menuitem"
+                    accessibilityState={{ selected }}
+                    key={item.value}
+                    onPress={() => {
+                      setCategory(item.value);
+                      setCategoryPickerOpen(false);
+                    }}
+                    style={[styles.pickerOption, { borderTopColor: colors.border }]}
+                  >
+                    <Text style={[styles.pickerOptionLabel, { color: colors.textPrimary }]}>
+                      {item.label}
+                    </Text>
+                    {selected ? (
+                      <Text style={[styles.pickerCheck, { color: colors.accentStrong }]}>✓</Text>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -477,7 +485,11 @@ export default function OperationsBoardScreen() {
       <View
         accessibilityLabel="Operations feed"
         accessibilityRole="radiogroup"
-        style={[styles.feedControl, { backgroundColor: colors.surface }]}
+        style={[
+          styles.feedControl,
+          largeText && styles.stackedControl,
+          { backgroundColor: colors.surface },
+        ]}
       >
         <Pressable
           accessibilityRole="radio"
@@ -485,6 +497,7 @@ export default function OperationsBoardScreen() {
           onPress={() => setHistory(false)}
           style={[
             styles.feedOption,
+            largeText && styles.stackedOption,
             !history ? styles.feedOptionSelected : null,
             { backgroundColor: !history ? colors.surfaceElevated : "transparent" },
           ]}
@@ -507,6 +520,7 @@ export default function OperationsBoardScreen() {
           onPress={() => setHistory(true)}
           style={[
             styles.feedOption,
+            largeText && styles.stackedOption,
             history ? styles.feedOptionSelected : null,
             { backgroundColor: history ? colors.surfaceElevated : "transparent" },
           ]}
@@ -534,210 +548,231 @@ export default function OperationsBoardScreen() {
           accessibilityRole="alert"
           style={[
             styles.errorBanner,
+            largeText && styles.stackedControl,
             { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
           ]}
         >
-          <Text style={[styles.errorText, { color: colors.textPrimary }]}>{loadErrorMessage}</Text>
+          <Text
+            style={[
+              styles.errorText,
+              largeText && styles.stackedOption,
+              { color: colors.textPrimary },
+            ]}
+          >
+            {loadErrorMessage}
+          </Text>
           <AppButton size="compact" variant="secondary" onPress={() => void load()}>
             Try Again
           </AppButton>
         </View>
       ) : null}
-      {loading ? (
-        <ActivityIndicator style={{ marginTop: 48 }} color={colors.accent} />
-      ) : (
-        <FlatList
-          data={visibleUpdates}
-          keyExtractor={(item) => item.id}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => {
-                setRefreshing(true);
-                void load(true);
-              }}
-            />
-          }
-          contentContainerStyle={styles.list}
-          ListHeaderComponent={
-            <View style={{ gap: 16 }}>
-              <OperationsDrivingAlertControl origin="operations" />
-              {unreadAlerts.length ? (
-                <AppCard contentStyle={{ gap: 10 }}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Text style={[styles.category, { color: colors.textPrimary }]}>
-                      Unread Nearby Alerts
-                    </Text>
-                    {unreadAlerts.length > 1 ? (
-                      <AppButton
-                        size="compact"
-                        variant="tertiary"
-                        onPress={() => userId && void markAllDrivingAlertsRead(userId)}
-                      >
-                        Mark All Read
-                      </AppButton>
-                    ) : null}
-                  </View>
-                  {unreadAlerts.map((alert) => (
-                    <Pressable
-                      key={`${alert.id}:${alert.alertedAt}`}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Open ${categoryLabel(alert.category)} nearby alert`}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/(tabs)/operations/map",
-                          params: { alertId: alert.id, area: alert.areaSlug },
-                        } as never)
-                      }
-                      style={{
-                        paddingVertical: 8,
-                        borderTopWidth: 1,
-                        borderTopColor: colors.border,
-                      }}
-                    >
-                      <Text style={{ color: colors.accentStrong, fontWeight: "700" }}>
-                        {categoryLabel(alert.category)} · {alert.stopName || alert.areaName}
-                      </Text>
-                      <Text style={{ color: colors.textPrimary }}>{alert.message}</Text>
-                      <Text style={{ color: colors.textSecondary }}>
-                        {new Date(alert.alertedAt).toLocaleTimeString([], {
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </AppCard>
-              ) : null}
-            </View>
-          }
-          ListEmptyComponent={
-            loadError ? null : (
-              <AppCard contentStyle={styles.emptyCard}>
-                <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
-                  All clear for now
-                </Text>
-                <Text style={[styles.emptyBody, { color: colors.textSecondary }]}>
-                  {history
-                    ? "You haven’t posted an update in the last seven days."
-                    : "No active driver updates have been reported for this area."}
-                </Text>
-              </AppCard>
-            )
-          }
-          renderItem={({ item }) => (
-            <AppCard contentStyle={styles.card}>
-              <View style={styles.meta}>
-                <Text style={[styles.category, { color: colors.accentStrong }]}>
-                  {categoryLabel(item.category)}
-                </Text>
-                <Text style={{ color: colors.textSecondary }}>{item.area_name}</Text>
-              </View>
-              <Text style={[styles.message, { color: colors.textPrimary }]}>{item.message}</Text>
-              {item.stop_id ? (
-                <Text style={{ color: colors.textSecondary }}>
-                  {item.stop_name || "Attached stop"}
-                  {item.stop_address ? ` · ${operationsDisplayAddress(item.stop_address)}` : ""}
-                </Text>
-              ) : null}
-              <Text style={[styles.byline, { color: colors.textSecondary }]}>
-                {item.username} · Founding Driver ·{" "}
-                {new Date(item.created_at).toLocaleTimeString([], {
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}
-                {item.edited ? " · Edited" : ""}
-                {lifecycleLabel(item) ? ` · ${lifecycleLabel(item)}` : ""}
-              </Text>
-              {item.status === "removed" && item.moderation_reason ? (
-                <Text style={{ color: colors.warning }}>{item.moderation_reason}</Text>
-              ) : null}
-              {item.last_confirmed_at ? (
-                <Text style={[styles.confirmed, { color: colors.success }]}>
-                  ✓ {confirmationLabel(item.last_confirmed_at)}
-                </Text>
-              ) : null}
-              <View style={styles.cardActions}>
-                {item.is_author ? (
-                  <>
-                    <AppButton
-                      size="compact"
-                      variant="secondary"
-                      onPress={() =>
-                        router.push({
-                          pathname: "/(tabs)/operations/compose",
-                          params: { editId: item.id },
-                        } as never)
-                      }
-                    >
-                      Edit
-                    </AppButton>
-                    <AppButton size="compact" variant="tertiary" onPress={() => resolve(item.id)}>
-                      Resolve
-                    </AppButton>
-                  </>
-                ) : (
-                  <>
-                    <Text style={{ color: colors.textSecondary }}>Still there?</Text>
-                    <AppButton
-                      size="compact"
-                      variant="secondary"
-                      onPress={() => void confirm(item.id, "yes")}
-                    >
-                      Yes
-                    </AppButton>
-                    <AppButton
-                      size="compact"
-                      variant="secondary"
-                      onPress={() => void confirm(item.id, "no")}
-                    >
-                      No
-                    </AppButton>
+    </View>
+  );
+
+  return (
+    <View style={[styles.screen, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      <FlatList
+        style={styles.scroll}
+        data={loading ? [] : visibleUpdates}
+        keyExtractor={(item) => item.id}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void load(true);
+            }}
+          />
+        }
+        contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          <View style={{ gap: 12 }}>
+            {controls}
+            <OperationsDrivingAlertControl origin="operations" compact />
+            {unreadAlerts.length ? (
+              <AppCard contentStyle={{ gap: 10 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <Text style={[styles.category, { color: colors.textPrimary }]}>
+                    Unread Nearby Alerts
+                  </Text>
+                  {unreadAlerts.length > 1 ? (
                     <AppButton
                       size="compact"
                       variant="tertiary"
-                      onPress={() =>
-                        router.push({
-                          pathname: "/(tabs)/profile/report-content",
-                          params: {
-                            subjectType: "operations_update",
-                            subjectId: item.id,
-                            ownerId: item.author_user_id,
-                            ownerName: item.username,
-                          },
-                        })
-                      }
+                      onPress={() => userId && void markAllDrivingAlertsRead(userId)}
                     >
-                      Report
+                      Mark All Read
                     </AppButton>
-                  </>
-                )}
-              </View>
+                  ) : null}
+                </View>
+                {unreadAlerts.map((alert) => (
+                  <Pressable
+                    key={`${alert.id}:${alert.alertedAt}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open ${categoryLabel(alert.category)} nearby alert`}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(tabs)/operations/map",
+                        params: { alertId: alert.id, area: alert.areaSlug },
+                      } as never)
+                    }
+                    style={{
+                      paddingVertical: 8,
+                      borderTopWidth: 1,
+                      borderTopColor: colors.border,
+                    }}
+                  >
+                    <Text style={{ color: colors.accentStrong, fontWeight: "700" }}>
+                      {categoryLabel(alert.category)} · {alert.stopName || alert.areaName}
+                    </Text>
+                    <Text style={{ color: colors.textPrimary }}>{alert.message}</Text>
+                    <Text style={{ color: colors.textSecondary }}>
+                      {new Date(alert.alertedAt).toLocaleTimeString([], {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </Text>
+                  </Pressable>
+                ))}
+              </AppCard>
+            ) : null}
+          </View>
+        }
+        ListEmptyComponent={
+          loading ? (
+            <ActivityIndicator style={styles.loading} color={colors.accent} />
+          ) : loadError ? null : (
+            <AppCard contentStyle={styles.emptyCard}>
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+                All clear for now
+              </Text>
+              <Text style={[styles.emptyBody, { color: colors.textSecondary }]}>
+                {history
+                  ? "You haven’t posted an update in the last seven days."
+                  : "No active driver updates have been reported for this area."}
+              </Text>
             </AppCard>
-          )}
-        />
-      )}
+          )
+        }
+        renderItem={({ item }) => (
+          <AppCard contentStyle={styles.card}>
+            <View style={styles.meta}>
+              <Text style={[styles.category, { color: colors.accentStrong }]}>
+                {categoryLabel(item.category)}
+              </Text>
+              <Text style={{ color: colors.textSecondary }}>{item.area_name}</Text>
+            </View>
+            <Text style={[styles.message, { color: colors.textPrimary }]}>{item.message}</Text>
+            {item.stop_id ? (
+              <Text style={{ color: colors.textSecondary }}>
+                {item.stop_name || "Attached stop"}
+                {item.stop_address ? ` · ${operationsDisplayAddress(item.stop_address)}` : ""}
+              </Text>
+            ) : null}
+            <Text style={[styles.byline, { color: colors.textSecondary }]}>
+              {item.username} · Founding Driver ·{" "}
+              {new Date(item.created_at).toLocaleTimeString([], {
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+              {item.edited ? " · Edited" : ""}
+              {lifecycleLabel(item) ? ` · ${lifecycleLabel(item)}` : ""}
+            </Text>
+            {item.status === "removed" && item.moderation_reason ? (
+              <Text style={{ color: colors.warning }}>{item.moderation_reason}</Text>
+            ) : null}
+            {item.last_confirmed_at ? (
+              <Text style={[styles.confirmed, { color: colors.success }]}>
+                ✓ {confirmationLabel(item.last_confirmed_at)}
+              </Text>
+            ) : null}
+            <View style={styles.cardActions}>
+              {item.is_author ? (
+                <>
+                  <AppButton
+                    size="compact"
+                    variant="secondary"
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(tabs)/operations/compose",
+                        params: { editId: item.id },
+                      } as never)
+                    }
+                  >
+                    Edit
+                  </AppButton>
+                  <AppButton size="compact" variant="tertiary" onPress={() => resolve(item.id)}>
+                    Resolve
+                  </AppButton>
+                </>
+              ) : (
+                <>
+                  <Text style={{ color: colors.textSecondary }}>Still there?</Text>
+                  <AppButton
+                    size="compact"
+                    variant="secondary"
+                    onPress={() => void confirm(item.id, "yes")}
+                  >
+                    Yes
+                  </AppButton>
+                  <AppButton
+                    size="compact"
+                    variant="secondary"
+                    onPress={() => void confirm(item.id, "no")}
+                  >
+                    No
+                  </AppButton>
+                  <AppButton
+                    size="compact"
+                    variant="tertiary"
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(tabs)/profile/report-content",
+                        params: {
+                          subjectType: "operations_update",
+                          subjectId: item.id,
+                          ownerId: item.author_user_id,
+                          ownerName: item.username,
+                        },
+                      })
+                    }
+                  >
+                    Report
+                  </AppButton>
+                </>
+              )}
+            </View>
+          </AppCard>
+        )}
+      />
     </View>
   );
 }
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  scroll: { flex: 1 },
+  controls: { marginHorizontal: -20 },
+  loading: { marginVertical: 24 },
   header: {
     alignItems: "flex-start",
     flexDirection: "row",
     paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 22,
+    paddingTop: 10,
+    paddingBottom: 8,
   },
   back: { fontSize: 17, fontWeight: "700" },
-  titleBlock: { flex: 1, minWidth: 0, gap: 8 },
+  titleBlock: { flex: 1, minWidth: 0, gap: 4 },
   title: { fontSize: 34, fontWeight: "800", letterSpacing: -0.8, width: "100%" },
+  largeTextTitle: { fontSize: 22 },
+  stackedHeader: { flexDirection: "column", alignItems: "flex-start" },
+  stackedControl: { flexDirection: "column", alignItems: "stretch" },
+  stackedOption: { flex: 0 },
   subtitle: { fontSize: 15, width: "100%", flexShrink: 1 },
   sectionLabel: {
     fontSize: 12,
@@ -754,12 +789,12 @@ const styles = StyleSheet.create({
   mapLink: { fontSize: 15, fontWeight: "700" },
   areaControl: {
     paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingBottom: 8,
   },
   conditionControl: {
     gap: 7,
     paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingBottom: 8,
   },
   conditionButton: {
     minHeight: 44,
@@ -767,6 +802,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     paddingHorizontal: 15,
+    paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
   },
@@ -779,6 +815,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   pickerSheet: {
+    maxHeight: "85%",
     borderRadius: 20,
     borderWidth: 1,
     overflow: "hidden",
@@ -790,6 +827,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     minHeight: 54,
     paddingHorizontal: 18,
+    paddingVertical: 10,
+    flexWrap: "wrap",
+    gap: 8,
   },
   pickerTitle: { fontSize: 20, fontWeight: "800" },
   pickerDone: { fontSize: 16, fontWeight: "700" },
@@ -799,6 +839,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     minHeight: 52,
     paddingHorizontal: 18,
+    paddingVertical: 12,
   },
   pickerOptionLabel: { flex: 1, fontSize: 16, fontWeight: "600" },
   pickerCheck: { fontSize: 18, fontWeight: "800" },
@@ -808,7 +849,7 @@ const styles = StyleSheet.create({
   feedControl: {
     flexDirection: "row",
     marginHorizontal: 20,
-    marginTop: 14,
+    marginTop: 8,
     marginBottom: 4,
     padding: 3,
     borderRadius: 12,
@@ -816,6 +857,8 @@ const styles = StyleSheet.create({
   feedOption: {
     flex: 1,
     minHeight: 44,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
@@ -830,7 +873,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-  feedOptionLabel: { fontSize: 15, fontWeight: "700" },
+  feedOptionLabel: { fontSize: 15, fontWeight: "700", flexShrink: 1, textAlign: "center" },
   offline: { paddingHorizontal: 16, paddingBottom: 4 },
   errorBanner: {
     marginHorizontal: 20,
@@ -844,7 +887,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   errorText: { flex: 1, fontSize: 15, fontWeight: "600" },
-  list: { padding: 20, gap: 12, paddingBottom: 40 },
+  list: { paddingHorizontal: 20, gap: 12, paddingBottom: 40 },
   card: { gap: 10 },
   meta: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
   category: { fontWeight: "800" },

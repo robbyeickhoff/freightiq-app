@@ -1,5 +1,55 @@
 # FreightIQ Operations Board V1 — Focused Build Specification
 
+## October 7 — approved large text acceptance correction
+
+Rob confirmed the prior Pixel checks complete. iPhone normal-size scrolling, both filters/feed
+tabs, View Map/Report navigation, refresh, Start/Stop Alerts, offline error visibility and online
+recovery passed. Larger text initially failed visibly (split heading, clipped filters/tabs),
+prompting the correction below.
+
+Approved correction stays presentation-only: retain system scaling, use a22pt base heading in
+large-text layout, stack area/link, feed choices and retry controls at fontScale1.5+, let filter
+labels wrap with vertical padding, and bound filter sheets with independently scrolling options.
+These modal scrollers do not wrap the main FlatList. Remeasure only the controls subtree on font
+scale changes; do not remount the feed or Driving Alerts session component. Four structural layout
+tests, TypeScript and focused lint pass;18 focused layout/refresh/driving-evaluation tests pass
+together. No shared AppButton change, dependency change, backend action or release.
+
+Physical acceptance completed October7 by Rob: iPhone screenshot05.13.57 shows unclipped upper
+controls; scrolling reaches readable alerts/feed; both filter menus scroll/select correctly;
+normal-size restoration and a fresh increase without restarting both work. Pixel then passed
+increased font size without closing, both menus/selections, readable alerts and reachable feed,
+and return to normal size without clipping or gaps. Exact scale values were not captured and
+large-text offline retry rendering was not separately exercised. No claim of all possible size
+combinations. The requested layout checks pass; scoped diff review and publication approvals remain.
+
+## October 6 — approved small-screen layout follow-up
+
+Rob approved one scrolling screen, reduced excess spacing and compact Driving Alerts after the
+production bot-defense cutoff. Build Mode; local presentation-only implementation. Upper title,
+filters, Report a Condition, feed tabs and status/retry banner now live in the existing FlatList
+header, so they can scroll away. No nested ScrollView or sticky header. The list stays mounted
+during initial loading, with the spinner as its empty content; no false empty-state message.
+Driving Alerts remains a JSX element, not a newly defined inline component, preserving identity
+through board renders. It is now available during loading as well as loaded/empty states.
+
+The compact alert variant is opt-in for Operations only. Route/Settings defaults stay unchanged.
+It trims padding, keeps full status and existing Start/Stop actions, and stacks at large font
+scale or narrow width rather than clipping. Existing picker/navigation/post/report handlers,
+refresh/caching logic, security limits, permissions and alert-session behavior are unchanged.
+No text-scaling cap or reduced touch targets added.
+
+Local validation:35 focused tests pass (including3 source-structure layout regressions and existing
+refresh/privacy/alert evaluation tests), TypeScript passes, focused ESLint passes, diff whitespace
+check passes. Static tests are not pixel/gesture/accessibility verification.
+Files: app/(tabs)/(map)/operations.tsx, components/operations-driving-alert-control.tsx,
+tests/operations-layout.test.ts, this specification and docs/CurrentBuild.md. Uncommitted.
+
+Physical acceptance remains: Pixel first, then iPhone in FreightIQ Dev; populated and empty feeds,
+scroll controls out of view and back, both filters, Active/My Updates, View Map/Report navigation,
+pull-to-refresh, offline/retry banner, Start/Stop and longer permission/status text; larger system
+text must wrap without hiding controls. No production changes, native builds or release performed.
+
 > **Status: Approved for bounded local implementation on 2026-09-03**
 >
 > This specification converts the approved Operations Board pilot direction into a bounded

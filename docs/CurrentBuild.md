@@ -13,6 +13,32 @@ answer one question:
 
 ## Current Objective
 
+### October 7 — Operations layout accepted on iPhone and Pixel
+
+Resumed iPhone layout acceptance after Rob confirmed the prior Pixel checks were finished.
+iPhone normal-size scrolling, filters/tabs, View Map/Report navigation, refresh, alerts start/stop,
+offline readable retry and online recovery all passed by user report. The initial large-text check
+failed (split title and clipped filter/tab labels); the approved correction passed the targeted
+physical checks below. Prior normal-size passes remain valid.
+
+Rob approved a focused correction. Operations now stacks area/link, feed options and retry at
+fontScale >=1.5, uses a smaller base heading while retaining system scaling, wraps filter labels,
+adds vertical breathing room and scrolls options within bounded filter modals. Only the controls
+subtree is keyed by fontScale to remeasure text after a setting change; the feed and alert-session
+component remain mounted. No scaling cap, backend, data or alert logic changes.
+18 focused layout/refresh/driving-evaluation tests, TypeScript, focused ESLint and whitespace
+checks pass. Rob confirmed iPhone large-text scrolling, readable/reachable alerts and feed,
+both scrollable filter menus and selections, restoration to normal size, and increasing size again
+without restarting. Screenshot05.13.57 confirms the corrected upper controls. Pixel then passed
+font-size increase without closing, both filter menus/selections, readable alerts and reachable
+feed, and normal-size restoration without clipping/gaps. These are user-reported physical results;
+exact font-scale values and large-text offline retry rendering were not separately measured.
+Changed this follow-up:
+operations.tsx, operations-layout.test.ts and the existing CurrentBuild/Operations specification.
+Rob approved scoped commit/push October7; validation and diff review passed. No build, release or
+production change. Metro8081 is serving canonical local-test mode. Hold candidate builds for the
+separate App Lock discussion. Unrelated backend/simulator work is excluded from layout publication.
+
 ### October 5 — mobile source publication approved
 
 Rob approved committing and pushing the exact47-path mobile package defined in

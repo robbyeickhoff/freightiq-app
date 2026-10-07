@@ -1,5 +1,14 @@
 import { useCallback, useState } from "react";
-import { Alert, AppState, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  AppState,
+  Linking,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useFocusEffect } from "expo-router";
 
 import { AppButton } from "@/components/ui/app-button";
@@ -20,11 +29,15 @@ import { supabase } from "@/utils/supabase";
 export function OperationsDrivingAlertControl({
   origin,
   showCategories = false,
+  compact = false,
 }: {
   origin: "route" | "operations" | "settings";
   showCategories?: boolean;
+  compact?: boolean;
 }) {
   const { colors } = useAppTheme();
+  const { width, fontScale } = useWindowDimensions();
+  const stackCompact = compact && (fontScale >= 1.5 || width < 350);
   const [userId, setUserId] = useState("");
   const [status, setStatus] = useState("Off");
   const [active, setActive] = useState(false);
@@ -94,10 +107,14 @@ export function OperationsDrivingAlertControl({
       ],
     );
   return (
-    <AppCard contentStyle={styles.card}>
-      <View style={styles.row}>
-        <View style={styles.copy}>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>Driving Alerts</Text>
+    <AppCard contentStyle={[styles.card, compact && styles.compactCard]}>
+      <View style={[styles.row, stackCompact && styles.stackedRow]}>
+        <View style={[styles.copy, stackCompact && styles.stackedCopy]}>
+          <Text
+            style={[styles.title, compact && styles.compactTitle, { color: colors.textPrimary }]}
+          >
+            Driving Alerts
+          </Text>
           <Text style={[styles.status, { color: colors.textSecondary }]}>{status}</Text>
         </View>
         <AppButton
@@ -161,6 +178,10 @@ export function OperationsDrivingAlertControl({
 }
 const styles = StyleSheet.create({
   card: { padding: 14, gap: 12 },
+  compactCard: { paddingVertical: 8, paddingHorizontal: 12, gap: 8 },
+  compactTitle: { fontSize: 15 },
+  stackedRow: { flexDirection: "column", alignItems: "stretch" },
+  stackedCopy: { flex: 0 },
   row: { flexDirection: "row", alignItems: "center", gap: 12 },
   copy: { flex: 1, gap: 3 },
   title: { fontSize: 16, fontWeight: "700" },
