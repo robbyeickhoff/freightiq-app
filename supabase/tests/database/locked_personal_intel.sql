@@ -60,7 +60,7 @@ select lives_ok(
 );
 
 reset role;
-select is((select count(*) from public.mfi_stops where id='private-note-source'),0::bigint,'successful merge removes source stop');
+select is((select removal_kind||':'||merged_into_stop_id from public.mfi_stops where id='private-note-source'),'merged:private-note-target','successful merge retains an audited hidden source tombstone');
 select is((select count(*) from public.mfi_private_stop_notes where stop_id='private-note-target'),2::bigint,'successful merge preserves every owner note');
 select is((select count(*) from public.mfi_reports where stop_id='private-note-target' and notes='Shared report survives merge'),1::bigint,'successful merge preserves another driver shared report');
 

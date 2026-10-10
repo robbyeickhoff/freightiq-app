@@ -6,6 +6,28 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-10-10 — Recoverable Stop Lifecycle V1 hosted backend
+
+Rob approved the exact two-file hosted package after local/hosted migration labels were reconciled.
+Confirmed physical database backup from 10:57:29 UTC, then applied Recoverable Stop Lifecycle V1
+version `20261009212734` and database-lint cleanup version `20261010140014` to main production
+project `finjqunyuyfxiesumuxk`. Exact SHA-256 values and evidence are in
+`scripts/fixtures/recoverable-stop-lifecycle-production-receipt.json`.
+
+Linked migration history now aligns and a follow-up dry run is empty. Hosted public/private schema
+lint reports zero findings. Transaction-only production verification passed the lifecycle grants,
+non-owner denial, owner remove/list/restore, 30-day metadata, reports/private-note preservation,
+merge tombstone/moves and limited private audit evidence, then rolled back. Independent cleanup
+verification found zero disposable users, stops, reports, private notes or lifecycle events.
+Supabase timed out only while refreshing its optional pg-delta cache after applying both migrations;
+the independent evidence confirms the database changes succeeded. Physical iPhone and Pixel
+acceptance subsequently passed delete, Undo, recovery-list restoration, map/search hiding, merge and
+restart persistence. The first iPhone route check exposed a stale locally saved route entry; the
+approved mobile correction removes a successfully deleted stop from Today’s Route, and the retest
+passed on both phones after full app restarts. No native production build, distribution, commit or
+push occurred.
+
+
 ## 2026-09-05 — Operations Board V1 and Route Map Interaction Candidates
 
 Production-profile candidates were created from clean, pushed `clean-main` commit `5018117` after

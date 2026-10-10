@@ -48,6 +48,10 @@ export default function ProfileLayout() {
         options={{ headerShown: true, title: "Blocked Contributors" }}
       />
       <Stack.Screen
+        name="recently-removed-stops"
+        options={{ headerShown: true, title: "Recently Removed Stops" }}
+      />
+      <Stack.Screen
         name="report-content"
         options={{ headerShown: true, title: "Report Content" }}
       />

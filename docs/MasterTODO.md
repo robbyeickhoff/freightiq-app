@@ -268,6 +268,11 @@ Strengthen the systems, infrastructure, and safeguards that quietly build user c
 ### Active Tasks
 
 - [x] Add an in-app pathway for users to initiate deletion of their FreightIQ account and associated personal data.
+- [ ] Complete [Recoverable Stop Lifecycle V1](build-specs/FreightIQRecoverableStopLifecycleV1BuildSpec.md).
+      Local migration, owner removal/restore, private lifecycle evidence, merge tombstones, immediate
+      Undo and Recently Removed Stops are implemented. Hosted deployment and physical iPhone/Pixel
+      acceptance passed October 10, including the corrected Today’s Route removal behavior. Scoped
+      commit/push, native production builds and distribution remain separately gated.
 
 #### Security Audit
 

@@ -217,6 +217,13 @@ export default function SettingsScreen() {
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Account</Text>
         <AppCard clipContent>
           <SettingsRow
+            accessibilityHint="Opens stops you can restore during their 30-day recovery window"
+            icon="delete"
+            label="Recently Removed Stops"
+            onPress={() => router.push("/(tabs)/profile/recently-removed-stops" as Href)}
+          />
+          <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+          <SettingsRow
             accessibilityHint="Signs out of your FreightIQ account"
             icon="logout"
             label="Log Out"

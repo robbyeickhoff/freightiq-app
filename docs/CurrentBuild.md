@@ -13,6 +13,74 @@ answer one question:
 
 ## Current Objective
 
+### October 10 — Recoverable Stop Lifecycle V1 accepted on iPhone and Pixel
+
+The complete lifecycle database/mobile diff and current Supabase guidance were reviewed. One bounded
+Android edge case was corrected: the post-removal Undo/Done alert is now non-dismissible so a driver
+cannot dismiss it and remain on a stop already hidden by the server. Four focused mobile contract
+tests were added. Thirty-two database assertions, all 185 mobile tests, TypeScript, public/private
+schema lint and diff whitespace checks pass; focused ESLint has no errors and retains only the two
+existing `stop.tsx` unused-variable warnings.
+
+The nineteen receipt-backed bot-defense, relocation and access-closure migration files now use the
+exact versions already assigned by Supabase. Every SHA-256 remained unchanged, the local-only ledger
+was aligned to the existing local schema, and linked history now matches through access closure.
+Evidence: `scripts/fixtures/migration-version-reconciliation-20261010.json`.
+
+Rob approved the exact two-file hosted package. The October 10 10:57:29 UTC physical backup was
+confirmed before deployment. Supabase applied lifecycle version `20261009212734` and lint-cleanup
+version `20261010140014`. Its optional pg-delta cache refresh timed out afterward, but independent
+verification confirms success: linked history aligns, the follow-up dry run is empty, hosted
+public/private schema lint has zero findings, and the rollback-only production transaction passed
+grants, owner/non-owner removal, recovery listing, 30-day metadata, child-data preservation,
+restoration, merge tombstone/moves and private audit checks. Independent cleanup counts are zero for
+both disposable users, both stops, report, private note and lifecycle events. Receipt:
+`scripts/fixtures/recoverable-stop-lifecycle-production-receipt.json`.
+
+Physical iPhone and Pixel acceptance passed against the deployed backend using the existing SDK 57
+development clients. Both phones passed delete, immediate Undo, Settings restoration, map/search
+exclusion, recovery, merge, and persistence after a full app restart. The initial iPhone route test
+found that deletion cleared map/search caches but left the locally persisted Today’s Route snapshot.
+The approved correction now removes the deleted stop from Today’s Route before reporting success;
+the focused lifecycle/route suite, TypeScript, formatting and diff checks pass, and both iPhone and
+Pixel confirmed the stop remains absent after restart. Commit/push, native production builds and
+distribution remain separate approval gates.
+
+### October 10 — existing database lint findings cleaned locally
+
+Rob approved fixing the three unrelated database-lint findings surfaced during Recoverable Stop
+Lifecycle verification while the context was fresh. Generated local migration
+`20261010140014_clean_database_lint_findings.sql` makes the two existing collection JSONB
+initializers explicit, removes three unused driver-collection variables and rewrites the private
+pause lookup to calculate the same salted actor key internally rather than requiring the linter to
+invoke a separately revoked private helper. No grants, policies, thresholds, result shape, ordering
+or exposed API changed. Full local public/private schema lint now reports no errors or warnings.
+The collection functional suite passed 41 of 43 assertions; its two failures are the already-known
+local anonymous-grant drift and all pagination/order/visibility checks passed. The security-response
+suite confirmed the real guarded read and denial paths before encountering pre-existing synthetic
+case state. This migration was subsequently deployed with the lifecycle backend as recorded above.
+No threshold, API, grant or policy behavior changed.
+
+### October 9 — Recoverable Stop Lifecycle V1 implemented locally
+
+Walker Products investigation confirmed FreightIQ had no durable stop deletion/merge history. Rob
+approved running the focused Recoverable Stop Lifecycle V1 build after accepting the Operations
+candidates. Contract: `docs/build-specs/FreightIQRecoverableStopLifecycleV1BuildSpec.md`.
+
+Local implementation replaces owner hard-delete with a 30-day recovery window, preserves attached
+reports/votes/Delivery Zone/Locked Personal Intel, adds owner-only restore plus immediate Undo and
+Settings > Recently Removed Stops, and retains merged sources as hidden audited tombstones. Private
+lifecycle evidence excludes report/private-note/contact/DZ content. Removed rows lose the active
+owner link so existing owner-readable paths cannot surface them; recovery ownership is stored
+separately and restored atomically. No automatic purge is included.
+
+The generated migration applied transactionally to the existing local database. Thirty-two focused
+database assertions pass, including non-owner denial, normal-detail exclusion, stale-write denial,
+child-data preservation, restoration and merge evidence. TypeScript passes; focused ESLint has zero
+errors and only two pre-existing `stop.tsx` unused-variable warnings. Hosted migration, physical
+iPhone/Pixel acceptance, commit/push, builds and distribution remain separate approval gates.
+
+
 ### October 7 — Operations layout accepted on iPhone and Pixel
 
 Resumed iPhone layout acceptance after Rob confirmed the prior Pixel checks were finished.

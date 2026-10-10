@@ -141,3 +141,27 @@ export async function deleteOwnedFreightIqStop(stopId: string) {
   });
   return requireData(data as boolean | null, error);
 }
+
+export type RemovedFreightIqStop = {
+  id: string;
+  name: string;
+  address: string | null;
+  removed_at: string;
+  recovery_expires_at: string;
+};
+
+export async function listOwnedRemovedFreightIqStops() {
+  const { data, error } = await supabase.rpc("list_owned_removed_freightiq_stops_v1");
+  if (error) throw error;
+  if (!Array.isArray(data)) throw new Error("Could not confirm your recently removed stops.");
+  return data as RemovedFreightIqStop[];
+}
+
+export async function restoreOwnedFreightIqStop(stopId: string) {
+  const { data, error } = await supabase.rpc("restore_owned_freightiq_stop_v1", {
+    p_stop_id: stopId,
+  });
+  const restored = requireData(data as boolean | null, error);
+  if (restored) invalidateStopLocations();
+  return restored;
+}

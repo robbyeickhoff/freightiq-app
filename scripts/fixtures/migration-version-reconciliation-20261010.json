@@ -1,0 +1,35 @@
+{
+  "projectRef": "finjqunyuyfxiesumuxk",
+  "reconciledAtLocalDate": "2026-10-10",
+  "scope": "Local filenames and local migration ledger only; hosted database remained read-only",
+  "migrations": [
+    { "originalFile": "20260928010000_add_stop_read_shadow_telemetry.sql", "reconciledFile": "20261005014746_add_stop_read_shadow_telemetry.sql", "sha256": "f9123eda30fcc6824960bba4bbd1f2342c0fc148cc5b94181a8375f8eb8f5db0" },
+    { "originalFile": "20260928010539_add_bounded_stop_read_api.sql", "reconciledFile": "20261005014758_add_bounded_stop_read_api.sql", "sha256": "36ad688962eafb489c67ce08510435fa389b0e1e5b2ac53a91b46cf0a1b53b08" },
+    { "originalFile": "20260928024202_add_bounded_stop_write_api.sql", "reconciledFile": "20261005014759_add_bounded_stop_write_api.sql", "sha256": "f32997923826ee431095eccf43573e8f6616cb016291f00bed3626112168dcef" },
+    { "originalFile": "20260930113905_correct_read_metrics_and_page_collections.sql", "reconciledFile": "20261005014800_correct_read_metrics_and_page_collections.sql", "sha256": "49b7d781e096f94cd8eed1ed4d2a333860a9f5d9b93543cddbfef3c8d052def9" },
+    { "originalFile": "20260930204213_add_shared_stop_read_guard.sql", "reconciledFile": "20261005014801_add_shared_stop_read_guard.sql", "sha256": "b1c6b0b4f52f22138fda594bc513084ee59eca198c7c1e9766a6416b94b388f2" },
+    { "originalFile": "20260930212122_add_owned_report_read.sql", "reconciledFile": "20261005014802_add_owned_report_read.sql", "sha256": "cff6eae4c81e808ada437c084014ccf6f14cde7eef89533ad0763ecaf7900d1a" },
+    { "originalFile": "20260930221744_add_owned_stop_editor_read.sql", "reconciledFile": "20261005014803_add_owned_stop_editor_read.sql", "sha256": "1431d464e269fc94ccd3d2e507ad747a2a60b9d22ea86c3078a0c5a99a664e37" },
+    { "originalFile": "20260930224820_add_owned_operations_editor_read.sql", "reconciledFile": "20261005014804_add_owned_operations_editor_read.sql", "sha256": "598438efb614a181fa76601fe3d50a4e07e309991dc19afb6841a0b07224e6f1" },
+    { "originalFile": "20260930232834_add_private_operations_page_reader.sql", "reconciledFile": "20261005014805_add_private_operations_page_reader.sql", "sha256": "32c8e95665a0bc190cf40f9698f6f763f286287d18dcf79b5adcf9da9919a746" },
+    { "originalFile": "20260930235344_add_operations_read_guard.sql", "reconciledFile": "20261005014806_add_operations_read_guard.sql", "sha256": "2bd57b9c93694f98ab4b534594a6e19476174bbf0f4ac2221e2151fa11f1125c" },
+    { "originalFile": "20261001041828_add_operations_verified_chain.sql", "reconciledFile": "20261005014807_add_operations_verified_chain.sql", "sha256": "b253d2b17d4112e5b8eef142182be3f94cf66a5ccb649fea1e99cd0dd02a32db" },
+    { "originalFile": "20261001043003_add_operations_contribution_reads.sql", "reconciledFile": "20261005014808_add_operations_contribution_reads.sql", "sha256": "9e45d5d6d89df0d312fbe1ef8328af80ed89e4de79829b19c7f3ae66277a0eff" },
+    { "originalFile": "20261001113222_optimize_operations_read_queries.sql", "reconciledFile": "20261005014810_optimize_operations_read_queries.sql", "sha256": "d3144b241bbf312892fc998321ca4e37b9fabd996227300919dbe8350d55a2e9" },
+    { "originalFile": "20261003191258_add_security_cases_and_read_response.sql", "reconciledFile": "20261005014811_add_security_cases_and_read_response.sql", "sha256": "9a89d365916b68cf9c7825f74bcce59102b81e67eb57d5fb1736aae8b2e6f75c" },
+    { "originalFile": "20261004134958_add_sustained_collection_warnings.sql", "reconciledFile": "20261005014812_add_sustained_collection_warnings.sql", "sha256": "5f64b57d7bff66f81940792de5c41f7f1daef0f27c4271593786c0f0fcd64e20" },
+    { "originalFile": "20261004135354_allow_separate_security_notification_inbox.sql", "reconciledFile": "20261005014813_allow_separate_security_notification_inbox.sql", "sha256": "79f8c8cd08dfdd8c40fc48539165edc4c969794b94abd73cf6b0daabf8cfe68c" },
+    { "originalFile": "20261004140257_add_security_delivery_health_check.sql", "reconciledFile": "20261005014815_add_security_delivery_health_check.sql", "sha256": "6a3fb75638a40a4fb0b7cc67774572f301a5e7d7e76d66a438aa914de98def67" },
+    { "originalFile": "20261004190247_move_stop_location.sql", "reconciledFile": "20261005140608_move_stop_location.sql", "sha256": "8c4e6b0117a934f74a6f855093a5faeceb142dcdd1b99911561e09d7e69b85c5" },
+    { "originalFile": "20261006120822_close_reviewed_legacy_shared_read_access.sql", "reconciledFile": "20261006120850_close_reviewed_legacy_shared_read_access.sql", "sha256": "ab4be237cd80e94ba5b03580fc914649ddf41d354bc2ddf80c7366479f2eb140" }
+  ],
+  "verification": {
+    "allHashesMatchedBeforeAndAfterRename": true,
+    "localAndHostedAppliedVersionsAligned": true,
+    "hostedDryRunPending": [
+      "20261009212734_add_recoverable_stop_lifecycle.sql",
+      "20261010140014_clean_database_lint_findings.sql"
+    ],
+    "hostedMutation": false
+  }
+}

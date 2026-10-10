@@ -47,6 +47,7 @@ import {
   deleteOwnedFreightIqReport,
   deleteOwnedFreightIqStop,
   editFreightIqStop,
+  restoreOwnedFreightIqStop,
   saveFreightIqReport,
   setFreightIqReportVote,
   setOwnedFreightIqDeliveryZone,
@@ -518,7 +519,7 @@ export default function StopScreen() {
   const [loading, setLoading] = useState(false);
   const [savingEntrance, setSavingEntrance] = useState(false);
   const [deletingStop, setDeletingStop] = useState(false);
-  const { refreshStops } = useTodayRoute();
+  const { refreshStops, removeStop: removeStopFromTodayRoute } = useTodayRoute();
   const [moveBusy, setMoveBusy] = useState(false);
   const [manageStopView, setManageStopView] = useState<
     "menu" | "edit-name" | "edit-address" | "move"
@@ -1902,23 +1903,53 @@ export default function StopScreen() {
       await AsyncStorage.setItem(VIEW_CACHE_KEY, JSON.stringify(nextViewPins));
 
       await AsyncStorage.removeItem(stopKey(stopId));
+      await removeStopFromTodayRoute(stopId);
 
-      Alert.alert("Stop deleted", "The stop and related intel were removed.", [
-        {
-          text: "OK",
-          onPress: () => {
-            setShowManageStop(false);
-            setManageStopView("menu");
-            router.replace({
-              pathname: "/(tabs)/(map)",
-              params: {
-                deletedStopId: stopId,
-                refreshAt: String(Date.now()),
-              },
-            });
+      Alert.alert(
+        "Stop removed",
+        "This stop is hidden and can be restored for 30 days.",
+        [
+          {
+            text: "Undo",
+            onPress: () => {
+              void (async () => {
+                try {
+                  const restored = await restoreOwnedFreightIqStop(stopId);
+                  if (!restored) {
+                    Alert.alert("Restore failed", "This stop is no longer available to restore.");
+                    return;
+                  }
+                  Alert.alert("Stop restored", "The stop and its Intel are available again.");
+                } catch (error: any) {
+                  Alert.alert("Restore failed", error?.message ?? "Please try again.");
+                } finally {
+                  setShowManageStop(false);
+                  setManageStopView("menu");
+                  router.replace({
+                    pathname: "/(tabs)/(map)",
+                    params: { refreshAt: String(Date.now()) },
+                  });
+                }
+              })();
+            },
           },
-        },
-      ]);
+          {
+            text: "Done",
+            onPress: () => {
+              setShowManageStop(false);
+              setManageStopView("menu");
+              router.replace({
+                pathname: "/(tabs)/(map)",
+                params: {
+                  deletedStopId: stopId,
+                  refreshAt: String(Date.now()),
+                },
+              });
+            },
+          },
+        ],
+        { cancelable: false },
+      );
     } finally {
       setDeletingStop(false);
     }
@@ -1929,7 +1960,7 @@ export default function StopScreen() {
 
     Alert.alert(
       "Delete this stop?",
-      "This permanently deletes the stop, its reports, votes, Delivery Zone, and any Locked Personal Intel saved here by any driver.",
+      "This hides the stop for everyone. Its reports, Delivery Zone, and Locked Personal Intel are preserved for 30 days so you can restore it from Settings.",
       [
         { text: "Cancel", style: "cancel" },
         {

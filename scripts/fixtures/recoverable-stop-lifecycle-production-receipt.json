@@ -1,0 +1,54 @@
+{
+  "projectRef": "finjqunyuyfxiesumuxk",
+  "recordedAtUtc": "2026-10-10T14:44:35Z",
+  "approval": "Rob explicitly approved deploying both reviewed pending migrations.",
+  "backup": {
+    "type": "PHYSICAL",
+    "createdAtUtc": "2026-10-10T10:57:29Z",
+    "verifiedInSupabaseDashboard": true
+  },
+  "migrations": [
+    {
+      "version": "20261009212734",
+      "file": "20261009212734_add_recoverable_stop_lifecycle.sql",
+      "sha256": "3e19973c2f1957660c7b6ea3c81b08a83ad1d18b25be7923285e47e8cec94244"
+    },
+    {
+      "version": "20261010140014",
+      "file": "20261010140014_clean_database_lint_findings.sql",
+      "sha256": "173bdfa0152fb59d46105c721e447caff78551398d57e6f359786e78fab5e4d6"
+    }
+  ],
+  "verification": {
+    "linkedMigrationHistoryAligned": true,
+    "followUpDryRunUpToDate": true,
+    "publicPrivateSchemaLintFindings": 0,
+    "transactionalHostedLifecycleVerification": "PASS",
+    "verifiedPaths": [
+      "private audit table denied to authenticated",
+      "anonymous list and restore execution denied",
+      "authenticated lifecycle function grants present",
+      "non-owner removal denied",
+      "owner removal and recovery listing",
+      "30-day removal metadata",
+      "report and private-note preservation",
+      "private audit content exclusion",
+      "owner restoration",
+      "merge tombstone and destination",
+      "report and private-note merge preservation",
+      "merge audit evidence"
+    ],
+    "fixtureCleanup": {
+      "users": 0,
+      "stops": 0,
+      "reports": 0,
+      "privateNotes": 0,
+      "lifecycleEvents": 0
+    }
+  },
+  "notes": [
+    "Supabase completed both migrations and then timed out refreshing its optional pg-delta cache.",
+    "Independent ledger, empty dry-run, lint and hosted behavior checks confirmed the migrations succeeded.",
+    "No native build, app distribution, commit or push was performed."
+  ]
+}
