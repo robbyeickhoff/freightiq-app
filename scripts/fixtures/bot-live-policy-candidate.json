@@ -1,0 +1,32 @@
+{
+  "status": "approved-and-applied-2026-10-05-compatibility-stage",
+  "projectRef": "finjqunyuyfxiesumuxk",
+  "excludedProjectRef": "bnhtwtcoalfgqtcgxmsh",
+  "preserveLegacyAccess": true,
+  "preserveSaltsRecipientsMailAndSchedules": true,
+  "freightiq_read_guard_config": {
+    "enabled": true,
+    "request_capacity": 120,
+    "request_refill": 2,
+    "metadata_capacity": 12000,
+    "metadata_refill": 10,
+    "detail_capacity": 150,
+    "detail_refill": 0.25
+  },
+  "operations_read_guard_config": {
+    "enabled": true,
+    "request_capacity": 120,
+    "request_refill": 2,
+    "row_capacity": 20000,
+    "row_refill": 100
+  },
+  "security_response_config": {
+    "detection_enabled": true,
+    "min_denied": 20,
+    "min_disclosed": 100,
+    "min_minutes": 3,
+    "warn_metadata_15m": 6000,
+    "warn_detail_15m": 250,
+    "warn_detail_60m": 750
+  }
+}

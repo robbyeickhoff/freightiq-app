@@ -27,6 +27,183 @@ approved mobile correction removes a successfully deleted stop from Today’s Ro
 passed on both phones after full app restarts. No native production build, distribution, commit or
 push occurred.
 
+## 2026-10-07 — Operations layout release candidates
+
+Rob approved builds after physical iPhone/Pixel layout acceptance and source commit/push3e01a36.
+App Lock changes explicitly deferred. Exact isolated clean source; fresh dependency installation
+and all three existing patches pass;131 mobile tests, TypeScript and focused lint pass.
+Both inspected archives match160 committed packaged files, excluding backend/site/local fixtures.
+iOS1.0.1(51), build bfddd3fe-cfce-410d-aa68-56303f505ed4, finished12:31:04UTC.
+Exact downloaded IPA ZIP/signature/identity/version checks passed; production push entitlement,
+debugging disabled, beta-reports-active verified. SHA256:
+60ec6594b697d7e808743cf7be2f6cd84c3f33f29f222ad822be8e980b479aa4.
+Optional automatic changelog scheduling refused by EAS plan; retry without that optional field
+succeeded. Submission32075adb-7258-49ec-8c46-136ba533cc09 accepted by Apple; processing complete.
+Build51 assigned to existing Team(Expo) internal group (1 tester); What to Test notes saved.
+External Early Testers group not added.
+Android1.0.1(32), build acf6475a-99bf-4ac3-9186-d90eee3d9334, finished12:45:40UTC.
+Exact AAB ZIP integrity passed; manifest/config and JAR signature entries present, without local
+cryptographic JAR verification. SHA256:
+f35c70e76d0173efabb3630f00a5001b075aa3558c5d3c6586f5284d864951bc.
+Manually uploaded to existing Alpha track4699678730398938940; previous31 excluded, only32 included.
+Zero blocking validation errors; one optional deobfuscation-file warning. Supported-device counts
+unchanged. Publishing overview verified exactly one intended Alpha32 change before submission.
+Final state: Changes in review, Google quick checks running. Managed publishing off unchanged;
+100% rollout is limited to existing closed Alpha audience. Android availability is not confirmed.
+Screenshots: /tmp/freightiq-ios51-testflight-20261007.jpg and
+/tmp/freightiq-android32-review-20261007.jpg.
+October9 Product Owner acceptance: installed iOS51 passed the Operations smoke check and remained
+reliable through substantial ordinary iPhone use; installed Android32 passed the Pixel smoke check.
+Both candidates are accepted. No new build, upload, store submission or public rollout accompanied
+this acceptance. No App Lock, backend,
+credentials, subscription, public release or tester-audience change. Release evidence uncommitted.
+
+## 2026-10-06 — Approved production legacy-read closure
+
+After installed iPhone50/Pixel acceptance, Rob chose immediate older-client cutoff, reported
+Apple users updated and confirmed sending the Android update email. Main project finjqunyuyfxiesumuxk
+received only closure migration20261006120850 (local source20261006120822).
+Removed44 legacy EXECUTE/SELECT grants across22 functions and5 tables including column grants;
+188 other grants, function bodies, policies and guard/security settings unchanged.
+Live-specific ACL rollback captured before mutation; not executed.
+
+78 real HTTP checks passed:56 legacy denials,15 protected stop operation types, Operations,
+anonymous protected denial, bulk refusal429/data:null and repeat-detail recovery.
+Write/Move Stop/Operations and moderator pause/restore checks passed inside a rolled-back
+transaction. Disposable auth account/session/counters and rollback-only fixtures verified absent.
+Health healthy, homepage200, no new security advisor findings. Existing warnings retained;
+authenticated-definer notices reduced35 to19. No new email-delivery or post-cutoff phone claim.
+Receipt: scripts/fixtures/hosted-cutover-20261006-receipt.json; related ACL, rollback and verification
+SQL beside it. No Routing Lab changes, native build, website deploy, commit or push.
+
+## 2026-10-05 — Approved TestFlight and Alpha uploads
+
+Rob approved exact iOS50/Android31 uploads to existing testing destinations. iOS EAS submission
+5625ff17-d279-445e-8dbf-5717f86ecbb7 succeeded; App Store Connect accepted the binary and processing
+is pending verification. Existing EAS-held API key reused; no credential changes. Browser Apple
+session expired; Rob asked to sign in before TestFlight availability/group verification.
+
+Android exact AAB SHA256156e8bd835acedc42bf830b2d2840b4a9c6fc737777442cf8159f2357736c683
+uploaded manually through existing Play Console Alpha track4699678730398938940, release24.
+Only31(1.0.1) included;30 excluded. Eight-person existing tester list unchanged. Supported-device
+counts unchanged; zero blocking validation errors, one optional deobfuscation-file warning.
+Accurate release notes saved;100% limited to closed Alpha audience. Publishing overview confirmed
+one intended change, then Changes in review with quick checks running after submission.
+Managed publishing off preserved; no public production rollout. No availability/device acceptance
+claim. Screenshot /tmp/freightiq-android31-review-20261005.jpg. No backend or legacy-access changes,
+code edits, new commits or pushes. CurrentBuild and this release record updated, uncommitted.
+
+## 2026-10-05 — Approved mobile candidates from51db93c
+
+Rob approved production-profile native candidate builds after source commit/push51db93c.
+Exact clean isolated clone; fresh npm ci with all three patches succeeds;127 mobile tests and
+TypeScript pass. Both archives match all160 tracked packaged files; no excluded database/site/test
+fixtures included. Remote signing reused without credential mutation; no auto-submit.
+
+iOS1.0.1(50): EAS81c5cbe6-40bf-4f70-85fc-5eaff606b2ca, FINISHED15:44:02UTC.
+Downloaded IPA has expected com.robbyeickhof.mfi identity, version1.0.1/build50; codesign deep/strict
+verification succeeds. Production aps-environment present, get-task-allow false, beta-reports-active
+true. IPA SHA25642cb313fcc949a7a70e3b2efaa9a4896cb3deb53370eafd17e07bf2d572c8d7f.
+Android1.0.1(31): EAS45a0deb2-73b7-4297-bace-9b86d6e40696, FINISHED16:00:12UTC.
+Downloaded AAB ZIP integrity passes; expected bundle manifest/config and JAR signature files exist.
+No local cryptographic JAR verification: no installed Java runtime; no tool installation attempted.
+AAB SHA256156e8bd835acedc42bf830b2d2840b4a9c6fc737777442cf8159f2357736c683.
+Exact artifacts retained at /tmp/freightiq-release-51db93c-ios50.ipa and
+/tmp/freightiq-release-51db93c-android31.aab, and on their EAS build records.
+No store upload/submission/distribution, installed-candidate acceptance, production backend change,
+or final legacy-read closure. Build completion is not installed-device acceptance.
+
+## 2026-10-05 — Approved Move Stop backend support
+
+Only relocation migration applied to finjqunyuyfxiesumuxk; hosted version20261005140608.
+Exact source hash8c4e6b0117a934f74a6f855093a5faeceb142dcdd1b99911561e09d7e69b85c5.
+Four definitions/permissions match local candidate; two DZ-credit trigger predicates verified.
+Existing grants/functions/unrelated triggers/bot and security config preserved by fingerprints.
+Anonymous/nonowner refusal and legacy route read pass; security health healthy; website checks pass.
+Advisor baseline unchanged; no real stops moved/backfilled. Receipt saved separately. No native
+build/phone acceptance/distribution/git publish or final legacy-access closure in this release.
+
+## 2026-10-05 — Compatible guarded-read website release
+
+Approved isolated production website release READY and promoted to freightiqapp.com:
+dpl_97XTsE6yPUKkgqyEuangYkp3rkPU, https://freightiq-site-nteszk8cs-freight-iq.vercel.app.
+Next16.3.8, build phase28.390s. Six reviewed source changes plus generated tsbuildinfo only;
+previous public/privacy/operator/dependency changes preserved. Source base32878d1 plus isolated
+changes, no exact release commit. Signed-in driver/admin/history/referral/moderation/security smoke
+passes; public homepage/privacy200; signed-out private routes307 to sign-in. No admin decisions
+made. Initial error query empty; no Vercel drains; zero protection bypasses. Mail-health monitoring
+is separate from website runtime monitoring; recovery inbox receipt pending.
+
+Rollback alias target dpl_5wLLBfBjf78ncQbKd4a2SvsAUsdx. New website depends on guarded APIs;
+pre-client guard-disable rollback is no longer safe to apply blindly. Legacy app access preserved.
+Rob also accepted measured118.307ms database overhead and deferred remaining phone-network
+acceptance to installed candidate tests before distribution/final closure. No claim populated HTTP
+performance gate passed. No native/database/Routing Lab release or git publish in this step.
+Changed canonical docs: CurrentBuild, bot spec, ReleaseHistory; uncommitted.
+
+## 2026-10-05 — Compatibility-stage bot guard activation
+
+Approved policy columns applied on finjqunyuyfxiesumuxk; readback 11:47:35 UTC confirms both new
+read guards/detection ON. Current client access, grants, function definitions, salts, recipients,
+mail and cron preserved. Old read paths remain OPEN; not final scraping protection.
+Activation/pre-client rollback SQL saved; local reversible checks and hosted preservation hashes pass.
+Actual authenticated HTTP: 150 detailed records allowed, next 50 new records refused without data,
+repeat records readable. Existing legacy path passes. Both disposable test logins/short counters
+removed and independently verified; no stop/report/Operations writes. Small timing sample recorded
+in bot spec; empty Operations feed means representative hosted performance remains incomplete.
+Health healthy; UptimeRobot Up/resolved. Recovery email inbox confirmation pending.
+Existing advisor findings unchanged, not a clean-security claim. No website/native release,
+schema/ACL change, Routing Lab mutation or git publish; local source/doc changes uncommitted.
+
+## 2026-10-05 — Approved privacy-only website publication
+
+Production READY and promoted: dpl_5wLLBfBjf78ncQbKd4a2SvsAUsdx,
+https://freightiq-site-k4nj1enpu-freight-iq.vercel.app. Public freightiqapp.com/privacy verified.
+Policy dated October 5, 2026 now explains security accounting, retention/provider boundaries and
+optional Driving Alerts background location. No app behavior, permissions or retention changed.
+Exact preserved live-source base verified across 92 files; isolated deployment changes only privacy
+source and regenerated TypeScript cache. Unrelated local social-image change excluded.
+
+Focused lint/type checks and local/hosted builds passed (Next 16.3.8, 23 static pages; hosted build
+phase 23.856 seconds). Seven policy-text assertions, public/homepage HTTP 200, private signed-out
+security route redirect and production alias verified. Initial error-log query returned no entries;
+drains not rechecked, watchdog recovery pending. No automation protection bypass created.
+Rollback target dpl_DoFmagqMi5RWsDSK4sN5sjnTEgPS. Source base 32878d1 with recorded isolated
+patches; no exact release commit. No commit/push, native build, database or Routing Lab change.
+Bot guards/detection remain OFF and legacy read bypasses OPEN; not final scraping protection.
+
+## 2026-10-04 — Bot-defense additive backend installation (disabled)
+
+October 5 follow-up: approved private security review website release is READY and promoted:
+dpl_DoFmagqMi5RWsDSK4sN5sjnTEgPS, https://freightiq-site-bvzp49xwb-freight-iq.vercel.app.
+Exported exact previous live 32878d1 source plus three moderator UI files and dependency patch files;
+unrelated nested-repository edits/content excluded. Next 16.3.8, Sharp 0.35.5, nanoid 3.3.20;
+zero production audit findings, five development-only lint-chain findings remain. Local/hosted
+builds, lint/type checks and HTTP access/image checks pass. Exact email link now redirects an
+authenticated moderator to the synthetic Security review case; no moderator action was submitted.
+Delivery inbox receipt was confirmed by Rob the previous evening. Driver guards/detection remain
+off; this is not final bot-protection activation. Details and rollback deployment in CurrentBuild.
+No commit/push or native release. Prior phase statements below describe their original checkpoint.
+
+Subsequent approved notification staging installed notify-security-alerts and security-alert-health,
+both version 1, both gateway JWT verification enabled. Actual HTTP checks proved no-JWT denial,
+worker disabled response and health-secret denial; 26 focused tests passed. No notification secrets,
+recipient, scheduler, website release or real email configured. Existing functions untouched.
+
+Rob explicitly approved the 17-file additive package for production finjqunyuyfxiesumuxk.
+Supabase recorded versions 20261005014746 through 20261005014815; exact per-file mapping and
+SHA-256 appear in scripts/fixtures/bot-rollout-production-receipt.json. Local filenames retain
+their original timestamps; reconcile this mapping before any CLI push, never reapply blindly.
+
+Existing 83 functions, 28 table ACL/RLS states, 249 column ACLs, 53 policies and 20 triggers match
+the pre-install fingerprints. Read-only authenticated-role legacy probes passed; no production
+write/physical-phone smoke test was performed. Stop/Operations enforcement, detection and mail are
+off, budgets/thresholds NULL, recipients/cases/outbox/counters empty. New interfaces return
+NOT_CONFIGURED as intended. Retention jobs installed; no user account paused.
+
+No relocation migration, Routing Lab change, native build, website/worker deployment, commit or
+push. No claim of live bot protection. Local-versus-hosted moderator summary token-length drift
+and hosted security-advisor findings are recorded in the bot spec; full activation remains gated.
 
 ## 2026-09-05 — Operations Board V1 and Route Map Interaction Candidates
 

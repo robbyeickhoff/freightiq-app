@@ -1,0 +1,107 @@
+{
+  "project": "finjqunyuyfxiesumuxk",
+  "hostedMigration": "20261006120850",
+  "name": "close_reviewed_legacy_shared_read_access",
+  "localMigration": "20261006120822_close_reviewed_legacy_shared_read_access.sql",
+  "approval": "Rob explicitly chose immediate cutoff, accepted older Android client incompatibility and confirmed update email sent.",
+  "scope": {
+    "functions": 22,
+    "tables": 5,
+    "removedGrants": 44,
+    "preservedGrants": 188
+  },
+  "verification": {
+    "httpProbes": 78,
+    "legacyDenials": 56,
+    "protectedStopOperationTypes": 15,
+    "operations": true,
+    "anonymousProtectedDenial": true,
+    "bulkDenial": "HTTP429 FREIGHTIQ_READ_THROTTLED with data:null after two 50-row batches following other bounded reads",
+    "repeatReadAfterDenial": true,
+    "serviceRead": true,
+    "writeAndModeratorProbe": "transaction-only, rolled back; see companion SQL",
+    "fixtureCleanup": true,
+    "configsPoliciesAndFunctionBodiesUnchanged": true,
+    "health": {
+      "enabled": true,
+      "healthy": true,
+      "recording_ok": true,
+      "retention_ok": true,
+      "worker_fresh": true,
+      "backlog_clear": true,
+      "recipient_ready": true
+    },
+    "advisorNoNewFindings": true,
+    "websiteHomeHTTP": 200
+  },
+  "qualifications": [
+    "No new phone acceptance after cutoff yet.",
+    "No new inbox-delivery test; prior user-confirmed delivery retained and live health healthy.",
+    "This prevents tested legacy bypasses and limits account bulk reading; it is not proof against every scraper or coordinated multi-account collection.",
+    "Existing advisor warnings remain; not introduced by closure.",
+    "No commit, push, native build, website deployment or Routing Lab change."
+  ],
+  "advisorBefore": [
+    {
+      "name": "rls_enabled_no_policy",
+      "count": 12,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+    },
+    {
+      "name": "anon_security_definer_function_executable",
+      "count": 1,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable"
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "count": 35,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable"
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "count": 1,
+      "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection"
+    }
+  ],
+  "advisorAfter": [
+    {
+      "name": "rls_enabled_no_policy",
+      "count": 12,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+    },
+    {
+      "name": "anon_security_definer_function_executable",
+      "count": 1,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable"
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "count": 19,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable"
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "count": 1,
+      "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection"
+    }
+  ],
+  "settingsFingerprint": {
+    "health": {
+      "enabled": true,
+      "healthy": true,
+      "recording_ok": true,
+      "retention_ok": true,
+      "worker_fresh": true,
+      "backlog_clear": true,
+      "recipient_ready": true
+    },
+    "library_hash": "9d2007191e60633313e28a146a566ba2",
+    "mail_enabled": true,
+    "policies_hash": "e14ee5036bdf836959bee45e2cd16eaa",
+    "security_hash": "789a294bab96c94e2225fdda05287cb4",
+    "library_enabled": true,
+    "operations_hash": "9705043cdc75527a819d3f462b82d74f",
+    "detection_enabled": true,
+    "operations_enabled": true
+  }
+}

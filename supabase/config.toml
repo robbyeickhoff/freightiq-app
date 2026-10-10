@@ -425,3 +425,10 @@ verify_jwt = false
 
 [functions.notify-founding-driver-emails]
 verify_jwt = false
+
+# Security notifications use gateway JWT verification plus separate worker/health secrets.
+[functions.notify-security-alerts]
+verify_jwt = true
+
+[functions.security-alert-health]
+verify_jwt = true

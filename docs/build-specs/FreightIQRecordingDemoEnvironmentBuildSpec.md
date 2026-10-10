@@ -66,3 +66,32 @@ not linked, pushed, copied, or created in production.
 - Candidate builds, TestFlight, Google Play, distribution, or release.
 - Analytics, website, referral, or marketing changes.
 - General-purpose environment configuration refactors.
+
+## October 6, 2026 — approved simulator repair evidence
+
+The existing Dev simulator binary reproduced `MessageQueue` even after a fresh canonical Metro
+restart fixed a separate stale dependency-resolution failure. Its Hermes reported an RN0.81.5
+build; the current locked native project uses RN0.86.3. Rebuilding the correct development identity
+with those existing dependencies resolved the startup failure without application-source edits.
+
+Isolated source/native build and backup: `/tmp/freightiq-simulator-repair-qusfYR`.
+Final artifact: `build/Build/Products/Debug-iphonesimulator/FreightIQDev.app` under that root.
+Target: iPhone17Pro/iOS26.5, UUID94ED7E7C-E706-43C5-A090-8357C5F84239,
+bundlecom.robbyeickhof.mfi.dev. Preserve the backup, which includes app data; do not publish it.
+Prebuild used APP_VARIANT=development, --no-install and --skip-dependency-update react,react-native;
+Pods used --no-repo-update. Final xcodebuild Debug used the explicit simulator destination,
+CODE_SIGNING_ALLOWED=YES, CODE_SIGN_IDENTITY=-, CODE_SIGNING_REQUIRED=NO. The first unsigned
+artifact loaded the app but showed a notification-keychain warning; the final locally signed
+artifact cold-launched without that warning. Push delivery was not tested.
+
+Verified in actual simulator UI: fictional local account signs in, map loads, Canyon Peak search
+opens complete4/4 Intel/saved DZ and both fictional Driver Reports. Cold launch preserves the
+session and repeats search/preview without the startup error. Package manifest/lock and app
+configuration remain unchanged; production, physical phone installations, database data and
+unrelated working-tree changes were untouched. No commit/push/release or recording performed.
+
+This repair deliberately reused existing Metro8081 with development/local-test mode and LAN local
+Supabasehttp://192.168.1.160:54321, recording mode false. It does not claim the separate loopback-only
+recording configuration above was exercised. Before a dedicated recording session, select that
+approved recording configuration without disrupting any active phone-test server. Do not reinstall
+dependencies or rebuild a normal/production-identity app merely to record a demo.

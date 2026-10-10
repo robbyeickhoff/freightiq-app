@@ -80,6 +80,53 @@ child-data preservation, restoration and merge evidence. TypeScript passes; focu
 errors and only two pre-existing `stop.tsx` unused-variable warnings. Hosted migration, physical
 iPhone/Pixel acceptance, commit/push, builds and distribution remain separate approval gates.
 
+### October 9 — Operations release candidates accepted on iPhone and Pixel
+
+Rob confirms the installed production candidates are accepted: iOS1.0.1(51) passed the Operations
+smoke check and has also remained reliable through substantial ordinary iPhone use; Android1.0.1(32)
+passed the corresponding Pixel smoke check. This is Product Owner physical-device acceptance of the
+already-uploaded candidates, not a new build, upload, store submission or public rollout. The
+Operations candidate acceptance gate is complete. No further Operations code or candidate release
+is pending; any later stop-lifecycle protection is a separate future build.
+
+### October 7 — Operations release candidates uploaded
+
+Rob deferred App Lock changes and approved new builds with the accepted Operations fixes.
+App Lock remains unchanged. Production-profile iOS51 and Android32 (version1.0.1) finished
+from exact committed source3e01a362a7245a93b4be0f0c39f5afe06814f786 in isolated clean clone
+`/tmp/freightiq-release-3e01a36-PvCumg`. Fresh npm ci applied all three existing patches;
+131 committed mobile tests, TypeScript and focused layout lint passed. Both inspected archives
+match all160 packaged source files; backend/site/local fixtures excluded. Existing signing reused.
+iOS build: bfddd3fe-cfce-410d-aa68-56303f505ed4.
+Android build: acf6475a-99bf-4ac3-9186-d90eee3d9334.
+Builds and store submissions are verified below; installed-candidate acceptance passed October 9.
+Existing TestFlight/closed Alpha destinations only; no public release or
+audience expansion. Rob identified his personal Chrome profile; signed-in Play Console Alpha and
+App Store Connect are now accessible. No backend changes.
+iOS51 finished12:31:04UTC; downloaded exact IPA, ZIP integrity, production bundle identity,
+version1.0.1/build51 and codesign deep/strict checks pass. SHA256:
+60ec6594b697d7e808743cf7be2f6cd84c3f33f29f222ad822be8e980b479aa4.
+First submission scheduling refused the optional changelog parameter (Enterprise-only); no
+submission was scheduled. Retried the established submit procedure without that optional field;
+release notes were entered in App Store Connect. No plan/credential changes.
+Retry submission32075adb-7258-49ec-8c46-136ba533cc09 succeeded: Apple accepted iOS51;
+TestFlight subsequently processed the build; installed-device acceptance passed October 9. Verified
+IPA entitlements: production push, debugging disabled, beta-reports-active present.
+App Store Connect now shows iOS51 processed, assigned to existing Team(Expo) internal group;
+What to Test notes saved through the UI. Early Testers external group was not added. Android32
+finished12:45:40UTC; exact downloaded AAB ZIP integrity passes,
+manifest/config and JAR signature entries present (not a local cryptographic JAR verification).
+SHA256:f35c70e76d0173efabb3630f00a5001b075aa3558c5d3c6586f5284d864951bc.
+Manual Alpha upload passed store validation with zero blocking errors and one optional
+deobfuscation-file warning. Supported-device counts unchanged; only32 included,31 excluded.
+Publishing overview showed exactly one intended change: Closed testing - Alpha32(1.0.1).
+Submitted and verified Changes in review, with Google quick checks still running. Existing
+managed publishing off retained;100% applies only to the existing closed Alpha audience.
+Android availability is not yet confirmed. No public production-track release or tester changes.
+Evidence: /tmp/freightiq-ios51-testflight-20261007.jpg and
+/tmp/freightiq-android32-review-20261007.jpg. Release notes/evidence updated; no further commit/push.
+October9 follow-up: Rob accepted both installed candidates after iPhone and Pixel smoke testing;
+substantial ordinary iPhone use also remained reliable. No further Operations candidate work remains.
 
 ### October 7 — Operations layout accepted on iPhone and Pixel
 
@@ -106,6 +153,144 @@ operations.tsx, operations-layout.test.ts and the existing CurrentBuild/Operatio
 Rob approved scoped commit/push October7; validation and diff review passed. No build, release or
 production change. Metro8081 is serving canonical local-test mode. Hold candidate builds for the
 separate App Lock discussion. Unrelated backend/simulator work is excluded from layout publication.
+
+### October 6 — simulator startup repair verified
+
+Rob approved repairing the existing simulator environment only. Restarted canonical Metro8081
+with its existing development/local-test settings (local Supabase192.168.1.160:54321, recording
+mode false). Its previously failing iOS bundle request now returns HTTP200. Old Dev binary still
+reproduced `MessageQueue` after that restart; its Hermes identifies itself as built for RN0.81.5,
+while current locked native dependencies use RN0.86.3.
+
+Built current tracked source and locked dependencies in an independent temporary copy, generated
+the development identity, and installed only com.robbyeickhof.mfi.dev on iPhone17Pro/iOS26.5
+simulator94ED7E7C-E706-43C5-A090-8357C5F84239. Final Debug simulator build uses local ad-hoc
+signing (CODE_SIGN_IDENTITY=-); the initial unsigned build's notification-keychain warning did
+not recur on the signed build's cold launch. No dependency upgrades or canonical native-project
+regeneration. Existing package/config files remain unchanged.
+
+UI verified: fictional local phone-test account sign-in, map, Canyon Peak search, complete4/4
+Core Intel, saved DZ, both fictional reports; cold relaunch retains login and repeats search and
+preview successfully without MessageQueue or the notification warning. This is simulator startup
+acceptance, not physical-phone layout acceptance or push-notification verification.
+
+Build/source and old simulator app/data backup: /tmp/freightiq-simulator-repair-qusfYR.
+Metro remains running from /Users/robbyeickhoff/mfi. No production/phone app/DB data changes,
+commit, push, distribution or video recording. Recording-mode loopback setup remains a separate
+demo-session step; current verification reused the existing LAN local-test server.
+
+### October 6 — Operations small-screen layout candidate
+
+Local phone setup repair: fictional login succeeded but Operations returned403/42501 for missing
+private-schema permission. All81 local private functions had default ACLs and supabase_admin
+ownership. Their signatures/definition hashes exactly matched a read-only main-project reference.
+Restored local private function client grants to that reference and migration-defined schema USAGE
+for authenticated/service_role. Verified all81 code/grant matches, anon schema denial and
+authenticated Operations HTTP200. No production mutation, threshold change or data reset.
+Initial postgres-role attempt produced permission warnings; completed with existing local-owner
+credentials without printing them. SQL: scripts/fixtures/local-private-permission-repair-20261006.sql.
+This repairs the demonstrated failure, not a full local/hosted parity audit. Pixel retry succeeded
+and displayed the existing expired-update notice instead of the connection error.
+
+Post-cutoff user checks passed: stop details/Intel loaded normally and Operations refreshed without
+error. Rob then approved the separate small-screen Operations fix. Build Mode: local layout
+implemented, pending physical acceptance. Contract:
+docs/build-specs/FreightIQOperationsBoardV1BuildSpec.md, October6 follow-up.
+
+Upper controls now scroll with the existing list; excess spacing reduced; Operations-only compact
+Driving Alerts keeps status and Start/Stop, stacking at larger text/narrow widths. No data-loading,
+bot-defense, backend, alert-session or posting logic changed.35 focused tests, TypeScript, focused
+ESLint and diff whitespace checks pass. These do not prove native visual fit.
+
+Changed: app/(tabs)/(map)/operations.tsx, components/operations-driving-alert-control.tsx,
+tests/operations-layout.test.ts, Operations Board spec and this document. All uncommitted.
+Next: Pixel then iPhone Dev acceptance of scrolling, filters/tabs, refresh, error/empty/loading
+states and alert controls at normal/larger text. No dev server started or new build/deploy performed.
+Preserve unrelated dirty files. Commit/push/build/distribution remain separate gates.
+
+### October 6 — approved production legacy-read closure complete
+
+Rob chose immediate cutoff, accepted that older Android clients must update, and confirmed the
+Android update email sent. He reports all current Apple users on50. Applied only the reviewed
+22-function/five-table legacy EXECUTE/SELECT closure to main finjqunyuyfxiesumuxk, hosted migration 20261006120850. Local source20261006120822. No Routing Lab change.
+
+Live-specific ACL/rollback captured first. Exactly44 grants removed;188 others preserved,
+function definitions and guard/security settings/policies unchanged.78 actual HTTP probes passed:
+56 legacy denials, all15 guarded stop operation types, Operations, anonymous denial, bulk429
+with no data and previously read detail still usable. Service reads remain available.
+Transaction-only create/edit/DZ/report/owner editor/Operations create-edit-resolve/Move Stop and
+moderator list-pause-restore-audit checks passed; all writes rolled back. Disposable HTTP login,
+session, short counters and synthetic SQL fixtures removed/absent. Live delivery health healthy,
+no new advisor findings; homepage200. Existing advisor warnings are recorded, not silently fixed.
+
+Receipt/ACLs/rollback/probe SQL: scripts/fixtures/hosted-cutover-20261006-\*.
+Verifier: scripts/verify-hosted-guarded-cutover.mjs. No new inbox test or post-cutoff phone claim.
+Next: brief installed-app search/detail and Operations refresh on Rob's current build; then
+separately address deferred small-screen Operations layout and review backend source publication.
+No new native build, website deployment, commit or push. Existing unrelated dirty work preserved.
+Protections now close tested legacy bypasses and limit account bulk reads; not a scrape-proof claim.
+
+### October 6 — installed phone acceptance and historical preflight (superseded above)
+
+Rob confirmed iPhone1.0.1(50) installed and passed search/preview/details, DZ pan/zoom, route,
+Operations/My Updates, alerts start/stop, offline fallback and online recovery. Actual Move Stop
+preserved private note, driver note and Intel at the new address. Pixel updated through Play Store;
+Rob accepted the version checkpoint without explicitly reading back31, then passed equivalent
+checks, two newly added route stops and actual Move Stop. These are user-reported physical results,
+not automated installed-binary inspection. Rob confirms both fictional stops deleted. Small-screen
+Operations layout remains deferred, not part of access closure.
+
+Rob authorized final bot-defense change. Release Mode: final-closure preflight, no mutation yet.
+Live read-only main-project check confirms library/Operations guards enabled, guarded reader
+callable by authenticated role, and legacy direct stop SELECT still open. Reviewed exact local
+22-function/five-table closure and ordered release handoff in bot spec. That handoff requires a
+support/cutover decision for older installed clients, whose reads fail after closure. Tester update
+notification/completion and accepted cutoff timing have not been confirmed; resolve this material
+user-impact gate before production revocation. No force-update mechanism found in scoped source
+text search; not an exhaustive version-usage audit. Live-specific ACL capture/rollback and complete
+post-closure verification remain required. No production control/settings/threshold change, commit,
+push, or Routing Lab action this turn.
+
+### October 5 — approved candidate uploads
+
+Rob approved uploading iOS50 to TestFlight and Android31 to the existing closed-testing track.
+EAS iOS submission5625ff17-d279-445e-8dbf-5717f86ecbb7 succeeded: binary accepted by App Store
+Connect; Apple processing and TestFlight availability not yet verified. Existing EAS-held API key
+reused, no credential setup or public App Review submission. App Store Connect browser session
+expired; Rob asked to sign in for availability verification.
+Android31 exact AAB uploaded through Chrome to existing Alpha release24. Build30 excluded,
+same8-person tester list unchanged,100% limited to this closed track. Validation:0blocking errors,
+one missing-deobfuscation-file warning; supported-device counts unchanged. Release notes saved.
+Google submission confirmed by Publishing overview: Changes in review, only Alpha31(1.0.1),
+quick checks running. Existing managed publishing off preserved; approved release can reach the
+existing closed-test audience after review. Not yet available/installed. Proof screenshot:
+/tmp/freightiq-android31-review-20261005.jpg. No public release or backend/legacy-read changes.
+Next user action: sign in to the existing App Store Connect Chrome tab; verify TestFlight50
+processing/availability and existing test group before phone installation. No new tester invitations.
+
+### October 5 — approved native candidates built; upload gate next
+
+Mobile commit51db93ca5cde8082979d746bc1eeb6dac063d3d4 is published on clean-main.
+Rob separately approved native candidate builds. Both production-profile builds are FINISHED:
+iOS1.0.1(50), EAS81c5cbe6-40bf-4f70-85fc-5eaff606b2ca; Android1.0.1(31),
+EAS45a0deb2-73b7-4297-bace-9b86d6e40696. Submitted October5 at15:37UTC.
+Built from isolated clean exact-commit clone /tmp/freightiq-release-51db93c-aDpbkX;
+canonical excluded dirty work preserved. Fresh npm ci applies all three patches;127 independent
+mobile tests and TypeScript pass. All43 reviewed runtime/test hashes match. Both fresh archives
+match132 files under app/components/context(s)/hooks/utils/plugins/patches; backend/site/docs/tests/
+fixtures/node_modules excluded. Only existing public map variables copied. EAS production environment
+reports no plain-text/sensitive variables. Existing remote signing credentials reused with
+freeze-credentials; remote build numbers incremented. No auto-submit, store upload, distribution,
+backend changes or final legacy-read closure. iOS completed15:44:02UTC; Android16:00:12UTC.
+Both exact artifacts downloaded to /tmp/freightiq-release-51db93c-ios50.ipa and
+/tmp/freightiq-release-51db93c-android31.aab. iOS identity/version/production push entitlement and
+deep/strict code signature verification pass. Android archive integrity passes and signature files
+exist; local cryptographic JAR verification not performed because no Java runtime is installed.
+Artifact hashes and EAS IDs recorded in ReleaseHistory. Upload through existing TestFlight/Play
+Alpha routes is the next separate approval; installed acceptance on both devices remains pending.
+Full archive comparison additionally confirms all160
+packaged tracked files match the clean source on each platform (excluding EAS Git metadata and the
+approved public-map .env).
 
 ### October 5 — mobile source publication approved
 
@@ -591,7 +776,7 @@ sender is intentionally disabled; never manufacture a healthy result by weakenin
 Rob approved proceeding with sender configuration and synthetic delivery. Installed dedicated
 SECURITY_ALERT_SECRET and SECURITY_ALERT_DELIVERY_ENABLED=true; private Vault entries
 freightiq_security_worker_secret / freightiq_security_worker_anon support dedicated cron job 7,
-freightiq-security-alert-every-minute (* * * * *). Configured existing Gmail moderator to receive
+freightiq-security-alert-every-minute (\* \* \* \* \*). Configured existing Gmail moderator to receive
 mail at the confirmed hello@freightiqapp.com account, without adding moderator privileges.
 mail_enabled=true; detection_enabled=false and both read guards remain false. Existing six cron
 job command hashes/schedules/active states are unchanged. No function/client deployment or access

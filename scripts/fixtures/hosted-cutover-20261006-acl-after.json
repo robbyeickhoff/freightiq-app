@@ -1,0 +1,1952 @@
+{
+  "acl": [
+    {
+      "col": "approach_hint",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "approach_hint",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "back_in_required",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "back_in_required",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "check_in_notes",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "check_in_notes",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "contact",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "contact",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "contact_name",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "contact_name",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "contact_people",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "contact_people",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "contact_phones",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "contact_phones",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "deliver_from_details",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "deliver_from_details",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "deliver_from_type",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "deliver_from_type",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "delivery_type",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "delivery_type",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "id",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "notes",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "notes",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "stop_id",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "tractor_type",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "tractor_type",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "truck_fit",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "truck_fit",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "updated_at",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "updated_at",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "user_id",
+      "kind": "column",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "address",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "address",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "city",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "city",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "country_code",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "country_code",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "entrance_lat",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "entrance_lng",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "id",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "lat",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "lng",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "name",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "name",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "state_code",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": "state_code",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "updated_at",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": "user_id",
+      "kind": "column",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.get_freightiq_report_reputation_v1(uuid[])",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.get_freightiq_report_reputation_v1(uuid[])",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.get_freightiq_route_stops_v1(text[])",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.get_freightiq_route_stops_v1(text[])",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.get_freightiq_stop_stats_v1(text[])",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.get_freightiq_stop_stats_v1(text[])",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.get_freightiq_stop_summaries_v1(text[])",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.get_freightiq_stop_summaries_v1(text[])",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.get_freightiq_stop_v1(text)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.get_freightiq_stop_v1(text)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.get_operations_board(text,boolean)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.get_operations_board(text,boolean)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_city_stops_v1(text,text,text,integer,integer)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_city_stops_v1(text,text,text,integer,integer)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_city_stops_v2(text,text,text,integer,jsonb)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_city_stops_v2(text,text,text,integer,jsonb)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_city_stops(text,text,text,integer,integer)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_city_stops(text,text,text,integer,integer)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_driver_stops_v1(uuid,integer,integer)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_driver_stops_v1(uuid,integer,integer)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_driver_stops_v2(uuid,integer,jsonb)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_driver_stops_v2(uuid,integer,jsonb)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_driver_stops(uuid,integer,integer)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_driver_stops(uuid,integer,integer)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_stop_reports_v1(text,integer)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_stop_reports_v1(text,integer)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_stops_in_bounds_v1(double precision,double precision,double precision,double precision,integer)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.list_freightiq_stops_in_bounds_v1(double precision,double precision,double precision,double precision,integer)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.match_freightiq_nearby_stop_v1(text,text,double precision,double precision,double precision)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.match_freightiq_nearby_stop_v1(text,text,double precision,double precision,double precision)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.match_nearby_mfi_stop(text,text,double precision,double precision,double precision)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.match_nearby_mfi_stop(text,text,double precision,double precision,double precision)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.search_freightiq_cities_v1(text,integer)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.search_freightiq_cities_v1(text,integer)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.search_freightiq_cities(text,integer)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.search_freightiq_cities(text,integer)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.search_freightiq_drivers_v1(text,integer)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.search_freightiq_drivers_v1(text,integer)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.search_freightiq_drivers(text,integer)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.search_freightiq_drivers(text,integer)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.search_freightiq_stops_v1(text,double precision,double precision,double precision,integer)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.search_freightiq_stops_v1(text,double precision,double precision,double precision,integer)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.search_mfi_stops(text,double precision,double precision,double precision,integer)",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "function",
+      "object": "public.search_mfi_stops(text,double precision,double precision,double precision,integer)",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "EXECUTE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "DELETE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "MAINTAIN"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "SELECT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16480",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "DELETE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16480",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16480",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "MAINTAIN"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16480",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16480",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16480",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16480",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "DELETE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "MAINTAIN"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "DELETE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "MAINTAIN"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "SELECT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_report_votes",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "DELETE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "MAINTAIN"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "SELECT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "DELETE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "DELETE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "MAINTAIN"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "SELECT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_reports",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "DELETE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "MAINTAIN"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "SELECT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16481",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "DELETE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "DELETE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "MAINTAIN"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "SELECT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.mfi_stops",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "DELETE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "MAINTAIN"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "SELECT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "DELETE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "MAINTAIN"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "SELECT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_update_confirmations",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "DELETE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "MAINTAIN"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "SELECT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16384",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "DELETE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "INSERT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "MAINTAIN"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "SELECT"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "col": null,
+      "kind": "table",
+      "object": "public.operations_updates",
+      "grantee": "16482",
+      "grantor": "16384",
+      "is_grantable": false,
+      "privilege_type": "UPDATE"
+    }
+  ],
+  "roles": {
+    "10": "supabase_admin",
+    "3373": "pg_monitor",
+    "3374": "pg_read_all_settings",
+    "3375": "pg_read_all_stats",
+    "3377": "pg_stat_scan_tables",
+    "4200": "pg_signal_backend",
+    "4544": "pg_checkpoint",
+    "4550": "pg_use_reserved_connections",
+    "4569": "pg_read_server_files",
+    "4570": "pg_write_server_files",
+    "4571": "pg_execute_server_program",
+    "6171": "pg_database_owner",
+    "6181": "pg_read_all_data",
+    "6182": "pg_write_all_data",
+    "6304": "pg_create_subscription",
+    "6337": "pg_maintain",
+    "16384": "postgres",
+    "16385": "pgbouncer",
+    "16427": "supabase_replication_admin",
+    "16428": "supabase_etl_admin",
+    "16430": "supabase_read_only_user",
+    "16480": "anon",
+    "16481": "authenticated",
+    "16482": "service_role",
+    "16483": "authenticator",
+    "16541": "supabase_auth_admin",
+    "16543": "supabase_storage_admin",
+    "16551": "dashboard_user",
+    "17264": "supabase_realtime_admin",
+    "45380": "supabase_privileged_role",
+    "50490": "cli_login_postgres",
+    "53847": "supabase_functions_admin"
+  },
+  "functions": [
+    {
+      "args": [
+        "p_user_ids"
+      ],
+      "hash": "1f6525be041c931943e2c78cc926f18c",
+      "name": "get_freightiq_report_reputation_v1",
+      "signature": "public.get_freightiq_report_reputation_v1(uuid[])"
+    },
+    {
+      "args": [
+        "p_stop_ids"
+      ],
+      "hash": "94424de09ff896d3358ddaedd6cb28a9",
+      "name": "get_freightiq_route_stops_v1",
+      "signature": "public.get_freightiq_route_stops_v1(text[])"
+    },
+    {
+      "args": [
+        "p_stop_ids"
+      ],
+      "hash": "07c2fa2a23d23abb5e1c3ad4b42bc4bb",
+      "name": "get_freightiq_stop_stats_v1",
+      "signature": "public.get_freightiq_stop_stats_v1(text[])"
+    },
+    {
+      "args": [
+        "p_stop_ids"
+      ],
+      "hash": "7adeca1b74df19d9472b18522c05f617",
+      "name": "get_freightiq_stop_summaries_v1",
+      "signature": "public.get_freightiq_stop_summaries_v1(text[])"
+    },
+    {
+      "args": [
+        "p_stop_id"
+      ],
+      "hash": "78d00c36d6462e899bfe2c6331cb1ed9",
+      "name": "get_freightiq_stop_v1",
+      "signature": "public.get_freightiq_stop_v1(text)"
+    },
+    {
+      "args": [
+        "p_area_slug",
+        "p_include_history"
+      ],
+      "hash": "a1a647d126505009af66ef1385c82e65",
+      "name": "get_operations_board",
+      "signature": "public.get_operations_board(text,boolean)"
+    },
+    {
+      "args": [
+        "p_city",
+        "p_state_code",
+        "p_country_code",
+        "p_result_limit",
+        "p_result_offset"
+      ],
+      "hash": "0f004bff880f902f91143febdc995e0c",
+      "name": "list_freightiq_city_stops",
+      "signature": "public.list_freightiq_city_stops(text,text,text,integer,integer)"
+    },
+    {
+      "args": [
+        "p_city",
+        "p_state_code",
+        "p_country_code",
+        "p_result_limit",
+        "p_result_offset"
+      ],
+      "hash": "7a4d6cb4b8b803ee36fa80c366c68cd2",
+      "name": "list_freightiq_city_stops_v1",
+      "signature": "public.list_freightiq_city_stops_v1(text,text,text,integer,integer)"
+    },
+    {
+      "args": [
+        "p_city",
+        "p_state_code",
+        "p_country_code",
+        "p_result_limit",
+        "p_cursor"
+      ],
+      "hash": "f8e481e18e456fa1b3224d6eb3046e5e",
+      "name": "list_freightiq_city_stops_v2",
+      "signature": "public.list_freightiq_city_stops_v2(text,text,text,integer,jsonb)"
+    },
+    {
+      "args": [
+        "p_contributor_id",
+        "p_result_limit",
+        "p_result_offset"
+      ],
+      "hash": "7bb5c5a8476219e80a8252f523071037",
+      "name": "list_freightiq_driver_stops",
+      "signature": "public.list_freightiq_driver_stops(uuid,integer,integer)"
+    },
+    {
+      "args": [
+        "p_contributor_id",
+        "p_result_limit",
+        "p_result_offset"
+      ],
+      "hash": "caac860f000dc6168900f09281a142ab",
+      "name": "list_freightiq_driver_stops_v1",
+      "signature": "public.list_freightiq_driver_stops_v1(uuid,integer,integer)"
+    },
+    {
+      "args": [
+        "p_contributor_id",
+        "p_result_limit",
+        "p_cursor"
+      ],
+      "hash": "0adc079c1d96091c5e87ca1aa4feb76c",
+      "name": "list_freightiq_driver_stops_v2",
+      "signature": "public.list_freightiq_driver_stops_v2(uuid,integer,jsonb)"
+    },
+    {
+      "args": [
+        "p_stop_id",
+        "p_result_limit"
+      ],
+      "hash": "08a120229585e39b5b902e9e95b1094d",
+      "name": "list_freightiq_stop_reports_v1",
+      "signature": "public.list_freightiq_stop_reports_v1(text,integer)"
+    },
+    {
+      "args": [
+        "p_south_lat",
+        "p_west_lng",
+        "p_north_lat",
+        "p_east_lng",
+        "p_result_limit"
+      ],
+      "hash": "9d8834f984eb9e38adf7ae193f9fa574",
+      "name": "list_freightiq_stops_in_bounds_v1",
+      "signature": "public.list_freightiq_stops_in_bounds_v1(double precision,double precision,double precision,double precision,integer)"
+    },
+    {
+      "args": [
+        "p_name",
+        "p_address",
+        "p_lat",
+        "p_lng",
+        "p_radius_meters"
+      ],
+      "hash": "7654c3a45f4ce11f00cbf48f441fb3fb",
+      "name": "match_freightiq_nearby_stop_v1",
+      "signature": "public.match_freightiq_nearby_stop_v1(text,text,double precision,double precision,double precision)"
+    },
+    {
+      "args": [
+        "p_name",
+        "p_address",
+        "p_lat",
+        "p_lng",
+        "p_radius_meters"
+      ],
+      "hash": "96cfe96cb1552e9c162a50a4a4449364",
+      "name": "match_nearby_mfi_stop",
+      "signature": "public.match_nearby_mfi_stop(text,text,double precision,double precision,double precision)"
+    },
+    {
+      "args": [
+        "p_search_text",
+        "p_result_limit"
+      ],
+      "hash": "f025ef6459043e9773211c384e4b856f",
+      "name": "search_freightiq_cities",
+      "signature": "public.search_freightiq_cities(text,integer)"
+    },
+    {
+      "args": [
+        "p_search_text",
+        "p_result_limit"
+      ],
+      "hash": "620be5322c19f07c6debfda6426b4d74",
+      "name": "search_freightiq_cities_v1",
+      "signature": "public.search_freightiq_cities_v1(text,integer)"
+    },
+    {
+      "args": [
+        "p_search_text",
+        "p_result_limit"
+      ],
+      "hash": "52aa11f813735ee8e6680bb3158c9f47",
+      "name": "search_freightiq_drivers",
+      "signature": "public.search_freightiq_drivers(text,integer)"
+    },
+    {
+      "args": [
+        "p_search_text",
+        "p_result_limit"
+      ],
+      "hash": "7adb04144736c08b4cb8010b33809fdd",
+      "name": "search_freightiq_drivers_v1",
+      "signature": "public.search_freightiq_drivers_v1(text,integer)"
+    },
+    {
+      "args": [
+        "p_search_text",
+        "p_center_lat",
+        "p_center_lng",
+        "p_radius_meters",
+        "p_result_limit"
+      ],
+      "hash": "a87f8a3fe44cc466e8aaeb486ccd5723",
+      "name": "search_freightiq_stops_v1",
+      "signature": "public.search_freightiq_stops_v1(text,double precision,double precision,double precision,integer)"
+    },
+    {
+      "args": [
+        "p_search_text",
+        "p_center_lat",
+        "p_center_lng",
+        "p_radius_meters",
+        "p_result_limit"
+      ],
+      "hash": "9d511940393e354f2ceb2bff0f39a55f",
+      "name": "search_mfi_stops",
+      "signature": "public.search_mfi_stops(text,double precision,double precision,double precision,integer)"
+    }
+  ]
+}

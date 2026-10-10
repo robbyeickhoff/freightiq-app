@@ -1,0 +1,34 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select no_plan();
+select ok(not has_function_privilege('anon','public.get_security_delivery_health_v1()','execute'),'anonymous cannot inspect internal health');
+select ok(not has_function_privilege('authenticated','public.get_security_delivery_health_v1()','execute'),'driver cannot inspect internal health');
+select ok(has_function_privilege('service_role','public.get_security_delivery_health_v1()','execute'),'dedicated server health client allowed');
+select is(public.get_security_delivery_health_v1()->>'healthy','false','disabled service is not falsely healthy');
+insert into auth.users(id,email,email_confirmed_at) values('99400000-0000-4000-8000-000000000001','health-moderator@example.invalid',now());
+insert into private.moderation_admins(user_id) values('99400000-0000-4000-8000-000000000001');
+insert into private.security_alert_recipients(user_id) values('99400000-0000-4000-8000-000000000001');
+update private.security_response_config set detection_enabled=true,mail_enabled=true,min_denied=20,min_disclosed=100,min_minutes=3,last_worker_at=clock_timestamp(),last_record_failure_at=null;
+select is(public.get_security_delivery_health_v1()->>'healthy','true','configured fresh service is healthy');
+update private.security_response_config set last_worker_at=clock_timestamp()-interval '6 minutes';
+select is(public.get_security_delivery_health_v1()->>'healthy','false','stopped worker visible independently');
+update private.security_response_config set last_worker_at=clock_timestamp(),last_record_failure_at=clock_timestamp();
+select is(public.get_security_delivery_health_v1()->>'healthy','false','recording failure requires operator acknowledgement');
+update private.security_response_config set last_record_failure_at=null;
+insert into private.security_read_cases(id,actor_key,denied,disclosed,active_minutes)
+ values('99400000-0000-4000-8000-000000000002',private.security_actor('99400000-0000-4000-8000-000000000001'),1,1,3);
+insert into private.security_alert_outbox(case_id,recipient_id,recipient,created_at)
+ values('99400000-0000-4000-8000-000000000002','99400000-0000-4000-8000-000000000001','health-moderator@example.invalid',clock_timestamp()-interval '6 minutes');
+select is(public.get_security_delivery_health_v1()->>'healthy','false','old queued mail visible even with fresh worker');
+update private.security_alert_outbox set state='held';
+select is(public.get_security_delivery_health_v1()->>'healthy','false','held mail visible');
+update private.security_alert_outbox set state='accepted';
+select is(public.get_security_delivery_health_v1()->>'healthy','true','provider accepted queue no longer stalled, not inbox proof');
+insert into private.security_read_minutes(actor_key,minute) values(private.security_actor('99400000-0000-4000-8000-000000000001'),clock_timestamp()-interval '121 minutes');
+select is(public.get_security_delivery_health_v1()->>'healthy','false','stopped retention cleanup visible');
+select private.purge_security_response();
+select is(public.get_security_delivery_health_v1()->>'healthy','true','cleanup recovers health');
+delete from private.security_alert_recipients;
+select is(public.get_security_delivery_health_v1()->>'healthy','false','missing recipient cannot be healthy');
+select * from finish();
+rollback;

@@ -45,6 +45,32 @@ preparation for expanding the tester base.
 
 # Active Work
 
+## October 4 Release Fixes
+
+- [x] Accept the local Create Stop name-prefill correction on iPhone and Pixel (October 4).
+      Address blank/required-name and business-name POI cases passed; iPhone creation saved.
+- [x] Complete focused DZ gesture/save/reopen checks with the existing local freeze correction.
+      iPhone new stop/DZ and both-phone relocation/DZ checks passed October 4.
+- [x] Approve simplified Move Stop: update address/stop pin, place or clear DZ, retain attached Intel
+      and reports unchanged; creator/existing trusted-editor authority (Rob, October 4 revision).
+- [ ] Implement and verify [Move Stop Location V1](build-specs/FreightIQMoveStopLocationV1BuildSpec.md)
+      within that simplified scope, without report history or Route Builder redesign.
+      Local implementation, automated checks and focused iPhone/Pixel relocation acceptance passed
+      October 4. Final release diff approval remains pending; Pixel route-specific display/order was
+      not separately observed. Local database only; production unchanged.
+- [ ] Accept the October 4 native startup patch and preview/wait wording on physical phones.
+      Both-phone reload/cold-open and offline preview error/recovery passed October 4. Supported
+      deep-link and long-wait minute wording checks remain; automated regression tests pass.
+      Auth transport patch omits duplicate expected-network logs only; errors still propagate.
+- [x] Approve and install the 17-file additive bot-defense production preparation (October 4).
+      Verified current backup/schema/history; existing access preserved, guards/detection/mail off.
+      Exact assigned versions and hashes in bot-rollout-production-receipt.json; relocation excluded.
+- [x] Reconcile original migration filenames with Supabase-assigned deployment versions before any
+      CLI push. Completed October 10 with all 19 receipt hashes preserved; linked history aligns and
+      dry run lists only Recoverable Stop Lifecycle V1 plus the later lint-cleanup migration.
+- The major Route Builder redesign remains deferred by Rob; only destination synchronization belongs
+  to relocation. Bot-defense production and release gates remain separate.
+
 ## Operations Driving Alerts
 
 - [x] Approve the bounded [Operations Driving Alerts V1 specification](build-specs/FreightIQOperationsNearbyAlertsV1BuildSpec.md).
@@ -274,9 +300,43 @@ Strengthen the systems, infrastructure, and safeguards that quietly build user c
       acceptance passed October 10, including the corrected Today’s Route removal behavior. Scoped
       commit/push, native production builds and distribution remain separately gated.
 
+#### Small-Screen Operations Usability
+
+- [x] Improve and accept Operations on small screens: upper controls scroll, spacing is reduced,
+      Driving Alerts remains readable and reachable, and larger-text filter controls remain usable.
+      Focused iPhone/Pixel layout acceptance passed October 7; installed iOS51/Android32 Operations
+      smoke checks and Product Owner candidate acceptance completed October 9.
+
+#### Offline Contribution Reliability
+
+- [ ] After Bot Scrape Protection V1, design and build coordinated offline capture/upload for
+      Operations posts, new stops and Intel updates. Preserve drafts, distinguish local from uploaded
+      state, prevent duplicate retries, respect Operations expiry, and handle Intel attached to a
+      not-yet-uploaded stop. The existing Operations Offline Outbox draft is input, not an approved
+      three-flow implementation contract; review the combined specification before implementation.
+
 #### Security Audit
 
 - [x] Harden and verify production stop-write Row Level Security, constraints, and grants.
+- [x] Review and approve the Bot Scrape Protection V1 behavior contract and complete its read-only
+      production verification gate.
+- [ ] Implement and verify bounded authenticated stop-data reads, removal of broad anonymous
+      enumeration, shadow abuse monitoring, and driver-safe progressive enforcement without
+      limiting stop creation.
+  - [x] Build and locally verify the bounded authenticated read foundation and migrate current
+        mobile/website read consumers.
+  - [x] Replace current mobile stop/report/vote mutation paths with locally verified, bounded
+        server operations that continue working after simulated client table-grant closure.
+  - [ ] Stage the actual legacy-grant closure behind compatible installed-build acceptance and an
+        approved older-client rollout/rollback plan.
+  - [x] Add and locally verify the privacy-approved, 30-day, alert-only shadow telemetry candidate;
+        no production numerical enforcement threshold, throttle, or block is enabled.
+  - [x] Complete October 2–3 targeted iPhone/Pixel Operations throttle, contribution, offline and
+        blocked-author visibility checks using local fictional fixtures; see the build spec for
+        exact coverage and exclusions. This does not complete release gates.
+  - [x] Complete targeted final-candidate iPhone/Pixel stop-library contribution/throttle and
+        saved-unread-alert removal while a Driving Alerts session remains active (October 3).
+  - [ ] Finish operator alerts/response tools, hosted parity and production calibration before cutover.
 - [ ] Complete the broader Supabase Row Level Security review outside the accepted stop-write scope.
 - [x] Restrict shared stop updates to stop owners and approved trusted editors.
 - [x] Restrict anonymous business contact and check-in field access.

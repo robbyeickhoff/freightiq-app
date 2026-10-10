@@ -1,0 +1,80 @@
+{
+  "projectRef": "finjqunyuyfxiesumuxk",
+  "migration": "20261004190247_move_stop_location.sql",
+  "sha256": "8c4e6b0117a934f74a6f855093a5faeceb142dcdd1b99911561e09d7e69b85c5",
+  "remoteVersion": "20261005140608",
+  "before": {
+    "preserve": {
+      "tables": "b56bcf59471d70897e125316f0ecb2ed",
+      "columns": "486ef8f085f94e4d8598752c35a2063d",
+      "library": "9d2007191e60633313e28a146a566ba2",
+      "response": "59fb97554ec7bf4d8acb9e1333c37fb3",
+      "operations": "9705043cdc75527a819d3f462b82d74f",
+      "old_functions": "690efdffafc5bde59c1ec4151e60ee8c",
+      "other_triggers": "b456c1a69ffb7a60257b62172f1c1fa3"
+    },
+    "triggers": [
+      {
+        "name": "capture_founding_driver_delivery_zone_completion",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER capture_founding_driver_delivery_zone_completion AFTER UPDATE OF entrance_lat, entrance_lng ON public.mfi_stops FOR EACH ROW EXECUTE FUNCTION private.capture_founding_driver_delivery_zone_completion()"
+      },
+      {
+        "name": "capture_referral_delivery_zone_completion",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER capture_referral_delivery_zone_completion AFTER UPDATE OF entrance_lat, entrance_lng ON public.mfi_stops FOR EACH ROW EXECUTE FUNCTION private.capture_referral_delivery_zone_completion()"
+      }
+    ],
+    "functions": [],
+    "dependencies": {
+      "is_trusted_stop_editor": "574656fcc89bf04c1c25d91e1f770bb7",
+      "is_contributor_restricted": "149e38477b54d85b00b835d05681e063",
+      "capture_referral_delivery_zone_completion": "b1b8fde0b723ea6e4d62246ae4c405dd",
+      "capture_founding_driver_delivery_zone_completion": "ac02f201be8f6cc78c8508ed6dc2123e"
+    }
+  },
+  "after": {
+    "preserve": {
+      "tables": "b56bcf59471d70897e125316f0ecb2ed",
+      "columns": "486ef8f085f94e4d8598752c35a2063d",
+      "library": "9d2007191e60633313e28a146a566ba2",
+      "response": "59fb97554ec7bf4d8acb9e1333c37fb3",
+      "operations": "9705043cdc75527a819d3f462b82d74f",
+      "old_functions": "690efdffafc5bde59c1ec4151e60ee8c",
+      "other_triggers": "b456c1a69ffb7a60257b62172f1c1fa3"
+    },
+    "triggers": [
+      {
+        "name": "capture_founding_driver_delivery_zone_completion",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER capture_founding_driver_delivery_zone_completion AFTER UPDATE OF entrance_lat, entrance_lng ON public.mfi_stops FOR EACH ROW WHEN (((NOT (old.lat IS DISTINCT FROM new.lat)) AND (NOT (old.lng IS DISTINCT FROM new.lng)))) EXECUTE FUNCTION private.capture_founding_driver_delivery_zone_completion()"
+      },
+      {
+        "name": "capture_referral_delivery_zone_completion",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER capture_referral_delivery_zone_completion AFTER UPDATE OF entrance_lat, entrance_lng ON public.mfi_stops FOR EACH ROW WHEN (((NOT (old.lat IS DISTINCT FROM new.lat)) AND (NOT (old.lng IS DISTINCT FROM new.lng)))) EXECUTE FUNCTION private.capture_referral_delivery_zone_completion()"
+      }
+    ],
+    "functions": [
+      "can_move_freightiq_stop",
+      "can_move_freightiq_stop_v1",
+      "move_freightiq_stop",
+      "move_freightiq_stop_v1"
+    ],
+    "dependencies": {
+      "is_trusted_stop_editor": "574656fcc89bf04c1c25d91e1f770bb7",
+      "is_contributor_restricted": "149e38477b54d85b00b835d05681e063",
+      "capture_referral_delivery_zone_completion": "b1b8fde0b723ea6e4d62246ae4c405dd",
+      "capture_founding_driver_delivery_zone_completion": "ac02f201be8f6cc78c8508ed6dc2123e"
+    }
+  },
+  "verification": {
+    "functionsMatchLocal": 4,
+    "anonExecute": false,
+    "authenticatedExecute": true,
+    "serviceRoleExecute": false,
+    "healthHealthy": true,
+    "advisorFindingsUnchanged": true,
+    "phoneAcceptance": false
+  }
+}

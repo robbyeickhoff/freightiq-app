@@ -1,5 +1,51 @@
 # FreightIQ Bot Scrape Protection V1 Build Specification
 
+## October 6 — final approved production read-access closure
+
+Release Mode: executed the reviewed final closure after Rob explicitly chose immediate rollout,
+accepted older Android clients requiring an update, and confirmed the update email sent.
+Rob reports all current Apple users on50; installed iPhone/Pixel acceptance already recorded.
+Main project finjqunyuyfxiesumuxk only. Hosted migration20261006120850 corresponds to local
+20261006120822_close_reviewed_legacy_shared_read_access.sql. No blanket migration push.
+
+Captured live ACLs and44-grant rollback before mutation. Reviewed closure block matches the local
+rehearsal source exactly; added drift/enabled-guard checks, bounded timeouts and effective-denial
+assertions. Exactly44 intended grants removed from22 functions/five tables including column SELECT.
+All188 remaining captured grants,22 function definitions, policies and guard/security configuration
+fingerprints unchanged. No quota, retention, detection, recipient, service-role or data-policy change.
+
+Actual hosted HTTP verification:78 probes pass.56 anonymous/authenticated legacy function/table/embed
+requests denied with permission errors. All15 protected stop operation types and Operations succeed;
+anonymous protected reads denied. After other bounded reads, two50-row batches allowed and the next
+batch refused HTTP429/FREIGHTIQ_READ_THROTTLED with data:null; previously read detail still succeeds.
+This checks the existing policy, not a new threshold or generalized concurrency performance claim.
+Disposable confirmed example.invalid login signed out/deleted; account, library/Operations short
+counters, seen tokens and security case absence verified. No shared content written by HTTP checks.
+
+Separate authenticated-role transaction verified create/edit/DZ/Intel/owner editor, Operations
+create/edit/resolve, Move Stop with report preservation, moderator queue/case reads and synthetic
+case pause/restore plus audit. Every synthetic write rolled back; no real user paused or stop moved.
+Fixture absence rechecked independently. Delivery health remains fully healthy and configuration
+hashes still match after tests. No new inbox email test; prior confirmed delivery remains evidence.
+Website homepage HTTP200; no new signed-in browser acceptance claimed.
+
+Security advisor: no new findings. Existing private-table no-policy notices12 and intentional
+authenticated SECURITY DEFINER notices19 remain (down from35 after closure). Existing public
+rls_auto_enable notice and disabled leaked-password protection warning are unchanged and outside
+this mutation. References:
+- https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy
+- https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable
+- https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable
+- https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+
+Evidence: scripts/fixtures/hosted-cutover-20261006-{acl-before.json,acl-after.json,rollback.sql,
+receipt.json,write-verification.sql}; scripts/verify-hosted-guarded-cutover.mjs.
+Rollback reopens legacy access and must not be executed silently. No commit/push or Routing Lab,
+website/native-build changes. Existing dirty work preserved. Protections now close the tested
+legacy bypasses and enforce account limits; not proof against every scraper/multi-account attack.
+Remaining acceptance: brief post-cutoff installed-app search/detail and Operations refresh.
+Deferred Operations small-screen layout and separate backend-source publishing remain separate work.
+
 ## October 5 mobile release source review
 
 Move Stop's separate backend installation is complete as recorded in CurrentBuild and its own spec;
