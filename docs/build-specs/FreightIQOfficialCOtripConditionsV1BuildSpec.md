@@ -1,12 +1,11 @@
 # FreightIQ Official COtrip Conditions V1 — Focused Build Specification
 
-> **Status: Draft for Product Owner review — implementation not approved**
+> **Status: Product Owner approved — bounded local implementation in progress**
 >
 > This document defines a bounded first integration of official Colorado Department of
-> Transportation traveler information into the existing FreightIQ Operations Board. Approval to
-> create this specification does not authorize implementation. Local code, database migrations,
-> API-key storage, scheduled jobs, production changes, builds, distribution, commit, and push remain
-> separate approval gates.
+> Transportation traveler information into the existing FreightIQ Operations Board. Approval now
+> authorizes Gates 2–5 as a bounded local implementation. API-key storage, production migration,
+> deployment, scheduled jobs, builds, distribution, commit, and push remain separate approval gates.
 
 ## Document Control
 
@@ -18,7 +17,7 @@
 - **Canonical branch:** `clean-main`
 - **Repository path:** `/Users/robbyeickhoff/mfi`
 - **Related contract:** `docs/build-specs/FreightIQOperationsBoardV1BuildSpec.md`
-- **Specification status:** Draft for Product Owner review
+- **Specification status:** Approved for bounded local implementation
 - **Last verified:** 2026-10-14
 
 ## 1. Objective

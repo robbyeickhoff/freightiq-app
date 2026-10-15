@@ -45,6 +45,17 @@ preparation for expanding the tester base.
 
 # Active Work
 
+## Official COtrip Conditions V1
+
+- [x] Approve the focused incidents and planned-events build specification.
+- [x] Complete and review the bounded local database, ingestion, guarded-read, Operations card,
+      source-filter, map-marker, feed-health, disclaimer, and automated verification work.
+- [x] Pass the focused physical-iPhone check for official cards, source filtering, disclaimer, and
+      supplied-point map markers against sanitized local fixtures (October 15).
+- [x] Complete the corresponding focused Pixel check (October 15).
+- [ ] Separately approve any production secret, migration, deployment, schedule, device build,
+      commit, or push.
+
 ## October 4 Release Fixes
 
 - [x] Accept the local Create Stop name-prefill correction on iPhone and Pixel (October 4).

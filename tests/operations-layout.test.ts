@@ -37,7 +37,7 @@ test("Operations uses one persistent virtualized list with controls inside its s
   // The list is a direct child of the screen, not inside a loading conditional or another scroller.
   assert.ok(ts.isJsxElement(lists[0].parent));
   assert.doesNotMatch(text, /stickyHeaderIndices/);
-  // Scrollers are allowed only inside the independent filter modals, never around the feed.
+  // Scrollers are allowed only inside independent filter/legal modals, never around the feed.
   const scrollers: ts.JsxElement[] = [];
   function findScrollers(node: ts.Node) {
     if (ts.isJsxElement(node) && node.openingElement.tagName.getText(source) === "ScrollView") {
@@ -46,7 +46,7 @@ test("Operations uses one persistent virtualized list with controls inside its s
     ts.forEachChild(node, findScrollers);
   }
   findScrollers(source);
-  assert.equal(scrollers.length, 2);
+  assert.equal(scrollers.length, 3);
   for (const scroller of scrollers) {
     let parent: ts.Node | undefined = scroller.parent;
     while (
@@ -66,6 +66,8 @@ test("Large text controls wrap and remeasure without remounting the feed or aler
   assert.match(text, /largeText && styles.stackedOption/);
   assert.match(text, /largeText && styles.largeTextTitle/);
   assert.match(text, /maxHeight: "85%"/);
+  assert.match(text, /Read the full required CDOT disclaimer/);
+  assert.match(text, /legalDisclaimerText: \{ fontSize: 16, lineHeight: 25 \}/);
   assert.doesNotMatch(
     text,
     /numberOfLines=\{1\}|allowFontScaling=\{false\}|maxFontSizeMultiplier=/,

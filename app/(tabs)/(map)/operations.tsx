@@ -42,6 +42,13 @@ import {
 import { supabase } from "@/utils/supabase";
 import { readActiveOperations } from "@/utils/operations-reads";
 import {
+  COTRIP_DISCLAIMER,
+  officialDetailText,
+  readOfficialCOtripConditions,
+  type COtripFeedHealth,
+  type OfficialCOtripCondition,
+} from "@/utils/cotrip-conditions";
+import {
   markAllDrivingAlertsRead,
   readDrivingAlerts,
   refreshDrivingSnapshot,
@@ -80,6 +87,12 @@ export default function OperationsBoardScreen() {
   const [area, setArea] = useState(params.area ?? "");
   const [areaPickerOpen, setAreaPickerOpen] = useState(false);
   const [updates, setUpdates] = useState<OperationsUpdate[]>([]);
+  const [official, setOfficial] = useState<OfficialCOtripCondition[]>([]);
+  const [officialHealth, setOfficialHealth] = useState<COtripFeedHealth>({});
+  const [officialLoadError, setOfficialLoadError] = useState(false);
+  const [source, setSource] = useState<"all" | "official" | "drivers">("all");
+  const [sourceInfoOpen, setSourceInfoOpen] = useState(false);
+  const [fullDisclaimerOpen, setFullDisclaimerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [canPost, setCanPost] = useState(false);
@@ -91,10 +104,20 @@ export default function OperationsBoardScreen() {
   const [loadErrorMessage, setLoadErrorMessage] = useState("Couldn’t load current conditions.");
   const [unreadAlerts, setUnreadAlerts] = useState<UnreadDrivingAlert[]>([]);
   const isOperationsTab = pathname === "/operations";
-  const visibleUpdates = useMemo(
-    () => filterOperationsByCategory(updates, category),
-    [category, updates],
-  );
+  const visibleUpdates = useMemo(() => {
+    const driverRows = source === "official" ? [] : filterOperationsByCategory(updates, category);
+    const officialRows =
+      source === "drivers" || history
+        ? []
+        : official.filter((item) => !category || item.category === category);
+    return [...driverRows, ...officialRows].sort((a, b) => {
+      const aTime =
+        "source" in a ? a.source_updated_at || a.starts_at || a.last_seen_at : a.created_at;
+      const bTime =
+        "source" in b ? b.source_updated_at || b.starts_at || b.last_seen_at : b.created_at;
+      return Date.parse(bTime) - Date.parse(aTime);
+    });
+  }, [category, history, official, source, updates]);
   const selectedCategoryLabel = category ? categoryLabel(category) : "All Conditions";
   const selectedAreaLabel =
     OPERATIONS_AREAS.find((item) => item.slug === area)?.name ?? "All Areas";
@@ -125,12 +148,15 @@ export default function OperationsBoardScreen() {
       const isCurrent = () => mayPublish() && epoch === operationsReadEpoch();
       if (!userId) return;
       if (!silent) setLoading(true);
-      const [board, access, ownHistory] = await Promise.all([
+      const [board, officialBoard, access, ownHistory] = await Promise.all([
         history
           ? supabase.rpc("get_owned_operations_history_v1", {
               p_area_slug: area || null,
             })
           : readActiveOperations(area || null, isCurrent),
+        history
+          ? Promise.resolve({ data: [], health: {}, error: null })
+          : readOfficialCOtripConditions(area || null, source),
         supabase.rpc("can_post_operations_update"),
         supabase.rpc("get_owned_operations_history_v1", {
           p_area_slug: null,
@@ -160,6 +186,17 @@ export default function OperationsBoardScreen() {
         await writeOperationsCache(userId, area, history, rows);
         void refreshDrivingSnapshot(userId).catch(() => undefined);
       }
+      if (!history) {
+        if (!officialBoard.error && officialBoard.data) {
+          setOfficial(officialBoard.data);
+          setOfficialHealth(officialBoard.health);
+          setOfficialLoadError(false);
+        } else {
+          setOfficial([]);
+          setOfficialHealth({});
+          setOfficialLoadError(true);
+        }
+      }
       if (!isCurrent()) return;
       setCanPost(access.data === true);
       if (!ownHistory.error) {
@@ -176,7 +213,7 @@ export default function OperationsBoardScreen() {
       setLoading(false);
       setRefreshing(false);
     },
-    [area, history, userId],
+    [area, history, source, userId],
   );
   useFocusEffect(
     useCallback(() => {
@@ -464,6 +501,152 @@ export default function OperationsBoardScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+      {!history ? (
+        <View style={styles.conditionControl}>
+          <View style={styles.areaHeader}>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>SOURCE</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="About Official COtrip"
+              onPress={() => {
+                setFullDisclaimerOpen(false);
+                setSourceInfoOpen(true);
+              }}
+            >
+              <Text style={[styles.mapLink, { color: colors.accentStrong }]}>
+                About Official COtrip ›
+              </Text>
+            </Pressable>
+          </View>
+          <View style={[styles.feedControl, { backgroundColor: colors.surface }]}>
+            {(
+              [
+                ["all", "All"],
+                ["official", "Official COtrip"],
+                ["drivers", "Driver Updates"],
+              ] as const
+            ).map(([value, label]) => (
+              <Pressable
+                key={value}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: source === value }}
+                onPress={() => setSource(value)}
+                style={[
+                  styles.feedOption,
+                  source === value ? styles.feedOptionSelected : null,
+                  { backgroundColor: source === value ? colors.surfaceElevated : "transparent" },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: source === value ? colors.textPrimary : colors.textSecondary,
+                    fontWeight: "700",
+                  }}
+                >
+                  {label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      ) : null}
+      <Modal
+        animationType="fade"
+        onRequestClose={() => {
+          if (fullDisclaimerOpen) setFullDisclaimerOpen(false);
+          else setSourceInfoOpen(false);
+        }}
+        transparent
+        visible={sourceInfoOpen}
+      >
+        <Pressable
+          style={styles.pickerBackdrop}
+          onPress={() => {
+            setFullDisclaimerOpen(false);
+            setSourceInfoOpen(false);
+          }}
+        >
+          <Pressable
+            accessibilityRole="summary"
+            onPress={(event) => event.stopPropagation()}
+            style={[
+              styles.pickerSheet,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            {fullDisclaimerOpen ? (
+              <>
+                <View style={styles.sourceInfoHeader}>
+                  <AppButton
+                    size="compact"
+                    variant="tertiary"
+                    onPress={() => setFullDisclaimerOpen(false)}
+                  >
+                    ‹ Back
+                  </AppButton>
+                  <Text
+                    style={[
+                      styles.pickerTitle,
+                      styles.sourceInfoHeaderTitle,
+                      { color: colors.textPrimary },
+                    ]}
+                  >
+                    Required CDOT Disclaimer
+                  </Text>
+                </View>
+                <ScrollView
+                  style={styles.legalDisclaimerScroll}
+                  contentContainerStyle={styles.legalDisclaimerContent}
+                >
+                  <Text style={[styles.legalDisclaimerText, { color: colors.textSecondary }]}>
+                    {COTRIP_DISCLAIMER}
+                  </Text>
+                </ScrollView>
+                <View style={styles.sourceInfoFooter}>
+                  <AppButton
+                    size="compact"
+                    variant="secondary"
+                    onPress={() => {
+                      setFullDisclaimerOpen(false);
+                      setSourceInfoOpen(false);
+                    }}
+                  >
+                    Close
+                  </AppButton>
+                </View>
+              </>
+            ) : (
+              <View style={styles.sourceInfoContent}>
+                <Text style={[styles.pickerTitle, { color: colors.textPrimary }]}>
+                  About Official COtrip
+                </Text>
+                <Text style={[styles.sourceInfoLead, { color: colors.textPrimary }]}>
+                  This information applies only to conditions labeled “Official COtrip.” Driver
+                  Updates are reported separately by FreightIQ drivers.
+                </Text>
+                <Text style={[styles.sourceInfoBody, { color: colors.textSecondary }]}>
+                  Official conditions may be delayed or incomplete. Follow posted signs, current
+                  closures, and law-enforcement directions.
+                </Text>
+                <AppButton
+                  size="compact"
+                  variant="secondary"
+                  onPress={() => setFullDisclaimerOpen(true)}
+                >
+                  Read the full required CDOT disclaimer ›
+                </AppButton>
+                <AppButton
+                  size="compact"
+                  variant="tertiary"
+                  onPress={() => setSourceInfoOpen(false)}
+                >
+                  Close
+                </AppButton>
+              </View>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
       <View style={styles.actions}>
         {canPost ? (
           <AppButton
@@ -542,6 +725,20 @@ export default function OperationsBoardScreen() {
         <Text style={[styles.offline, { color: colors.warning }]}>
           Saved copy · updated {new Date(offlineAt).toLocaleTimeString()}
         </Text>
+      ) : null}
+      {!history && Object.values(officialHealth).some((item) => item.status !== "healthy") ? (
+        <View
+          accessibilityRole="alert"
+          style={[
+            styles.errorBanner,
+            { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.errorText, { color: colors.textPrimary }]}>
+            Official COtrip data is delayed or temporarily unavailable. Driver updates are still
+            current.
+          </Text>
+        </View>
       ) : null}
       {loadError ? (
         <View
@@ -655,101 +852,167 @@ export default function OperationsBoardScreen() {
               <Text style={[styles.emptyBody, { color: colors.textSecondary }]}>
                 {history
                   ? "You haven’t posted an update in the last seven days."
-                  : "No active driver updates have been reported for this area."}
+                  : source === "official" && officialLoadError
+                    ? "Official COtrip data could not be loaded. Pull down to try again."
+                    : "No active driver updates have been reported for this area."}
               </Text>
             </AppCard>
           )
         }
-        renderItem={({ item }) => (
-          <AppCard contentStyle={styles.card}>
-            <View style={styles.meta}>
-              <Text style={[styles.category, { color: colors.accentStrong }]}>
-                {categoryLabel(item.category)}
+        renderItem={({ item }) =>
+          "source" in item ? (
+            <AppCard contentStyle={styles.card}>
+              <View style={styles.meta}>
+                <Text style={[styles.category, { color: colors.accentStrong }]}>
+                  Official COtrip
+                </Text>
+                <Text style={{ color: colors.textSecondary }}>{categoryLabel(item.category)}</Text>
+              </View>
+              {item.route_name ? (
+                <Text style={[styles.category, { color: colors.textPrimary }]}>
+                  {item.route_name}
+                </Text>
+              ) : null}
+              <Text style={[styles.message, { color: colors.textPrimary }]}>{item.message}</Text>
+              {item.direction ? (
+                <Text style={{ color: colors.textSecondary }}>Direction: {item.direction}</Text>
+              ) : null}
+              {item.starts_at ? (
+                <Text style={{ color: colors.textSecondary }}>
+                  Starts {new Date(item.starts_at).toLocaleString()}
+                </Text>
+              ) : null}
+              {item.clears_at ? (
+                <Text style={{ color: colors.textSecondary }}>
+                  Expected clear {new Date(item.clears_at).toLocaleString()}
+                </Text>
+              ) : null}
+              {item.severity ? (
+                <Text style={{ color: colors.textSecondary }}>Severity: {item.severity}</Text>
+              ) : null}
+              {officialDetailText(item.lane_impacts) ? (
+                <Text style={{ color: colors.textSecondary }}>
+                  Lane impacts: {officialDetailText(item.lane_impacts)}
+                </Text>
+              ) : null}
+              {officialDetailText(item.restrictions) ? (
+                <Text style={{ color: colors.textSecondary }}>
+                  Restrictions: {officialDetailText(item.restrictions)}
+                </Text>
+              ) : null}
+              {item.feed_type === "planned_events" && officialDetailText(item.schedule) ? (
+                <Text style={{ color: colors.textSecondary }}>
+                  Schedule: {officialDetailText(item.schedule)}
+                </Text>
+              ) : null}
+              <Text style={[styles.byline, { color: colors.textSecondary }]}>
+                Source updated{" "}
+                {new Date(item.source_updated_at || item.last_seen_at).toLocaleString()}
               </Text>
-              <Text style={{ color: colors.textSecondary }}>{item.area_name}</Text>
-            </View>
-            <Text style={[styles.message, { color: colors.textPrimary }]}>{item.message}</Text>
-            {item.stop_id ? (
-              <Text style={{ color: colors.textSecondary }}>
-                {item.stop_name || "Attached stop"}
-                {item.stop_address ? ` · ${operationsDisplayAddress(item.stop_address)}` : ""}
+              <AppButton
+                size="compact"
+                variant="secondary"
+                onPress={() =>
+                  router.push({
+                    pathname: "/(tabs)/operations/map",
+                    params: { area, officialId: item.id },
+                  } as never)
+                }
+              >
+                View Map
+              </AppButton>
+            </AppCard>
+          ) : (
+            <AppCard contentStyle={styles.card}>
+              <View style={styles.meta}>
+                <Text style={[styles.category, { color: colors.accentStrong }]}>
+                  {categoryLabel(item.category)}
+                </Text>
+                <Text style={{ color: colors.textSecondary }}>{item.area_name}</Text>
+              </View>
+              <Text style={[styles.message, { color: colors.textPrimary }]}>{item.message}</Text>
+              {item.stop_id ? (
+                <Text style={{ color: colors.textSecondary }}>
+                  {item.stop_name || "Attached stop"}
+                  {item.stop_address ? ` · ${operationsDisplayAddress(item.stop_address)}` : ""}
+                </Text>
+              ) : null}
+              <Text style={[styles.byline, { color: colors.textSecondary }]}>
+                {item.username} · Founding Driver ·{" "}
+                {new Date(item.created_at).toLocaleTimeString([], {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+                {item.edited ? " · Edited" : ""}
+                {lifecycleLabel(item) ? ` · ${lifecycleLabel(item)}` : ""}
               </Text>
-            ) : null}
-            <Text style={[styles.byline, { color: colors.textSecondary }]}>
-              {item.username} · Founding Driver ·{" "}
-              {new Date(item.created_at).toLocaleTimeString([], {
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-              {item.edited ? " · Edited" : ""}
-              {lifecycleLabel(item) ? ` · ${lifecycleLabel(item)}` : ""}
-            </Text>
-            {item.status === "removed" && item.moderation_reason ? (
-              <Text style={{ color: colors.warning }}>{item.moderation_reason}</Text>
-            ) : null}
-            {item.last_confirmed_at ? (
-              <Text style={[styles.confirmed, { color: colors.success }]}>
-                ✓ {confirmationLabel(item.last_confirmed_at)}
-              </Text>
-            ) : null}
-            <View style={styles.cardActions}>
-              {item.is_author ? (
-                <>
-                  <AppButton
-                    size="compact"
-                    variant="secondary"
-                    onPress={() =>
-                      router.push({
-                        pathname: "/(tabs)/operations/compose",
-                        params: { editId: item.id },
-                      } as never)
-                    }
-                  >
-                    Edit
-                  </AppButton>
-                  <AppButton size="compact" variant="tertiary" onPress={() => resolve(item.id)}>
-                    Resolve
-                  </AppButton>
-                </>
-              ) : (
-                <>
-                  <Text style={{ color: colors.textSecondary }}>Still there?</Text>
-                  <AppButton
-                    size="compact"
-                    variant="secondary"
-                    onPress={() => void confirm(item.id, "yes")}
-                  >
-                    Yes
-                  </AppButton>
-                  <AppButton
-                    size="compact"
-                    variant="secondary"
-                    onPress={() => void confirm(item.id, "no")}
-                  >
-                    No
-                  </AppButton>
-                  <AppButton
-                    size="compact"
-                    variant="tertiary"
-                    onPress={() =>
-                      router.push({
-                        pathname: "/(tabs)/profile/report-content",
-                        params: {
-                          subjectType: "operations_update",
-                          subjectId: item.id,
-                          ownerId: item.author_user_id,
-                          ownerName: item.username,
-                        },
-                      })
-                    }
-                  >
-                    Report
-                  </AppButton>
-                </>
-              )}
-            </View>
-          </AppCard>
-        )}
+              {item.status === "removed" && item.moderation_reason ? (
+                <Text style={{ color: colors.warning }}>{item.moderation_reason}</Text>
+              ) : null}
+              {item.last_confirmed_at ? (
+                <Text style={[styles.confirmed, { color: colors.success }]}>
+                  ✓ {confirmationLabel(item.last_confirmed_at)}
+                </Text>
+              ) : null}
+              <View style={styles.cardActions}>
+                {item.is_author ? (
+                  <>
+                    <AppButton
+                      size="compact"
+                      variant="secondary"
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(tabs)/operations/compose",
+                          params: { editId: item.id },
+                        } as never)
+                      }
+                    >
+                      Edit
+                    </AppButton>
+                    <AppButton size="compact" variant="tertiary" onPress={() => resolve(item.id)}>
+                      Resolve
+                    </AppButton>
+                  </>
+                ) : (
+                  <>
+                    <Text style={{ color: colors.textSecondary }}>Still there?</Text>
+                    <AppButton
+                      size="compact"
+                      variant="secondary"
+                      onPress={() => void confirm(item.id, "yes")}
+                    >
+                      Yes
+                    </AppButton>
+                    <AppButton
+                      size="compact"
+                      variant="secondary"
+                      onPress={() => void confirm(item.id, "no")}
+                    >
+                      No
+                    </AppButton>
+                    <AppButton
+                      size="compact"
+                      variant="tertiary"
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(tabs)/profile/report-content",
+                          params: {
+                            subjectType: "operations_update",
+                            subjectId: item.id,
+                            ownerId: item.author_user_id,
+                            ownerName: item.username,
+                          },
+                        })
+                      }
+                    >
+                      Report
+                    </AppButton>
+                  </>
+                )}
+              </View>
+            </AppCard>
+          )
+        }
       />
     </View>
   );
@@ -833,6 +1096,21 @@ const styles = StyleSheet.create({
   },
   pickerTitle: { fontSize: 20, fontWeight: "800" },
   pickerDone: { fontSize: 16, fontWeight: "700" },
+  sourceInfoContent: { gap: 16, padding: 20 },
+  sourceInfoLead: { fontSize: 17, fontWeight: "700", lineHeight: 25 },
+  sourceInfoBody: { fontSize: 16, lineHeight: 24 },
+  sourceInfoHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    minHeight: 58,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  sourceInfoHeaderTitle: { flex: 1, paddingRight: 70, textAlign: "center" },
+  legalDisclaimerScroll: { flexShrink: 1 },
+  legalDisclaimerContent: { paddingHorizontal: 20, paddingBottom: 24 },
+  legalDisclaimerText: { fontSize: 16, lineHeight: 25 },
+  sourceInfoFooter: { paddingHorizontal: 20, paddingBottom: 12 },
   pickerOption: {
     alignItems: "center",
     borderTopWidth: StyleSheet.hairlineWidth,

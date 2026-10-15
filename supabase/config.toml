@@ -432,3 +432,7 @@ verify_jwt = true
 
 [functions.security-alert-health]
 verify_jwt = true
+
+# Scheduled COtrip ingestion uses gateway JWT verification and a separate worker secret.
+[functions.ingest-cotrip-conditions]
+verify_jwt = true

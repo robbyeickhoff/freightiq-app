@@ -38,10 +38,12 @@ test("My Updates hides raw connection errors while retaining cached posts and st
         history,
         userId: "fictional",
         area: "grand-junction",
+        source: "all",
         Promise,
         operationsReadEpoch: () => 0,
         supabase: { rpc: async () => ({ data: null, error: { message: raw } }) },
         readActiveOperations: async () => ({ data: null, error: { message: wait } }),
+        readOfficialCOtripConditions: async () => ({ data: [], health: {}, error: null }),
         readOperationsCache: async () =>
           cached ? { updates: posts, savedAt: "saved-time" } : null,
         writeOperationsCache: async () => {
@@ -53,6 +55,9 @@ test("My Updates hides raw connection errors while retaining cached posts and st
         setUpdates: (value: unknown) => {
           state.posts = value;
         },
+        setOfficial: () => undefined,
+        setOfficialHealth: () => undefined,
+        setOfficialLoadError: () => undefined,
         setOfflineAt: (value: unknown) => {
           state.offlineAt = value;
         },
@@ -66,6 +71,7 @@ test("My Updates hides raw connection errors while retaining cached posts and st
           state.refreshing = value;
         },
         setCanPost: () => undefined,
+        refreshDrivingSnapshot: async () => undefined,
         Alert: {
           alert: (_title: string, message: string) => {
             state.alert = message;

@@ -13,6 +13,37 @@ answer one question:
 
 ## Current Objective
 
+### October 15 — Official COtrip Conditions V1 local iPhone acceptance
+
+Rob approved Gates 2–5 of the
+[Official COtrip Conditions V1 specification](build-specs/FreightIQOfficialCOtripConditionsV1BuildSpec.md).
+The active scope is local only: private normalized incidents/planned-events storage, complete
+paginated ingestion with independent feed health, guarded authenticated reads, mixed Operations
+cards/source filtering, supplied-point map presentation, the required CDOT disclaimer, and local
+verification. A live key, production migration, deployed function, schedule, distribution build,
+commit, and push remain separate approval gates.
+
+The focused physical-iPhone check passed against local Supabase using sanitized incident and planned
+event fixtures. Rob confirmed the Official COtrip source filter showed both cards, the complete CDOT
+disclaimer was readable, and each card's View Map action opened the matching blue official marker.
+The initial check exposed a missing authenticated execute grant between the guarded public RPC and
+its private reader plus a missing initial success timestamp; both were corrected locally. The RPC
+then returned both fixtures with healthy feed state. The app now also reports an official-read
+failure instead of incorrectly showing “All clear.” Pixel acceptance remains pending. Production,
+live credentials, deployment, scheduling, distribution, commit, and push remain unchanged.
+
+Rob identified that the original “Source Info” label could make the CDOT disclaimer appear to cover
+the entire mixed feed. The first approved local correction renamed it “About Official COtrip” and
+stated that it applies only to cards labeled Official COtrip; Driver Updates remain separately
+attributed to FreightIQ drivers. The iPhone check confirmed that distinction, then exposed that the
+required legal paragraph still dominated the sheet and was unlikely to be read. The approved
+follow-up keeps the first sheet short and practical, moves the unchanged required language behind
+“Read the full required CDOT disclaimer,” and presents it in a separate scrollable view with larger
+line spacing. Rob confirmed the revised summary and full-disclaimer views look good on the physical
+iPhone. The Pixel then passed the same local flow: sign-in, Operations, Official COtrip filtering,
+official fixture presentation, the short source explanation, the separately scrollable full CDOT
+disclaimer, and official map behavior. Focused iPhone and Pixel presentation acceptance is complete.
+
 ### October 10 — Recoverable Stop Lifecycle V1 accepted on iPhone and Pixel
 
 The complete lifecycle database/mobile diff and current Supabase guidance were reviewed. One bounded

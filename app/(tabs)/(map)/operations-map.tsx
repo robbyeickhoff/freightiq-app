@@ -16,6 +16,11 @@ import {
 } from "@/utils/operations-board";
 import { supabase } from "@/utils/supabase";
 import { readActiveOperations } from "@/utils/operations-reads";
+import {
+  officialConditionPoints,
+  readOfficialCOtripConditions,
+  type OfficialCOtripCondition,
+} from "@/utils/cotrip-conditions";
 import { useAppTheme } from "@/context/theme-context";
 import { Borders, Elevation, Spacing, Typography } from "@/constants/theme";
 import {
@@ -28,7 +33,12 @@ export default function OperationsMapScreen() {
   const mapRef = useRef<MapView | null>(null);
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const params = useLocalSearchParams<{ area?: string; pickLocation?: string; alertId?: string }>();
+  const params = useLocalSearchParams<{
+    area?: string;
+    pickLocation?: string;
+    alertId?: string;
+    officialId?: string;
+  }>();
   const handledAlert = useRef<string | null>(null);
   const fromCompose = params.pickLocation === "true";
   const [selectingLocation, setSelectingLocation] = useState(false);
@@ -37,7 +47,9 @@ export default function OperationsMapScreen() {
   const areaLabel = params.area ? selected.name : "All Areas";
   const [canPost, setCanPost] = useState(false);
   const [updates, setUpdates] = useState<OperationsUpdate[]>([]);
+  const [official, setOfficial] = useState<OfficialCOtripCondition[]>([]);
   const [picked, setPicked] = useState<OperationsUpdate | null>(null);
+  const [pickedOfficial, setPickedOfficial] = useState<OfficialCOtripCondition | null>(null);
   useEffect(() => {
     setSelectedDrivingCondition(picked?.id ?? null);
     return () => setSelectedDrivingCondition(null);
@@ -114,7 +126,10 @@ export default function OperationsMapScreen() {
     async (mayPublish: () => boolean = () => true) => {
       const epoch = operationsReadEpoch();
       const isCurrent = () => mayPublish() && epoch === operationsReadEpoch();
-      const { data, error } = await readActiveOperations(params.area || null, isCurrent);
+      const [{ data, error }, officialResult] = await Promise.all([
+        readActiveOperations(params.area || null, isCurrent),
+        readOfficialCOtripConditions(params.area || null),
+      ]);
       if (!isCurrent()) return;
       if (error) {
         setLoadErrorMessage(error.message);
@@ -135,6 +150,18 @@ export default function OperationsMapScreen() {
         false,
       );
       setUpdates(rows);
+      const officialRows = officialResult.error || !officialResult.data ? [] : officialResult.data;
+      setOfficial(officialRows);
+      if (params.officialId) {
+        const match = officialRows.find((row) => row.id === params.officialId) ?? null;
+        setPickedOfficial(match);
+        const point = match ? officialConditionPoints(match)[0] : null;
+        if (point)
+          mapRef.current?.animateToRegion(
+            { ...point, latitudeDelta: 0.1, longitudeDelta: 0.1 },
+            350,
+          );
+      }
       if (params.alertId && handledAlert.current !== params.alertId) {
         handledAlert.current = params.alertId;
         const match = rows.find(
@@ -173,7 +200,7 @@ export default function OperationsMapScreen() {
       );
       setLoadError(false);
     },
-    [params.area, params.alertId, router],
+    [params.area, params.alertId, params.officialId, router],
   );
   useFocusEffect(
     useCallback(() => {
@@ -235,7 +262,7 @@ export default function OperationsMapScreen() {
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             {isPickingLocation
               ? "Move map to choose location"
-              : `${areaLabel} · ${updates.filter((u) => u.latitude != null).length} mapped`}
+              : `${areaLabel} · ${updates.filter((u) => u.latitude != null).length + official.reduce((count, item) => count + officialConditionPoints(item).length, 0)} mapped`}
           </Text>
         </View>
       </View>
@@ -260,6 +287,7 @@ export default function OperationsMapScreen() {
                   title={categoryLabel(u.category)}
                   onPress={() => {
                     setPicked(u);
+                    setPickedOfficial(null);
                     void supabase.auth.getSession().then(({ data }) => {
                       if (data.session?.user.id)
                         void markDrivingAlertRead(data.session.user.id, u.id);
@@ -267,6 +295,22 @@ export default function OperationsMapScreen() {
                   }}
                 />
               ))}
+          {!isPickingLocation &&
+            official.flatMap((condition) =>
+              officialConditionPoints(condition).map((point, index) => (
+                <Marker
+                  key={`${condition.id}:${index}:${markerEpoch}`}
+                  coordinate={point}
+                  description={condition.message}
+                  pinColor="#246bce"
+                  title={`Official COtrip · ${condition.route_name || categoryLabel(condition.category)}`}
+                  onPress={() => {
+                    setPicked(null);
+                    setPickedOfficial(condition);
+                  }}
+                />
+              )),
+            )}
         </MapView>
         {isPickingLocation ? (
           <View pointerEvents="none" style={styles.crosshair}>
@@ -293,7 +337,7 @@ export default function OperationsMapScreen() {
           </View>
         ) : null}
         <View style={[styles.bottom, { bottom: insets.bottom + Spacing.md }]}>
-          {picked && !isPickingLocation ? (
+          {(picked || pickedOfficial) && !isPickingLocation ? (
             <View
               style={[
                 styles.card,
@@ -302,17 +346,22 @@ export default function OperationsMapScreen() {
               ]}
             >
               <Text style={[styles.category, { color: colors.accentStrong }]}>
-                {categoryLabel(picked.category)}
+                {pickedOfficial ? "Official COtrip" : categoryLabel(picked!.category)}
               </Text>
-              <Text style={[styles.message, { color: colors.textPrimary }]}>{picked.message}</Text>
+              <Text style={[styles.message, { color: colors.textPrimary }]}>
+                {pickedOfficial?.message ?? picked!.message}
+              </Text>
               <Text style={{ color: colors.textSecondary }}>
-                {picked.area_name} · {picked.username}
+                {pickedOfficial
+                  ? `${pickedOfficial.route_name || categoryLabel(pickedOfficial.category)} · source updated ${new Date(pickedOfficial.source_updated_at || pickedOfficial.last_seen_at).toLocaleString()}`
+                  : `${picked!.area_name} · ${picked!.username}`}
               </Text>
               <AppButton
                 size="compact"
                 variant="tertiary"
                 onPress={() => {
                   setPicked(null);
+                  setPickedOfficial(null);
                   handledAlert.current = null;
                   setMarkerEpoch((value) => value + 1);
                 }}
