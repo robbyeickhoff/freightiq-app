@@ -78,6 +78,172 @@ The same focused acceptance matrix subsequently passed on the physical Pixel.
 - Existing nearby exact, prefix, fuzzy, Preview Card, Stop Intel, reports, and map behavior do not
   regress.
 
+## Approved Focused Amendment — 2026-10-16
+
+The Product Owner approved this focused amendment and local implementation after physical-iPhone
+use exposed a punctuation-normalization gap in stop search. That approval does not authorize a
+hosted database change, deployment, commit, push, build, distribution, or release.
+
+### Observed Driver Scenario
+
+With the map centered near Grand Junction and the search scope set to Stops, entering `st m`
+returned Northwest Machine Works Inc and 1150 West Market Street but did not return the existing
+St. Mary's Hospital stop. Selecting the hospital through another path confirmed that the stop
+exists and its Preview Card loads normally.
+
+Repository inspection and a read-only local SQL reproduction identified the cause:
+
+- the accepted search function lowercases and collapses whitespace but preserves punctuation;
+- the literal query `st m` occurs across the word boundary in `Northwest Machine` and
+  `West Market`;
+- it does not occur in `St. Mary's` because the period produces `st. m`;
+- full-string trigram similarity between `st m` and the hospital's longer name is approximately
+  `0.09`, below the existing fuzzy-name threshold; and
+- the correct stop therefore fails candidate admission while incidental literal fragments remain
+  eligible.
+
+This is a database text-normalization and ranking defect. It is not a missing-record, Preview Card,
+map, or search-interface defect.
+
+### Approved Design Boundary
+
+The smallest useful correction is to make search punctuation-insensitive and preserve the accepted
+ranking hierarchy. The implementation design presented for Product Owner approval must:
+
+1. derive the same normalized searchable representation for the query, stop name, and address by:
+   - lowercasing;
+   - replacing runs of non-alphanumeric characters with a single space;
+   - collapsing repeated whitespace; and
+   - trimming leading and trailing whitespace;
+2. evaluate exact name, name prefix, literal name fragment, fuzzy name, and address matching against
+   that normalized representation;
+3. rank a normalized business-name prefix above ordinary name fragments and address fragments, so
+   `st m` ranks normalized `st mary s hospital...` above `northwest machine...` and
+   `west market...`;
+4. preserve the existing geographic context, strong-distant-name behavior, distance tie-breaking,
+   deterministic ordering, radius clamp, result limits, return shape, moderation filtering,
+   guarded read path, telemetry, and authentication behavior; and
+5. preserve the existing raw display name and address. Normalization is search-only and must not
+   rewrite saved stop data.
+
+This amendment does not authorize acronym search, semantic or AI search, a global fuzzy-threshold
+reduction, spelling dictionaries, provider replacement, search-history personalization, UI changes,
+or stop-data cleanup. Those would be broader product changes with materially different false-match
+risks.
+
+### Approved Two-Character Name-Prefix Follow-up — 2026-10-18
+
+Physical-iPhone testing passed the original `st m` correction and then exposed that `St.` was still
+rejected because punctuation normalization reduced it to two letters. The Product Owner compared
+the behavior with Apple Maps and approved a narrow two-character follow-up:
+
+- two letters or numbers may search only the beginning of saved stop names within the current map
+  area;
+- two-character searches do not use name fragments, addresses, fuzzy matching, distant matching,
+  city search, driver search, or nearby-place-provider search;
+- the existing broad search paths still require at least three letters or numbers; and
+- a dedicated normalized-name prefix index must keep this path bounded and efficient.
+
+This permits `St` and `St.` to find St. Mary's without turning every two-character input into a
+broad database search.
+
+### Index and Migration Requirements
+
+The implementation must not apply normalization only at query time in a way that silently discards
+the accepted index-assisted search design. Before implementation approval, the exact migration must
+show how the normalized name and address expressions are indexed and how the search function uses
+the same expressions.
+
+The migration and verification plan must:
+
+- use repository-backed, forward-only migration artifacts;
+- preserve the function's fixed empty `search_path` and least-privilege execution model;
+- avoid new exposed tables or unapproved return fields;
+- demonstrate indexed candidate retrieval with `EXPLAIN (ANALYZE, BUFFERS)` for representative
+  normalized prefix, literal fragment, address, fuzzy, and sparse-result searches;
+- measure index-build and write-maintenance impact before any hosted operation;
+- run the applicable schema lint, advisors, database tests, guarded-read tests, and access checks;
+  and
+- keep local implementation, hosted migration, deployment, commit/push, build, and distribution as
+  separate approval gates.
+
+### Focused Acceptance Matrix
+
+Local database verification must prove:
+
+- `st m`, `st. m`, `St Mary`, and `St. Mary's` return St. Mary's Hospital first for the observed
+  Grand Junction context;
+- `St` and `St.` return St. Mary's Hospital first through local name-prefix matching only;
+- two-character input does not admit incidental name fragments or address fragments, while a
+  one-character normalized query remains rejected;
+- Northwest Machine Works Inc and 1150 West Market Street remain discoverable by meaningful
+  searches but rank below the hospital for `st m`;
+- punctuation variants such as apostrophes, periods, hyphens, slashes, and repeated spaces produce
+  the same intended normalized match without changing displayed text;
+- exact normalized business names remain ahead of prefixes, prefixes remain ahead of literal name
+  fragments, and name matches remain ahead of incidental address fragments;
+- the existing Isun, Ridgway Animal Hospital, Ridgway `test`, nearby `ridgway`, address-fragment,
+  misspelling, same-name/different-city, missing-address, short-query, invalid-input, and stable-order
+  cases do not regress;
+- hidden or removed stops remain excluded through the existing guarded path; and
+- rapid typing and map-context changes continue to reject stale responses.
+
+After local database and app verification pass and the complete diff is reviewed, focused physical
+iPhone and Pixel acceptance must repeat the observed `st m` scenario plus representative exact,
+address, nearby, and intentional distant searches. Static or simulator results do not replace those
+physical-device checks.
+
+The focused physical-device checks passed on 2026-10-18. On both the iPhone and Pixel, `St`, `St.`,
+`st m`, and the All-scope `St.` search returned St. Mary's first. Two-character searches did not
+surface the incidental Northwest Machine or West Market fragments, and the one-character `S` input
+showed the two-character guidance instead of searching. The iPhone also passed `st. m`, `St Mary`,
+and `St. Mary's`. The `Canyon` check correctly returned no saved stop in the local fixture under
+Stops while All continued to return outside place results. Metro showed no device errors during the
+accepted checks. The three exact fictional phone-test stops were then removed, with zero matching
+fixtures remaining.
+
+### Local Implementation Record — 2026-10-16
+
+The approved implementation is complete:
+
+- migration `20261016192006_normalize_stop_search_punctuation.sql` adds normalized name and address
+  trigram indexes and replaces only the internal `search_mfi_stops(...)` matching implementation;
+- saved display names and addresses, the guarded client API, permissions, result shape, geographic
+  context, distance ranking, moderation filtering, limits, and telemetry remain unchanged;
+- focused database coverage passes all 21 assertions for the observed query variants, two-character
+  local name-prefix behavior, ranking, punctuation, repeated whitespace, accented letters, display
+  preservation, hidden-stop exclusion, one-character rejection, guarded-read path, and dedicated
+  prefix index;
+- five focused app tests confirm that All and Stops begin at two characters while cities, drivers,
+  nearby places, and broad matching remain at three;
+- the current guarded-cutover suite passes all 217 assertions;
+- public/private local database lint reports no findings;
+- an indexed normalized-name lookup produces a bitmap index scan through the new trigram index; and
+- no COtrip ingestion, Operations feed, official-card, map-marker, source-filter, disclaimer, or
+  feed-health file changed.
+
+The older `bot_scrape_protection.sql` suite still expects the direct bounded-reader grants that were
+intentionally removed by the later guarded-read access closure. It stops on that known historical
+expectation; the current guarded-cutover suite is the applicable passing coverage for today's app
+read path.
+
+### Approval Gates
+
+1. Product Owner reviews and approves this amendment as the implementation contract. **Complete.**
+2. Codex presents the exact local implementation scope and announces direct implementation.
+   **Complete.**
+3. Local migration, database tests, app integration, query-plan evidence, and diff review pass.
+   **Complete, including focused iPhone and Pixel acceptance.**
+4. Product Owner approves the exact hosted migration and rollback/verification procedure.
+   **Complete on 2026-10-18.**
+5. Hosted verification and focused physical-iPhone and Pixel acceptance pass.
+   **Complete on 2026-10-18.** The physical checks passed first against the reviewed local build;
+   the subsequently approved hosted migration preserved 433 stops and existing access controls,
+   installed three valid indexes, and returned St. Mary's first for `St.` and `st m` in read-only
+   production verification. The isolated rollout excluded the pending Official COtrip migration.
+6. Product Owner approves commit/push. **Approved on 2026-10-18.** Builds, distribution, and release
+   remain separately approved actions.
+
 ## Document Control
 
 - **Title:** FreightIQ Search Relevance — Location-Aware Stop Search Build Specification

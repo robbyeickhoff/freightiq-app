@@ -13,6 +13,55 @@ answer one question:
 
 ## Current Objective
 
+### October 16 — Stop-search punctuation normalization implemented locally
+
+Physical-iPhone use exposed that searching `st m` could return Northwest Machine Works Inc and 1150
+West Market Street while omitting the existing St. Mary's Hospital stop. The accepted search
+function preserved punctuation, so incidental literal `st m` fragments qualified while the period
+in `St. Mary's` prevented the intended prefix match.
+
+Rob approved the focused correction in the existing Search Relevance specification. The reviewed
+implementation now normalizes punctuation and repeated whitespace for matching only,
+preserves accented letters and saved display text, and ranks the normalized hospital-name prefix
+above incidental name/address fragments. Two matching trigram indexes preserve the bounded,
+index-assisted design. The guarded client route, permissions, result fields, map context, distance
+ranking, limits, hidden-stop filtering and telemetry are unchanged.
+
+All 21 focused database assertions and all 217 current guarded-cutover assertions pass; local
+public/private database lint is clean, and query-plan evidence confirms the normalized name index is
+eligible for the intended lookup. The older pre-cutover scrape-protection suite stops on direct-read
+permissions intentionally removed by the later guarded-read closure; its current replacement passes.
+No COtrip/Operations code or behavior changed. Final diff review, local app/device acceptance, any
+hosted migration, commit/push, build, distribution and release remain separate gates.
+
+October 18 iPhone testing passed `st m`, `st. m`, `St Mary`, and `St. Mary's`, with St. Mary's first.
+It also confirmed that `Canyon` correctly has no saved-stop result in the local fixture while All
+can still return outside place results. Testing then exposed that `St.` was rejected because
+normalization left only two letters. Rob approved allowing two-character local saved-stop name
+prefixes while keeping fragments, addresses, fuzzy/distant matching, cities, drivers, and nearby
+places at three characters. The local follow-up now has a dedicated prefix index, 21 passing
+database assertions, five passing app-readiness tests, passing guarded-read tests, TypeScript,
+focused lint, database lint, whitespace checks, and an indexed two-character query plan. Updated
+iPhone and Pixel acceptance passed on October 18. Both phones returned St. Mary's first for `St`,
+`St.`, `st m`, and All-scope `St.`; incidental Machine/Market fragments stayed out of the
+two-character results, and `S` showed the two-character guidance. The iPhone also passed `st. m`,
+`St Mary`, and `St. Mary's`; `Canyon` correctly remained absent under Stops while All could return
+outside place results. Metro showed no device errors. The three exact fictional phone-test stops
+were removed afterward and zero matching fixtures remain. The focused local/device gate is complete.
+Rob approved the hosted database gate on October 18. Migration
+`20261016192006_normalize_stop_search_punctuation.sql` was applied by an isolated rollout package
+that deliberately excluded the pending Official COtrip migration. Production verification kept all
+433 saved stops unchanged, confirmed all three new search indexes are valid, preserved the existing
+direct-access restrictions, and returned St. Mary's first for both `St.` and `st m`; one-character
+search remained rejected. Public/private database lint is clean. Supabase advisors reported no
+search-migration finding; their remaining notices are pre-existing and unrelated to this change.
+The canonical broad migration command is intentionally still blocked by the older pending COtrip
+migration, so it must not be forced or run with an include-all option. Rob approved committing and
+pushing the reviewed search package on October 18. App build, distribution and release remain
+separate approval gates. Until the app-side change is released,
+existing app versions can benefit from the hosted `st m` and `St.` correction, while raw two-letter
+`St` search still requires the updated app.
+
 ### October 15 — Official COtrip Conditions V1 local iPhone acceptance
 
 Rob approved Gates 2–5 of the

@@ -73,6 +73,13 @@ import { readActiveOperations } from "@/utils/operations-reads";
 import { stopNamePrefill } from "@/utils/stop-name-prefill";
 import { getStopLocationEpoch } from "@/utils/stop-relocation";
 import { reportStatsPreview } from "@/utils/report-stats-preview";
+import {
+  discoverySearchIsReady,
+  scopedSearchIsReady,
+  searchCharacterCount,
+  searchMinimumMessage,
+  stopSearchIsReady,
+} from "@/utils/search-query-readiness";
 
 type Pin = {
   id: string;
@@ -2153,12 +2160,14 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const q = query.trim();
+    const stopQueryReady = stopSearchIsReady(q);
+    const discoveryQueryReady = discoverySearchIsReady(q);
     const requestId = ++lastRequestId.current;
     const abortController = new AbortController();
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    if (q.length < 3) {
+    if (!scopedSearchIsReady(q, searchScope)) {
       endMapboxSearchSession();
       setFreightIqResults([]);
       setCityResults([]);
@@ -2180,10 +2189,12 @@ export default function HomeScreen() {
         };
         const searchRadiusMeters = searchRadiusMetersFromRegion(region);
         const sessionToken =
-          searchScope === "all" && MAPBOX_TOKEN ? getMapboxSearchSessionToken() : null;
+          searchScope === "all" && discoveryQueryReady && MAPBOX_TOKEN
+            ? getMapboxSearchSessionToken()
+            : null;
 
         const freightIqRequest = (async (): Promise<FreightIqSearchRow[]> => {
-          if (searchScope !== "all" && searchScope !== "stops") return [];
+          if ((searchScope !== "all" && searchScope !== "stops") || !stopQueryReady) return [];
           const data = await readGuardedFreightIq<FreightIqSearchRow[]>(
             "search_stops",
             {
@@ -2199,7 +2210,8 @@ export default function HomeScreen() {
         })();
 
         const cityRequest = (async (): Promise<CitySearchRow[]> => {
-          if (searchScope !== "all" && searchScope !== "cities") return [];
+          if ((searchScope !== "all" && searchScope !== "cities") || !discoveryQueryReady)
+            return [];
           const data = await readGuardedFreightIq(
             "search_cities",
             {
@@ -2217,7 +2229,8 @@ export default function HomeScreen() {
         })();
 
         const driverRequest = (async (): Promise<DriverSearchRow[]> => {
-          if (searchScope !== "all" && searchScope !== "drivers") return [];
+          if ((searchScope !== "all" && searchScope !== "drivers") || !discoveryQueryReady)
+            return [];
           const data = await readGuardedFreightIq(
             "search_drivers",
             {
@@ -2234,7 +2247,8 @@ export default function HomeScreen() {
         })();
 
         const placeRequest = (async (): Promise<PlaceResult[]> => {
-          if (searchScope !== "all" || !MAPBOX_TOKEN || !sessionToken) return [];
+          if (searchScope !== "all" || !discoveryQueryReady || !MAPBOX_TOKEN || !sessionToken)
+            return [];
 
           const proximity = `${searchCenter.longitude},${searchCenter.latitude}`;
           const url =
@@ -2467,13 +2481,15 @@ export default function HomeScreen() {
 
   const resultLabel = useMemo(() => {
     if (!query.trim()) return "";
-    if (query.trim().length < 3) return "Enter at least 3 characters";
+    if (!scopedSearchIsReady(query, searchScope)) return searchMinimumMessage(searchScope);
     if (searching) return "Searching…";
 
     const resultCount =
       freightIqResults.length + cityResults.length + driverResults.length + results.length;
     if (resultCount > 0) return searchScope === "all" ? "Search results" : "FreightIQ results";
     if (failedSearchSources.length > 0) return "Some results are unavailable — try again";
+    if (searchScope === "all" && searchCharacterCount(query) === 2)
+      return "No saved stops match. Enter 3 characters for other results.";
     if (searchScope === "cities") return "No FreightIQ cities match this search.";
     if (searchScope === "drivers") return "No contributing drivers match this search.";
     if (searchScope === "stops") return "No FreightIQ stops match this search.";
