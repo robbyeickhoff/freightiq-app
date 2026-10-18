@@ -90,6 +90,7 @@ export default function OperationsBoardScreen() {
   const [official, setOfficial] = useState<OfficialCOtripCondition[]>([]);
   const [officialHealth, setOfficialHealth] = useState<COtripFeedHealth>({});
   const [officialLoadError, setOfficialLoadError] = useState(false);
+  const [expandedOfficialIds, setExpandedOfficialIds] = useState<Set<string>>(() => new Set());
   const [source, setSource] = useState<"all" | "official" | "drivers">("all");
   const [sourceInfoOpen, setSourceInfoOpen] = useState(false);
   const [fullDisclaimerOpen, setFullDisclaimerOpen] = useState(false);
@@ -771,6 +772,7 @@ export default function OperationsBoardScreen() {
       <FlatList
         style={styles.scroll}
         data={loading ? [] : visibleUpdates}
+        extraData={expandedOfficialIds}
         keyExtractor={(item) => item.id}
         refreshControl={
           <RefreshControl
@@ -873,54 +875,81 @@ export default function OperationsBoardScreen() {
                   {item.route_name}
                 </Text>
               ) : null}
-              <Text style={[styles.message, { color: colors.textPrimary }]}>{item.message}</Text>
-              {item.direction ? (
-                <Text style={{ color: colors.textSecondary }}>Direction: {item.direction}</Text>
-              ) : null}
-              {item.starts_at ? (
-                <Text style={{ color: colors.textSecondary }}>
-                  Starts {new Date(item.starts_at).toLocaleString()}
-                </Text>
-              ) : null}
+              <Text
+                numberOfLines={expandedOfficialIds.has(item.id) ? undefined : 2}
+                style={[styles.message, { color: colors.textPrimary }]}
+              >
+                {item.message}
+              </Text>
               {item.clears_at ? (
                 <Text style={{ color: colors.textSecondary }}>
                   Expected clear {new Date(item.clears_at).toLocaleString()}
                 </Text>
               ) : null}
-              {item.severity ? (
-                <Text style={{ color: colors.textSecondary }}>Severity: {item.severity}</Text>
+              {expandedOfficialIds.has(item.id) ? (
+                <>
+                  {item.direction ? (
+                    <Text style={{ color: colors.textSecondary }}>Direction: {item.direction}</Text>
+                  ) : null}
+                  {item.starts_at ? (
+                    <Text style={{ color: colors.textSecondary }}>
+                      Starts {new Date(item.starts_at).toLocaleString()}
+                    </Text>
+                  ) : null}
+                  {item.severity ? (
+                    <Text style={{ color: colors.textSecondary }}>Severity: {item.severity}</Text>
+                  ) : null}
+                  {officialDetailText(item.lane_impacts) ? (
+                    <Text style={{ color: colors.textSecondary }}>
+                      Lane impacts: {officialDetailText(item.lane_impacts)}
+                    </Text>
+                  ) : null}
+                  {officialDetailText(item.restrictions) ? (
+                    <Text style={{ color: colors.textSecondary }}>
+                      Restrictions: {officialDetailText(item.restrictions)}
+                    </Text>
+                  ) : null}
+                  {item.feed_type === "planned_events" && officialDetailText(item.schedule) ? (
+                    <Text style={{ color: colors.textSecondary }}>
+                      Schedule: {officialDetailText(item.schedule)}
+                    </Text>
+                  ) : null}
+                  <Text style={[styles.byline, { color: colors.textSecondary }]}>
+                    Source updated{" "}
+                    {new Date(item.source_updated_at || item.last_seen_at).toLocaleString()}
+                  </Text>
+                </>
               ) : null}
-              {officialDetailText(item.lane_impacts) ? (
-                <Text style={{ color: colors.textSecondary }}>
-                  Lane impacts: {officialDetailText(item.lane_impacts)}
-                </Text>
-              ) : null}
-              {officialDetailText(item.restrictions) ? (
-                <Text style={{ color: colors.textSecondary }}>
-                  Restrictions: {officialDetailText(item.restrictions)}
-                </Text>
-              ) : null}
-              {item.feed_type === "planned_events" && officialDetailText(item.schedule) ? (
-                <Text style={{ color: colors.textSecondary }}>
-                  Schedule: {officialDetailText(item.schedule)}
-                </Text>
-              ) : null}
-              <Text style={[styles.byline, { color: colors.textSecondary }]}>
-                Source updated{" "}
-                {new Date(item.source_updated_at || item.last_seen_at).toLocaleString()}
-              </Text>
-              <AppButton
-                size="compact"
-                variant="secondary"
-                onPress={() =>
-                  router.push({
-                    pathname: "/(tabs)/operations/map",
-                    params: { area, officialId: item.id },
-                  } as never)
-                }
-              >
-                View Map
-              </AppButton>
+              <View style={styles.cardActions}>
+                <AppButton
+                  accessibilityHint={`${expandedOfficialIds.has(item.id) ? "Collapses" : "Expands"} the complete Official COtrip condition`}
+                  accessibilityState={{ expanded: expandedOfficialIds.has(item.id) }}
+                  size="compact"
+                  variant="tertiary"
+                  onPress={() =>
+                    setExpandedOfficialIds((current) => {
+                      const next = new Set(current);
+                      if (next.has(item.id)) next.delete(item.id);
+                      else next.add(item.id);
+                      return next;
+                    })
+                  }
+                >
+                  {expandedOfficialIds.has(item.id) ? "Hide Details" : "Show Details"}
+                </AppButton>
+                <AppButton
+                  size="compact"
+                  variant="secondary"
+                  onPress={() =>
+                    router.push({
+                      pathname: "/(tabs)/operations/map",
+                      params: { area, officialId: item.id },
+                    } as never)
+                  }
+                >
+                  View Map
+                </AppButton>
+              </View>
             </AppCard>
           ) : (
             <AppCard contentStyle={styles.card}>

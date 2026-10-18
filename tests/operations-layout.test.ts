@@ -79,6 +79,17 @@ test("Large text controls wrap and remeasure without remounting the feed or aler
   );
 });
 
+test("Official COtrip cards default to compact independently expandable previews", () => {
+  assert.match(text, /expandedOfficialIds/);
+  assert.match(text, /numberOfLines=\{expandedOfficialIds\.has\(item\.id\) \? undefined : 2\}/);
+  assert.match(text, /accessibilityState=\{\{ expanded: expandedOfficialIds\.has\(item\.id\) \}\}/);
+  assert.match(text, /"Hide Details" : "Show Details"/);
+  assert.match(text, /const next = new Set\(current\)/);
+  assert.equal(prop("extraData"), "{expandedOfficialIds}");
+  assert.match(text, /Expected clear/);
+  assert.match(text, /View Map/);
+});
+
 test("Loading, empty, failure and pull-to-refresh states remain available in the same list", () => {
   assert.match(prop("ListEmptyComponent"), /loading \? \(/);
   assert.match(prop("ListEmptyComponent"), /ActivityIndicator/);

@@ -150,6 +150,17 @@ Show the useful subset available for the record:
 Missing fields are omitted rather than shown as empty or inferred. Long source messages may be
 collapsed visually, but the complete normalized message must remain available on expansion.
 
+Official cards default to a compact preview so one verbose source record does not dominate the
+Operations feed. The collapsed card shows the source/category row, route, no more than two visual
+lines of the traveler-information message, expected-clear time when supplied, an explicit
+**Show Details** control, and **View Map** when usable geometry exists. Expanding one card reveals
+its complete normalized message and all supplied direction, start time, schedule, lane-impact,
+restriction, severity, and source-updated details without expanding other cards. The control then
+reads **Hide Details**. Collapsing or expanding a card does not reorder the feed, reload data, change
+filters, or alter map behavior. The control exposes its expanded state and purpose to assistive
+technology, and the complete message remains available through expansion at all supported text
+sizes.
+
 V1 does not generate AI summaries, infer severity, rewrite road restrictions, calculate delays, or
 claim that an event blocks a specific freight route.
 
