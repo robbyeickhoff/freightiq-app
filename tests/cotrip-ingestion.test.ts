@@ -29,6 +29,16 @@ const row = (id: string) => ({
   },
   contactName: "must not persist",
 });
+const feature = (id: string) => ({
+  type: "Feature",
+  properties: {
+    ...row(id),
+    geometry: undefined,
+    schedule: [{ startTime: "08:00", endTime: "17:00" }],
+  },
+  geometry: row(id).geometry,
+});
+const collection = (...features: unknown[]) => ({ type: "FeatureCollection", features });
 
 test("normalizes approved fields and excludes source contacts", () => {
   const value = normalizeRecord(row("event-1"), "planned_events");
@@ -39,18 +49,45 @@ test("normalizes approved fields and excludes source contacts", () => {
   assert.equal(mapCategory("Crash", "incidents"), "temporary_hazard");
 });
 
+test("normalizes the live COtrip GeoJSON feature shape", () => {
+  const value = normalizeRecord(feature("event-geojson"), "planned_events");
+  assert.equal(value?.source_id, "event-geojson");
+  assert.equal((value?.geometry as Record<string, unknown>)?.type, "MultiPoint");
+  assert.deepEqual(value?.schedule, {
+    entries: [{ startTime: "08:00", endTime: "17:00" }],
+  });
+});
+
 test("follows Next-Offset until the documented null terminator", async () => {
   const urls: string[] = [];
+  const firstPage = Array.from({ length: 100 }, (_, index) => row(`first-${index}`));
   const fetcher = async (input: string | URL | Request) => {
     const url = String(input);
     urls.push(url);
     return urls.length === 1
-      ? Response.json([row("1")], { headers: headers(1, "100") })
+      ? Response.json(firstPage, { headers: headers(100, "100") })
       : Response.json([row("2")], { headers: headers(1) });
   };
   const result = await fetchCompleteFeed(fetcher as typeof fetch, "local-test-key", "incidents");
-  assert.equal(result.length, 2);
+  assert.equal(result.length, 101);
   assert.match(urls[1], /offset=100/);
+});
+
+test("paginates the live COtrip GeoJSON FeatureCollection shape", async () => {
+  const urls: string[] = [];
+  const firstPage = Array.from({ length: 100 }, (_, index) => feature(`geo-first-${index}`));
+  const fetcher = async (input: string | URL | Request) => {
+    urls.push(String(input));
+    return urls.length === 1
+      ? Response.json(collection(...firstPage), { headers: headers(100, "next-page") })
+      : Response.json(collection(feature("geo-final")), {
+          headers: headers(1, "misleading-terminal-token"),
+        });
+  };
+  const result = await fetchCompleteFeed(fetcher as typeof fetch, "local-test-key", "incidents");
+  assert.equal(result.length, 101);
+  assert.match(urls[1], /offset=next-page/);
+  assert.equal(urls.length, 2);
 });
 
 test("rejects malformed pagination instead of accepting an incomplete snapshot", async () => {

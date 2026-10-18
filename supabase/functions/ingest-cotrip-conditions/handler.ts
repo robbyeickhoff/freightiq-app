@@ -52,7 +52,12 @@ export function mapCategory(typeValue: unknown, feed: FeedType) {
 
 export function normalizeRecord(input: unknown, feed: FeedType) {
   if (!input || typeof input !== "object" || Array.isArray(input)) return null;
-  const row = input as Record<string, unknown>;
+  const feature = input as Record<string, unknown>;
+  const properties = feature.properties;
+  const row =
+    properties && typeof properties === "object" && !Array.isArray(properties)
+      ? { ...(properties as Record<string, unknown>), geometry: feature.geometry }
+      : feature;
   const sourceId = clean(field(row, "id", "eventId", "incidentId"), 200);
   const sourceType = clean(field(row, "type", "eventType", "incidentType"), 100) ?? "unknown";
   const message = clean(field(row, "travelerInformationMessage", "message", "description"), 1000);
@@ -66,8 +71,11 @@ export function normalizeRecord(input: unknown, feed: FeedType) {
     route_name: clean(field(row, "routeName", "route", "roadName"), 200),
     message,
     direction: clean(field(row, "direction", "directionOfTravel"), 100),
-    schedule:
-      field(row, "schedule") && typeof field(row, "schedule") === "object"
+    schedule: Array.isArray(field(row, "schedule"))
+      ? { entries: list(field(row, "schedule")) }
+      : field(row, "schedule") &&
+          typeof field(row, "schedule") === "object" &&
+          !Array.isArray(field(row, "schedule"))
         ? field(row, "schedule")
         : {},
     lane_impacts: list(field(row, "laneImpacts", "lanes")),
@@ -113,16 +121,26 @@ export async function fetchCompleteFeed(fetcher: Fetch, apiKey: string, feed: Fe
       throw new Error("schema_invalid");
     const body = await response.arrayBuffer();
     if (body.byteLength > MAX_BYTES) throw new Error("response_size_invalid");
-    let pageRows: unknown;
+    let pageBody: unknown;
     try {
-      pageRows = JSON.parse(new TextDecoder().decode(body));
+      pageBody = JSON.parse(new TextDecoder().decode(body));
     } catch {
       throw new Error("schema_invalid");
     }
+    const pageRows = Array.isArray(pageBody)
+      ? pageBody
+      : pageBody &&
+          typeof pageBody === "object" &&
+          !Array.isArray(pageBody) &&
+          (pageBody as Record<string, unknown>).type === "FeatureCollection" &&
+          Array.isArray((pageBody as Record<string, unknown>).features)
+        ? ((pageBody as Record<string, unknown>).features as unknown[])
+        : null;
     if (!Array.isArray(pageRows)) throw new Error("schema_invalid");
     const pageSize = response.headers.get("Page-Size");
     if (!pageSize || Number(pageSize) !== pageRows.length) throw new Error("pagination_invalid");
     records.push(...pageRows);
+    if (pageRows.length < PAGE_LIMIT) return records;
     const next = response.headers.get("Next-Offset");
     if (!next || next.toLowerCase() === "null") return records;
     if (seenOffsets.has(next)) throw new Error("pagination_invalid");

@@ -27,8 +27,8 @@ create table private.operations_official_conditions (
   snapshot_id uuid not null,
   unique(source,feed_type,source_id),
   check(clears_at is null or starts_at is null or clears_at>=starts_at),
-  check(st_srid(source_geometry)=4326),
-  check(geometrytype(source_geometry) in ('POINT','MULTIPOINT'))
+  check(extensions.st_srid(source_geometry)=4326),
+  check(extensions.geometrytype(source_geometry) in ('POINT','MULTIPOINT'))
 );
 create index operations_official_conditions_active_order
   on private.operations_official_conditions(last_seen_at desc,id desc) where inactive_at is null;
