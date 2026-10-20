@@ -13,6 +13,25 @@ answer one question:
 
 ## Current Objective
 
+### October 19 — Official UDOT Traffic bounded local implementation
+
+Rob approved extending the accepted COtrip Operations integration with the verified UDOT Traffic
+Events and Current Road Conditions feeds. The local implementation adds independent Utah endpoint
+ingestion and health, private source-aware storage, server-side encoded-polyline decoding,
+geometry-based area matching, a conservative snapshot-count-collapse guard, backward-compatible
+Colorado-only reads for existing app builds, and guarded source-aware reads for the updated app.
+Routine UDOT Dry/Fair/no-restriction segments are omitted; actionable conditions retain the
+Official UDOT Traffic label, compact card, map action, source notice, and separate COtrip/UDOT
+filters. Rob approved making Driver Updates the first and default source, followed by COtrip, UDOT,
+and the combined All view. Driver update content and Driving Alerts remain unchanged.
+
+The live UDOT key is not stored in the repository or mobile app. TypeScript, focused lint, all 203
+mobile tests, and whitespace checks pass. The migration applied cleanly to the existing local
+COtrip schema; its rollback-only database test passed Utah source isolation, guarded permissions,
+and the snapshot-collapse safeguard, and public/private database lint is clean. Physical
+iPhone/Pixel acceptance, production secret storage, hosted migration, function deployment,
+schedule activation, commit/push, builds, distribution, and release remain separate gates.
+
 ### October 16 — Stop-search punctuation normalization implemented locally
 
 Physical-iPhone use exposed that searching `st m` could return Northwest Machine Works Inc and 1150

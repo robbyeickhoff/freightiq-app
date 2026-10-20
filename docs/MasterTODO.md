@@ -45,7 +45,7 @@ preparation for expanding the tester base.
 
 # Active Work
 
-## Official COtrip Conditions V1
+## Official COtrip + UDOT Conditions V1
 
 - [x] Approve the focused incidents and planned-events build specification.
 - [x] Complete and review the bounded local database, ingestion, guarded-read, Operations card,
@@ -53,6 +53,11 @@ preparation for expanding the tester base.
 - [x] Pass the focused physical-iPhone check for official cards, source filtering, disclaimer, and
       supplied-point map markers against sanitized local fixtures (October 15).
 - [x] Complete the corresponding focused Pixel check (October 15).
+- [x] Approve the UDOT Events and actionable Current Road Conditions specification and bounded local
+      implementation (October 19).
+- [x] Run the UDOT migration/database verification locally with rollback-only source-isolation,
+      permission, snapshot-collapse, and database-lint checks (October 19).
+- [ ] Complete focused iPhone and Pixel acceptance.
 - [ ] Separately approve any production secret, migration, deployment, schedule, device build,
       commit, or push.
 

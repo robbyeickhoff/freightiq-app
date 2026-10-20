@@ -4,8 +4,8 @@ import { OPERATIONS_CATEGORIES, type OperationsCategory } from "@/utils/operatio
 export type COtripPoint = { latitude: number; longitude: number };
 export type OfficialCOtripCondition = {
   id: string;
-  source: "cotrip";
-  feed_type: "incidents" | "planned_events";
+  source: "cotrip" | "udot";
+  feed_type: "incidents" | "planned_events" | "events" | "road_conditions";
   source_type: string;
   category: OperationsCategory;
   route_name: string | null;
@@ -27,18 +27,25 @@ export type OfficialCOtripCondition = {
 };
 export type COtripFeedHealth = Record<
   string,
-  { status: "healthy" | "delayed" | "unavailable" | "error"; last_success_at: string | null }
+  {
+    source?: "cotrip" | "udot";
+    status: "healthy" | "delayed" | "unavailable" | "error";
+    last_success_at: string | null;
+  }
 >;
+export type OfficialSourceFilter = "all" | "official" | "drivers" | "cotrip" | "udot";
 
 export function validOfficialCOtripCondition(value: unknown): value is OfficialCOtripCondition {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const row = value as Record<string, unknown>;
   return (
-    row.source === "cotrip" &&
+    ["cotrip", "udot"].includes(row.source as string) &&
     typeof row.id === "string" &&
     typeof row.message === "string" &&
     typeof row.source_type === "string" &&
-    ["incidents", "planned_events"].includes(row.feed_type as string) &&
+    ["incidents", "planned_events", "events", "road_conditions"].includes(
+      row.feed_type as string,
+    ) &&
     OPERATIONS_CATEGORIES.some((item) => item.value === row.category) &&
     typeof row.last_seen_at === "string" &&
     Number.isFinite(Date.parse(row.last_seen_at)) &&
@@ -90,9 +97,9 @@ export function officialDetailText(value: unknown) {
 
 export async function readOfficialCOtripConditions(
   area: string | null,
-  sourceFilter: "all" | "official" | "drivers" = "all",
+  sourceFilter: OfficialSourceFilter = "all",
 ) {
-  const { data, error } = await supabase.rpc("read_cotrip_conditions_guarded_v1", {
+  const { data, error } = await supabase.rpc("read_official_conditions_guarded_v2", {
     p_area_slug: area,
     p_source_filter: sourceFilter,
   });
@@ -105,17 +112,24 @@ export async function readOfficialCOtripConditions(
     return {
       data: null,
       health: {},
-      error: new Error("Could not refresh official COtrip conditions."),
+      error: new Error("Could not refresh official road conditions."),
     };
   const conditions = response.data.conditions.filter(validOfficialCOtripCondition);
   if (conditions.length !== response.data.conditions.length)
     return {
       data: null,
       health: {},
-      error: new Error("Official COtrip data did not pass validation."),
+      error: new Error("Official road-condition data did not pass validation."),
     };
   return { data: conditions, health: response.data.feed_health ?? {}, error: null };
 }
 
 export const COTRIP_DISCLAIMER =
   "The data made available here has been modified for use from its original source, which is the State of Colorado, Department of Transportation (CDOT). THE STATE OF COLORADO AND CDOT MAKES NO REPRESENTATIONS OR WARRANTY AS TO THE COMPLETENESS, ACCURACY, TIMELINESS, OR CONTENT OF ANY DATA MADE AVAILABLE THROUGH THIS SITE. THE STATE OF COLORADO AND CDOT EXPRESSLY DISCLAIMS ALL WARRANTIES, WHETHER EXPRESS OR IMPLIED, INCLUDING ANY IMPLIED WARRANTIES OF MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE. The data is subject to change as modifications and updates are complete. It is understood that the information contained in the Web feed is being used at one's own risk.";
+
+export const UDOT_DISCLAIMER =
+  "UDOT Traffic information is provided as a public service and may be delayed, incomplete, or affected by services outside UDOT's control. Road conditions can change quickly. Drivers remain responsible for following posted signs, current closures, law-enforcement direction, and safe-driving requirements. Use of this information is at the driver's own risk.";
+
+export function officialSourceLabel(source: OfficialCOtripCondition["source"]) {
+  return source === "udot" ? "Official UDOT Traffic" : "Official COtrip";
+}

@@ -43,10 +43,13 @@ import { supabase } from "@/utils/supabase";
 import { readActiveOperations } from "@/utils/operations-reads";
 import {
   COTRIP_DISCLAIMER,
+  UDOT_DISCLAIMER,
   officialDetailText,
+  officialSourceLabel,
   readOfficialCOtripConditions,
   type COtripFeedHealth,
   type OfficialCOtripCondition,
+  type OfficialSourceFilter,
 } from "@/utils/cotrip-conditions";
 import {
   markAllDrivingAlertsRead,
@@ -80,7 +83,7 @@ export default function OperationsBoardScreen() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const { fontScale } = useWindowDimensions();
+  const { fontScale, height: windowHeight } = useWindowDimensions();
   const largeText = fontScale >= 1.5;
   const params = useLocalSearchParams<{ area?: string }>();
   const [userId, setUserId] = useState("");
@@ -91,9 +94,10 @@ export default function OperationsBoardScreen() {
   const [officialHealth, setOfficialHealth] = useState<COtripFeedHealth>({});
   const [officialLoadError, setOfficialLoadError] = useState(false);
   const [expandedOfficialIds, setExpandedOfficialIds] = useState<Set<string>>(() => new Set());
-  const [source, setSource] = useState<"all" | "official" | "drivers">("all");
+  const [source, setSource] = useState<OfficialSourceFilter>("drivers");
   const [sourceInfoOpen, setSourceInfoOpen] = useState(false);
   const [fullDisclaimerOpen, setFullDisclaimerOpen] = useState(false);
+  const [disclaimerSource, setDisclaimerSource] = useState<"cotrip" | "udot">("cotrip");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [canPost, setCanPost] = useState(false);
@@ -106,7 +110,9 @@ export default function OperationsBoardScreen() {
   const [unreadAlerts, setUnreadAlerts] = useState<UnreadDrivingAlert[]>([]);
   const isOperationsTab = pathname === "/operations";
   const visibleUpdates = useMemo(() => {
-    const driverRows = source === "official" ? [] : filterOperationsByCategory(updates, category);
+    const driverRows = ["official", "cotrip", "udot"].includes(source)
+      ? []
+      : filterOperationsByCategory(updates, category);
     const officialRows =
       source === "drivers" || history
         ? []
@@ -122,6 +128,16 @@ export default function OperationsBoardScreen() {
   const selectedCategoryLabel = category ? categoryLabel(category) : "All Conditions";
   const selectedAreaLabel =
     OPERATIONS_AREAS.find((item) => item.slug === area)?.name ?? "All Areas";
+  const officialHealthDelayed =
+    source !== "drivers" &&
+    Object.entries(officialHealth).some(
+      ([key, item]) =>
+        item.status !== "healthy" &&
+        (source === "all" ||
+          source === "official" ||
+          (source === "cotrip" && key.startsWith("cotrip:")) ||
+          (source === "udot" && key.startsWith("udot:"))),
+    );
 
   useEffect(() => {
     void supabase.auth.getUser().then(async ({ data }) => {
@@ -508,43 +524,49 @@ export default function OperationsBoardScreen() {
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>SOURCE</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="About Official COtrip"
+              accessibilityLabel="About official road data"
               onPress={() => {
                 setFullDisclaimerOpen(false);
                 setSourceInfoOpen(true);
               }}
             >
               <Text style={[styles.mapLink, { color: colors.accentStrong }]}>
-                About Official COtrip ›
+                About Official Sources ›
               </Text>
             </Pressable>
           </View>
           <View style={[styles.feedControl, { backgroundColor: colors.surface }]}>
             {(
               [
-                ["all", "All"],
-                ["official", "Official COtrip"],
                 ["drivers", "Driver Updates"],
+                ["cotrip", "COtrip"],
+                ["udot", "UDOT"],
+                ["all", "All"],
               ] as const
             ).map(([value, label]) => (
               <Pressable
                 key={value}
+                accessibilityLabel={label}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: source === value }}
                 onPress={() => setSource(value)}
                 style={[
                   styles.feedOption,
+                  styles.sourceFeedOption,
                   source === value ? styles.feedOptionSelected : null,
-                  { backgroundColor: source === value ? colors.surfaceElevated : "transparent" },
+                  {
+                    backgroundColor: source === value ? colors.surfaceElevated : "transparent",
+                    flex: value === "drivers" ? 1.35 : 0.88,
+                  },
                 ]}
               >
                 <Text
-                  style={{
-                    color: source === value ? colors.textPrimary : colors.textSecondary,
-                    fontWeight: "700",
-                  }}
+                  style={[
+                    styles.sourceFeedOptionLabel,
+                    { color: source === value ? colors.textPrimary : colors.textSecondary },
+                  ]}
                 >
-                  {label}
+                  {value === "drivers" ? "Driver\nUpdates" : label}
                 </Text>
               </Pressable>
             ))}
@@ -560,18 +582,23 @@ export default function OperationsBoardScreen() {
         transparent
         visible={sourceInfoOpen}
       >
-        <Pressable
-          style={styles.pickerBackdrop}
-          onPress={() => {
-            setFullDisclaimerOpen(false);
-            setSourceInfoOpen(false);
-          }}
-        >
+        <View style={styles.pickerBackdrop}>
           <Pressable
+            accessibilityLabel="Close official source information"
+            accessibilityRole="button"
+            onPress={() => {
+              setFullDisclaimerOpen(false);
+              setSourceInfoOpen(false);
+            }}
+            style={StyleSheet.absoluteFill}
+          />
+          <View
             accessibilityRole="summary"
-            onPress={(event) => event.stopPropagation()}
             style={[
               styles.pickerSheet,
+              fullDisclaimerOpen && {
+                height: Math.max(360, windowHeight - insets.top - insets.bottom - 48),
+              },
               { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
           >
@@ -592,15 +619,20 @@ export default function OperationsBoardScreen() {
                       { color: colors.textPrimary },
                     ]}
                   >
-                    Required CDOT Disclaimer
+                    {disclaimerSource === "udot" ? "UDOT Source Notice" : "Required CDOT Disclaimer"}
                   </Text>
                 </View>
                 <ScrollView
+                  accessibilityLabel={
+                    disclaimerSource === "udot" ? "UDOT source notice" : "CDOT disclaimer"
+                  }
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator
                   style={styles.legalDisclaimerScroll}
                   contentContainerStyle={styles.legalDisclaimerContent}
                 >
                   <Text style={[styles.legalDisclaimerText, { color: colors.textSecondary }]}>
-                    {COTRIP_DISCLAIMER}
+                    {disclaimerSource === "udot" ? UDOT_DISCLAIMER : COTRIP_DISCLAIMER}
                   </Text>
                 </ScrollView>
                 <View style={styles.sourceInfoFooter}>
@@ -619,11 +651,11 @@ export default function OperationsBoardScreen() {
             ) : (
               <View style={styles.sourceInfoContent}>
                 <Text style={[styles.pickerTitle, { color: colors.textPrimary }]}>
-                  About Official COtrip
+                  About Official Sources
                 </Text>
                 <Text style={[styles.sourceInfoLead, { color: colors.textPrimary }]}>
-                  This information applies only to conditions labeled “Official COtrip.” Driver
-                  Updates are reported separately by FreightIQ drivers.
+                  COtrip and UDOT information applies only to cards labeled with that official
+                  source. Driver Updates are reported separately by FreightIQ drivers.
                 </Text>
                 <Text style={[styles.sourceInfoBody, { color: colors.textSecondary }]}>
                   Official conditions may be delayed or incomplete. Follow posted signs, current
@@ -632,9 +664,22 @@ export default function OperationsBoardScreen() {
                 <AppButton
                   size="compact"
                   variant="secondary"
-                  onPress={() => setFullDisclaimerOpen(true)}
+                  onPress={() => {
+                    setDisclaimerSource("cotrip");
+                    setFullDisclaimerOpen(true);
+                  }}
                 >
                   Read the full required CDOT disclaimer ›
+                </AppButton>
+                <AppButton
+                  size="compact"
+                  variant="secondary"
+                  onPress={() => {
+                    setDisclaimerSource("udot");
+                    setFullDisclaimerOpen(true);
+                  }}
+                >
+                  Read the UDOT source notice ›
                 </AppButton>
                 <AppButton
                   size="compact"
@@ -645,8 +690,8 @@ export default function OperationsBoardScreen() {
                 </AppButton>
               </View>
             )}
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
       <View style={styles.actions}>
         {canPost ? (
@@ -727,7 +772,7 @@ export default function OperationsBoardScreen() {
           Saved copy · updated {new Date(offlineAt).toLocaleTimeString()}
         </Text>
       ) : null}
-      {!history && Object.values(officialHealth).some((item) => item.status !== "healthy") ? (
+      {!history && officialHealthDelayed ? (
         <View
           accessibilityRole="alert"
           style={[
@@ -736,7 +781,7 @@ export default function OperationsBoardScreen() {
           ]}
         >
           <Text style={[styles.errorText, { color: colors.textPrimary }]}>
-            Official COtrip data is delayed or temporarily unavailable. Driver updates are still
+            Official road data is delayed or temporarily unavailable. Driver updates are still
             current.
           </Text>
         </View>
@@ -854,8 +899,8 @@ export default function OperationsBoardScreen() {
               <Text style={[styles.emptyBody, { color: colors.textSecondary }]}>
                 {history
                   ? "You haven’t posted an update in the last seven days."
-                  : source === "official" && officialLoadError
-                    ? "Official COtrip data could not be loaded. Pull down to try again."
+                  : ["official", "cotrip", "udot"].includes(source) && officialLoadError
+                    ? "Official road data could not be loaded. Pull down to try again."
                     : "No active driver updates have been reported for this area."}
               </Text>
             </AppCard>
@@ -866,7 +911,7 @@ export default function OperationsBoardScreen() {
             <AppCard contentStyle={styles.card}>
               <View style={styles.meta}>
                 <Text style={[styles.category, { color: colors.accentStrong }]}>
-                  Official COtrip
+                  {officialSourceLabel(item.source)}
                 </Text>
                 <Text style={{ color: colors.textSecondary }}>{categoryLabel(item.category)}</Text>
               </View>
@@ -922,7 +967,7 @@ export default function OperationsBoardScreen() {
               ) : null}
               <View style={styles.cardActions}>
                 <AppButton
-                  accessibilityHint={`${expandedOfficialIds.has(item.id) ? "Collapses" : "Expands"} the complete Official COtrip condition`}
+                  accessibilityHint={`${expandedOfficialIds.has(item.id) ? "Collapses" : "Expands"} the complete ${officialSourceLabel(item.source)} condition`}
                   accessibilityState={{ expanded: expandedOfficialIds.has(item.id) }}
                   size="compact"
                   variant="tertiary"
@@ -1136,7 +1181,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   sourceInfoHeaderTitle: { flex: 1, paddingRight: 70, textAlign: "center" },
-  legalDisclaimerScroll: { flexShrink: 1 },
+  legalDisclaimerScroll: { flex: 1 },
   legalDisclaimerContent: { paddingHorizontal: 20, paddingBottom: 24 },
   legalDisclaimerText: { fontSize: 16, lineHeight: 25 },
   sourceInfoFooter: { paddingHorizontal: 20, paddingBottom: 12 },
@@ -1172,6 +1217,8 @@ const styles = StyleSheet.create({
     gap: 7,
     borderRadius: 9,
   },
+  sourceFeedOption: { paddingHorizontal: 4 },
+  sourceFeedOptionLabel: { flexShrink: 1, fontWeight: "700", textAlign: "center" },
   selectedDot: { width: 7, height: 7, borderRadius: 4 },
   feedOptionSelected: {
     shadowColor: "#000",

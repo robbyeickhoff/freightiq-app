@@ -8,6 +8,7 @@ const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 Deno.serve(
   createHandler({
     apiKey: Deno.env.get("COTRIP_API_KEY") ?? "",
+    udotApiKey: Deno.env.get("UDOT_API_KEY") ?? "",
     workerSecret: Deno.env.get("COTRIP_INGEST_SECRET") ?? "",
     fetcher: fetch,
     rpc: async (name, args) => {

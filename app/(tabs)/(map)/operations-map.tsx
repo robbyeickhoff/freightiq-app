@@ -18,6 +18,7 @@ import { supabase } from "@/utils/supabase";
 import { readActiveOperations } from "@/utils/operations-reads";
 import {
   officialConditionPoints,
+  officialSourceLabel,
   readOfficialCOtripConditions,
   type OfficialCOtripCondition,
 } from "@/utils/cotrip-conditions";
@@ -303,7 +304,7 @@ export default function OperationsMapScreen() {
                   coordinate={point}
                   description={condition.message}
                   pinColor="#246bce"
-                  title={`Official COtrip · ${condition.route_name || categoryLabel(condition.category)}`}
+                  title={`${officialSourceLabel(condition.source)} · ${condition.route_name || categoryLabel(condition.category)}`}
                   onPress={() => {
                     setPicked(null);
                     setPickedOfficial(condition);
@@ -346,7 +347,7 @@ export default function OperationsMapScreen() {
               ]}
             >
               <Text style={[styles.category, { color: colors.accentStrong }]}>
-                {pickedOfficial ? "Official COtrip" : categoryLabel(picked!.category)}
+                {pickedOfficial ? officialSourceLabel(pickedOfficial.source) : categoryLabel(picked!.category)}
               </Text>
               <Text style={[styles.message, { color: colors.textPrimary }]}>
                 {pickedOfficial?.message ?? picked!.message}

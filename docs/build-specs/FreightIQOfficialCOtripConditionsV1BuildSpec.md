@@ -1,36 +1,40 @@
-# FreightIQ Official COtrip Conditions V1 — Focused Build Specification
+# FreightIQ Official COtrip + UDOT Conditions V1 — Focused Build Specification
 
-> **Status: Product Owner approved — bounded local implementation in progress**
+> **Status: COtrip tester build accepted; UDOT bounded local implementation awaiting review**
 >
-> This document defines a bounded first integration of official Colorado Department of
-> Transportation traveler information into the existing FreightIQ Operations Board. Approval now
-> authorizes Gates 2–5 as a bounded local implementation. API-key storage, production migration,
+> This document defines bounded integrations of official Colorado and Utah traveler information
+> into the existing FreightIQ Operations Board. The COtrip implementation has completed its current
+> tester-build gate. The approved UDOT database, ingestion, guarded-read, mobile presentation, and
+> focused automated work is implemented and database-verified locally. Physical-device acceptance
+> remains before the local gate can close. API-key storage, production migration,
 > deployment, scheduled jobs, builds, distribution, commit, and push remain separate approval gates.
 
 ## Document Control
 
-- **Title:** FreightIQ Official COtrip Conditions V1 — Focused Build Specification
-- **Purpose:** Add useful official road incidents and planned events to Operations without
-  representing them as driver-authored knowledge
+- **Title:** FreightIQ Official COtrip + UDOT Conditions V1 — Focused Build Specification
+- **Purpose:** Add useful official Colorado and Utah road information to Operations without
+  representing it as driver-authored knowledge
 - **Operating mode:** Product → Build Specification
 - **Repository:** `robbyeickhoff/freightiq-app`
 - **Canonical branch:** `clean-main`
 - **Repository path:** `/Users/robbyeickhoff/mfi`
 - **Related contract:** `docs/build-specs/FreightIQOperationsBoardV1BuildSpec.md`
-- **Specification status:** Approved for bounded local implementation
-- **Last verified:** 2026-10-14
+- **Specification status:** COtrip implemented and in tester distribution; UDOT contract verified
+  and bounded local implementation approved on 2026-10-19
+- **Last verified:** 2026-10-19
 
 ## 1. Objective
 
-Give a signed-in FreightIQ driver a calm, current view of official Colorado road incidents and
-planned road work alongside the existing Operations Board.
+Give a signed-in FreightIQ driver a calm, current view of useful official Colorado and Utah road
+information alongside the existing Operations Board.
 
 V1 must answer:
 
 > What official road condition could affect delivery work in this Operations area?
 
-The integration supplements driver knowledge. It does not replace the driver-authored Operations
-system, navigation, route judgment, emergency information, or direct verification with CDOT.
+The integrations supplement driver knowledge. They do not replace the driver-authored Operations
+system, navigation, route judgment, emergency information, or direct verification with CDOT or
+UDOT.
 
 ## 2. Verified Starting Point
 
@@ -83,24 +87,71 @@ The complete CDOT Traveler Information Data Feeds User Guide establishes that:
 The Colorado Information Marketplace lists an expected update frequency of every 15 minutes for
 the CDOT real-time feed. V1 uses that published cadence for server polling.
 
+### 2.3 UDOT Account and Feed Validation
+
+FreightIQ has an approved UDOT Traffic developer account and API key. The credential is sensitive
+and is not stored in this repository, this specification, a migration, or a mobile bundle.
+
+Official UDOT documentation and a read-only live-key verification on 2026-10-19 established:
+
+- the API requires a developer key in the `key` query parameter;
+- the published throttle is ten calls per 60 seconds;
+- `GET https://www.udottraffic.utah.gov/api/v2/get/event?format=json` returns the current traffic
+  event collection;
+- `GET https://www.udottraffic.utah.gov/api/v2/get/roadconditions?format=json` returns current road
+  condition segments;
+- the live Events response contained 266 records and matched the documented event fields, including
+  stable IDs, source identity, route, direction, description, start/end/updated Unix timestamps,
+  point coordinates, optional secondary coordinates and encoded geometry, closure state, event
+  type/subtype/category, severity, lane impacts, recurrence, detour, county, mileposts, and optional
+  restrictions;
+- the live Road Conditions response contained 145 records and matched the documented fields for
+  stable IDs, road and weather condition, restriction, roadway name, encoded polyline, and
+  last-updated Unix timestamp;
+- eight live Events records were in Grand, San Juan, or Emery counties, including coverage relevant
+  to I-70, SR-46, SR-128, and the Dinosaur Diamond corridor;
+- live Road Conditions included I-70 toward the Colorado state line, SR-128, SR-24, SR-95, and
+  multiple US-191 segments around Moab, La Sal Junction, Monticello, Blanding, and Bluff;
+- every live Event supplied a usable primary point, 57 supplied encoded geometry, and the current
+  snapshot supplied no non-empty structured restriction arrays;
+- every live Road Conditions record supplied encoded geometry;
+- both endpoints returned HTTP 200 JSON with `cache-control: private` and ETags; and
+- the live responses did not expose a rate-limit-remaining header, retry-after header, or explicit
+  source polling cadence.
+
+The live observations are validation evidence, not permanent fixtures or a guarantee of future
+record counts. No full response or API key is retained in repository evidence.
+
+UDOT's published disclaimer states that traveler information is a public service, accuracy and
+timeliness are not guaranteed, availability depends on systems outside UDOT's control, road and
+weather conditions can change quickly, drivers remain responsible for evaluating conditions, and
+reliance is at the user's own risk. This source-specific warning must remain reachable from UDOT
+cards and must not be presented as applying to COtrip or driver-authored updates.
+
 ## 3. Approved V1 Product Contract
 
 This section becomes approved only after the Product Owner approves this complete specification.
 
 ### 3.1 Included Official Feed Types
 
-V1 includes:
+V1 includes these source-specific slices:
 
-- incidents; and
-- planned events.
+- COtrip incidents;
+- COtrip planned events;
+- UDOT traffic Events; and
+- UDOT Current Road Conditions.
 
-V1 excludes road conditions. Their large line geometries, nested observations, forecast/operator
-distinction, and routine dry segments require a separate V1.1 contract after the first integration
-is accepted.
+COtrip road conditions remain excluded. Their large line geometries, nested observations,
+forecast/operator distinction, and routine dry segments require a separate contract. UDOT Current
+Road Conditions use a materially smaller, documented segment model and are included only for
+Western Utah routes relevant to FreightIQ operations. Routine `Dry`/`Fair` segments must not flood
+the default feed; the implementation contract must define a deterministic relevance rule that
+shows actionable restrictions or non-routine road/weather conditions and keeps ordinary segments
+available only when they add useful route context.
 
 ### 3.2 Source Identity
 
-Every official card must be visibly labeled **Official COtrip**.
+Every official card must be visibly labeled **Official COtrip** or **Official UDOT Traffic**.
 
 Official records:
 
@@ -118,8 +169,9 @@ created or independently verified the condition.
 
 - The existing **Active** feed remains the primary view.
 - Active official cards appear in the same feed as active driver updates.
-- Add a source filter with **All**, **Official COtrip**, and **Driver Updates** choices.
-- **All** remains the default and preserves the selected Operations area and category filters.
+- Add source filtering ordered **Driver Updates**, **COtrip**, **UDOT**, and **All**.
+- **Driver Updates** is the default. The combined **All** view is an explicit choice, and every
+  source choice preserves the selected Operations area and category filters.
 - **My Updates** remains driver-authored history only and does not show official records.
 - Official and driver cards must use a shared operational visual language while remaining clearly
   distinguishable without relying only on color.
@@ -134,7 +186,7 @@ created or independently verified the condition.
 
 Show the useful subset available for the record:
 
-- **Official COtrip** source label;
+- the correct **Official COtrip** or **Official UDOT Traffic** source label;
 - normalized FreightIQ category;
 - route name;
 - traveler information message;
@@ -161,8 +213,12 @@ filters, or alter map behavior. The control exposes its expanded state and purpo
 technology, and the complete message remains available through expansion at all supported text
 sizes.
 
+UDOT Road Conditions cards replace the general traveler-information message with the supplied
+road condition, weather condition, restriction, roadway name, and source-updated time. They do not
+invent a message, start/end time, direction, lane impact, or severity that UDOT did not supply.
+
 V1 does not generate AI summaries, infer severity, rewrite road restrictions, calculate delays, or
-claim that an event blocks a specific freight route.
+claim that an event or condition blocks a specific freight route.
 
 ### 3.5 Category Mapping
 
@@ -176,6 +232,16 @@ Preferred mapping:
 - crash, disabled vehicle, debris, fire, flooding, or similar immediate incident →
   `temporary_hazard`;
 - weather-related official incident → `weather_road_conditions`.
+
+UDOT-specific mapping:
+
+- `closures` or `IsFullClosure = true` → `road_closure`;
+- `roadwork` → `construction`;
+- `accidentsAndIncidents` → `temporary_hazard`, except a documented weather-specific subtype may
+  map to `weather_road_conditions`;
+- actionable UDOT Road Conditions with a non-routine road/weather condition or restriction →
+  `weather_road_conditions`; and
+- routine `Dry`/`Fair`/no-restriction segments are not promoted as active alert cards.
 
 Unknown source types remain eligible only when they can be safely labeled **Temporary Hazard** and
 retain the unmodified official type for inspection. Otherwise, omit the record and capture a
@@ -193,6 +259,13 @@ Area assignment is server-controlled and reproducible.
 - For multipoint geometry, evaluate every supplied point and a documented coarse spatial hull of
   the complete supplied geometry against every area coverage radius. A derived hull is used only to
   avoid dropping a long event between supplied points; it is not stored or displayed as a road path.
+- Decode UDOT `EncodedPolyline` and `DetourPolyline` server-side with a pinned, tested Google
+  encoded-polyline implementation. Preserve the original encoded value privately for deterministic
+  rematching, but return only validated bounded geometry required by the card/map contract.
+- UDOT event primary/secondary points and decoded polylines may contribute to matching. A zero or
+  invalid secondary coordinate is treated as absent, not as real geometry.
+- UDOT Road Conditions are eligible only when their validated decoded segment intersects the
+  approved Western Utah operating coverage; route-name text alone is not sufficient for assignment.
 - Preserve the original source geometry for map rendering and future rematching.
 - Do not represent the resulting assignment as a municipal boundary, service territory, Delivery
   Zone, road-valid route, or proof that the entire event lies inside an area.
@@ -217,8 +290,8 @@ external navigation as a destination.
 
 ### 3.8 Currentness and Lifecycle
 
-The server polls incidents and planned events every 15 minutes. A run records separate health for
-each endpoint.
+The server polls each approved COtrip and UDOT endpoint every 15 minutes. A run records separate
+health for each endpoint and source.
 
 A record is eligible for the active feed only when:
 
@@ -234,6 +307,11 @@ Lifecycle rules:
 - A record missing from a complete, successful, fully paginated default endpoint snapshot becomes
   inactive because CDOT documents that closed incidents and planned events no longer appear in the
   default feed.
+- UDOT endpoints return whole JSON collections with no documented pagination. A structurally valid,
+  successful UDOT array is treated as the endpoint snapshot only after parser, response-size,
+  count-anomaly, and schema checks pass. A missing UDOT Event may then become inactive. UDOT Road
+  Conditions are refreshed by stable source ID and become inactive when absent from a trustworthy
+  snapshot or no longer actionable under the approved relevance rule.
 - A record must not become inactive because of timeout, authentication failure, parse failure,
   schema rejection, apparent truncation, or any incomplete response.
 - A record with a future start may be shown as **Planned** when relevant to the selected area.
@@ -250,22 +328,27 @@ Feed health is a first-class part of the read contract.
   classification without storing the API key or full response in logs.
 - A successful poll that has not refreshed for 30 minutes is **delayed**.
 - The mobile feed may retain the last known official records while delayed, but it must show an
-  explicit **Official COtrip data delayed** state and the last successful refresh time.
+  explicit source-specific delayed state and the last successful refresh time.
 - After two hours without a successful poll, hide official records from the active feed and show
   that official data is temporarily unavailable. Driver updates remain usable.
 - If one endpoint fails, identify only that official source slice as delayed or unavailable.
+- COtrip and UDOT health are independent. A UDOT failure must not delay, hide, or relabel COtrip
+  records, and a COtrip failure must not affect UDOT or driver updates.
 - Never label cached official data as current without a visible source/refresh time.
 - A zero-record response is authoritative only when the response is structurally valid and the
   documented pagination headers establish that the snapshot is complete.
 - A first page containing the default 100 records is not a complete snapshot. Ingestion must follow
   `Next-Offset` until it is null before reconciling disappearance.
+- UDOT does not publish pagination or a normal record-count range. Establish a conservative
+  rolling-baseline anomaly check during observation; a sharp count collapse must not reconcile
+  disappearance until independently confirmed by a subsequent successful snapshot.
 
 Pull-to-refresh refreshes FreightIQ's normalized server result. It does not cause every mobile
-client to call COtrip directly or bypass the scheduled polling policy.
+client to call COtrip or UDOT directly or bypass the scheduled polling policy.
 
 ### 3.10 Driving Alerts Boundary
 
-Official COtrip records do not enter Driving Alerts V1.
+Official COtrip and UDOT records do not enter Driving Alerts V1.
 
 Background notification eligibility, encounter suppression, official geometry behavior, and safe
 notification wording require a separate accepted amendment after the foreground Operations
@@ -295,6 +378,13 @@ redesign of the ingestion contract.
 Each official card uses the concise **Official COtrip** label and provides a reachable source-info
 action. FreightIQ must not use CDOT branding in a way that implies endorsement.
 
+UDOT cards use the concise **Official UDOT Traffic** label and a separate reachable source-info
+action. The UDOT surface must plainly state that the information is supplied as a public service;
+accuracy, timeliness, and availability are not guaranteed; conditions can change quickly; drivers
+must evaluate current conditions and posted signs; and reliance is at the user's own risk. The
+implementation review must recheck the official UDOT disclaimer immediately before tester
+distribution. FreightIQ must not use UDOT branding in a way that implies endorsement.
+
 ## 4. Technical Contract
 
 ### 4.1 Architecture
@@ -302,9 +392,10 @@ action. FreightIQ must not use CDOT branding in a way that implies endorsement.
 Use this bounded flow:
 
 ```text
-COtrip JSON API
-       |
-       v
+COtrip JSON API     UDOT Traffic JSON API
+       |                     |
+       +----------+----------+
+                  v
 Scheduled Supabase Edge Function (15-minute cadence)
        |
        v
@@ -317,14 +408,15 @@ Guarded authenticated Operations read
 FreightIQ Operations Board and temporary map layer
 ```
 
-The mobile app never calls COtrip directly.
+The mobile app never calls COtrip or UDOT directly.
 
 ### 4.2 Credential Boundary
 
-- Store the COtrip API key only as a protected server-side secret.
+- Store the COtrip and UDOT API keys as separate protected server-side secrets.
 - Never commit the key, place it in a migration, Expo configuration, mobile bundle, browser bundle,
   fixture, log, screenshot, error, or client response.
-- The Edge Function reads the key at runtime and sends it only to the official HTTPS endpoint.
+- The Edge Function reads each key at runtime and sends it only to that source's official HTTPS
+  endpoint.
 - Use a newly generated key for the production secret if the existing key has been exposed during
   setup or validation.
 - Key generation, rotation, secret configuration, and function deployment each require explicit
@@ -333,20 +425,27 @@ The mobile app never calls COtrip directly.
 
 ### 4.3 Network and Parser Boundary
 
-- Allow only the exact official COtrip HTTPS host and approved endpoint paths.
+- Allow only the exact official COtrip and UDOT HTTPS hosts and approved endpoint paths.
 - Use bounded connection and response timeouts, response-size limits, and conservative retries with
   jitter for transient failures.
 - Do not follow an unexpected redirect to another host.
 - Require JSON and validate the top-level structure and every accepted record before mutation.
 - Follow the documented `Next-Offset` header until it is null. Record the `Page-Size` for each page
   and reject a snapshot as incomplete when pagination terminates unexpectedly.
+- Do not apply COtrip pagination assumptions to UDOT. Require a top-level JSON array, validate every
+  accepted UDOT record, enforce response-size and record-count bounds, and use the independent
+  count-anomaly rule before lifecycle reconciliation.
+- Use UDOT ETags for conditional requests when verified to return a safe `304 Not Modified`
+  response with the production request pattern. A `304` refreshes endpoint health without
+  manufacturing new source timestamps or reprocessing the last good snapshot.
 - Keep every requested page below the documented 10 MB response limit. Do not assume that the
   default 100-record page is the full feed.
 - Reject malformed coordinates, invalid identifiers, impossible timestamps, and unsupported
   geometry without failing closed records already stored from a prior good snapshot.
 - Treat upstream strings as untrusted data: normalize control characters, enforce server limits,
   render as text, and never execute HTML or links from the feed.
-- Record counts and safe error classes may be logged. API keys and full traveler messages may not.
+- Record counts and safe error classes may be logged. API keys, full traveler messages, UDOT event
+  descriptions/comments, and raw upstream responses may not.
 
 ### 4.4 Data Model Direction
 
@@ -404,8 +503,9 @@ V1.
 ### 4.7 Scheduling
 
 - Use a server-side 15-minute schedule.
-- The cadence matches CDOT's published expected update frequency. No additional request-rate
-  prerequisite is required for this bounded schedule.
+- The cadence matches CDOT's published expected update frequency and uses two UDOT calls per normal
+  run, comfortably below UDOT's published ten-calls-per-60-seconds throttle. Retries must remain
+  globally bounded so a failing run cannot exceed that limit.
 - Prevent overlapping ingestion runs for the same endpoint.
 - One endpoint failure must not roll back a successful independent endpoint update.
 - Make ingestion idempotent for repeated snapshots.
@@ -416,8 +516,9 @@ V1.
 
 ## 5. Accessibility and Driver-Safety Requirements
 
-- Screen readers announce **Official COtrip**, category, route, message, relevant timing, impacts,
-  restrictions, and map action in a useful order.
+- Screen readers announce the correct **Official COtrip** or **Official UDOT Traffic** source,
+  category, route, message or condition, relevant timing, impacts, restrictions, and map action in
+  a useful order.
 - Source identity, category, and delayed state never rely only on color.
 - Dynamic Type and Android font scaling do not clip the source label, route, message, schedule,
   restriction, source filter, or stale banner.
@@ -432,6 +533,7 @@ V1.
 ## 6. Included Scope
 
 - COtrip incidents and planned events
+- UDOT Events and actionable Western Utah Current Road Conditions
 - Server-side 15-minute ingestion
 - Private normalized official-condition and feed-health storage
 - Multi-area geometry matching
@@ -440,21 +542,23 @@ V1.
 - Clearly labeled official cards
 - Temporary Operations map-layer presentation
 - Delayed and unavailable feed states
-- CDOT attribution and required disclaimer surface
+- Separate CDOT and UDOT attribution/disclaimer surfaces
 - Focused database, ingestion, mobile, security, and failure-path tests
 - Physical iPhone and Pixel acceptance
 
 ## 7. Explicit Exclusions
 
 - COtrip road-condition segments or forecasts
-- Direct mobile-to-COtrip requests
+- routine UDOT `Dry`/`Fair`/no-restriction segments as active alert cards
+- Direct mobile-to-COtrip or mobile-to-UDOT requests
 - Official records in My Updates, confirmations, moderation, reports, blocking, or contributor limits
 - Driving Alerts, push notifications, background location, geofencing, or proximity prompts for
   official records
 - AI summaries, inferred severity, predicted delays, passability, rerouting, route optimization,
   navigation guidance, or ETA changes
 - Cameras, chain-law feeds, truck restrictions beyond fields already present in included records,
-  weather forecasts, emergency alerts, or other state/federal feeds
+  weather forecasts, UDOT Alerts, snow plows, message signs, mountain passes, emergency alerts, or
+  other state/federal feeds
 - Public website feed, dispatcher dashboard, analytics dashboard, exports, or public API
 - Indefinite raw-payload history
 - Changes to Delivery Zone, Routing Lab, stop data, or existing driver-post behavior
@@ -472,6 +576,12 @@ The official feed guide and terms establish the V1 contract: default 100-record 
 `offset` pagination, `Next-Offset` completion, `Page-Size`, a 10 MB response limit, disappearance of
 closed incidents and planned events from the default feed, a 15-minute expected update frequency,
 and the required disclaimer. These published rules are sufficient for local implementation.
+
+UDOT's official endpoint documentation, live-key verification, published throttle, and disclaimer
+establish the additional Utah contract: whole-array JSON snapshots, Events and Current Road
+Conditions schemas, Unix timestamps, primary points and encoded polylines, source-specific
+attribution, ten calls per 60 seconds, and no documented pagination or polling cadence. The Product
+Owner approved the bounded local implementation on 2026-10-19.
 
 ### Gate 2 — Local Database and Ingestion Foundation
 
@@ -516,7 +626,8 @@ After local acceptance, approve and execute separately, in order:
 
 1. production database backup and migration review;
 2. production database migration and independent security verification;
-3. creation or rotation of a dedicated COtrip key and direct storage as a protected server secret;
+3. creation or rotation of dedicated COtrip and UDOT keys and direct storage as separate protected
+   server secrets;
 4. Edge Function deployment without schedule activation;
 5. signed/manual production ingestion verification with deletion reconciliation disabled;
 6. scheduled-job activation at the documented 15-minute cadence;
@@ -536,15 +647,23 @@ No later gate is implied by approval of an earlier gate.
 ### 9.1 Ingestion and Parser Tests
 
 - valid incident and planned-event fixtures normalize correctly;
+- valid UDOT Event and Road Conditions fixtures normalize correctly;
 - unknown fields do not break accepted records;
 - malformed top-level responses do not mutate the last good snapshot;
 - a default 100-record first page follows `Next-Offset` until null before reconciliation;
 - every requested page remains below the documented 10 MB response limit;
 - missing, malformed, repeated, or prematurely terminated pagination headers reject the snapshot as
   incomplete;
+- UDOT whole-array snapshots enforce schema, response-size, and count-anomaly safeguards without
+  requiring COtrip pagination headers;
+- a sharp UDOT count collapse cannot inactivate unseen records until a subsequent trustworthy
+  snapshot confirms it;
+- UDOT ETag handling treats a verified `304 Not Modified` as healthy without rewriting source time;
 - invalid records are rejected safely and counted without exposing messages or credentials;
 - source strings render as text and control characters are normalized;
 - point and multipoint geometry validation rejects invalid ranges and unsupported shapes;
+- UDOT encoded polylines decode deterministically, reject malformed or excessive geometry, and
+  preserve no invented road path;
 - repeated snapshots are idempotent;
 - source updates preserve source timestamps and update normalized fields;
 - one endpoint can succeed while the other fails;
@@ -557,6 +676,8 @@ No later gate is implied by approval of an earlier gate.
 ### 9.2 Area and Category Tests
 
 - each existing Operations area matches known nearby fixture geometry;
+- approved Western Utah coverage matches known Grand, San Juan, and Emery County fixtures while
+  excluding unrelated statewide records;
 - a cross-area event can map to more than one area;
 - a long multipoint event is not reduced to nearest-anchor assignment;
 - outside-area records do not enter client reads;
@@ -580,7 +701,8 @@ No later gate is implied by approval of an earlier gate.
 
 ### 9.4 Mobile Tests
 
-- All, Official COtrip, and Driver Updates source filters return the correct discriminated records;
+- All, Official COtrip, Official UDOT Traffic, and Driver Updates source filters return the correct
+  discriminated records;
 - official cards never render a user avatar, username, Founding Driver badge, confirmation, edit,
   resolve, report, or block action;
 - My Updates remains driver-only;
@@ -601,7 +723,7 @@ No later gate is implied by approval of an earlier gate.
 - focused ESLint with no new warnings;
 - formatting and `git diff --check`;
 - local iOS and Android production bundles when the mobile diff is ready; and
-- a repository secret scan covering the COtrip key value and known key parameter forms.
+- a repository secret scan covering both official key values and known key parameter forms.
 
 ## 10. Physical-Device Acceptance
 
@@ -613,6 +735,9 @@ Static, simulator, API, and database checks do not replace physical iPhone and P
 - Each source filter works and retains area/category selections as designed.
 - A current Western Colorado official event displays route, message, timing, impacts, restrictions,
   and source time without invented content.
+- A current relevant Western Utah Event or actionable Road Condition displays the supplied route,
+  condition/message, timing when available, restriction when available, and source time without
+  invented content.
 - Official geometry opens on the map and returns to the prior state cleanly.
 - My Updates remains driver-only.
 - Pull-to-refresh, offline cache, delayed state, two-hour unavailable state, and online recovery are
@@ -628,10 +753,10 @@ hide actions.
 
 ### 10.3 Field Acceptance
 
-Use at least one live Western Colorado incident or planned event when safely available. Compare the
-FreightIQ card and map location against the signed-in official COtrip source while stopped. Confirm
-that the information is useful, source identity is clear, and no wording implies routing or safety
-guarantees.
+Use at least one live Western Colorado incident or planned event and one relevant Western Utah Event
+or actionable Road Condition when safely available. Compare each FreightIQ card and map location
+against its official source while stopped. Confirm that the information is useful, source identity
+is clear, disclaimers are source-specific, and no wording implies routing or safety guarantees.
 
 ## 11. Stop Conditions
 
@@ -658,7 +783,7 @@ Before tester distribution:
 - record local, hosted, and physical-device evidence at the correct gates;
 - add or update Help content for source identity, delayed data, limits, and required disclaimer;
 - verify Privacy Policy and Terms accurately describe official-data processing if required;
-- recheck the current COtrip/CDOT developer terms and attribution language;
+- recheck the current COtrip/CDOT and UDOT developer terms and attribution language;
 - document credential rotation and feed-disable rollback without recording the key; and
 - keep database, Edge Function, schedule, build, tester distribution, and public release approvals
   distinct.
@@ -669,7 +794,7 @@ The production design must support these independent reversals:
 
 1. disable scheduled ingestion without a mobile release;
 2. disable official records in guarded reads while retaining driver Operations;
-3. revoke or rotate the COtrip key without a mobile release;
+3. revoke or rotate either official-source key without a mobile release;
 4. roll back the Edge Function independently from the database; and
 5. remove mobile presentation in a later reviewed build without deleting driver updates.
 
@@ -685,6 +810,12 @@ Updates, map behavior, confirmations, moderation, and Driving Alerts usable.
   `https://docs.google.com/document/d/1pVDW5iRiRsAWcixw5Z9umPFRspuOUJUdH2YLpYfltP4/edit?usp=sharing`
 - Colorado Information Marketplace, CDOT Real Time Data Feed:
   `https://data.colorado.gov/Transportation/CDOT-Real-Time-Data-Feed-XML-/j3ch-zsvz/about_data`
+- UDOT Traffic developer API documentation: `https://udottraffic.utah.gov/developers/doc`
+- UDOT Traffic Events endpoint documentation:
+  `https://www.udottraffic.utah.gov/help/endpoint/event`
+- UDOT Traffic Current Road Conditions endpoint documentation:
+  `https://udottraffic.utah.gov/help/endpoint/roadconditions`
+- UDOT Traffic disclaimer: `https://udottraffic.utah.gov/about/disclaimer`
 - Supabase Edge Functions secrets:
   `https://supabase.com/docs/guides/functions/secrets`
 - Supabase scheduled Edge Functions:
@@ -699,8 +830,9 @@ or production change because vendor terms and platform procedures may change.
 
 ## 15. Approval Boundary
 
-Product Owner approval of this specification would authorize only the bounded local implementation
-and local verification described in Gates 2–5.
+The earlier COtrip approval authorized its completed bounded implementation. The Product Owner
+subsequently approved the UDOT implementation and local verification described in Gates 2–5 on
+2026-10-19. That approval remains local-only.
 
 It would not authorize:
 
@@ -714,7 +846,7 @@ It would not authorize:
 - native builds or tester distribution;
 - App Store or Play Store submission;
 - public release;
-- road conditions, Driving Alerts, or any other excluded feature.
+- COtrip road conditions, Driving Alerts, or any other excluded feature.
 
 Any material product, data, security, lifecycle, geometry, attribution, or operational change to
 this contract requires Product Owner review before implementation continues.

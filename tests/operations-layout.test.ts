@@ -66,6 +66,12 @@ test("Large text controls wrap and remeasure without remounting the feed or aler
   assert.match(text, /largeText && styles.stackedOption/);
   assert.match(text, /largeText && styles.largeTextTitle/);
   assert.match(text, /maxHeight: "85%"/);
+  assert.match(
+    text,
+    /height: Math\.max\(360, windowHeight - insets\.top - insets\.bottom - 48\)/,
+  );
+  assert.match(text, /legalDisclaimerScroll: \{ flex: 1 \}/);
+  assert.match(text, /nestedScrollEnabled/);
   assert.match(text, /Read the full required CDOT disclaimer/);
   assert.match(text, /legalDisclaimerText: \{ fontSize: 16, lineHeight: 25 \}/);
   assert.doesNotMatch(
@@ -88,6 +94,24 @@ test("Official COtrip cards default to compact independently expandable previews
   assert.equal(prop("extraData"), "{expandedOfficialIds}");
   assert.match(text, /Expected clear/);
   assert.match(text, /View Map/);
+});
+
+test("Operations distinguishes Colorado, Utah, and driver sources", () => {
+  const official = readFileSync(
+    new URL("../utils/cotrip-conditions.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(text, /useState<OfficialSourceFilter>\("drivers"\)/);
+  assert.match(
+    text,
+    /\["drivers", "Driver Updates"\],[\s\S]*\["cotrip", "COtrip"\],[\s\S]*\["udot", "UDOT"\],[\s\S]*\["all", "All"\]/,
+  );
+  assert.match(text, /accessibilityLabel=\{label\}/);
+  assert.match(text, /value === "drivers" \? "Driver\\nUpdates" : label/);
+  assert.match(text, /flex: value === "drivers" \? 1\.35 : 0\.88/);
+  assert.match(text, /Read the UDOT source notice/);
+  assert.match(official, /Official UDOT Traffic/);
+  assert.match(official, /UDOT_DISCLAIMER/);
 });
 
 test("Loading, empty, failure and pull-to-refresh states remain available in the same list", () => {
