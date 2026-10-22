@@ -91,6 +91,10 @@ export type FreightIqReportReadRow = {
   contact_phones: unknown;
   check_in_notes: string | null;
   contact_people: unknown[] | null;
+  deliver_from_details_updated_at?: string | null;
+  approach_hint_updated_at?: string | null;
+  check_in_notes_updated_at?: string | null;
+  notes_updated_at?: string | null;
   moderation_status: string;
   username: string | null;
   profile_tractor_type: string | null;
@@ -127,6 +131,10 @@ export type FreightIqOwnedReport = Pick<
   | "contact_phones"
   | "check_in_notes"
   | "contact_people"
+  | "deliver_from_details_updated_at"
+  | "approach_hint_updated_at"
+  | "check_in_notes_updated_at"
+  | "notes_updated_at"
 >;
 
 // This endpoint can return only the signed-in driver's own contribution. Never

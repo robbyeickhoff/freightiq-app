@@ -25,7 +25,7 @@ set local role authenticated;
 set local "request.jwt.claim.sub"='50000000-0000-4000-8000-000000000001';
 select is(public.get_owned_freightiq_report_v1('own-read-stop')->>'id','51000000-0000-4000-8000-000000000002','newest own report selected deterministically, including own hidden report');
 select is(public.get_owned_freightiq_report_v1('own-read-stop')->>'notes','My hidden report','another driver content is not returned');
-select is((select count(*) from jsonb_object_keys(public.get_owned_freightiq_report_v1('own-read-stop'))),15::bigint,'only explicit editor fields returned');
+select is((select count(*) from jsonb_object_keys(public.get_owned_freightiq_report_v1('own-read-stop'))),19::bigint,'only explicit editor fields and their freshness dates returned');
 select ok(not (public.get_owned_freightiq_report_v1('own-read-stop') ?| array['address','lat','username','reputation','caller_vote','votes_up']),'no stop metadata, profile or voting disclosure');
 select throws_ok($$select public.get_owned_freightiq_report_v1('')$$,'22023','A valid stop ID is required.','blank ID rejected');
 select throws_ok($$select public.get_owned_freightiq_report_v1(repeat('x',1025))$$,'22023','A valid stop ID is required.','oversized ID rejected');

@@ -153,6 +153,10 @@ type ReportRow = {
   contact_phones: unknown;
   check_in_notes: string | null;
   notes: string | null;
+  deliver_from_details_updated_at?: string | null;
+  approach_hint_updated_at?: string | null;
+  check_in_notes_updated_at?: string | null;
+  notes_updated_at?: string | null;
   votes_up: number;
   votes_down: number;
   created_at: string;
@@ -2132,6 +2136,16 @@ export default function StopScreen() {
     });
   }
 
+  function formatIntelDate(fieldUpdatedAt: string | null | undefined, reportUpdatedAt: string) {
+    const d = new Date(fieldUpdatedAt ?? reportUpdatedAt);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView
@@ -2559,15 +2573,27 @@ export default function StopScreen() {
                         ) : null}
 
                         {r.deliver_from_details ? (
-                          <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
-                            {r.deliver_from_details}
-                          </Text>
+                          <View>
+                            <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
+                              {r.deliver_from_details}
+                            </Text>
+                            <Text style={[styles.fieldUpdatedAt, { color: colors.textSecondary }]}>
+                              Last updated{" "}
+                              {formatIntelDate(r.deliver_from_details_updated_at, r.updated_at)}
+                            </Text>
+                          </View>
                         ) : null}
 
                         {r.approach_hint ? (
-                          <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
-                            <Text style={styles.bold}>Best Approach:</Text> {r.approach_hint}
-                          </Text>
+                          <View>
+                            <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
+                              <Text style={styles.bold}>Best Approach:</Text> {r.approach_hint}
+                            </Text>
+                            <Text style={[styles.fieldUpdatedAt, { color: colors.textSecondary }]}>
+                              Last updated{" "}
+                              {formatIntelDate(r.approach_hint_updated_at, r.updated_at)}
+                            </Text>
+                          </View>
                         ) : null}
 
                         {(() => {
@@ -2655,18 +2681,31 @@ export default function StopScreen() {
                                 </View>
                               ))}
                               {reportContact.checkInNotes ? (
-                                <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
-                                  {reportContact.checkInNotes}
-                                </Text>
+                                <View>
+                                  <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
+                                    {reportContact.checkInNotes}
+                                  </Text>
+                                  <Text
+                                    style={[styles.fieldUpdatedAt, { color: colors.textSecondary }]}
+                                  >
+                                    Last updated{" "}
+                                    {formatIntelDate(r.check_in_notes_updated_at, r.updated_at)}
+                                  </Text>
+                                </View>
                               ) : null}
                             </View>
                           );
                         })()}
 
                         {r.notes ? (
-                          <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
-                            <Text style={styles.bold}>Driver Notes:</Text> {r.notes}
-                          </Text>
+                          <View>
+                            <Text style={[styles.reportLine, { color: colors.textPrimary }]}>
+                              <Text style={styles.bold}>Driver Notes:</Text> {r.notes}
+                            </Text>
+                            <Text style={[styles.fieldUpdatedAt, { color: colors.textSecondary }]}>
+                              Last updated {formatIntelDate(r.notes_updated_at, r.updated_at)}
+                            </Text>
+                          </View>
                         ) : null}
 
                         <Text style={[styles.reportVotes, { color: colors.textSecondary }]}>
@@ -4214,6 +4253,7 @@ const styles = StyleSheet.create({
   reputationText: { color: "#444", fontWeight: "800", fontSize: 12 },
   reportMeta: { color: "#666", fontSize: 12 },
   reportLine: { color: "#222" },
+  fieldUpdatedAt: { fontSize: 12, marginTop: 2 },
   reportContactBlock: {
     gap: 8,
     borderTopWidth: 1,

@@ -13,6 +13,56 @@ answer one question:
 
 ## Current Objective
 
+### October 21 — Carrier-neutral nationwide Operations area directory
+
+Real iPhone use of the COtrip/UDOT tester build confirmed that the flat six-area picker will not
+scale as Utah and later territories are added. Rob supplied the current Grand Junction service
+territory's Colorado outer checkpoints—Telluride, Ouray, Gunnison, Crested Butte, Hotchkiss,
+Paonia, Rifle, Meeker, Craig, Rangely, Norwood, Nucla, Naturita, Gateway, Bedrock, and Paradox—and
+defined the Utah operating corridor through Moab, Monticello, Blanding, and Bluff with an
+approximate 50-mile east/west reach. Colorado edge towns require a practical 25–30 mile cushion and
+route-aware boundary rather than hard town limits.
+
+Montana tester use exposed that every driver currently sees the same six Colorado areas plus COtrip
+and UDOT controls. Rob approved revising the
+[Operations Area Directory V1 specification](build-specs/FreightIQScalableOperationsAreasV1BuildSpec.md)
+around a carrier-neutral nationwide directory. Nearby, saved, and recent areas lead the experience;
+states organize browsing; practical operating regions remain the posting leaves; unsupported
+territory never falls back to Colorado; and official-source controls appear only where they can
+return relevant data. Public freight-terminal directories may help discover working hubs, but
+carrier codes, branding, transit-time maps, and claimed service boundaries do not become FreightIQ
+product data.
+
+The Product Owner approved the revised nationwide directory specification, the Colorado/Utah
+practical-area model, the 160-mile Missoula pilot circle, and the bounded local implementation on
+October 21. The local implementation now has server-owned hierarchy and geometry, legacy-area
+membership, guarded directory and group reads, contextual official-source choices, practical-leaf
+posting, and scope-aware map behavior. Existing six-area rows and old RPC behavior remain intact.
+The focused directory database test, all 204 mobile tests, TypeScript, focused lint, and local
+public/private database lint pass. On October 22, physical iPhone acceptance passed the simplified
+picker: Near Me selected Grand Valley / I-70, state browsing exposed only the appropriate practical
+areas, Recent Areas updated correctly, and Colorado, Utah, and Montana each showed only their
+relevant source controls. Pixel acceptance remains a later gate.
+
+Montana's official public MDT feeds are technically feasible, and Rob directed FreightIQ to proceed
+without agency outreach. MDT feed selection, polling/caching, attribution/disclaimer, ingestion,
+hosted migration/deployment, commit/push, native builds, distribution, and release remain separate
+approval gates.
+
+### October 22 — Per-field Driver Report freshness dates
+
+Rob approved adding a separate freshness date beneath Delivery Details, Best Approach, Check-in
+Notes, and Driver Notes on the Intel page. The local database now stamps only the text field that
+actually changed; unchanged fields retain their prior date, cleared fields clear their date, and
+existing content uses the report's last update as the best available historical date. Guarded shared
+and owned-report reads expose only the four new dates alongside their existing fields.
+
+The focused database and mobile contract tests, guarded owned-report security test, all mobile
+tests, TypeScript, focused lint, database lint, formatting, and whitespace checks pass. Physical
+iPhone acceptance confirmed that the four dates display under Driver Reports and editing only Driver
+Notes updates only that field's date. Pixel acceptance, hosted migration/deployment, production
+verification, native builds, distribution, and release remain separate gates.
+
 ### October 19 — Official UDOT Traffic bounded local implementation
 
 Rob approved extending the accepted COtrip Operations integration with the verified UDOT Traffic
