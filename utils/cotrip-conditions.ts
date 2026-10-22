@@ -124,6 +124,35 @@ export async function readOfficialCOtripConditions(
   return { data: conditions, health: response.data.feed_health ?? {}, error: null };
 }
 
+export async function readOfficialConditionsForScope(
+  scopeId: string,
+  sourceFilter: OfficialSourceFilter = "all",
+) {
+  const { data, error } = await supabase.rpc("read_official_conditions_guarded_v3", {
+    p_scope_id: scopeId,
+    p_source_filter: sourceFilter,
+  });
+  if (error) return { data: null, health: {}, error };
+  const response = data as {
+    code?: string | null;
+    data?: { conditions?: unknown[]; feed_health?: COtripFeedHealth };
+  } | null;
+  if (!response || response.code || !Array.isArray(response.data?.conditions))
+    return {
+      data: null,
+      health: {},
+      error: new Error("Could not refresh official road conditions."),
+    };
+  const conditions = response.data.conditions.filter(validOfficialCOtripCondition);
+  if (conditions.length !== response.data.conditions.length)
+    return {
+      data: null,
+      health: {},
+      error: new Error("Official road-condition data did not pass validation."),
+    };
+  return { data: conditions, health: response.data.feed_health ?? {}, error: null };
+}
+
 export const COTRIP_DISCLAIMER =
   "The data made available here has been modified for use from its original source, which is the State of Colorado, Department of Transportation (CDOT). THE STATE OF COLORADO AND CDOT MAKES NO REPRESENTATIONS OR WARRANTY AS TO THE COMPLETENESS, ACCURACY, TIMELINESS, OR CONTENT OF ANY DATA MADE AVAILABLE THROUGH THIS SITE. THE STATE OF COLORADO AND CDOT EXPRESSLY DISCLAIMS ALL WARRANTIES, WHETHER EXPRESS OR IMPLIED, INCLUDING ANY IMPLIED WARRANTIES OF MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE. The data is subject to change as modifications and updates are complete. It is understood that the information contained in the Web feed is being used at one's own risk.";
 

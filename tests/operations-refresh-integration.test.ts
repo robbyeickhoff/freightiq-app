@@ -42,8 +42,8 @@ test("My Updates hides raw connection errors while retaining cached posts and st
         Promise,
         operationsReadEpoch: () => 0,
         supabase: { rpc: async () => ({ data: null, error: { message: raw } }) },
-        readActiveOperations: async () => ({ data: null, error: { message: wait } }),
-        readOfficialCOtripConditions: async () => ({ data: [], health: {}, error: null }),
+        readActiveOperationsScope: async () => ({ data: null, error: { message: wait } }),
+        readOfficialConditionsForScope: async () => ({ data: [], health: {}, error: null }),
         readOperationsCache: async () =>
           cached ? { updates: posts, savedAt: "saved-time" } : null,
         writeOperationsCache: async () => {

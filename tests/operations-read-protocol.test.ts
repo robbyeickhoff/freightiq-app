@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 // @ts-expect-error Node strip-types requires extensions.
-import { executeOperationsRead } from "../utils/operations-read-protocol.ts";
+import * as OperationsReadProtocol from "../utils/operations-read-protocol.ts";
+const { executeOperationsRead, executeOperationsScopeRead } = OperationsReadProtocol;
 const snapshot = "a".repeat(64);
 const cursor = {
   v: 1,
@@ -120,4 +121,27 @@ test("unsealed or mixed-lifetime next cursors fail before another request", asyn
     await assert.rejects(executeOperationsRead(c, null, valid, () => true));
     assert.equal(c.calls.length, 1);
   }
+});
+
+test("directory scope transport uses one guarded paginated scope read", async () => {
+  const calls: { name: string; args: Record<string, unknown> }[] = [];
+  const scopeCursor = { ...cursor };
+  const scopedClient = {
+    rpc(name: string, args: Record<string, unknown>) {
+      calls.push({ name, args });
+      return {
+        async abortSignal() {
+          return good(calls.length === 1 ? { ...first, next_cursor: scopeCursor } : last);
+        },
+      };
+    },
+  };
+  assert.deepEqual(
+    await executeOperationsScopeRead(scopedClient, "group:western-colorado", valid, () => true),
+    [{ id: "a" }, { id: "b" }],
+  );
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].name, "read_operations_scope_guarded_v2");
+  assert.equal(calls[0].args.p_scope_id, "group:western-colorado");
+  assert.deepEqual(calls[1].args.p_cursor, scopeCursor);
 });

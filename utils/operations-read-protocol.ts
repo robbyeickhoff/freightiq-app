@@ -84,3 +84,44 @@ export async function executeOperationsRead<T extends { id: string }>(
     signal?.removeEventListener("abort", abort);
   }
 }
+
+export async function executeOperationsScopeRead<T extends { id: string }>(
+  client: GuardedReadClient,
+  scopeId: string,
+  validRow: (x: unknown) => x is T,
+  isCurrent: () => boolean,
+  signal?: AbortSignal,
+): Promise<T[]> {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  if (signal?.aborted) abort();
+  signal?.addEventListener("abort", abort, { once: true });
+  const timer = setTimeout(abort, 30000);
+  try {
+    return await loadCompleteOperations(
+      async (cursor) => {
+        if (controller.signal.aborted)
+          throw new OperationsReadError("OPERATIONS_READ_ABORTED", "Refresh cancelled.");
+        const { data, error } = await client
+          .rpc("read_operations_scope_guarded_v2", {
+            p_scope_id: scopeId,
+            p_limit: 100,
+            p_cursor: cursor,
+          })
+          .abortSignal(controller.signal);
+        if (controller.signal.aborted)
+          throw new OperationsReadError("OPERATIONS_READ_ABORTED", "Refresh cancelled.");
+        if (error) throw failure(error);
+        if (!object(data) || data.code !== null) throw failure(data);
+        return data.data;
+      },
+      validRow,
+      isCurrent,
+    );
+  } catch (error) {
+    throw error instanceof OperationsReadError ? error : failure(error);
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", abort);
+  }
+}

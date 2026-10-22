@@ -66,10 +66,7 @@ test("Large text controls wrap and remeasure without remounting the feed or aler
   assert.match(text, /largeText && styles.stackedOption/);
   assert.match(text, /largeText && styles.largeTextTitle/);
   assert.match(text, /maxHeight: "85%"/);
-  assert.match(
-    text,
-    /height: Math\.max\(360, windowHeight - insets\.top - insets\.bottom - 48\)/,
-  );
+  assert.match(text, /height: Math\.max\(360, windowHeight - insets\.top - insets\.bottom - 48\)/);
   assert.match(text, /legalDisclaimerScroll: \{ flex: 1 \}/);
   assert.match(text, /nestedScrollEnabled/);
   assert.match(text, /Read the full required CDOT disclaimer/);
@@ -96,16 +93,19 @@ test("Official COtrip cards default to compact independently expandable previews
   assert.match(text, /View Map/);
 });
 
-test("Operations distinguishes Colorado, Utah, and driver sources", () => {
-  const official = readFileSync(
-    new URL("../utils/cotrip-conditions.ts", import.meta.url),
-    "utf8",
-  );
+test("Operations limits official sources to the selected directory scope", () => {
+  const official = readFileSync(new URL("../utils/cotrip-conditions.ts", import.meta.url), "utf8");
   assert.match(text, /useState<OfficialSourceFilter>\("drivers"\)/);
-  assert.match(
-    text,
-    /\["drivers", "Driver Updates"\],[\s\S]*\["cotrip", "COtrip"\],[\s\S]*\["udot", "UDOT"\],[\s\S]*\["all", "All"\]/,
-  );
+  assert.match(text, /availableSources\.map/);
+  assert.match(text, /availableSources\.includes\("cotrip"\)/);
+  assert.match(text, /availableSources\.includes\("udot"\)/);
+  assert.match(text, /That official road source is not available in the area you selected/);
+  assert.match(text, /Near Me/);
+  assert.match(text, /RECENT AREAS/);
+  assert.match(text, /Browse by State/);
+  assert.match(text, /areaPickerView === "states"/);
+  assert.match(text, /group\.state_code === areaPickerView\.slice/);
+  assert.doesNotMatch(text, /All \{territory\.display_name\}/);
   assert.match(text, /accessibilityLabel=\{label\}/);
   assert.match(text, /value === "drivers" \? "Driver\\nUpdates" : label/);
   assert.match(text, /flex: value === "drivers" \? 1\.35 : 0\.88/);

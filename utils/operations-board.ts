@@ -217,7 +217,7 @@ export function findOperationsStatusNotice(
 export function validateOperationsDraft(draft: OperationsDraft) {
   const message = draft.message.trim();
   const category = OPERATIONS_CATEGORIES.find((item) => item.value === draft.category);
-  if (!OPERATIONS_AREAS.some((area) => area.slug === draft.areaSlug))
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.areaSlug))
     return "Choose an Operations area.";
   if (!category) return "Choose a category.";
   if (!message || message.length > 280 || /[\u0000-\u001f\u007f]/.test(message))

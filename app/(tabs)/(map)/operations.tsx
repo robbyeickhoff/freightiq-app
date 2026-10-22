@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from "expo-router";
+import * as Location from "expo-location";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppIcon } from "@/components/ui/app-icon";
 import { AppButton } from "@/components/ui/app-button";
@@ -21,7 +22,6 @@ import { AppCard } from "@/components/ui/app-card";
 import { OperationsDrivingAlertControl } from "@/components/operations-driving-alert-control";
 import { useAppTheme } from "@/context/theme-context";
 import {
-  OPERATIONS_AREAS,
   operationsReadEpoch,
   subscribeOperationsPrivacy,
   OPERATIONS_CATEGORIES,
@@ -39,14 +39,23 @@ import {
   writeOperationsPreference,
   writeOperationsStatusSnapshot,
 } from "@/utils/operations-board";
+import {
+  directorySelection,
+  findNearbyOperationsArea,
+  legacyAreaToScope,
+  readRecentOperationsAreas,
+  readOperationsAreaDirectory,
+  rememberRecentOperationsArea,
+  type OperationsAreaDirectory,
+} from "@/utils/operations-area-directory";
 import { supabase } from "@/utils/supabase";
-import { readActiveOperations } from "@/utils/operations-reads";
+import { readActiveOperationsScope } from "@/utils/operations-reads";
 import {
   COTRIP_DISCLAIMER,
   UDOT_DISCLAIMER,
   officialDetailText,
   officialSourceLabel,
-  readOfficialCOtripConditions,
+  readOfficialConditionsForScope,
   type COtripFeedHealth,
   type OfficialCOtripCondition,
   type OfficialSourceFilter,
@@ -78,6 +87,16 @@ function lifecycleLabel(update: OperationsUpdate) {
   return null;
 }
 
+const OPERATIONS_STATE_NAMES: Record<string, string> = {
+  CO: "Colorado",
+  MT: "Montana",
+  UT: "Utah",
+};
+
+function operationsStateName(stateCode: string) {
+  return OPERATIONS_STATE_NAMES[stateCode] ?? stateCode;
+}
+
 export default function OperationsBoardScreen() {
   const router = useRouter();
   const pathname = usePathname();
@@ -87,8 +106,14 @@ export default function OperationsBoardScreen() {
   const largeText = fontScale >= 1.5;
   const params = useLocalSearchParams<{ area?: string }>();
   const [userId, setUserId] = useState("");
-  const [area, setArea] = useState(params.area ?? "");
+  const [area, setArea] = useState(() => legacyAreaToScope(params.area ?? ""));
+  const [directory, setDirectory] = useState<OperationsAreaDirectory | null>(null);
   const [areaPickerOpen, setAreaPickerOpen] = useState(false);
+  const [areaPickerView, setAreaPickerView] = useState<"root" | "states" | `state:${string}`>(
+    "root",
+  );
+  const [recentAreaIds, setRecentAreaIds] = useState<string[]>([]);
+  const [locatingArea, setLocatingArea] = useState(false);
   const [updates, setUpdates] = useState<OperationsUpdate[]>([]);
   const [official, setOfficial] = useState<OfficialCOtripCondition[]>([]);
   const [officialHealth, setOfficialHealth] = useState<COtripFeedHealth>({});
@@ -126,8 +151,35 @@ export default function OperationsBoardScreen() {
     });
   }, [category, history, official, source, updates]);
   const selectedCategoryLabel = category ? categoryLabel(category) : "All Conditions";
-  const selectedAreaLabel =
-    OPERATIONS_AREAS.find((item) => item.slug === area)?.name ?? "All Areas";
+  const selectedDirectoryItem = useMemo(
+    () => directorySelection(directory, area),
+    [area, directory],
+  );
+  const selectedAreaLabel = selectedDirectoryItem?.label ?? "Choose an area";
+  const directoryStateCodes = useMemo(
+    () => [...new Set(directory?.groups.map((group) => group.state_code) ?? [])].sort(),
+    [directory],
+  );
+  const recentAreas = useMemo(
+    () =>
+      recentAreaIds.flatMap((scopeId) => {
+        const item = directorySelection(directory, scopeId);
+        return item?.area ? [{ scopeId, label: item.label }] : [];
+      }),
+    [directory, recentAreaIds],
+  );
+  const availableSources = useMemo(
+    () => selectedDirectoryItem?.sources ?? [],
+    [selectedDirectoryItem],
+  );
+  const sourceChoices: { value: OfficialSourceFilter; label: string }[] = [
+    { value: "drivers", label: "Driver Updates" },
+    ...availableSources.map((value) => ({
+      value,
+      label: value === "cotrip" ? "COtrip" : "UDOT",
+    })),
+    ...(availableSources.length ? [{ value: "all" as const, label: "All" }] : []),
+  ];
   const officialHealthDelayed =
     source !== "drivers" &&
     Object.entries(officialHealth).some(
@@ -143,9 +195,35 @@ export default function OperationsBoardScreen() {
     void supabase.auth.getUser().then(async ({ data }) => {
       const id = data.user?.id ?? "";
       setUserId(id);
-      if (id && !params.area) setArea((await readOperationsPreference(id)) ?? "");
+      if (id) {
+        const [preference, recent] = await Promise.all([
+          params.area ? Promise.resolve(null) : readOperationsPreference(id),
+          readRecentOperationsAreas(id),
+        ]);
+        if (!params.area) setArea(legacyAreaToScope(preference ?? ""));
+        setRecentAreaIds(recent);
+      }
     });
   }, [params.area]);
+  useEffect(() => {
+    let active = true;
+    void readOperationsAreaDirectory().then((result) => {
+      if (active && result.data) setDirectory(result.data);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (source === "drivers" || source === "official") return;
+    if (source === "all" ? !availableSources.length : !availableSources.includes(source)) {
+      setSource("drivers");
+      Alert.alert(
+        "Showing Driver Updates",
+        "That official road source is not available in the area you selected.",
+      );
+    }
+  }, [area, availableSources, source]);
   useEffect(
     () =>
       subscribeOperationsPrivacy(() => {
@@ -163,17 +241,21 @@ export default function OperationsBoardScreen() {
     async (silent = false, mayPublish: () => boolean = () => true) => {
       const epoch = operationsReadEpoch();
       const isCurrent = () => mayPublish() && epoch === operationsReadEpoch();
-      if (!userId) return;
+      if (!userId || !area) {
+        setUpdates([]);
+        setOfficial([]);
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
       if (!silent) setLoading(true);
       const [board, officialBoard, access, ownHistory] = await Promise.all([
         history
-          ? supabase.rpc("get_owned_operations_history_v1", {
-              p_area_slug: area || null,
-            })
-          : readActiveOperations(area || null, isCurrent),
+          ? supabase.rpc("get_owned_operations_history_v1", { p_area_slug: null })
+          : readActiveOperationsScope(area, isCurrent),
         history
           ? Promise.resolve({ data: [], health: {}, error: null })
-          : readOfficialCOtripConditions(area || null, source),
+          : readOfficialConditionsForScope(area, source),
         supabase.rpc("can_post_operations_update"),
         supabase.rpc("get_owned_operations_history_v1", {
           p_area_slug: null,
@@ -286,9 +368,56 @@ export default function OperationsBoardScreen() {
       };
     }, [load]),
   );
-  const chooseArea = async (slug: string) => {
-    setArea(slug);
-    if (userId) await writeOperationsPreference(userId, slug);
+  const chooseArea = async (scopeId: string) => {
+    setArea(scopeId);
+    if (userId) {
+      await writeOperationsPreference(userId, scopeId);
+      if (scopeId.startsWith("area:")) {
+        setRecentAreaIds(await rememberRecentOperationsArea(userId, scopeId));
+      }
+    }
+  };
+  const closeAreaPicker = () => {
+    setAreaPickerOpen(false);
+    setAreaPickerView("root");
+  };
+  const chooseNearbyArea = async () => {
+    if (!directory || locatingArea) return;
+    setLocatingArea(true);
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status !== "granted") {
+        Alert.alert(
+          "Location unavailable",
+          "Allow location access to find a nearby Operations area, or browse by state.",
+        );
+        return;
+      }
+      const current = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const nearby = findNearbyOperationsArea(
+        directory,
+        current.coords.latitude,
+        current.coords.longitude,
+      );
+      if (!nearby) {
+        Alert.alert(
+          "No supported area nearby",
+          "FreightIQ does not have an Operations area near your current location yet. You can still browse by state.",
+        );
+        return;
+      }
+      await chooseArea(nearby.scope_id);
+      closeAreaPicker();
+    } catch {
+      Alert.alert(
+        "Location unavailable",
+        "FreightIQ could not determine your current location. Browse by state instead.",
+      );
+    } finally {
+      setLocatingArea(false);
+    }
   };
   const resolve = (id: string) =>
     Alert.alert("Resolve update?", "This removes it from the active board.", [
@@ -361,7 +490,10 @@ export default function OperationsBoardScreen() {
           accessibilityLabel={`Area filter, ${selectedAreaLabel}`}
           accessibilityRole="button"
           accessibilityState={{ expanded: areaPickerOpen }}
-          onPress={() => setAreaPickerOpen(true)}
+          onPress={() => {
+            setAreaPickerView("root");
+            setAreaPickerOpen(true);
+          }}
           style={[
             styles.conditionButton,
             { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
@@ -380,14 +512,14 @@ export default function OperationsBoardScreen() {
       </View>
       <Modal
         animationType="fade"
-        onRequestClose={() => setAreaPickerOpen(false)}
+        onRequestClose={closeAreaPicker}
         transparent
         visible={areaPickerOpen}
       >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Close area filter"
-          onPress={() => setAreaPickerOpen(false)}
+          onPress={closeAreaPicker}
           style={styles.pickerBackdrop}
         >
           <Pressable
@@ -399,39 +531,157 @@ export default function OperationsBoardScreen() {
             ]}
           >
             <View style={styles.pickerHeader}>
-              <Text style={[styles.pickerTitle, { color: colors.textPrimary }]}>Area</Text>
+              {areaPickerView === "root" ? null : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Back"
+                  hitSlop={10}
+                  onPress={() => setAreaPickerView(areaPickerView === "states" ? "root" : "states")}
+                >
+                  <Text style={[styles.pickerBack, { color: colors.accentStrong }]}>‹ Back</Text>
+                </Pressable>
+              )}
+              <Text style={[styles.pickerTitle, { color: colors.textPrimary }]}>
+                {areaPickerView === "root"
+                  ? "Area"
+                  : areaPickerView === "states"
+                    ? "Browse by State"
+                    : operationsStateName(areaPickerView.slice("state:".length))}
+              </Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Close area filter"
                 hitSlop={10}
-                onPress={() => setAreaPickerOpen(false)}
+                onPress={closeAreaPicker}
               >
                 <Text style={[styles.pickerDone, { color: colors.accentStrong }]}>Done</Text>
               </Pressable>
             </View>
             <ScrollView>
-              {[{ slug: "", name: "All Areas" }, ...OPERATIONS_AREAS].map((item) => {
-                const selected = area === item.slug;
-                return (
+              {areaPickerView === "root" ? (
+                <>
                   <Pressable
                     accessibilityRole="menuitem"
-                    accessibilityState={{ selected }}
-                    key={item.slug}
-                    onPress={() => {
-                      void chooseArea(item.slug);
-                      setAreaPickerOpen(false);
-                    }}
+                    accessibilityLabel="Near Me"
+                    accessibilityHint="Uses your current location to choose the closest supported Operations area"
+                    disabled={!directory || locatingArea}
+                    onPress={() => void chooseNearbyArea()}
+                    style={[styles.pickerOption, { borderTopColor: colors.border }]}
+                  >
+                    <View style={styles.pickerOptionCopy}>
+                      <Text style={[styles.pickerOptionLabel, { color: colors.textPrimary }]}>
+                        Near Me
+                      </Text>
+                      <Text style={[styles.pickerOptionHint, { color: colors.textSecondary }]}>
+                        Use your current location
+                      </Text>
+                    </View>
+                    {locatingArea ? (
+                      <ActivityIndicator color={colors.accentStrong} />
+                    ) : (
+                      <AppIcon name="location" size={22} color={colors.accentStrong} />
+                    )}
+                  </Pressable>
+
+                  {recentAreas.length ? (
+                    <Text style={[styles.pickerSectionLabel, { color: colors.textSecondary }]}>
+                      RECENT AREAS
+                    </Text>
+                  ) : null}
+                  {recentAreas.map((item) => {
+                    const selected = area === item.scopeId;
+                    return (
+                      <Pressable
+                        accessibilityRole="menuitem"
+                        accessibilityState={{ selected }}
+                        key={item.scopeId}
+                        onPress={() => {
+                          void chooseArea(item.scopeId);
+                          closeAreaPicker();
+                        }}
+                        style={[styles.pickerOption, { borderTopColor: colors.border }]}
+                      >
+                        <Text style={[styles.pickerOptionLabel, { color: colors.textPrimary }]}>
+                          {item.label}
+                        </Text>
+                        {selected ? (
+                          <Text style={[styles.pickerCheck, { color: colors.accentStrong }]}>
+                            ✓
+                          </Text>
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+
+                  <Text style={[styles.pickerSectionLabel, { color: colors.textSecondary }]}>
+                    FIND AN AREA
+                  </Text>
+                  <Pressable
+                    accessibilityRole="menuitem"
+                    accessibilityHint="Shows states with supported FreightIQ Operations areas"
+                    onPress={() => setAreaPickerView("states")}
                     style={[styles.pickerOption, { borderTopColor: colors.border }]}
                   >
                     <Text style={[styles.pickerOptionLabel, { color: colors.textPrimary }]}>
-                      {item.name}
+                      Browse by State
                     </Text>
-                    {selected ? (
-                      <Text style={[styles.pickerCheck, { color: colors.accentStrong }]}>✓</Text>
-                    ) : null}
+                    <AppIcon name="chevronRight" size={22} color={colors.accentStrong} />
                   </Pressable>
-                );
-              })}
+                </>
+              ) : areaPickerView === "states" ? (
+                directoryStateCodes.map((stateCode) => (
+                  <Pressable
+                    accessibilityRole="menuitem"
+                    key={stateCode}
+                    onPress={() => setAreaPickerView(`state:${stateCode}`)}
+                    style={[styles.pickerOption, { borderTopColor: colors.border }]}
+                  >
+                    <Text style={[styles.pickerOptionLabel, { color: colors.textPrimary }]}>
+                      {operationsStateName(stateCode)}
+                    </Text>
+                    <AppIcon name="chevronRight" size={22} color={colors.accentStrong} />
+                  </Pressable>
+                ))
+              ) : (
+                directory?.groups
+                  .filter((group) => group.state_code === areaPickerView.slice("state:".length))
+                  .map((group) => (
+                    <View key={group.scope_id} accessibilityRole="summary">
+                      <Text style={[styles.pickerSectionLabel, { color: colors.textSecondary }]}>
+                        {group.display_name.toUpperCase()}
+                      </Text>
+                      {group.areas.map((item) => {
+                        const selected = area === item.scope_id;
+                        return (
+                          <Pressable
+                            accessibilityRole="menuitem"
+                            accessibilityState={{ selected }}
+                            key={item.scope_id}
+                            onPress={() => {
+                              void chooseArea(item.scope_id);
+                              closeAreaPicker();
+                            }}
+                            style={[styles.pickerOption, { borderTopColor: colors.border }]}
+                          >
+                            <Text style={[styles.pickerOptionLabel, { color: colors.textPrimary }]}>
+                              {item.display_name}
+                            </Text>
+                            {selected ? (
+                              <Text style={[styles.pickerCheck, { color: colors.accentStrong }]}>
+                                ✓
+                              </Text>
+                            ) : null}
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  ))
+              )}
+              {!directory ? (
+                <Text style={[styles.sourceInfoBody, { color: colors.textSecondary }]}>
+                  Operations areas are temporarily unavailable.
+                </Text>
+              ) : null}
             </ScrollView>
           </Pressable>
         </Pressable>
@@ -522,28 +772,25 @@ export default function OperationsBoardScreen() {
         <View style={styles.conditionControl}>
           <View style={styles.areaHeader}>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>SOURCE</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="About official road data"
-              onPress={() => {
-                setFullDisclaimerOpen(false);
-                setSourceInfoOpen(true);
-              }}
-            >
-              <Text style={[styles.mapLink, { color: colors.accentStrong }]}>
-                About Official Sources ›
-              </Text>
-            </Pressable>
+            {availableSources.length ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="About official road data"
+                onPress={() => {
+                  setFullDisclaimerOpen(false);
+                  setSourceInfoOpen(true);
+                }}
+              >
+                <Text style={[styles.mapLink, { color: colors.accentStrong }]}>
+                  {availableSources.length === 1
+                    ? `About ${availableSources[0] === "cotrip" ? "COtrip" : "UDOT"} ›`
+                    : "About Official Sources ›"}
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
           <View style={[styles.feedControl, { backgroundColor: colors.surface }]}>
-            {(
-              [
-                ["drivers", "Driver Updates"],
-                ["cotrip", "COtrip"],
-                ["udot", "UDOT"],
-                ["all", "All"],
-              ] as const
-            ).map(([value, label]) => (
+            {sourceChoices.map(({ value, label }) => (
               <Pressable
                 key={value}
                 accessibilityLabel={label}
@@ -619,7 +866,9 @@ export default function OperationsBoardScreen() {
                       { color: colors.textPrimary },
                     ]}
                   >
-                    {disclaimerSource === "udot" ? "UDOT Source Notice" : "Required CDOT Disclaimer"}
+                    {disclaimerSource === "udot"
+                      ? "UDOT Source Notice"
+                      : "Required CDOT Disclaimer"}
                   </Text>
                 </View>
                 <ScrollView
@@ -654,33 +903,40 @@ export default function OperationsBoardScreen() {
                   About Official Sources
                 </Text>
                 <Text style={[styles.sourceInfoLead, { color: colors.textPrimary }]}>
-                  COtrip and UDOT information applies only to cards labeled with that official
-                  source. Driver Updates are reported separately by FreightIQ drivers.
+                  {availableSources
+                    .map((item) => (item === "cotrip" ? "COtrip" : "UDOT"))
+                    .join(" and ")}{" "}
+                  information applies only to cards labeled with that official source. Driver
+                  Updates are reported separately by FreightIQ drivers.
                 </Text>
                 <Text style={[styles.sourceInfoBody, { color: colors.textSecondary }]}>
                   Official conditions may be delayed or incomplete. Follow posted signs, current
                   closures, and law-enforcement directions.
                 </Text>
-                <AppButton
-                  size="compact"
-                  variant="secondary"
-                  onPress={() => {
-                    setDisclaimerSource("cotrip");
-                    setFullDisclaimerOpen(true);
-                  }}
-                >
-                  Read the full required CDOT disclaimer ›
-                </AppButton>
-                <AppButton
-                  size="compact"
-                  variant="secondary"
-                  onPress={() => {
-                    setDisclaimerSource("udot");
-                    setFullDisclaimerOpen(true);
-                  }}
-                >
-                  Read the UDOT source notice ›
-                </AppButton>
+                {availableSources.includes("cotrip") ? (
+                  <AppButton
+                    size="compact"
+                    variant="secondary"
+                    onPress={() => {
+                      setDisclaimerSource("cotrip");
+                      setFullDisclaimerOpen(true);
+                    }}
+                  >
+                    Read the full required CDOT disclaimer ›
+                  </AppButton>
+                ) : null}
+                {availableSources.includes("udot") ? (
+                  <AppButton
+                    size="compact"
+                    variant="secondary"
+                    onPress={() => {
+                      setDisclaimerSource("udot");
+                      setFullDisclaimerOpen(true);
+                    }}
+                  >
+                    Read the UDOT source notice ›
+                  </AppButton>
+                ) : null}
                 <AppButton
                   size="compact"
                   variant="tertiary"
@@ -697,12 +953,17 @@ export default function OperationsBoardScreen() {
         {canPost ? (
           <AppButton
             size="compact"
-            onPress={() =>
+            onPress={() => {
+              if (!selectedDirectoryItem?.area) {
+                Alert.alert("Choose one area", "Select a specific Operations area before posting.");
+                setAreaPickerOpen(true);
+                return;
+              }
               router.push({
                 pathname: "/(tabs)/operations/compose",
-                params: { area },
-              } as never)
-            }
+                params: { area: selectedDirectoryItem.area.slug },
+              } as never);
+            }}
             fullWidth
           >
             Report a Condition
@@ -1169,6 +1430,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pickerTitle: { fontSize: 20, fontWeight: "800" },
+  pickerBack: { fontSize: 16, fontWeight: "700" },
   pickerDone: { fontSize: 16, fontWeight: "700" },
   sourceInfoContent: { gap: 16, padding: 20 },
   sourceInfoLead: { fontSize: 17, fontWeight: "700", lineHeight: 25 },
@@ -1194,6 +1456,16 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   pickerOptionLabel: { flex: 1, fontSize: 16, fontWeight: "600" },
+  pickerOptionCopy: { flex: 1, gap: 2 },
+  pickerOptionHint: { fontSize: 13 },
+  pickerSectionLabel: {
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+    paddingTop: 18,
+  },
   pickerCheck: { fontSize: 18, fontWeight: "800" },
   actions: {
     paddingHorizontal: 20,

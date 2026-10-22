@@ -4,7 +4,11 @@ import {
   operationsReadEpoch,
   type OperationsUpdate,
 } from "@/utils/operations-board";
-import { executeOperationsRead, OperationsReadError } from "@/utils/operations-read-protocol";
+import {
+  executeOperationsRead,
+  executeOperationsScopeRead,
+  OperationsReadError,
+} from "@/utils/operations-read-protocol";
 
 export function validOperationsUpdate(value: unknown): value is OperationsUpdate {
   if (!value || typeof value !== "object") return false;
@@ -61,6 +65,46 @@ export async function readActiveOperations(
       },
     };
     const data = await executeOperationsRead(client, area, validOperationsUpdate, current);
+    return { data, error: null };
+  } catch (error) {
+    return {
+      data: null,
+      error:
+        error instanceof OperationsReadError
+          ? error
+          : new OperationsReadError(
+              "OPERATIONS_READ_UNAVAILABLE",
+              "Could not refresh Operations. Please try again.",
+            ),
+    };
+  }
+}
+
+export async function readActiveOperationsScope(
+  scopeId: string,
+  isCurrent: () => boolean = () => true,
+) {
+  const epoch = operationsReadEpoch();
+  const current = () => isCurrent() && epoch === operationsReadEpoch();
+  try {
+    const { data: auth } = await supabase.auth.getSession();
+    const id = auth.session?.user.id;
+    if (!id || !current()) throw new Error("No current account");
+    const client = {
+      rpc(name: string, args: Record<string, unknown>) {
+        return {
+          async abortSignal(signal: AbortSignal) {
+            const { data: before } = await supabase.auth.getSession();
+            if (before.session?.user.id !== id || !current()) throw new Error("Account changed");
+            const response = await supabase.rpc(name, args).abortSignal(signal);
+            const { data: after } = await supabase.auth.getSession();
+            if (after.session?.user.id !== id || !current()) throw new Error("Account changed");
+            return response;
+          },
+        };
+      },
+    };
+    const data = await executeOperationsScopeRead(client, scopeId, validOperationsUpdate, current);
     return { data, error: null };
   } catch (error) {
     return {

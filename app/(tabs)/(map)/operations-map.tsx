@@ -14,12 +14,18 @@ import {
   OPERATIONS_AREAS,
   type OperationsUpdate,
 } from "@/utils/operations-board";
+import {
+  directorySelection,
+  readOperationsAreaDirectory,
+  type OperationsAreaDirectory,
+} from "@/utils/operations-area-directory";
 import { supabase } from "@/utils/supabase";
-import { readActiveOperations } from "@/utils/operations-reads";
+import { readActiveOperations, readActiveOperationsScope } from "@/utils/operations-reads";
 import {
   officialConditionPoints,
   officialSourceLabel,
   readOfficialCOtripConditions,
+  readOfficialConditionsForScope,
   type OfficialCOtripCondition,
 } from "@/utils/cotrip-conditions";
 import { useAppTheme } from "@/context/theme-context";
@@ -44,8 +50,11 @@ export default function OperationsMapScreen() {
   const fromCompose = params.pickLocation === "true";
   const [selectingLocation, setSelectingLocation] = useState(false);
   const isPickingLocation = fromCompose || selectingLocation;
+  const isDirectoryScope = !!params.area?.includes(":");
+  const [directory, setDirectory] = useState<OperationsAreaDirectory | null>(null);
   const selected = OPERATIONS_AREAS.find((a) => a.slug === params.area) ?? OPERATIONS_AREAS[0];
-  const areaLabel = params.area ? selected.name : "All Areas";
+  const directoryItem = directorySelection(directory, params.area ?? "");
+  const areaLabel = directoryItem?.label ?? (params.area ? selected.name : "Choose an area");
   const [canPost, setCanPost] = useState(false);
   const [updates, setUpdates] = useState<OperationsUpdate[]>([]);
   const [official, setOfficial] = useState<OfficialCOtripCondition[]>([]);
@@ -66,6 +75,27 @@ export default function OperationsMapScreen() {
     latitudeDelta: 0.35,
     longitudeDelta: 0.35,
   });
+  useEffect(() => {
+    let active = true;
+    void readOperationsAreaDirectory().then((result) => {
+      if (!active || !result.data) return;
+      setDirectory(result.data);
+      const item = directorySelection(result.data, params.area ?? "");
+      if (item?.center) {
+        const next = {
+          latitude: item.center.latitude,
+          longitude: item.center.longitude,
+          latitudeDelta: item.area ? 1.2 : 3.5,
+          longitudeDelta: item.area ? 1.2 : 3.5,
+        };
+        setRegion(next);
+        mapRef.current?.animateToRegion(next, 350);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [params.area]);
   const centerOnCurrentLocation = useCallback(async (showError: boolean) => {
     setLocating(true);
     try {
@@ -128,8 +158,12 @@ export default function OperationsMapScreen() {
       const epoch = operationsReadEpoch();
       const isCurrent = () => mayPublish() && epoch === operationsReadEpoch();
       const [{ data, error }, officialResult] = await Promise.all([
-        readActiveOperations(params.area || null, isCurrent),
-        readOfficialCOtripConditions(params.area || null),
+        isDirectoryScope
+          ? readActiveOperationsScope(params.area!, isCurrent)
+          : readActiveOperations(params.area || null, isCurrent),
+        isDirectoryScope
+          ? readOfficialConditionsForScope(params.area!, "all")
+          : readOfficialCOtripConditions(params.area || null),
       ]);
       if (!isCurrent()) return;
       if (error) {
@@ -201,7 +235,7 @@ export default function OperationsMapScreen() {
       );
       setLoadError(false);
     },
-    [params.area, params.alertId, params.officialId, router],
+    [isDirectoryScope, params.area, params.alertId, params.officialId, router],
   );
   useFocusEffect(
     useCallback(() => {
@@ -347,7 +381,9 @@ export default function OperationsMapScreen() {
               ]}
             >
               <Text style={[styles.category, { color: colors.accentStrong }]}>
-                {pickedOfficial ? officialSourceLabel(pickedOfficial.source) : categoryLabel(picked!.category)}
+                {pickedOfficial
+                  ? officialSourceLabel(pickedOfficial.source)
+                  : categoryLabel(picked!.category)}
               </Text>
               <Text style={[styles.message, { color: colors.textPrimary }]}>
                 {pickedOfficial?.message ?? picked!.message}

@@ -16,7 +16,6 @@ import { AppButton } from "@/components/ui/app-button";
 import { AppCard } from "@/components/ui/app-card";
 import { useAppTheme } from "@/context/theme-context";
 import {
-  OPERATIONS_AREAS,
   OPERATIONS_CATEGORIES,
   categoryLabel,
   operationsDisplayAddress,
@@ -28,6 +27,10 @@ import {
   type OperationsCategory,
   type OperationsDraft,
 } from "@/utils/operations-board";
+import {
+  readOperationsAreaDirectory,
+  type OperationsDirectoryArea,
+} from "@/utils/operations-area-directory";
 import { supabase } from "@/utils/supabase";
 import { readGuardedFreightIq } from "@/utils/freightiq-stop-reads";
 import { refreshCurrentDrivingSnapshot } from "@/utils/operations-driving-alerts";
@@ -66,7 +69,8 @@ export default function OperationsComposeScreen() {
     longitude?: string;
   }>();
   const [userId, setUserId] = useState("");
-  const [areaSlug, setAreaSlug] = useState(params.area || "grand-junction");
+  const [areaSlug, setAreaSlug] = useState(params.area || "");
+  const [postingAreas, setPostingAreas] = useState<OperationsDirectoryArea[]>([]);
   const [category, setCategory] = useState<OperationsCategory>("weather_road_conditions");
   const [message, setMessage] = useState("");
   const [expiresAt, setExpiresAt] = useState(endOfLocalDay());
@@ -89,6 +93,18 @@ export default function OperationsComposeScreen() {
   const [checkingDuplicates, setCheckingDuplicates] = useState(false);
   const duplicateCheckBusy = useRef(false);
   const duplicateCheckMounted = useRef(true);
+  useEffect(() => {
+    let active = true;
+    void readOperationsAreaDirectory().then((result) => {
+      if (!active || !result.data) return;
+      const areas = result.data.groups.flatMap((group) => group.areas);
+      setPostingAreas(areas);
+      if (!params.editId) setAreaSlug((current) => current || areas[0]?.slug || "");
+    });
+    return () => {
+      active = false;
+    };
+  }, [params.editId]);
   useEffect(() => {
     duplicateCheckMounted.current = true;
     return () => {
@@ -281,7 +297,11 @@ export default function OperationsComposeScreen() {
       return;
     }
     Keyboard.dismiss();
-    const center = OPERATIONS_AREAS.find((item) => item.slug === areaSlug) ?? OPERATIONS_AREAS[0];
+    const center = postingAreas.find((item) => item.slug === areaSlug) ?? postingAreas[0];
+    if (!center) {
+      Alert.alert("Areas unavailable", "Wait for the Operations areas to load, then try again.");
+      return;
+    }
     setSearchingStops(true);
     setSearchedStops(true);
     try {
@@ -405,7 +425,7 @@ export default function OperationsComposeScreen() {
     );
   }
   if (reviewing && !params.editId) {
-    const areaName = OPERATIONS_AREAS.find((item) => item.slug === areaSlug)?.name ?? areaSlug;
+    const areaName = postingAreas.find((item) => item.slug === areaSlug)?.display_name ?? areaSlug;
     return (
       <View style={[styles.screen, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <ScrollView contentContainerStyle={styles.content}>
@@ -478,7 +498,7 @@ export default function OperationsComposeScreen() {
           <>
             <Text style={[styles.label, { color: colors.textPrimary }]}>Area</Text>
             <View style={styles.wrap}>
-              {OPERATIONS_AREAS.map((a) => (
+              {postingAreas.map((a) => (
                 <AppButton
                   accessibilityState={{ selected: areaSlug === a.slug }}
                   key={a.slug}
@@ -486,7 +506,7 @@ export default function OperationsComposeScreen() {
                   variant={areaSlug === a.slug ? "primary" : "secondary"}
                   onPress={() => setAreaSlug(a.slug)}
                 >
-                  {a.name}
+                  {a.state_code} · {a.display_name}
                 </AppButton>
               ))}
             </View>

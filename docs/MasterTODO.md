@@ -45,6 +45,29 @@ preparation for expanding the tester base.
 
 # Active Work
 
+## Nationwide Operations Area Directory V1
+
+- [x] Approve revising the focused
+      [Operations Area Directory V1 specification](build-specs/FreightIQScalableOperationsAreasV1BuildSpec.md)
+      around carrier-neutral nationwide areas and contextually relevant official sources.
+- [x] Review and approve the revised directory/source contract (October 21).
+- [x] Review the candidate Western Colorado and Utah outer service geometry.
+- [x] Confirm Missoula as the Montana tester's terminal and first carrier-neutral pilot area.
+- [x] Define a candidate Missoula Area using a roughly Grand Junction-sized 160-mile circle centered
+      on the public terminal address without requesting additional tester work.
+- [x] Review and approve the candidate Missoula Area circle (October 21).
+- [x] Approve practical-area boundaries, names, overlap precedence, and legacy-area membership
+      (October 21).
+- [ ] Separately approve MDT feed selection, normalization, attribution/disclaimer, respectful
+      polling/caching, and failure safeguards before Montana ingestion work; no agency outreach is
+      required.
+- [x] Implement the approved hierarchy, guarded group reads, spatial matching, mobile picker, and
+      existing-client compatibility locally (October 21).
+- [x] Review the complete local diff and complete focused iPhone acceptance (October 22).
+- [ ] Complete focused Pixel acceptance.
+- [ ] Keep hosted migration, production verification, commit/push, native builds, tester
+      distribution, and release as separate approval gates.
+
 ## Official COtrip + UDOT Conditions V1
 
 - [x] Approve the focused incidents and planned-events build specification.
