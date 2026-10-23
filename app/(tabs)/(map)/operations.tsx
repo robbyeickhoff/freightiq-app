@@ -60,6 +60,7 @@ import {
   type OfficialCOtripCondition,
   type OfficialSourceFilter,
 } from "@/utils/cotrip-conditions";
+import { officialFeedHealthNotice } from "@/utils/official-feed-health";
 import {
   markAllDrivingAlertsRead,
   readDrivingAlerts,
@@ -180,16 +181,7 @@ export default function OperationsBoardScreen() {
     })),
     ...(availableSources.length ? [{ value: "all" as const, label: "All" }] : []),
   ];
-  const officialHealthDelayed =
-    source !== "drivers" &&
-    Object.entries(officialHealth).some(
-      ([key, item]) =>
-        item.status !== "healthy" &&
-        (source === "all" ||
-          source === "official" ||
-          (source === "cotrip" && key.startsWith("cotrip:")) ||
-          (source === "udot" && key.startsWith("udot:"))),
-    );
+  const officialHealthMessage = officialFeedHealthNotice(officialHealth, source);
 
   useEffect(() => {
     void supabase.auth.getUser().then(async ({ data }) => {
@@ -1033,7 +1025,7 @@ export default function OperationsBoardScreen() {
           Saved copy · updated {new Date(offlineAt).toLocaleTimeString()}
         </Text>
       ) : null}
-      {!history && officialHealthDelayed ? (
+      {!history && officialHealthMessage ? (
         <View
           accessibilityRole="alert"
           style={[
@@ -1042,8 +1034,7 @@ export default function OperationsBoardScreen() {
           ]}
         >
           <Text style={[styles.errorText, { color: colors.textPrimary }]}>
-            Official road data is delayed or temporarily unavailable. Driver updates are still
-            current.
+            {officialHealthMessage}
           </Text>
         </View>
       ) : null}

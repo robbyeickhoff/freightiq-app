@@ -949,8 +949,7 @@ export default function HomeScreen() {
               (Array.isArray(data) ? data : []) as OperationsUpdate[],
               false,
             ).filter(
-              (update) =>
-                update.latitude != null && update.longitude != null && !update.is_author,
+              (update) => update.latitude != null && update.longitude != null && !update.is_author,
             );
             // Update or remove a visible prompt without reopening a dismissed one.
             setNearbyOperationsUpdate((current) =>
@@ -3171,6 +3170,7 @@ export default function HomeScreen() {
 
           {selectedStop && selectedEntrance && showSelectedEntrance ? (
             <Marker
+              accessibilityLabel="Delivery Zone"
               key={`entrance-${selectedStop.id}-${entranceHighlightOn ? "highlight" : "normal"}`}
               coordinate={{
                 latitude: selectedEntrance.lat,
@@ -3852,7 +3852,10 @@ export default function HomeScreen() {
                           <Text
                             style={[styles.previewDetailValue, { color: colors.textSecondary }]}
                           >
-                            {reportStatsPreview(selectedReportStatsStatus, selectedReportStats.count)}
+                            {reportStatsPreview(
+                              selectedReportStatsStatus,
+                              selectedReportStats.count,
+                            )}
                           </Text>
                         </View>
                         <AppIcon name="chevronRight" color={colors.textSecondary} />
@@ -3975,19 +3978,37 @@ export default function HomeScreen() {
       ) : null}
 
       {deliveryZoneInspectionSource ? (
-        <Pressable
-          accessibilityLabel={
-            deliveryZoneInspectionSource === "route" ? "Back to Route Map" : "Return to stop"
-          }
-          accessibilityRole="button"
-          style={styles.deliveryZoneReturnPill}
-          onPress={exitDeliveryZoneInspection}
-        >
-          <Text style={styles.deliveryZoneReturnTitle}>
-            {deliveryZoneInspectionSource === "route" ? "← Back to Route Map" : "← Back to Stop"}
-          </Text>
-          <Text style={styles.deliveryZoneReturnSubtitle}>Viewing Delivery Zone</Text>
-        </Pressable>
+        <View style={styles.deliveryZoneInspectionControls}>
+          <View
+            accessible
+            accessibilityLabel="Map legend. Green dot: Stop. Blue bullseye: Delivery Zone."
+            style={styles.deliveryZoneLegend}
+          >
+            <View style={styles.deliveryZoneLegendItem}>
+              <View style={styles.deliveryZoneLegendStopDot} />
+              <Text style={styles.deliveryZoneLegendText}>Stop</Text>
+            </View>
+            <View style={styles.deliveryZoneLegendItem}>
+              <View style={styles.deliveryZoneLegendBullseyeOuter}>
+                <View style={styles.deliveryZoneLegendBullseyeInner} />
+              </View>
+              <Text style={styles.deliveryZoneLegendText}>Delivery Zone</Text>
+            </View>
+          </View>
+          <Pressable
+            accessibilityLabel={
+              deliveryZoneInspectionSource === "route" ? "Back to Route Map" : "Return to stop"
+            }
+            accessibilityRole="button"
+            style={styles.deliveryZoneReturnPill}
+            onPress={exitDeliveryZoneInspection}
+          >
+            <Text style={styles.deliveryZoneReturnTitle}>
+              {deliveryZoneInspectionSource === "route" ? "← Back to Route Map" : "← Back to Stop"}
+            </Text>
+            <Text style={styles.deliveryZoneReturnSubtitle}>Viewing Delivery Zone</Text>
+          </Pressable>
+        </View>
       ) : null}
 
       {nearbyOperationsUpdate && !showPreview ? (
@@ -4604,10 +4625,64 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
 
-  deliveryZoneReturnPill: {
+  deliveryZoneInspectionControls: {
     position: "absolute",
     bottom: 28,
     alignSelf: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  deliveryZoneLegend: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: "white",
+    borderRadius: 12,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+
+  deliveryZoneLegendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  deliveryZoneLegendStopDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "green",
+  },
+
+  deliveryZoneLegendBullseyeOuter: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#2563eb",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  deliveryZoneLegendBullseyeInner: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "white",
+  },
+
+  deliveryZoneLegendText: {
+    color: "#111",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  deliveryZoneReturnPill: {
     backgroundColor: "white",
     borderRadius: 16,
     paddingVertical: 10,

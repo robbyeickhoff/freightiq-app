@@ -42,7 +42,20 @@ The focused directory database test, all 204 mobile tests, TypeScript, focused l
 public/private database lint pass. On October 22, physical iPhone acceptance passed the simplified
 picker: Near Me selected Grand Valley / I-70, state browsing exposed only the appropriate practical
 areas, Recent Areas updated correctly, and Colorado, Utah, and Montana each showed only their
-relevant source controls. Pixel acceptance remains a later gate.
+relevant source controls. Pixel acceptance passed the same focused flow on October 23: Near Me
+selected Grand Valley / I-70, Moab and Missoula appeared in Recent Areas, and Colorado, Utah, and
+Montana each exposed only their relevant source controls.
+
+Later production use on October 22 confirmed that COtrip incidents remained healthy while the
+planned-events endpoint was returning HTTP 500 responses. The existing single warning made that
+partial upstream failure sound like all official data was unavailable. Rob approved a focused local
+wording correction: when planned events alone are delayed, Operations now says that COtrip
+planned-event information is delayed while live incidents and Driver Updates remain available. A
+broader outage retains the existing general warning. All 213 mobile tests, TypeScript, focused lint,
+formatting, and whitespace checks pass. Physical-iPhone acceptance passed October 23: the targeted
+partial-outage fixture displayed the specific planned-events warning, and switching to Driver
+Updates removed it. Pixel acceptance passed the same partial-outage and Driver Updates checks on
+October 23. Commit/push, builds, and distribution remain separate gates.
 
 Montana's official public MDT feeds are technically feasible, and Rob directed FreightIQ to proceed
 without agency outreach. MDT feed selection, polling/caching, attribution/disclaimer, ingestion,
@@ -60,8 +73,22 @@ and owned-report reads expose only the four new dates alongside their existing f
 The focused database and mobile contract tests, guarded owned-report security test, all mobile
 tests, TypeScript, focused lint, database lint, formatting, and whitespace checks pass. Physical
 iPhone acceptance confirmed that the four dates display under Driver Reports and editing only Driver
-Notes updates only that field's date. Pixel acceptance, hosted migration/deployment, production
-verification, native builds, distribution, and release remain separate gates.
+Notes updates only that field's date. Pixel acceptance passed the same four-date display and
+Driver-Notes-only update check on October 23. Hosted migration/deployment, production verification,
+native builds, distribution, and release remain separate gates.
+
+### October 22 — Delivery Zone map legend
+
+Early-tester feedback showed that the green stop marker and blue Delivery Zone bullseye were not
+self-explanatory in Delivery Zone inspection mode. Rob approved a focused local clarification. The
+inspection view now places a compact **Stop / Delivery Zone** legend above the existing return card,
+using both words and distinct marker shapes rather than color alone. The blue map marker also has an
+explicit Delivery Zone accessibility label. The normal map, marker coordinates, navigation, and
+Delivery Zone data are unchanged. Focused tests, TypeScript, focused lint, formatting, and whitespace
+checks pass. Physical-iPhone acceptance passed October 23: the legend was clear in Delivery Zone
+inspection, disappeared after returning to the stop, and normal map controls remained functional.
+Pixel acceptance passed the same Delivery Zone inspection and return flow on October 23.
+Commit/push, builds, and distribution remain separate gates.
 
 ### October 19 — Official UDOT Traffic bounded local implementation
 
@@ -78,9 +105,12 @@ and the combined All view. Driver update content and Driving Alerts remain uncha
 The live UDOT key is not stored in the repository or mobile app. TypeScript, focused lint, all 203
 mobile tests, and whitespace checks pass. The migration applied cleanly to the existing local
 COtrip schema; its rollback-only database test passed Utah source isolation, guarded permissions,
-and the snapshot-collapse safeguard, and public/private database lint is clean. Physical
-iPhone/Pixel acceptance, production secret storage, hosted migration, function deployment,
-schedule activation, commit/push, builds, distribution, and release remain separate gates.
+and the snapshot-collapse safeguard, and public/private database lint is clean. Physical iPhone and
+Pixel acceptance passed October 23 against refreshed local fixtures: both UDOT event and actionable
+road-condition cards loaded, details expanded and collapsed, View Map opened the blue official
+marker, and the UDOT source notice opened, scrolled, and closed normally. Production secret storage,
+hosted migration, function deployment, schedule activation, commit/push, builds, distribution, and
+release remain separate gates.
 
 ### October 16 — Stop-search punctuation normalization implemented locally
 

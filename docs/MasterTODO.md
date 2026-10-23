@@ -64,7 +64,7 @@ preparation for expanding the tester base.
 - [x] Implement the approved hierarchy, guarded group reads, spatial matching, mobile picker, and
       existing-client compatibility locally (October 21).
 - [x] Review the complete local diff and complete focused iPhone acceptance (October 22).
-- [ ] Complete focused Pixel acceptance.
+- [x] Complete focused Pixel acceptance (October 23).
 - [ ] Keep hosted migration, production verification, commit/push, native builds, tester
       distribution, and release as separate approval gates.
 
@@ -80,7 +80,7 @@ preparation for expanding the tester base.
       implementation (October 19).
 - [x] Run the UDOT migration/database verification locally with rollback-only source-isolation,
       permission, snapshot-collapse, and database-lint checks (October 19).
-- [ ] Complete focused iPhone and Pixel acceptance.
+- [x] Complete focused iPhone and Pixel acceptance (October 23).
 - [ ] Separately approve any production secret, migration, deployment, schedule, device build,
       commit, or push.
 
