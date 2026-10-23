@@ -65,8 +65,11 @@ preparation for expanding the tester base.
       existing-client compatibility locally (October 21).
 - [x] Review the complete local diff and complete focused iPhone acceptance (October 22).
 - [x] Complete focused Pixel acceptance (October 23).
-- [ ] Keep hosted migration, production verification, commit/push, native builds, tester
-      distribution, and release as separate approval gates.
+- [x] Separately approve, deploy, and production-verify the nationwide directory and Driver Report
+      freshness migrations after confirming a current physical backup (October 23).
+- [x] Smoke-test the currently distributed production app against the migrated production database
+      and confirm legacy Operations and Driver Report reads remain compatible (October 23).
+- [ ] Keep native builds, tester distribution, and release as separate approval gates.
 
 ## Official COtrip + UDOT Conditions V1
 

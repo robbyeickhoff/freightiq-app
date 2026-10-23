@@ -46,6 +46,18 @@ relevant source controls. Pixel acceptance passed the same focused flow on Octob
 selected Grand Valley / I-70, Moab and Missoula appeared in Recent Areas, and Colorado, Utah, and
 Montana each exposed only their relevant source controls.
 
+On October 23, after separate Product Owner approval, the two exact pending Supabase migrations
+were deployed to production following confirmation of a scheduled physical backup. Production
+verification preserved all 443 stops, 456 reports, 19 Operations updates, and the six legacy area
+rows; installed the three approved directory groups and ten practical leaf areas; retained the
+legacy official-read and posting interfaces; denied anonymous access to the new guarded reads; and
+confirmed the report-timestamp backfill, trigger, geometry index, and source mappings. The advisor
+comparison introduced no new warning-level findings. The currently distributed production app then
+passed the backward-compatibility smoke test: Operations opened normally, legacy areas and source
+filters loaded, official cards expanded and mapped correctly, return navigation worked, and an
+existing stop's Driver Reports loaded normally. Native builds, tester distribution, and release
+remain separate gates.
+
 Later production use on October 22 confirmed that COtrip incidents remained healthy while the
 planned-events endpoint was returning HTTP 500 responses. The existing single warning made that
 partial upstream failure sound like all official data was unavailable. Rob approved a focused local
@@ -74,8 +86,11 @@ The focused database and mobile contract tests, guarded owned-report security te
 tests, TypeScript, focused lint, database lint, formatting, and whitespace checks pass. Physical
 iPhone acceptance confirmed that the four dates display under Driver Reports and editing only Driver
 Notes updates only that field's date. Pixel acceptance passed the same four-date display and
-Driver-Notes-only update check on October 23. Hosted migration/deployment, production verification,
-native builds, distribution, and release remain separate gates.
+Driver-Notes-only update check on October 23. The approved production migration and verification
+completed with the nationwide directory rollout on October 23: all 456 reports survived, all four
+timestamp columns backfilled without invariant failures, the field-update trigger is installed,
+and guarded permissions remain bounded. Native builds, distribution, and release remain separate
+gates.
 
 ### October 22 — Delivery Zone map legend
 
