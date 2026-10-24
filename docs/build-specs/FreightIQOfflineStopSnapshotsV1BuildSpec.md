@@ -1,6 +1,6 @@
 # FreightIQ Offline Stop Snapshots V1 — Proposed Build Specification
 
-> **Status: Approved; bounded local candidate implemented; physical acceptance pending**
+> **Status: Implemented, physically accepted, and production backend installed**
 >
 > The Product Owner approved investigation and preparation of this draft on October 24, 2026 after
 > physical testing confirmed that **Save Stops for Offline** retained map markers but not the shared
@@ -15,8 +15,9 @@
 - **Repository path:**
   `docs/build-specs/FreightIQOfflineStopSnapshotsV1BuildSpec.md`
 - **Operating mode:** Product → Build Specification planning
-- **Implementation status:** Bounded local candidate complete; production migration and physical
-  device acceptance pending
+- **Implementation status:** Complete; iPhone and Pixel acceptance passed October 24, 2026;
+  production migration installed and verified October 24, 2026; native builds and distribution
+  remain separate gates
 - **Draft authorization:** Product Owner, October 24, 2026
 - **Implementation authorization:** Product Owner, October 24, 2026
 - **Governing documents:**
