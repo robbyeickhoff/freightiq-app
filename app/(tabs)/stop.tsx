@@ -3481,14 +3481,14 @@ export default function StopScreen() {
                         {contactPhoneCount()} of 5 phone numbers used
                       </Text>
 
-                      <Text style={intelStyles.contactFieldLabel}>Check-In Notes</Text>
+                      <Text style={intelStyles.contactFieldLabel}>Check-In / Driver Entrance</Text>
                       <TextInput
                         placeholderTextColor={colors.textSecondary}
                         keyboardAppearance={colorScheme}
                         value={checkInNotes}
                         onChangeText={(text) => setCheckInNotes(text.slice(0, 500))}
                         onFocus={(event) => keepContactFieldVisible(event.nativeEvent.target)}
-                        placeholder="e.g. Call receiving before backing into dock"
+                        placeholder="e.g. Ring the buzzer at the blue man door on the east side, or call receiving before backing into the dock"
                         style={[intelStyles.input, styles.checkInNotesInput]}
                         multiline
                       />
