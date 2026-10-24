@@ -4,6 +4,7 @@ import {
   Alert,
   AppState,
   FlatList,
+  Linking,
   Modal,
   Pressable,
   RefreshControl,
@@ -52,6 +53,7 @@ import { supabase } from "@/utils/supabase";
 import { readActiveOperationsScope } from "@/utils/operations-reads";
 import {
   COTRIP_DISCLAIMER,
+  MDT_DISCLAIMER,
   UDOT_DISCLAIMER,
   officialDetailText,
   officialSourceLabel,
@@ -98,6 +100,12 @@ function operationsStateName(stateCode: string) {
   return OPERATIONS_STATE_NAMES[stateCode] ?? stateCode;
 }
 
+function officialSourceShortLabel(source: "cotrip" | "udot" | "mdt") {
+  if (source === "cotrip") return "COtrip";
+  if (source === "udot") return "UDOT";
+  return "MDT";
+}
+
 export default function OperationsBoardScreen() {
   const router = useRouter();
   const pathname = usePathname();
@@ -123,7 +131,7 @@ export default function OperationsBoardScreen() {
   const [source, setSource] = useState<OfficialSourceFilter>("drivers");
   const [sourceInfoOpen, setSourceInfoOpen] = useState(false);
   const [fullDisclaimerOpen, setFullDisclaimerOpen] = useState(false);
-  const [disclaimerSource, setDisclaimerSource] = useState<"cotrip" | "udot">("cotrip");
+  const [disclaimerSource, setDisclaimerSource] = useState<"cotrip" | "udot" | "mdt">("cotrip");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [canPost, setCanPost] = useState(false);
@@ -136,7 +144,7 @@ export default function OperationsBoardScreen() {
   const [unreadAlerts, setUnreadAlerts] = useState<UnreadDrivingAlert[]>([]);
   const isOperationsTab = pathname === "/operations";
   const visibleUpdates = useMemo(() => {
-    const driverRows = ["official", "cotrip", "udot"].includes(source)
+    const driverRows = ["official", "cotrip", "udot", "mdt"].includes(source)
       ? []
       : filterOperationsByCategory(updates, category);
     const officialRows =
@@ -177,7 +185,7 @@ export default function OperationsBoardScreen() {
     { value: "drivers", label: "Driver Updates" },
     ...availableSources.map((value) => ({
       value,
-      label: value === "cotrip" ? "COtrip" : "UDOT",
+      label: officialSourceShortLabel(value),
     })),
     ...(availableSources.length ? [{ value: "all" as const, label: "All" }] : []),
   ];
@@ -210,10 +218,6 @@ export default function OperationsBoardScreen() {
     if (source === "drivers" || source === "official") return;
     if (source === "all" ? !availableSources.length : !availableSources.includes(source)) {
       setSource("drivers");
-      Alert.alert(
-        "Showing Driver Updates",
-        "That official road source is not available in the area you selected.",
-      );
     }
   }, [area, availableSources, source]);
   useEffect(
@@ -775,7 +779,7 @@ export default function OperationsBoardScreen() {
               >
                 <Text style={[styles.mapLink, { color: colors.accentStrong }]}>
                   {availableSources.length === 1
-                    ? `About ${availableSources[0] === "cotrip" ? "COtrip" : "UDOT"} ›`
+                    ? `About ${officialSourceShortLabel(availableSources[0])} ›`
                     : "About Official Sources ›"}
                 </Text>
               </Pressable>
@@ -860,12 +864,18 @@ export default function OperationsBoardScreen() {
                   >
                     {disclaimerSource === "udot"
                       ? "UDOT Source Notice"
-                      : "Required CDOT Disclaimer"}
+                      : disclaimerSource === "mdt"
+                        ? "MDT Source Notice"
+                        : "Required CDOT Disclaimer"}
                   </Text>
                 </View>
                 <ScrollView
                   accessibilityLabel={
-                    disclaimerSource === "udot" ? "UDOT source notice" : "CDOT disclaimer"
+                    disclaimerSource === "udot"
+                      ? "UDOT source notice"
+                      : disclaimerSource === "mdt"
+                        ? "MDT source notice"
+                        : "CDOT disclaimer"
                   }
                   nestedScrollEnabled
                   showsVerticalScrollIndicator
@@ -873,10 +883,34 @@ export default function OperationsBoardScreen() {
                   contentContainerStyle={styles.legalDisclaimerContent}
                 >
                   <Text style={[styles.legalDisclaimerText, { color: colors.textSecondary }]}>
-                    {disclaimerSource === "udot" ? UDOT_DISCLAIMER : COTRIP_DISCLAIMER}
+                    {disclaimerSource === "udot"
+                      ? UDOT_DISCLAIMER
+                      : disclaimerSource === "mdt"
+                        ? MDT_DISCLAIMER
+                        : COTRIP_DISCLAIMER}
                   </Text>
                 </ScrollView>
                 <View style={styles.sourceInfoFooter}>
+                  {disclaimerSource === "mdt" ? (
+                    <>
+                      <AppButton
+                        size="compact"
+                        variant="tertiary"
+                        onPress={() => Linking.openURL("https://www.mdt.mt.gov/travinfo/")}
+                      >
+                        Open Montana 511 ›
+                      </AppButton>
+                      <AppButton
+                        size="compact"
+                        variant="tertiary"
+                        onPress={() =>
+                          Linking.openURL("https://www.mdt.mt.gov/mdt/terms-of-use.aspx")
+                        }
+                      >
+                        MDT Terms of Use ›
+                      </AppButton>
+                    </>
+                  ) : null}
                   <AppButton
                     size="compact"
                     variant="secondary"
@@ -895,11 +929,9 @@ export default function OperationsBoardScreen() {
                   About Official Sources
                 </Text>
                 <Text style={[styles.sourceInfoLead, { color: colors.textPrimary }]}>
-                  {availableSources
-                    .map((item) => (item === "cotrip" ? "COtrip" : "UDOT"))
-                    .join(" and ")}{" "}
-                  information applies only to cards labeled with that official source. Driver
-                  Updates are reported separately by FreightIQ drivers.
+                  {availableSources.map(officialSourceShortLabel).join(" and ")} information applies
+                  only to cards labeled with that official source. Driver Updates are reported
+                  separately by FreightIQ drivers.
                 </Text>
                 <Text style={[styles.sourceInfoBody, { color: colors.textSecondary }]}>
                   Official conditions may be delayed or incomplete. Follow posted signs, current
@@ -927,6 +959,18 @@ export default function OperationsBoardScreen() {
                     }}
                   >
                     Read the UDOT source notice ›
+                  </AppButton>
+                ) : null}
+                {availableSources.includes("mdt") ? (
+                  <AppButton
+                    size="compact"
+                    variant="secondary"
+                    onPress={() => {
+                      setDisclaimerSource("mdt");
+                      setFullDisclaimerOpen(true);
+                    }}
+                  >
+                    Read the MDT source notice ›
                   </AppButton>
                 ) : null}
                 <AppButton
@@ -1151,7 +1195,7 @@ export default function OperationsBoardScreen() {
               <Text style={[styles.emptyBody, { color: colors.textSecondary }]}>
                 {history
                   ? "You haven’t posted an update in the last seven days."
-                  : ["official", "cotrip", "udot"].includes(source) && officialLoadError
+                  : ["official", "cotrip", "udot", "mdt"].includes(source) && officialLoadError
                     ? "Official road data could not be loaded. Pull down to try again."
                     : "No active driver updates have been reported for this area."}
               </Text>

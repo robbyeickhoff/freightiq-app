@@ -58,9 +58,15 @@ preparation for expanding the tester base.
 - [x] Review and approve the candidate Missoula Area circle (October 21).
 - [x] Approve practical-area boundaries, names, overlap precedence, and legacy-area membership
       (October 21).
-- [ ] Separately approve MDT feed selection, normalization, attribution/disclaimer, respectful
-      polling/caching, and failure safeguards before Montana ingestion work; no agency outreach is
-      required.
+- [x] Review and separately approve the completed MDT source contract covering feed selection,
+      normalization, attribution/disclaimer, 10-minute conditional polling/caching, and independent
+      last-trusted-snapshot safeguards (October 23); no agency outreach is required.
+- [x] Implement MDT ingestion, independent health, guarded Montana reads, mobile source controls,
+      attribution/notice, and regression coverage locally (October 23).
+- [x] Complete focused physical iPhone and Pixel acceptance for Official MDT, including cards,
+      details, map return, notice/links, filters, refresh/background behavior, state isolation,
+      freshness warnings, and silent fallback when changing to an area with different sources
+      (October 24).
 - [x] Implement the approved hierarchy, guarded group reads, spatial matching, mobile picker, and
       existing-client compatibility locally (October 21).
 - [x] Review the complete local diff and complete focused iPhone acceptance (October 22).

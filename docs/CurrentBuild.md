@@ -70,9 +70,19 @@ Updates removed it. Pixel acceptance passed the same partial-outage and Driver U
 October 23. Commit/push, builds, and distribution remain separate gates.
 
 Montana's official public MDT feeds are technically feasible, and Rob directed FreightIQ to proceed
-without agency outreach. MDT feed selection, polling/caching, attribution/disclaimer, ingestion,
-hosted migration/deployment, commit/push, native builds, distribution, and release remain separate
-approval gates.
+without agency outreach. On October 23 Rob approved the completed technical source contract and its
+bounded local implementation. The local candidate now ingests incidents, restrictions, non-routine
+road conditions, and only truck-impacting construction; uses conditional polling and independent
+last-trusted snapshots; preserves source isolation; and adds Montana-scoped **Official MDT** controls,
+health, attribution, and notice behavior. Live official payload compatibility, 226 app tests, focused
+COtrip/UDOT/area/MDT database tests, TypeScript, database lint, and ESLint passed (two pre-existing
+unused-variable warnings remain in `app/(tabs)/stop.tsx`). Focused physical iPhone and Pixel
+acceptance passed October 24: Montana source controls, live cards, expand/collapse, map return,
+notice scrolling, both official links, filtering, refresh, background return, state isolation, and
+freshness warnings behaved correctly. Normal cross-state area changes now silently reset an
+inapplicable official source to Driver Updates; genuine feed-health warnings remain. Hosted
+migration/function deployment, schedule activation, commit/push, native builds, distribution, and
+release remain separate gates.
 
 ### October 22 — Per-field Driver Report freshness dates
 

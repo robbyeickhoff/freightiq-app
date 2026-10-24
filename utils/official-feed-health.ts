@@ -1,13 +1,13 @@
 export type OfficialFeedHealth = Record<
   string,
   {
-    source?: "cotrip" | "udot";
+    source?: "cotrip" | "udot" | "mdt";
     status: "healthy" | "delayed" | "unavailable" | "error";
     last_success_at: string | null;
   }
 >;
 
-type OfficialSourceFilter = "all" | "official" | "drivers" | "cotrip" | "udot";
+type OfficialSourceFilter = "all" | "official" | "drivers" | "cotrip" | "udot" | "mdt";
 
 const genericNotice =
   "Official road data is delayed or temporarily unavailable. Driver Updates are still current.";
@@ -15,6 +15,7 @@ const genericNotice =
 function sourceFor(key: string, item: OfficialFeedHealth[string]) {
   if (item.source) return item.source;
   if (key.startsWith("udot:")) return "udot";
+  if (key.startsWith("mdt:")) return "mdt";
   return "cotrip";
 }
 

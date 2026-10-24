@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/utils/supabase";
 
-export type OperationsOfficialSource = "cotrip" | "udot";
+export type OperationsOfficialSource = "cotrip" | "udot" | "mdt";
 export type OperationsDirectoryArea = {
   scope_id: string;
   slug: string;
@@ -33,7 +33,8 @@ const CACHE_KEY = "mfi:operations:area-directory:v1";
 const RECENT_AREA_LIMIT = 3;
 const NEARBY_MAX_MILES = 200;
 const sources = (value: unknown): value is OperationsOfficialSource[] =>
-  Array.isArray(value) && value.every((item) => item === "cotrip" || item === "udot");
+  Array.isArray(value) &&
+  value.every((item) => item === "cotrip" || item === "udot" || item === "mdt");
 const validArea = (value: unknown): value is OperationsDirectoryArea => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const row = value as Record<string, unknown>;

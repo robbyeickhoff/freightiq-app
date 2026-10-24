@@ -4,8 +4,14 @@ import { OPERATIONS_CATEGORIES, type OperationsCategory } from "@/utils/operatio
 export type COtripPoint = { latitude: number; longitude: number };
 export type OfficialCOtripCondition = {
   id: string;
-  source: "cotrip" | "udot";
-  feed_type: "incidents" | "planned_events" | "events" | "road_conditions";
+  source: "cotrip" | "udot" | "mdt";
+  feed_type:
+    | "incidents"
+    | "planned_events"
+    | "events"
+    | "road_conditions"
+    | "restrictions"
+    | "construction";
   source_type: string;
   category: OperationsCategory;
   route_name: string | null;
@@ -28,24 +34,29 @@ export type OfficialCOtripCondition = {
 export type COtripFeedHealth = Record<
   string,
   {
-    source?: "cotrip" | "udot";
+    source?: "cotrip" | "udot" | "mdt";
     status: "healthy" | "delayed" | "unavailable" | "error";
     last_success_at: string | null;
   }
 >;
-export type OfficialSourceFilter = "all" | "official" | "drivers" | "cotrip" | "udot";
+export type OfficialSourceFilter = "all" | "official" | "drivers" | "cotrip" | "udot" | "mdt";
 
 export function validOfficialCOtripCondition(value: unknown): value is OfficialCOtripCondition {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const row = value as Record<string, unknown>;
   return (
-    ["cotrip", "udot"].includes(row.source as string) &&
+    ["cotrip", "udot", "mdt"].includes(row.source as string) &&
     typeof row.id === "string" &&
     typeof row.message === "string" &&
     typeof row.source_type === "string" &&
-    ["incidents", "planned_events", "events", "road_conditions"].includes(
-      row.feed_type as string,
-    ) &&
+    [
+      "incidents",
+      "planned_events",
+      "events",
+      "road_conditions",
+      "restrictions",
+      "construction",
+    ].includes(row.feed_type as string) &&
     OPERATIONS_CATEGORIES.some((item) => item.value === row.category) &&
     typeof row.last_seen_at === "string" &&
     Number.isFinite(Date.parse(row.last_seen_at)) &&
@@ -57,12 +68,16 @@ export function validOfficialCOtripCondition(value: unknown): value is OfficialC
 
 export function officialConditionPoints(condition: OfficialCOtripCondition): COtripPoint[] {
   const geometry = condition.geometry;
-  const pairs =
+  let pairs: unknown =
     geometry.type === "Point"
       ? [geometry.coordinates]
       : geometry.type === "MultiPoint"
         ? geometry.coordinates
-        : [];
+        : geometry.type === "LineString"
+          ? [representativeLinePoint(geometry.coordinates)]
+          : geometry.type === "MultiLineString" && Array.isArray(geometry.coordinates)
+            ? [representativeLinePoint(geometry.coordinates.flat())]
+            : [];
   if (!Array.isArray(pairs)) return [];
   return pairs.flatMap((pair) => {
     if (!Array.isArray(pair) || pair.length < 2) return [];
@@ -76,6 +91,11 @@ export function officialConditionPoints(condition: OfficialCOtripCondition): COt
       ? [{ latitude, longitude }]
       : [];
   });
+}
+
+function representativeLinePoint(value: unknown) {
+  if (!Array.isArray(value) || !value.length) return null;
+  return value[Math.floor(value.length / 2)];
 }
 
 export function officialDetailText(value: unknown) {
@@ -159,6 +179,11 @@ export const COTRIP_DISCLAIMER =
 export const UDOT_DISCLAIMER =
   "UDOT Traffic information is provided as a public service and may be delayed, incomplete, or affected by services outside UDOT's control. Road conditions can change quickly. Drivers remain responsible for following posted signs, current closures, law-enforcement direction, and safe-driving requirements. Use of this information is at the driver's own risk.";
 
+export const MDT_DISCLAIMER =
+  "Official MDT information applies only to conditions labeled “Official MDT.” Driver Updates are reported separately by FreightIQ drivers. MDT information may change, may not be real time, and is provided as-is. Verify critical restrictions and closures with Montana 511 before travel. Use this information at your own risk. FreightIQ is not affiliated with or endorsed by MDT.";
+
 export function officialSourceLabel(source: OfficialCOtripCondition["source"]) {
-  return source === "udot" ? "Official UDOT Traffic" : "Official COtrip";
+  if (source === "udot") return "Official UDOT Traffic";
+  if (source === "mdt") return "Official MDT";
+  return "Official COtrip";
 }

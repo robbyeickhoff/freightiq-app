@@ -99,7 +99,9 @@ test("Operations limits official sources to the selected directory scope", () =>
   assert.match(text, /availableSources\.map/);
   assert.match(text, /availableSources\.includes\("cotrip"\)/);
   assert.match(text, /availableSources\.includes\("udot"\)/);
-  assert.match(text, /That official road source is not available in the area you selected/);
+  assert.match(text, /availableSources\.includes\("mdt"\)/);
+  assert.match(text, /setSource\("drivers"\)/);
+  assert.doesNotMatch(text, /That official road source is not available in the area you selected/);
   assert.match(text, /Near Me/);
   assert.match(text, /RECENT AREAS/);
   assert.match(text, /Browse by State/);
@@ -110,8 +112,11 @@ test("Operations limits official sources to the selected directory scope", () =>
   assert.match(text, /value === "drivers" \? "Driver\\nUpdates" : label/);
   assert.match(text, /flex: value === "drivers" \? 1\.35 : 0\.88/);
   assert.match(text, /Read the UDOT source notice/);
+  assert.match(text, /Read the MDT source notice/);
   assert.match(official, /Official UDOT Traffic/);
+  assert.match(official, /Official MDT/);
   assert.match(official, /UDOT_DISCLAIMER/);
+  assert.match(official, /MDT_DISCLAIMER/);
 });
 
 test("Loading, empty, failure and pull-to-refresh states remain available in the same list", () => {

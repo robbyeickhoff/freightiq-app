@@ -9,6 +9,7 @@ Deno.serve(
   createHandler({
     apiKey: Deno.env.get("COTRIP_API_KEY") ?? "",
     udotApiKey: Deno.env.get("UDOT_API_KEY") ?? "",
+    mdtEnabled: true,
     workerSecret: Deno.env.get("COTRIP_INGEST_SECRET") ?? "",
     fetcher: fetch,
     rpc: async (name, args) => {

@@ -11,9 +11,17 @@ const UDOT_PATHS = {
   events: "/api/v2/get/event",
   road_conditions: "/api/v2/get/roadconditions",
 } as const;
+const MDT_BASE_URL = "https://mt.cdn.iteris-atis.com";
+const MDT_PATHS = {
+  events: "/geojson/icons/metadata/icons.events.geojson",
+  restrictions: "/geojson/icons/metadata/icons.restrictions.geojson",
+  road_conditions: "/kml/mdt_conditions.kml",
+  construction: "/geojson/icons/metadata/icons.construction.geojson",
+} as const;
 
 type FeedType = keyof typeof PATHS;
 type UDOTFeedType = keyof typeof UDOT_PATHS;
+type MDTFeedType = keyof typeof MDT_PATHS;
 type Fetch = typeof fetch;
 type Rpc = (
   name: string,
@@ -23,6 +31,7 @@ type Rpc = (
 export type HandlerDependencies = {
   apiKey: string;
   udotApiKey?: string;
+  mdtEnabled?: boolean;
   workerSecret: string;
   fetcher: Fetch;
   rpc: Rpc;
@@ -30,7 +39,8 @@ export type HandlerDependencies = {
   randomUUID?: () => string;
 };
 
-type OfficialSource = "cotrip" | "udot";
+type OfficialSource = "cotrip" | "udot" | "mdt";
+type UpstreamValidators = { etag?: string | null; last_modified?: string | null };
 
 const clean = (value: unknown, max: number) => {
   if (typeof value !== "string") return null;
@@ -168,7 +178,8 @@ function udotGeometry(row: Record<string, unknown>) {
     points.push([longitudeSecondary, latitudeSecondary]);
   const unique = points.filter(
     (point, index) =>
-      index === points.findIndex((candidate) => candidate[0] === point[0] && candidate[1] === point[1]),
+      index ===
+      points.findIndex((candidate) => candidate[0] === point[0] && candidate[1] === point[1]),
   );
   if (!unique.length) return null;
   return unique.length === 1
@@ -177,7 +188,8 @@ function udotGeometry(row: Record<string, unknown>) {
 }
 
 export function mapUDOTCategory(row: Record<string, unknown>, feed: UDOTFeedType) {
-  const type = clean(field(row, "EventType", "EventCategory", "EventSubType"), 100)?.toLowerCase() ?? "";
+  const type =
+    clean(field(row, "EventType", "EventCategory", "EventSubType"), 100)?.toLowerCase() ?? "";
   if (row.IsFullClosure === true || /clos/.test(type)) return "road_closure";
   if (feed === "road_conditions" || /weather|snow|ice|blizzard/.test(type))
     return "weather_road_conditions";
@@ -195,7 +207,9 @@ export function normalizeUDOTRecord(input: unknown, feed: UDOTFeedType) {
     const road = cleanField(row, 100, "RoadCondition") ?? "Unknown road condition";
     const weather = cleanField(row, 100, "WeatherCondition");
     const restriction = cleanField(row, 500, "Restriction");
-    const routine = road.toLowerCase() === "dry" && weather?.toLowerCase() === "fair" &&
+    const routine =
+      road.toLowerCase() === "dry" &&
+      weather?.toLowerCase() === "fair" &&
       (!restriction || /^(none|no restrictions?|n\/a)$/i.test(restriction));
     if (routine) return undefined;
     return {
@@ -276,6 +290,252 @@ export async function fetchUDOTFeed(fetcher: Fetch, apiKey: string, feed: UDOTFe
   }
 }
 
+const decodeXml = (value: string) =>
+  value
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_match, code) => String.fromCodePoint(Number(code)));
+
+function plainText(value: unknown, max: number) {
+  if (typeof value !== "string") return null;
+  return clean(
+    decodeXml(value)
+      .replace(/<\s*br\s*\/?>/gi, " ")
+      .replace(/<\s*\/p\s*>/gi, " ")
+      .replace(/<[^>]*>/g, " "),
+    max,
+  );
+}
+
+const mdtTimestamp = (value: unknown) => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const date = new Date(value < 10_000_000_000 ? value * 1000 : value);
+    return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+  }
+  return timestamp(value);
+};
+
+function mdtPointGeometry(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const geometry = value as Record<string, unknown>;
+  if (geometry.type !== "Point" || !Array.isArray(geometry.coordinates)) return null;
+  const longitude = Number(geometry.coordinates[0]);
+  const latitude = Number(geometry.coordinates[1]);
+  if (
+    !Number.isFinite(longitude) ||
+    !Number.isFinite(latitude) ||
+    longitude < -116.2 ||
+    longitude > -103.8 ||
+    latitude < 44.2 ||
+    latitude > 49.2
+  )
+    return null;
+  return { type: "Point", coordinates: [longitude, latitude] };
+}
+
+function mdtConstructionHasTruckImpact(value: string) {
+  return /(road closed|closures?|blocked lanes?|detour|lane closures?|travel delay\s+(?:1[0-9]|[2-9][0-9])\s*min|pilot vehicles?|signal lights?|speed limit|width limit|height limit|length limit|weight limit)/i.test(
+    value,
+  );
+}
+
+export function normalizeMDTGeoJSONRecord(
+  input: unknown,
+  feed: Exclude<MDTFeedType, "road_conditions">,
+) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const feature = input as Record<string, unknown>;
+  const properties = feature.properties;
+  if (!properties || typeof properties !== "object" || Array.isArray(properties)) return null;
+  const row = properties as Record<string, unknown>;
+  const sourceId = identifier(field(row, "event_id") ?? feature.id);
+  const geometry = mdtPointGeometry(feature.geometry);
+  const report = plainText(field(row, "report"), 1000);
+  const enhanced = plainText(field(row, "enhanced_report"), 1000);
+  if (!sourceId || !geometry || !report) return null;
+  if (feed === "construction" && !mdtConstructionHasTruckImpact(`${report} ${enhanced ?? ""}`))
+    return undefined;
+  const sourceType = cleanField(row, 100, "headline", "category") ?? "Official MDT";
+  const closure = /road closed|road closure|blocked road/i.test(`${sourceType} ${report}`);
+  return {
+    source_id: sourceId,
+    source_type: sourceType,
+    category: closure
+      ? "road_closure"
+      : feed === "construction"
+        ? "construction"
+        : "temporary_hazard",
+    route_name: cleanField(row, 200, "route"),
+    message: report,
+    direction: cleanField(row, 100, "dir"),
+    schedule: {},
+    lane_impacts: /lane|blocked/i.test(report) ? [report] : [],
+    restrictions: feed === "restrictions" ? [report] : [],
+    jurisdictions: [],
+    severity: cleanField(row, 50, "category"),
+    starts_at: null,
+    clears_at: null,
+    source_updated_at: mdtTimestamp(field(row, "last_update")),
+    geometry,
+    source_metadata: {
+      mile_reference: typeof row.mrm === "number" && Number.isFinite(row.mrm) ? row.mrm : null,
+      source_url: cleanField(row, 500, "url"),
+    },
+  };
+}
+
+function kmlCoordinates(value: string) {
+  return value
+    .trim()
+    .split(/\s+/)
+    .flatMap((item) => {
+      const [rawLongitude, rawLatitude] = item.split(",");
+      const longitude = Number(rawLongitude);
+      const latitude = Number(rawLatitude);
+      return Number.isFinite(longitude) &&
+        Number.isFinite(latitude) &&
+        longitude >= -116.2 &&
+        longitude <= -103.8 &&
+        latitude >= 44.2 &&
+        latitude <= 49.2
+        ? [[longitude, latitude]]
+        : [];
+    })
+    .slice(0, 10_000);
+}
+
+function conditionLabel(value: string) {
+  return value
+    .split(",")
+    .map((part) => part.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()))
+    .join(" · ");
+}
+
+export function normalizeMDTRoadConditions(kml: string, sourceUpdatedAt: string | null) {
+  if (kml.length > MAX_BYTES) throw new Error("response_size_invalid");
+  const records: Record<string, unknown>[] = [];
+  for (const match of kml.matchAll(
+    /<Placemark\b[^>]*\bid="([^"]+)"[^>]*>([\s\S]*?)<\/Placemark>/g,
+  )) {
+    if (records.length >= 5000) throw new Error("schema_invalid");
+    const sourceId = clean(match[1], 200);
+    const body = match[2];
+    const style = body.match(/<styleUrl>#?([^<]+)<\/styleUrl>/)?.[1] ?? "";
+    const condition = clean(style.split("road_conditions:")[1], 100)?.toLowerCase() ?? "";
+    if (!sourceId || !condition || condition === "dry" || condition === "wet") continue;
+    const lines = [
+      ...body.matchAll(
+        /<LineString>[\s\S]*?<coordinates>([\s\S]*?)<\/coordinates>[\s\S]*?<\/LineString>/g,
+      ),
+    ]
+      .map((line) => kmlCoordinates(line[1]))
+      .filter((line) => line.length >= 2);
+    if (!lines.length) throw new Error("schema_invalid");
+    const geometry =
+      lines.length === 1
+        ? { type: "LineString", coordinates: lines[0] }
+        : { type: "MultiLineString", coordinates: lines };
+    const closed = /closed|season_closed/.test(condition);
+    records.push({
+      source_id: sourceId,
+      source_type: "Road Conditions",
+      category: closed ? "road_closure" : "weather_road_conditions",
+      route_name: null,
+      message: conditionLabel(condition),
+      direction: null,
+      schedule: {},
+      lane_impacts: [],
+      restrictions: [],
+      jurisdictions: [],
+      severity: /severe|closed/.test(condition) ? "severe" : null,
+      starts_at: null,
+      clears_at: null,
+      source_updated_at: sourceUpdatedAt,
+      geometry,
+      source_metadata: { condition },
+    });
+  }
+  if (!records.length) throw new Error("schema_invalid");
+  return records;
+}
+
+async function fetchMDTResponse(fetcher: Fetch, feed: MDTFeedType, validators: UpstreamValidators) {
+  const headers = new Headers();
+  if (validators.etag) headers.set("if-none-match", validators.etag);
+  if (validators.last_modified) headers.set("if-modified-since", validators.last_modified);
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(new Error("upstream_timeout")), 15_000);
+    try {
+      const response = await fetcher(new URL(MDT_PATHS[feed], MDT_BASE_URL), {
+        signal: controller.signal,
+        redirect: "error",
+        headers,
+      });
+      if (response.status === 304) return response;
+      if (!response.ok) throw new Error(`http_${response.status}`);
+      return response;
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 250));
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw lastError;
+}
+
+export async function fetchMDTFeed(
+  fetcher: Fetch,
+  feed: MDTFeedType,
+  validators: UpstreamValidators = {},
+) {
+  const response = await fetchMDTResponse(fetcher, feed, validators);
+  const nextValidators = {
+    etag: clean(response.headers.get("etag"), 300),
+    last_modified: clean(response.headers.get("last-modified"), 100),
+  };
+  if (response.status === 304) return { unchanged: true as const, records: [], ...nextValidators };
+  const body = await response.arrayBuffer();
+  if (body.byteLength > MAX_BYTES) throw new Error("response_size_invalid");
+  const text = new TextDecoder().decode(body);
+  if (feed === "road_conditions") {
+    if (!response.headers.get("content-type")?.toLowerCase().includes("kml"))
+      throw new Error("schema_invalid");
+    return {
+      unchanged: false as const,
+      records: normalizeMDTRoadConditions(text, mdtTimestamp(nextValidators.last_modified)),
+      ...nextValidators,
+    };
+  }
+  if (!response.headers.get("content-type")?.toLowerCase().includes("application/json"))
+    throw new Error("schema_invalid");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error("schema_invalid");
+  }
+  if (
+    !parsed ||
+    typeof parsed !== "object" ||
+    Array.isArray(parsed) ||
+    (parsed as Record<string, unknown>).type !== "FeatureCollection" ||
+    !Array.isArray((parsed as Record<string, unknown>).features) ||
+    ((parsed as Record<string, unknown>).features as unknown[]).length > 5000
+  )
+    throw new Error("schema_invalid");
+  return {
+    unchanged: false as const,
+    records: (parsed as { features: unknown[] }).features,
+    ...nextValidators,
+  };
+}
+
 function safeError(error: unknown) {
   const text = error instanceof Error ? error.message : "unknown";
   if (text.startsWith("http_")) return text;
@@ -347,11 +607,17 @@ export function createHandler(deps: HandlerDependencies) {
       return new Response("Unauthorized", { status: 401 });
     const fetchedAt = (deps.now?.() ?? new Date()).toISOString();
     const outcomes: Record<string, unknown> = {};
-    const feeds: { source: OfficialSource; feed: FeedType | UDOTFeedType }[] = [
+    const feeds: { source: OfficialSource; feed: FeedType | UDOTFeedType | MDTFeedType }[] = [
       ...(Object.keys(PATHS) as FeedType[]).map((feed) => ({ source: "cotrip" as const, feed })),
       ...(deps.udotApiKey
         ? (Object.keys(UDOT_PATHS) as UDOTFeedType[]).map((feed) => ({
             source: "udot" as const,
+            feed,
+          }))
+        : []),
+      ...(deps.mdtEnabled
+        ? (Object.keys(MDT_PATHS) as MDTFeedType[]).map((feed) => ({
+            source: "mdt" as const,
             feed,
           }))
         : []),
@@ -360,20 +626,56 @@ export function createHandler(deps: HandlerDependencies) {
       const snapshotId = deps.randomUUID?.() ?? crypto.randomUUID();
       try {
         const apiKey = source === "cotrip" ? deps.apiKey : deps.udotApiKey;
-        if (!apiKey) throw new Error("credentials_unavailable");
-        const raw = source === "cotrip"
-          ? await fetchCompleteFeed(deps.fetcher, apiKey, feed as FeedType)
-          : await fetchUDOTFeed(deps.fetcher, apiKey, feed as UDOTFeedType);
+        if (source !== "mdt" && !apiKey) throw new Error("credentials_unavailable");
+        const validator =
+          source === "mdt"
+            ? await deps.rpc("read_official_feed_validator_v1", {
+                p_source: source,
+                p_feed_type: feed,
+              })
+            : { data: null, error: null };
+        if (validator.error) throw new Error("database_unavailable");
+        const mdt =
+          source === "mdt"
+            ? await fetchMDTFeed(
+                deps.fetcher,
+                feed as MDTFeedType,
+                (validator.data as UpstreamValidators | null) ?? {},
+              )
+            : null;
+        if (mdt?.unchanged) {
+          const { data, error } = await deps.rpc("record_official_feed_not_modified_v1", {
+            p_source: source,
+            p_feed_type: feed,
+            p_fetched_at: fetchedAt,
+            p_etag: mdt.etag,
+            p_last_modified: mdt.last_modified,
+          });
+          if (error) throw new Error("database_unavailable");
+          outcomes[`${source}:${feed}`] = data;
+          continue;
+        }
+        const raw =
+          source === "cotrip"
+            ? await fetchCompleteFeed(deps.fetcher, apiKey!, feed as FeedType)
+            : source === "udot"
+              ? await fetchUDOTFeed(deps.fetcher, apiKey!, feed as UDOTFeedType)
+              : mdt!.records;
         const mapped = raw.map((row) =>
           source === "cotrip"
             ? normalizeRecord(row, feed as FeedType)
-            : normalizeUDOTRecord(row, feed as UDOTFeedType),
+            : source === "udot"
+              ? normalizeUDOTRecord(row, feed as UDOTFeedType)
+              : feed === "road_conditions"
+                ? row
+                : normalizeMDTGeoJSONRecord(row, feed as Exclude<MDTFeedType, "road_conditions">),
         );
-        if (source === "udot" && mapped.some((row) => row === null))
+        if (source !== "cotrip" && mapped.some((row) => row === null))
           throw new Error("schema_invalid");
         const normalized = mapped.filter(Boolean);
-        if (source === "cotrip" && normalized.length !== raw.length) throw new Error("schema_invalid");
-        const { data, error } = await deps.rpc("ingest_official_snapshot_v2", {
+        if (source === "cotrip" && normalized.length !== raw.length)
+          throw new Error("schema_invalid");
+        const { data, error } = await deps.rpc("ingest_official_snapshot_v3", {
           p_source: source,
           p_feed_type: feed,
           p_snapshot_id: snapshotId,
@@ -381,12 +683,14 @@ export function createHandler(deps: HandlerDependencies) {
           p_complete: true,
           p_fetched_at: fetchedAt,
           p_error_code: null,
+          p_etag: mdt?.etag ?? null,
+          p_last_modified: mdt?.last_modified ?? null,
         });
         if (error) throw new Error("database_unavailable");
         outcomes[`${source}:${feed}`] = data;
       } catch (error) {
         const code = safeError(error);
-        await deps.rpc("ingest_official_snapshot_v2", {
+        await deps.rpc("ingest_official_snapshot_v3", {
           p_source: source,
           p_feed_type: feed,
           p_snapshot_id: snapshotId,
@@ -394,6 +698,8 @@ export function createHandler(deps: HandlerDependencies) {
           p_complete: false,
           p_fetched_at: fetchedAt,
           p_error_code: code,
+          p_etag: null,
+          p_last_modified: null,
         });
         outcomes[`${source}:${feed}`] = { accepted: false, error: code };
       }

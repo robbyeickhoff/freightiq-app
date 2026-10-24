@@ -45,3 +45,15 @@ test("healthy and driver-only views show no warning", () => {
   assert.equal(officialFeedHealthNotice(health, "cotrip"), null);
   assert.equal(officialFeedHealthNotice(health, "drivers"), null);
 });
+
+test("an MDT partial failure stays scoped to Montana official data", () => {
+  const health = {
+    "mdt:events": { ...healthy, source: "mdt" as const },
+    "mdt:restrictions": { ...error, source: "mdt" as const },
+  };
+  assert.equal(
+    officialFeedHealthNotice(health, "mdt"),
+    "Official road data is delayed or temporarily unavailable. Driver Updates are still current.",
+  );
+  assert.equal(officialFeedHealthNotice(health, "cotrip"), null);
+});

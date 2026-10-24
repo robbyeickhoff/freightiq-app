@@ -299,19 +299,94 @@ reconciled, and limited so it cannot become an unrestricted geographic-data expo
 
 ### 6.4 Montana source readiness
 
-MDT currently publishes unauthenticated public KML/GeoJSON feeds for road conditions; alerts,
-closures, and incidents; construction; and restrictions. Product Owner direction is to treat MDT's
-official publication of these feeds for unrestricted public access as sufficient to proceed without
-separate agency outreach. Before MDT implementation begins, the technical source contract must
-document:
+MDT publishes unauthenticated public traveler-information feeds from its official
+[Data Feeds and Google Earth](https://www.mdt.mt.gov/mdt/rss.aspx) page. No developer account or API
+key is required. Product Owner direction is to treat that official public publication as sufficient
+to proceed without separate agency outreach. FreightIQ will not reproduce MDT page design, imply
+agency endorsement, or expose the upstream files directly to the mobile client.
 
-- FreightIQ attribution and practical source-disclaimer language based on MDT's published terms;
-- a respectful polling and caching policy that does not burden the public service;
-- that FreightIQ does not reproduce MDT page design or imply agency endorsement;
-- endpoint ownership, update behavior, identifiers, pagination/snapshot behavior, and failure
-  semantics; and
-- a minimal feed set that avoids routine noise while preserving closures, restrictions, delays, and
-  truck-relevant limits.
+#### 6.4.1 Approved feed set
+
+The bounded Montana source uses these four MDT-published endpoints:
+
+| Dataset                         | Official endpoint                                                                  | FreightIQ inclusion rule                                                                                                                                                                        |
+| ------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Alerts, closures, and incidents | `https://mt.cdn.iteris-atis.com/geojson/icons/metadata/icons.events.geojson`       | Include closures, blocked lanes, incidents, warnings, hazards, and truck-relevant limits.                                                                                                       |
+| Restrictions                    | `https://mt.cdn.iteris-atis.com/geojson/icons/metadata/icons.restrictions.geojson` | Include every active height, width, length, weight, speed, seasonal, or other commercial-vehicle restriction.                                                                                   |
+| Road conditions                 | `https://mt.cdn.iteris-atis.com/kml/mdt_conditions.kml`                            | Include non-routine conditions such as ice, snow, slush, reduced visibility, severe driving, and closures; omit dry/normal and ordinary wet-only segments unless paired with a material hazard. |
+| Construction                    | `https://mt.cdn.iteris-atis.com/geojson/icons/metadata/icons.construction.geojson` | Include only records with a closure, lane closure, detour, delay of at least 10 minutes, pilot vehicle, signal control, reduced speed, or height/width/length/weight limit.                     |
+
+Camera, RWIS, rest-area, general weather, and routine no-impact construction data are excluded from
+V1. They add noise or materially different media/privacy/retention behavior without improving the
+fast driver workflow.
+
+#### 6.4.2 Source identity and normalization
+
+- Store the provider as `mdt` and monitor each of `events`, `restrictions`, `road_conditions`, and
+  `construction` independently.
+- GeoJSON records use `event_id`, falling back to feature `id`, as the stable source identifier.
+  Preserve route, mile reference, direction, source category, source URL when supplied, and the
+  upstream Unix `last_update` value in bounded source metadata.
+- Use the plain-text `report` as the primary description after stripping any remaining markup.
+  `enhanced_report` may assist normalization but is never rendered as trusted HTML.
+- Road-condition KML uses the Placemark identifier as the stable source identifier, the complete
+  supplied line geometry for matching, and the response `Last-Modified` time when no per-record
+  update time is supplied.
+- Source point coordinates are parsed as longitude/latitude numbers and validated against Montana
+  bounds. Malformed identifiers, geometry, timestamps, or required text reject the affected
+  snapshot rather than publishing a partial replacement.
+- Normalize into the existing official-condition categories without combining MDT records with
+  COtrip, UDOT, or driver-authored updates. MDT wording and source timestamps remain attributable to
+  MDT.
+
+#### 6.4.3 Polling, caching, and snapshot safety
+
+- Poll each endpoint no more frequently than every 10 minutes.
+- Send conditional requests using `ETag` and/or `Last-Modified` when available. An unchanged response
+  records a successful check without reparsing or rewriting the trusted snapshot.
+- Apply bounded request timeouts, payload-size limits, record-count limits, and one retry with
+  backoff. Do not fan out requests per area or per record.
+- Treat each dataset as a complete independent snapshot. Never deactivate the last trusted records
+  after a timeout, HTTP error, parse failure, invalid payload, or implausible count collapse.
+- Reuse the existing snapshot-collapse rule: once a dataset's trusted count is at least 20, a new
+  snapshot below 25 percent of that count is rejected until independently verified.
+- Match accepted geometry to reviewed Montana practical-area geometry on the server. The phone reads
+  only FreightIQ's bounded guarded response.
+- Feed health is independent per dataset. A construction failure must not hide healthy incidents,
+  restrictions, road conditions, or Driver Updates. A failed or stale feed must never display as
+  “All clear.”
+
+#### 6.4.4 Attribution and driver-facing notice
+
+Cards use the source label **Official MDT**. The source notice says:
+
+> Official MDT information applies only to conditions labeled “Official MDT.” Driver Updates are
+> reported separately by FreightIQ drivers. MDT information may change, may not be real time, and is
+> provided as-is. Verify critical restrictions and closures with Montana 511 before travel. Use this
+> information at your own risk. FreightIQ is not affiliated with or endorsed by MDT.
+
+The notice links to MDT Traveler Information and MDT's
+[Terms of Use](https://www.mdt.mt.gov/mdt/terms-of-use.aspx). It follows MDT's published position
+that public information is provided as-is, may change or be discontinued, carries no warranty, and
+is used at the user's risk. FreightIQ copies only the bounded informational data needed for driver
+operations; it does not copy MDT site design or present modified text as an MDT quotation.
+
+#### 6.4.5 Implementation boundary
+
+MDT support requires a new reviewed migration that expands source/feed constraints and guarded
+health reads, plus an ingestion change that preserves the existing COtrip and UDOT schedules and
+records. Secrets are not introduced. Local sanitized fixtures must cover all four datasets,
+truck-impact filtering, KML line parsing, HTML stripping, conditional unchanged responses,
+malformed snapshots, count-collapse rejection, partial feed failure, source isolation, Montana-only
+source controls, card expansion, map behavior, notice scrolling, and both-phone acceptance.
+
+The Product Owner approved this source contract and bounded local implementation on October 23.
+Focused physical iPhone and Pixel acceptance passed October 24, including live MDT cards,
+expand/collapse, map return, notice scrolling and official links, source filtering, refresh and
+background return, state isolation, stale-feed warning recovery, and silent source fallback during
+normal cross-state area changes.
+Hosted migration, function deployment, schedule activation, native builds, tester distribution, and
+release remain separate approval gates.
 
 ### 6.5 Driver posting
 

@@ -8,6 +8,9 @@ import {
   normalizeRecord,
   normalizeUDOTRecord,
   fetchUDOTFeed,
+  fetchMDTFeed,
+  normalizeMDTGeoJSONRecord,
+  normalizeMDTRoadConditions,
   // @ts-expect-error Node's local verification runner needs the explicit extension.
 } from "../supabase/functions/ingest-cotrip-conditions/handler.ts";
 
@@ -151,7 +154,10 @@ test("normalizes UDOT events and decodes their supplied geometry", () => {
   assert.equal(value?.route_name, "US-191");
   assert.deepEqual(value?.jurisdictions, ["San Juan"]);
   assert.deepEqual(value?.geometry, { type: "Point", coordinates: [-109.55, 38.57] });
-  assert.equal(mapUDOTCategory({ EventType: "accidentsAndIncidents" }, "events"), "temporary_hazard");
+  assert.equal(
+    mapUDOTCategory({ EventType: "accidentsAndIncidents" }, "events"),
+    "temporary_hazard",
+  );
   assert.equal(mapUDOTCategory({ IsFullClosure: true }, "events"), "road_closure");
 });
 
@@ -212,9 +218,7 @@ test("rejects a malformed UDOT record instead of accepting a partial snapshot", 
       headers: { "x-freightiq-worker-secret": "local-worker-secret" },
     }),
   );
-  const eventCall = calls.find(
-    (call) => call.p_source === "udot" && call.p_feed_type === "events",
-  );
+  const eventCall = calls.find((call) => call.p_source === "udot" && call.p_feed_type === "events");
   assert.equal(eventCall?.p_complete, false);
   assert.equal(eventCall?.p_error_code, "schema_invalid");
 });
@@ -264,12 +268,155 @@ test("ingests UDOT endpoints independently when its server key is configured", a
   );
   assert.equal(response.status, 200);
   assert.equal(calls.length, 4);
-  assert.ok(calls.every((call) => call.name === "ingest_official_snapshot_v2"));
+  assert.ok(calls.every((call) => call.name === "ingest_official_snapshot_v3"));
   assert.deepEqual(
     calls.slice(2).map((call) => [call.args.p_source, call.args.p_feed_type]),
     [
       ["udot", "events"],
       ["udot", "road_conditions"],
     ],
+  );
+});
+
+const mdtFeature = (id: string, report: string, category = "incd") => ({
+  type: "Feature",
+  id,
+  properties: {
+    event_id: id,
+    headline: category === "cnstr" ? "Road Work" : "Incident",
+    category,
+    report,
+    route: "I-90",
+    mrm: 101.5,
+    dir: "B",
+    last_update: 1792764000,
+  },
+  geometry: { type: "Point", coordinates: ["-114.12", "46.88"] },
+});
+
+test("normalizes MDT incidents and truck restrictions without trusting markup", () => {
+  const incident = normalizeMDTGeoJSONRecord(
+    mdtFeature("mt-event-1", "<b>Blocked lane</b><br />Use caution."),
+    "events",
+  );
+  assert.equal(incident?.source_id, "mt-event-1");
+  assert.equal(incident?.message, "Blocked lane Use caution.");
+  assert.deepEqual(incident?.geometry, { type: "Point", coordinates: [-114.12, 46.88] });
+  const restriction = normalizeMDTGeoJSONRecord(
+    mdtFeature("mt-restriction-1", "Width limit 12 ft."),
+    "restrictions",
+  );
+  assert.deepEqual(restriction?.restrictions, ["Width limit 12 ft."]);
+});
+
+test("filters routine MDT construction while preserving truck-impacting work", () => {
+  assert.equal(
+    normalizeMDTGeoJSONRecord(
+      mdtFeature("mt-work-quiet", "Shoulder work with no traffic restrictions.", "cnstr"),
+      "construction",
+    ),
+    undefined,
+  );
+  const impacting = normalizeMDTGeoJSONRecord(
+    mdtFeature("mt-work-impact", "Lane closure with width limit 12 ft.", "cnstr"),
+    "construction",
+  );
+  assert.equal(impacting?.category, "construction");
+});
+
+test("parses non-routine MDT KML line geometry and omits routine dry segments", () => {
+  const kml = `<?xml version="1.0"?><kml><Document>
+    <Placemark id="road_conditions_dry"><styleUrl>#road_conditions:dry</styleUrl>
+      <LineString><coordinates>-114.2,46.8 -114.1,46.9</coordinates></LineString></Placemark>
+    <Placemark id="road_conditions_ice"><styleUrl>#road_conditions:ice,reduced_vis</styleUrl>
+      <LineString><coordinates>-114.2,46.8 -114.1,46.9</coordinates></LineString></Placemark>
+  </Document></kml>`;
+  const records = normalizeMDTRoadConditions(kml, "2026-10-23T12:00:00.000Z");
+  assert.equal(records.length, 1);
+  assert.equal(records[0].source_id, "road_conditions_ice");
+  assert.equal(records[0].category, "weather_road_conditions");
+  assert.deepEqual(records[0].geometry, {
+    type: "LineString",
+    coordinates: [
+      [-114.2, 46.8],
+      [-114.1, 46.9],
+    ],
+  });
+});
+
+test("uses MDT conditional validators and accepts an unchanged response", async () => {
+  let ifNoneMatch: string | null = null;
+  let ifModifiedSince: string | null = null;
+  const result = await fetchMDTFeed(
+    (async (input: string | URL | Request, init?: RequestInit) => {
+      const request = new Request(input, init);
+      ifNoneMatch = request.headers.get("if-none-match");
+      ifModifiedSince = request.headers.get("if-modified-since");
+      return new Response(null, { status: 304, headers: { etag: '"fixture"' } });
+    }) as typeof fetch,
+    "events",
+    { etag: '"fixture"', last_modified: "Thu, 22 Oct 2026 12:00:00 GMT" },
+  );
+  assert.equal(result.unchanged, true);
+  assert.equal(ifNoneMatch, '"fixture"');
+  assert.equal(ifModifiedSince, "Thu, 22 Oct 2026 12:00:00 GMT");
+});
+
+test("ingests four MDT datasets independently and records unchanged feeds", async () => {
+  const calls: { name: string; args: Record<string, unknown> }[] = [];
+  const kml = `<kml><Placemark id="road_conditions_snow"><styleUrl>#road_conditions:snow</styleUrl>
+    <LineString><coordinates>-114.2,46.8 -114.1,46.9</coordinates></LineString></Placemark></kml>`;
+  const handler = createHandler({
+    apiKey: "local-cotrip-key",
+    mdtEnabled: true,
+    workerSecret: "local-worker-secret",
+    randomUUID: () => "40000000-0000-4000-8000-000000000001",
+    fetcher: (async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes("data.cotrip")) return Response.json([row("co-1")], { headers: headers(1) });
+      if (url.includes("icons.events")) return new Response(null, { status: 304 });
+      if (url.endsWith(".kml"))
+        return new Response(kml, {
+          headers: { "content-type": "application/vnd.google-earth.kml+xml" },
+        });
+      const feed = url.includes("construction") ? "cnstr" : "restr";
+      return Response.json(
+        {
+          type: "FeatureCollection",
+          features: [
+            mdtFeature(
+              `mt-${feed}`,
+              feed === "cnstr" ? "Lane closure." : "Width limit 12 ft.",
+              feed,
+            ),
+          ],
+        },
+        { headers: { etag: `"${feed}"` } },
+      );
+    }) as typeof fetch,
+    rpc: async (name, args) => {
+      calls.push({ name, args });
+      if (name === "read_official_feed_validator_v1")
+        return { data: args.p_feed_type === "events" ? { etag: '"fixture"' } : {}, error: null };
+      return { data: { accepted: true }, error: null };
+    },
+  });
+  const response = await handler(
+    new Request("http://local.test", {
+      method: "POST",
+      headers: { "x-freightiq-worker-secret": "local-worker-secret" },
+    }),
+  );
+  assert.equal(response.status, 200);
+  assert.equal(calls.filter((call) => call.name === "read_official_feed_validator_v1").length, 4);
+  assert.equal(
+    calls.filter((call) => call.name === "record_official_feed_not_modified_v1").length,
+    1,
+  );
+  assert.deepEqual(
+    calls
+      .filter((call) => call.name === "ingest_official_snapshot_v3" && call.args.p_source === "mdt")
+      .map((call) => call.args.p_feed_type),
+    ["restrictions", "road_conditions", "construction"],
   );
 });
