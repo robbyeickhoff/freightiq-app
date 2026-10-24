@@ -456,6 +456,9 @@ export default function StopScreen() {
   const [deliverFromDetails, setDeliverFromDetails] = useState("");
   const [deliveryType, setDeliveryType] = useState<"Dock" | "Forklift" | "Liftgate" | "">("");
   const [additionalIntelOpen, setAdditionalIntelOpen] = useState(false);
+  const [additionalIntelPicker, setAdditionalIntelPicker] = useState<
+    "deliverFrom" | "approach" | null
+  >(null);
   const [showManageStop, setShowManageStop] = useState(false);
   const [approachHint, setApproachHint] = useState("");
   const [backInRequired, setBackInRequired] = useState<boolean | null>(null);
@@ -1376,6 +1379,16 @@ export default function StopScreen() {
     "Wide turn needed",
     "No turnaround",
   ];
+
+  const selectedApproachChips = approachChips.filter((approach) =>
+    approachHint
+      .split(";")
+      .map((part) => part.trim().toLowerCase())
+      .includes(approach.toLowerCase()),
+  );
+  const approachSummary = selectedApproachChips.length
+    ? selectedApproachChips.join(" · ")
+    : "Select approach options";
 
   function appendApproach(text: string) {
     setApproachHint((previous) => {
@@ -3016,17 +3029,70 @@ export default function StopScreen() {
 
                   <View style={intelStyles.card}>
                     <Text style={intelStyles.sectionLabel}>Deliver From</Text>
-                    <View style={styles.chipRow}>
-                      {deliverFromChips.map(({ value, label }) => (
-                        <Chip
-                          themed
-                          key={value}
-                          label={label}
-                          active={deliverFromType === value}
-                          onPress={() => setDeliverFromType(value)}
-                        />
-                      ))}
-                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: additionalIntelPicker === "deliverFrom" }}
+                      accessibilityLabel={`Deliver From, ${deliverFromType || "not selected"}`}
+                      accessibilityHint="Expands delivery location choices"
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        setAdditionalIntelPicker((current) =>
+                          current === "deliverFrom" ? null : "deliverFrom",
+                        );
+                      }}
+                      style={({ pressed }) => [
+                        styles.intelSelectorRow,
+                        { backgroundColor: colors.surface, borderColor: colors.border },
+                        pressed ? styles.disclosureRowPressed : null,
+                      ]}
+                    >
+                      <Text style={[styles.intelSelectorValue, { color: colors.textPrimary }]}>
+                        {deliverFromType || "Select delivery location"}
+                      </Text>
+                      <MaterialIcons
+                        name={
+                          additionalIntelPicker === "deliverFrom" ? "expand-less" : "expand-more"
+                        }
+                        size={28}
+                        color={colors.textSecondary}
+                      />
+                    </Pressable>
+                    {additionalIntelPicker === "deliverFrom" ? (
+                      <View style={styles.intelPickerOptionList}>
+                        {deliverFromChips.map(({ label, value }) => {
+                          const selected = deliverFromType === value;
+                          return (
+                            <Pressable
+                              accessibilityRole="radio"
+                              accessibilityState={{ checked: selected }}
+                              key={value}
+                              onPress={() => {
+                                setDeliverFromType(value);
+                                setAdditionalIntelPicker(null);
+                              }}
+                              style={({ pressed }) => [
+                                styles.intelPickerOption,
+                                { borderColor: colors.border },
+                                selected ? { backgroundColor: colors.accentMuted } : null,
+                                pressed ? styles.disclosureRowPressed : null,
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.intelPickerOptionText,
+                                  { color: colors.textPrimary },
+                                ]}
+                              >
+                                {label}
+                              </Text>
+                              {selected ? (
+                                <AppIcon name="check" size={24} color={colors.accentStrong} />
+                              ) : null}
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    ) : null}
 
                     <TextInput
                       placeholderTextColor={colors.textSecondary}
@@ -3040,17 +3106,78 @@ export default function StopScreen() {
                     />
 
                     <Text style={intelStyles.sectionLabel}>Best Approach</Text>
-                    <View style={styles.chipRow}>
-                      {approachChips.map((approach) => (
-                        <Chip
-                          themed
-                          key={approach}
-                          label={approach}
-                          active={approachHint.toLowerCase().includes(approach.toLowerCase())}
-                          onPress={() => appendApproach(approach)}
-                        />
-                      ))}
-                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: additionalIntelPicker === "approach" }}
+                      accessibilityLabel={`Best Approach, ${approachSummary}`}
+                      accessibilityHint="Expands approach choices"
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        setAdditionalIntelPicker((current) =>
+                          current === "approach" ? null : "approach",
+                        );
+                      }}
+                      style={({ pressed }) => [
+                        styles.intelSelectorRow,
+                        { backgroundColor: colors.surface, borderColor: colors.border },
+                        pressed ? styles.disclosureRowPressed : null,
+                      ]}
+                    >
+                      <Text
+                        numberOfLines={2}
+                        style={[styles.intelSelectorValue, { color: colors.textPrimary }]}
+                      >
+                        {approachSummary}
+                      </Text>
+                      <MaterialIcons
+                        name={additionalIntelPicker === "approach" ? "expand-less" : "expand-more"}
+                        size={28}
+                        color={colors.textSecondary}
+                      />
+                    </Pressable>
+                    {additionalIntelPicker === "approach" ? (
+                      <View style={styles.intelPickerOptionList}>
+                        <Text style={intelStyles.helperText}>Choose all that apply.</Text>
+                        {approachChips.map((approach) => {
+                          const selected = selectedApproachChips.some(
+                            (value) => value.toLowerCase() === approach.toLowerCase(),
+                          );
+                          return (
+                            <Pressable
+                              accessibilityRole="checkbox"
+                              accessibilityState={{ checked: selected }}
+                              key={approach}
+                              onPress={() => appendApproach(approach)}
+                              style={({ pressed }) => [
+                                styles.intelPickerOption,
+                                { borderColor: colors.border },
+                                selected ? { backgroundColor: colors.accentMuted } : null,
+                                pressed ? styles.disclosureRowPressed : null,
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.intelPickerOptionText,
+                                  { color: colors.textPrimary },
+                                ]}
+                              >
+                                {approach}
+                              </Text>
+                              {selected ? (
+                                <AppIcon name="check" size={24} color={colors.accentStrong} />
+                              ) : null}
+                            </Pressable>
+                          );
+                        })}
+                        <AppButton
+                          fullWidth
+                          onPress={() => setAdditionalIntelPicker(null)}
+                          variant="secondary"
+                        >
+                          Done
+                        </AppButton>
+                      </View>
+                    ) : null}
 
                     <TextInput
                       placeholderTextColor={colors.textSecondary}
@@ -3950,6 +4077,41 @@ const styles = StyleSheet.create({
   },
   additionalIntelAddress: {
     color: "#666",
+  },
+  intelPickerOptionList: {
+    gap: 8,
+    paddingVertical: 16,
+  },
+  intelPickerOption: {
+    alignItems: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 52,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  intelPickerOptionText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  intelSelectorRow: {
+    alignItems: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 52,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  intelSelectorValue: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "700",
+    marginRight: 8,
   },
   driverNotesInput: {
     minHeight: 120,
