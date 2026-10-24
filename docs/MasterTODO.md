@@ -679,7 +679,10 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 - [ ] Design a true driver-usable offline stop snapshot that includes the last successfully loaded
       shared Driver Reports/Core Intel, a visible **Offline copy** and **Last updated** time, honest
       stale-data treatment, reconnect refresh, and account/logout/block privacy invalidation. Preserve
-      the stricter Locked Personal Intel boundary.
+      the stricter Locked Personal Intel boundary. Draft prepared October 24 in
+      [Offline Stop Snapshots V1](build-specs/FreightIQOfflineStopSnapshotsV1BuildSpec.md). The
+      specification and bounded local candidate were approved October 24; physical acceptance and
+      production installation remain pending.
 - [ ] Separate deliberately saved offline stops from automatically maintained working data. Audit and
       migrate the current `PINS_KEY` / `VIEW_CACHE_KEY` behavior so newly created stops and older map
       view entries do not silently inflate the user-facing **Cached Stops** count or imply deliberate

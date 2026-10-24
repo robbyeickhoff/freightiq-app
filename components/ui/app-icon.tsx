@@ -26,6 +26,7 @@ const ICONS = {
   community: { default: "gpp-good" },
   blocked: { default: "block" },
   delete: { default: "delete-outline" },
+  download: { default: "download-for-offline" },
   drag: { default: "drag-handle" },
   incomplete: { default: "pending-actions" },
   passwordHidden: { default: "visibility-off" },

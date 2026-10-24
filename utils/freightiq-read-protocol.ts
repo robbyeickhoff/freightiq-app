@@ -15,7 +15,8 @@ export type FreightIqReadOperation =
   | "stop_summaries"
   | "stop_reports"
   | "report_reputation"
-  | "stop_stats";
+  | "stop_stats"
+  | "offline_snapshots";
 
 type RpcResponse = { data: unknown; error: unknown };
 export type GuardedReadClient = {

@@ -74,6 +74,10 @@ import {
 import { supabase } from "../../utils/supabase";
 import { freightIqReadMessage } from "../../utils/freightiq-read-protocol";
 import {
+  getOfflineStopSnapshot,
+  offlineSnapshotNeedsRefresh,
+} from "../../utils/offline-stop-snapshots";
+import {
   composeLockedIntelTransfer,
   findSensitiveSharedIntel,
   type SensitiveSharedIntelField,
@@ -432,6 +436,7 @@ export default function StopScreen() {
   const [ownReportLoaded, setOwnReportLoaded] = useState(false);
   const [reportsLoadError, setReportsLoadError] = useState(false);
   const [reportReadMessage, setReportReadMessage] = useState<string | null>(null);
+  const [offlineSavedAt, setOfflineSavedAt] = useState<string | null>(null);
   const reportLoadRequestRef = useRef(0);
   const entranceLoadRequestRef = useRef(0);
   const reportEditorInitializedRef = useRef(false);
@@ -760,6 +765,7 @@ export default function StopScreen() {
     setReportsLoaded(false);
     setOwnReportLoaded(false);
     setReportsLoadError(false);
+    setOfflineSavedAt(null);
     reportEditorInitializedRef.current = false;
     setMyReportId(null);
     setSavedReportSnapshot(null);
@@ -1073,7 +1079,32 @@ export default function StopScreen() {
 
       setEntranceLoaded(true);
     } catch {
-      if (request === entranceLoadRequestRef.current) setEntranceLoaded(true);
+      if (request !== entranceLoadRequestRef.current) return;
+      const snapshot = sessionUserId
+        ? await getOfflineStopSnapshot(sessionUserId, stopId).catch(() => null)
+        : null;
+      if (request !== entranceLoadRequestRef.current) return;
+      if (snapshot) {
+        setPreviewStopLat(snapshot.stop.lat);
+        setPreviewStopLng(snapshot.stop.lng);
+        setCurrentStopName(snapshot.stop.name);
+        setCurrentStopAddress(snapshot.stop.address ?? "");
+        if (
+          typeof snapshot.stop.entrance_lat === "number" &&
+          typeof snapshot.stop.entrance_lng === "number"
+        ) {
+          setEntranceLat(snapshot.stop.entrance_lat);
+          setEntranceLng(snapshot.stop.entrance_lng);
+          setEntranceRegion({
+            latitude: snapshot.stop.entrance_lat,
+            longitude: snapshot.stop.entrance_lng,
+            latitudeDelta: 0.006,
+            longitudeDelta: 0.006,
+          });
+        }
+        setOfflineSavedAt(snapshot.savedAt);
+      }
+      setEntranceLoaded(true);
     }
   }
 
@@ -1086,7 +1117,12 @@ export default function StopScreen() {
         readFreightIqStopReports(stopId),
       ]);
       if (request !== reportLoadRequestRef.current) return;
-      const data = shared.status === "fulfilled" ? shared.value : [];
+      const offlineSnapshot =
+        shared.status === "rejected" && ownerUserId
+          ? await getOfflineStopSnapshot(ownerUserId, stopId).catch(() => null)
+          : null;
+      if (request !== reportLoadRequestRef.current) return;
+      const data = shared.status === "fulfilled" ? shared.value : (offlineSnapshot?.reports ?? []);
       const hydrated = data.map((report) => ({
         ...report,
         contact_people: report.contact_people,
@@ -1096,19 +1132,52 @@ export default function StopScreen() {
       })) as ReportRow[];
       const uniqueUserIds = [...new Set(hydrated.map((report) => report.user_id))];
 
-      setReportsLoadError(shared.status === "rejected");
+      setReportsLoadError(shared.status === "rejected" && !offlineSnapshot);
       setReportReadMessage(
-        shared.status === "rejected"
+        shared.status === "rejected" && !offlineSnapshot
           ? freightIqReadMessage(shared.reason, "Could not refresh shared reports.")
           : null,
       );
       setReportsLoaded(true);
-      if (shared.status === "fulfilled") {
+      if (shared.status === "fulfilled" || offlineSnapshot) {
         setBlockedContributorIds([]);
         setReports(hydrated);
-        void Promise.all([loadVotesForReports(hydrated), loadReputationForUsers(uniqueUserIds)]);
+        if (offlineSnapshot) {
+          setOfflineSavedAt(offlineSnapshot.savedAt);
+          setVoteStatsByReportId(
+            Object.fromEntries(
+              hydrated.map((report) => [
+                report.id,
+                {
+                  up: Number(report.vote_up_count ?? 0),
+                  down: Number(report.vote_down_count ?? 0),
+                  myVote: 0,
+                },
+              ]),
+            ),
+          );
+        } else {
+          setOfflineSavedAt(null);
+          void Promise.all([loadVotesForReports(hydrated), loadReputationForUsers(uniqueUserIds)]);
+        }
       }
-      if (owned.status === "rejected") throw owned.reason;
+      if (owned.status === "rejected") {
+        if (offlineSnapshot) {
+          const sharedCoreIntel = getSharedCoreIntel(hydrated);
+          inheritedCoreIntelRef.current = {
+            ...(sharedCoreIntel.deliveryType ? { deliveryType: sharedCoreIntel.deliveryType } : {}),
+            ...(sharedCoreIntel.truckFit ? { truckFit: sharedCoreIntel.truckFit } : {}),
+            ...(sharedCoreIntel.backInRequired !== null
+              ? { backInRequired: sharedCoreIntel.backInRequired }
+              : {}),
+          };
+          setDeliveryType(sharedCoreIntel.deliveryType ?? "");
+          setTruckFit(sharedCoreIntel.truckFit ?? "");
+          setBackInRequired(sharedCoreIntel.backInRequired);
+          return;
+        }
+        throw owned.reason;
+      }
       const mine = owned.value;
       if (mine && mine.user_id !== ownerUserId) throw new Error("Report owner changed.");
       const editor = reportEditorSnapshotRef.current;
@@ -2177,6 +2246,18 @@ export default function StopScreen() {
               ) : null}
             </View>
 
+            {offlineSavedAt ? (
+              <AppCard contentStyle={styles.v2SectionCard}>
+                <Text style={[styles.v2SectionTitle, { color: colors.textPrimary }]}>
+                  Offline copy · saved {new Date(offlineSavedAt).toLocaleString()}
+                </Text>
+                <Text style={[styles.v2SectionSubtitle, { color: colors.textSecondary }]}>
+                  Read-only until FreightIQ reconnects.
+                  {offlineSnapshotNeedsRefresh(offlineSavedAt) ? " Refresh recommended." : ""}
+                </Text>
+              </AppCard>
+            ) : null}
+
             <StopIntelSummary
               backInRequired={backInRequired}
               deliveryType={deliveryType}
@@ -2298,6 +2379,7 @@ export default function StopScreen() {
                       View DZ
                     </AppButton>
                     <AppButton
+                      disabled={Boolean(offlineSavedAt)}
                       onPress={() => void openEntrancePicker()}
                       size="compact"
                       style={[
@@ -2311,7 +2393,11 @@ export default function StopScreen() {
                   </View>
                 </>
               ) : (
-                <AppButton fullWidth onPress={() => void openEntrancePicker()}>
+                <AppButton
+                  disabled={Boolean(offlineSavedAt)}
+                  fullWidth
+                  onPress={() => void openEntrancePicker()}
+                >
                   Set Delivery Zone
                 </AppButton>
               )}

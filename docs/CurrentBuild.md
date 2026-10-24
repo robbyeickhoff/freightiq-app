@@ -13,6 +13,52 @@ answer one question:
 
 ## Current Objective
 
+### October 24 — Honest offline stop snapshots
+
+Physical testing of the on-demand map-summary correction confirmed that the current **Save Stops for
+Offline** action keeps marker identity/location but does not preserve the shared Driver Reports/Core
+Intel a driver expects to use in a dead zone. Inspection also confirmed that `mfi:pins:v1` and
+`mfi:view-cache:v1` are automatic working stores populated by map loads, new-stop creation, and older
+view behavior. The user-facing **Cached Stops** count therefore mixes deliberate and automatic
+entries. Normal logout does not clear the unscoped map/stop cache.
+
+Rob approved investigation and preparation of a focused specification on October 24. The proposed
+[Offline Stop Snapshots V1 specification](build-specs/FreightIQOfflineStopSnapshotsV1BuildSpec.md)
+separates explicit account-scoped offline snapshots from working map data; includes stop location,
+Delivery Zone, shared Core Intel, and current Driver Reports; visibly labels saved time and older
+copies; excludes Locked Personal Intel and offline writes; purges snapshots on logout/account
+deletion; and uses one bounded guarded server operation instead of per-stop bulk reads. The draft
+allows at most 50 deliberately saved stops and 500 combined visible reports, refuses incomplete
+batches rather than silently truncating them, and keeps earlier complete copies after failures.
+
+Rob approved the specification and bounded local implementation on October 24. The local candidate
+now uses a distinct versioned, account-scoped offline index whose entries point to complete snapshot
+versions, so an interrupted replacement keeps the earlier index/copy. Map Tools shows only
+deliberately saved offline stops, supports bounded current-view save, refresh, individual removal,
+and remove-all, while Preview Card supports one-stop save. The Intel screen falls back to saved
+location, Delivery Zone, shared Core Intel, and Driver Reports after live reads fail; it labels the
+saved time, marks copies older than seven days for refresh, and keeps offline editing unavailable.
+Explicit logout removes the active account's copies. Legacy pin/view caches remain map working data
+and never count as offline saves.
+
+Local migration `20261024142353_add_offline_stop_snapshots_v1.sql` adds one POST-only guarded
+`offline_snapshots` operation. It accepts 1–50 unique available stops, excludes blocked/restricted
+reports and Locked Personal Intel, refuses batches above 500 visible reports, and returns the whole
+batch or no usable data. It does not change guard thresholds or expose a direct client bypass. The
+migration and eight focused database assertions pass locally; private/public database lint reports
+no errors. All 233 app tests and TypeScript pass. Focused ESLint has only the previously known
+warnings. The complete legacy database harness still hits its previously known direct-call
+permission assumptions after earlier assertions, so it is not counted as evidence for this
+candidate. Physical iPhone testing on October 24 first exposed that the map Preview Card still used
+live-only summary and Delivery Zone reads while offline. The corrected candidate now falls back only
+to that account's deliberate saved snapshot after a live preview read fails, including Core Intel,
+Driver Report count, votes, and Delivery Zone. The same saved stop then passed the iPhone Airplane
+Mode Preview Card and full Intel-page checks.
+
+The Pixel passed the same saved-stop Airplane Mode Preview Card and full Intel-page checks on
+October 24. Physical iPhone and Pixel acceptance is complete. Production migration/deployment,
+commit/push, native builds, tester distribution, and release remain separate gates.
+
 ### October 23 — On-demand map report summaries
 
 Rob approved a narrow client correction after a read-only investigation confirmed that his normal

@@ -21,6 +21,7 @@ import { navigationPreferenceLabel } from "@/utils/navigation-apps";
 import { clearAppLockPreference } from "@/utils/app-lock";
 import { clearStoredTodayRoute } from "@/utils/todays-route";
 import { stopDrivingAlerts } from "@/utils/operations-driving-alerts";
+import { clearOfflineStopSnapshots } from "@/utils/offline-stop-snapshots";
 
 type SettingsRowProps = {
   accessibilityHint?: string;
@@ -98,6 +99,7 @@ export default function SettingsScreen() {
     const { data } = await supabase.auth.getSession();
     const userId = data.session?.user.id;
     if (userId) await stopDrivingAlerts(userId);
+    if (userId) await clearOfflineStopSnapshots(userId).catch(() => undefined);
     const { error } = await supabase.auth.signOut();
 
     if (error) {

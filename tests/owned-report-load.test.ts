@@ -53,6 +53,7 @@ function harness() {
     myReportId: "my-report",
     readOwnedFreightIqReport: async () => own,
     readFreightIqStopReports: async () => shared,
+    getOfflineStopSnapshot: async () => null,
     getSharedCoreIntel: () => ({ deliveryType: null, truckFit: null, backInRequired: null }),
     freightIqReadMessage: (_error: unknown, fallback: string) => fallback,
     readStructuredContact: () => ({ people: [], checkInNotes: "My check-in" }),

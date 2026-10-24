@@ -49,11 +49,21 @@ import { evaluateOperationsEncounter } from "@/utils/operations-proximity";
 import { refreshCurrentDrivingSnapshot } from "@/utils/operations-driving-alerts";
 import { operationsReadEpoch, subscribeOperationsPrivacy } from "@/utils/operations-board";
 import {
+  readFreightIqOfflineSnapshots,
   readFreightIqStop,
   readGuardedFreightIq,
   readFreightIqStopStats,
   readFreightIqStopsInRegion,
 } from "@/utils/freightiq-stop-reads";
+import {
+  clearOfflineStopSnapshots,
+  getOfflineStopSnapshot,
+  listOfflineStopSnapshots,
+  MAX_OFFLINE_STOPS,
+  removeOfflineStopSnapshot,
+  saveOfflineStopSnapshots,
+  type OfflineStopSnapshot,
+} from "@/utils/offline-stop-snapshots";
 import { createFreightIqStop } from "@/utils/freightiq-stop-writes";
 import { freightIqReadMessage, isFreightIqReadThrottled } from "@/utils/freightiq-read-protocol";
 import {
@@ -71,7 +81,6 @@ import {
 import { supabase } from "../../../utils/supabase";
 import { readActiveOperations } from "@/utils/operations-reads";
 import { stopNamePrefill } from "@/utils/stop-name-prefill";
-import { getStopLocationEpoch } from "@/utils/stop-relocation";
 import { reportStatsPreview } from "@/utils/report-stats-preview";
 import {
   discoverySearchIsReady,
@@ -186,6 +195,54 @@ type ReportStats = {
   truckFit: "53'" | "48'" | "40'" | "28'" | "Mixed" | null;
   backInRequired: boolean | null;
 };
+
+function summarizeOfflineReports(snapshot: OfflineStopSnapshot) {
+  function consensus<T extends string | boolean>(values: T[]): T | null {
+    const counts = new Map<T, number>();
+    values.forEach((value) => counts.set(value, (counts.get(value) ?? 0) + 1));
+    const highest = Math.max(0, ...counts.values());
+    const winners = [...counts.entries()].filter(([, count]) => count === highest);
+    return highest > 0 && winners.length === 1 ? winners[0][0] : null;
+  }
+
+  const deliveryValues = snapshot.reports
+    .map((report) => report.delivery_type)
+    .filter(
+      (value): value is "Dock" | "Forklift" | "Liftgate" =>
+        value === "Dock" || value === "Forklift" || value === "Liftgate",
+    );
+  const truckValues = snapshot.reports
+    .map((report) => report.truck_fit)
+    .filter(
+      (value): value is "53'" | "48'" | "40'" | "28'" =>
+        value === "53'" || value === "48'" || value === "40'" || value === "28'",
+    );
+  const backInValues = snapshot.reports
+    .map((report) => report.back_in_required)
+    .filter((value): value is boolean => typeof value === "boolean");
+  const latestReport = [...snapshot.reports].sort(
+    (a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at) || a.id.localeCompare(b.id),
+  )[0];
+
+  const deliveryConsensus = consensus(deliveryValues);
+  const truckConsensus = consensus(truckValues);
+  return {
+    stats: {
+      count: snapshot.reports.length,
+      latestUsername: latestReport?.username ?? null,
+      deliveryType: deliveryConsensus ?? (deliveryValues.length > 0 ? ("Mixed" as const) : null),
+      truckFit: truckConsensus ?? (truckValues.length > 0 ? ("Mixed" as const) : null),
+      backInRequired: consensus(backInValues),
+    } satisfies ReportStats,
+    score: snapshot.reports.reduce(
+      (total, report) => ({
+        up: total.up + Number(report.vote_up_count ?? 0),
+        down: total.down + Number(report.vote_down_count ?? 0),
+      }),
+      { up: 0, down: 0 },
+    ),
+  };
+}
 
 type DeliveryZoneInspectionSource = "preview" | "route" | "stop-intel";
 
@@ -573,6 +630,8 @@ export default function HomeScreen() {
   const selectedStopRef = useRef<Pin | null>(null);
   const [nearbyStopsOpen, setNearbyStopsOpen] = useState(false);
   const [mapToolsOpen, setMapToolsOpen] = useState(false);
+  const [offlineStopsOpen, setOfflineStopsOpen] = useState(false);
+  const [offlineStops, setOfflineStops] = useState<OfflineStopSnapshot[]>([]);
   const [nearbyStops, setNearbyStops] = useState<Pin[]>([]);
   const [previewVisible, setPreviewVisible] = useState(true);
   const [routePreviewReturnView, setRoutePreviewReturnView] = useState<"list" | "map" | null>(null);
@@ -593,11 +652,7 @@ export default function HomeScreen() {
   function openNearbyStopChoice(p: Pin) {
     setNearbyStopsOpen(false);
     setNearbyStops([]);
-
-    setSelectedStopId(p.id);
-    setSelectedStop(p);
-    setPreviewVisible(true);
-    void loadSelectedEntranceForStop(p);
+    void selectStop(p, { skipNearbyChoice: true });
   }
 
   const [newPinOpen, setNewPinOpen] = useState(false);
@@ -698,7 +753,7 @@ export default function HomeScreen() {
     Platform.OS === "android",
   );
 
-  const [cachedStopCount, setCachedStopCount] = useState(0);
+  const [offlineSaving, setOfflineSaving] = useState(false);
 
   async function requireSignedIn() {
     const { data } = await supabase.auth.getSession();
@@ -752,14 +807,36 @@ export default function HomeScreen() {
     };
   }
 
-  async function updateCachedStopCount() {
+  async function refreshOfflineStops() {
     try {
-      const rawPins = await AsyncStorage.getItem(PINS_KEY);
-      const parsedPins = sanitizePins(rawPins ? JSON.parse(rawPins) : []);
-      setCachedStopCount(parsedPins.length);
+      const { data } = await supabase.auth.getSession();
+      const userId = data.session?.user.id;
+      setOfflineStops(userId ? await listOfflineStopSnapshots(userId) : []);
     } catch {
-      setCachedStopCount(0);
+      setOfflineStops([]);
     }
+  }
+
+  async function loadSavedOfflineStop(stopId: string) {
+    try {
+      const { data } = await supabase.auth.getSession();
+      const userId = data.session?.user.id;
+      return userId ? await getOfflineStopSnapshot(userId, stopId) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function applyOfflineReportSummary(snapshot: OfflineStopSnapshot) {
+    const summary = summarizeOfflineReports(snapshot);
+    setReportStatsByStopId((previous) => ({
+      ...previous,
+      [snapshot.stopId]: summary.stats,
+    }));
+    setScoreByStopId((previous) => ({
+      ...previous,
+      [snapshot.stopId]: summary.score,
+    }));
   }
 
   useEffect(() => {
@@ -810,7 +887,11 @@ export default function HomeScreen() {
         await AsyncStorage.setItem(PINS_KEY, JSON.stringify(safePins));
         await AsyncStorage.setItem(VIEW_CACHE_KEY, JSON.stringify(safeViewPins));
         await AsyncStorage.removeItem(stopKey(deletedStopId));
-        setCachedStopCount(safeViewPins.length);
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.user.id) {
+          await removeOfflineStopSnapshot(data.session.user.id, deletedStopId);
+        }
+        await refreshOfflineStops();
       } catch {}
     })();
   }, [params.deletedStopId, params.refreshAt]);
@@ -841,7 +922,7 @@ export default function HomeScreen() {
           );
         }
 
-        await updateCachedStopCount();
+        await refreshOfflineStops();
 
         const stopToRefresh = selectedStopRef.current;
         if (active && stopToRefresh) {
@@ -1292,70 +1373,6 @@ export default function HomeScreen() {
     }
   }
 
-  async function loadStopsInView(viewRegion: Region) {
-    const locationEpoch = getStopLocationEpoch();
-    try {
-      const data = await readFreightIqStopsInRegion(viewRegion);
-
-      const visiblePins: Pin[] = sanitizePins(
-        data.map((row) => ({
-          id: String(row.id),
-          name: row.name ?? "Unknown",
-          lat: Number(row.lat),
-          lng: Number(row.lng),
-          address: row.address ?? undefined,
-        })),
-      );
-
-      const rawExistingPins = await AsyncStorage.getItem(PINS_KEY);
-      const rawExistingViewPins = await AsyncStorage.getItem(VIEW_CACHE_KEY);
-
-      if (locationEpoch !== getStopLocationEpoch()) return;
-
-      const existingPins = sanitizePins(rawExistingPins ? JSON.parse(rawExistingPins) : []);
-      const existingViewPins = sanitizePins(
-        rawExistingViewPins ? JSON.parse(rawExistingViewPins) : [],
-      );
-
-      const mergedPins = mergePinsById(existingPins, visiblePins);
-      const mergedViewPins = mergePinsById(existingViewPins, visiblePins);
-
-      setPins(mergedPins);
-      setCachedStopCount(mergedViewPins.length);
-      await AsyncStorage.setItem(PINS_KEY, JSON.stringify(mergedPins));
-      await AsyncStorage.setItem(VIEW_CACHE_KEY, JSON.stringify(mergedViewPins));
-
-      Alert.alert(
-        "Stops loaded",
-        `${visiblePins.length} stop${visiblePins.length === 1 ? "" : "s"} added from this view.`,
-      );
-    } catch (e) {
-      if (isFreightIqReadThrottled(e)) {
-        Alert.alert("Please wait", e.message);
-        return;
-      }
-      if (locationEpoch !== getStopLocationEpoch()) return;
-      console.log("Stops in view load failed", e);
-
-      try {
-        const raw = await AsyncStorage.getItem(VIEW_CACHE_KEY);
-        if (locationEpoch !== getStopLocationEpoch()) return;
-        const cachedPins = sanitizePins(raw ? JSON.parse(raw) : []);
-
-        if (cachedPins.length) {
-          const mergedPins = mergePinsById(pins, cachedPins);
-          setPins(mergedPins);
-          await AsyncStorage.setItem(PINS_KEY, JSON.stringify(mergedPins));
-          Alert.alert("Offline cache", "Loaded saved stops from cache.");
-        } else {
-          Alert.alert("Offline cache", "No saved stops available yet.");
-        }
-      } catch {
-        Alert.alert("Offline cache", "Could not load saved stops.");
-      }
-    }
-  }
-
   useEffect(() => {
     try {
       const safePins = sanitizePins(pins);
@@ -1619,30 +1636,132 @@ export default function HomeScreen() {
 
   async function saveStopsForOffline() {
     try {
-      await loadStopsInView(region);
-    } catch {
-      Alert.alert("Save failed", "Could not save stops for offline use.");
+      const userId = await requireSignedIn();
+      if (!userId) return;
+      const rows = await readFreightIqStopsInRegion(region);
+      if (!rows.length) {
+        Alert.alert("No stops in this view", "Move or zoom the map, then try again.");
+        return;
+      }
+      if (rows.length > MAX_OFFLINE_STOPS) {
+        Alert.alert(
+          "Too many stops",
+          "Zoom in until this map view contains 50 stops or fewer. Nothing was saved.",
+        );
+        return;
+      }
+      const existingIds = new Set(offlineStops.map((snapshot) => snapshot.stopId));
+      const combinedCount = new Set([...existingIds, ...rows.map((row) => row.id)]).size;
+      if (combinedCount > MAX_OFFLINE_STOPS) {
+        Alert.alert(
+          "Offline list is full",
+          "Remove older offline stops before saving this map view. Nothing was saved.",
+        );
+        return;
+      }
+
+      Alert.alert(
+        "Save stops for offline use?",
+        `FreightIQ will save the location, Delivery Zone, Core Intel, and current Driver Reports for ${rows.length} stop${rows.length === 1 ? "" : "s"} on this phone.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Save Offline",
+            onPress: () => {
+              void (async () => {
+                setOfflineSaving(true);
+                try {
+                  const snapshots = await readFreightIqOfflineSnapshots(rows.map((row) => row.id));
+                  await saveOfflineStopSnapshots(userId, snapshots);
+                  await refreshOfflineStops();
+                  Alert.alert(
+                    "Saved offline",
+                    `${snapshots.length} stop${snapshots.length === 1 ? "" : "s"} saved with current Intel.`,
+                  );
+                } catch (error) {
+                  Alert.alert(
+                    "Could not finish saving",
+                    `${freightIqReadMessage(error, "Your previous offline copies were kept.")} Your previous offline copies were kept.`,
+                  );
+                } finally {
+                  setOfflineSaving(false);
+                }
+              })();
+            },
+          },
+        ],
+      );
+    } catch (error) {
+      Alert.alert("Save failed", freightIqReadMessage(error, "Could not inspect this map view."));
     }
   }
 
-  async function clearCachedStops() {
+  async function saveSelectedStopOffline() {
+    if (!selectedStop || selectedStop.id === "temp-search-result") return;
+    const userId = await requireSignedIn();
+    if (!userId) return;
+    const alreadySaved = offlineStops.some((snapshot) => snapshot.stopId === selectedStop.id);
+    if (!alreadySaved && offlineStops.length >= MAX_OFFLINE_STOPS) {
+      Alert.alert("Offline list is full", "Remove an older offline stop before saving this one.");
+      return;
+    }
+    setOfflineSaving(true);
+    try {
+      const snapshots = await readFreightIqOfflineSnapshots([selectedStop.id]);
+      await saveOfflineStopSnapshots(userId, snapshots);
+      await refreshOfflineStops();
+      Alert.alert("Saved offline", `${selectedStop.name} and its current Intel are saved.`);
+    } catch (error) {
+      Alert.alert(
+        "Could not save offline",
+        `${freightIqReadMessage(error, "Please try again later.")} Your previous offline copy was kept.`,
+      );
+    } finally {
+      setOfflineSaving(false);
+    }
+  }
+
+  async function clearSavedOfflineStops() {
+    const { data } = await supabase.auth.getSession();
+    const userId = data.session?.user.id;
+    if (!userId) return;
     Alert.alert(
-      "Clear cached stops?",
-      "This will remove all locally cached stops from your device.",
+      "Remove all offline stops?",
+      "This removes the offline copies from this phone. Shared FreightIQ stops and Intel are not deleted.",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Clear",
+          text: "Remove All",
           style: "destructive",
           onPress: async () => {
-            await AsyncStorage.removeItem(PINS_KEY);
-            await AsyncStorage.removeItem(VIEW_CACHE_KEY);
-            setPins([]);
-            setCachedStopCount(0);
+            await clearOfflineStopSnapshots(userId);
+            setOfflineStops([]);
           },
         },
       ],
     );
+  }
+
+  async function refreshAllOfflineStops() {
+    const { data } = await supabase.auth.getSession();
+    const userId = data.session?.user.id;
+    if (!userId || !offlineStops.length) return;
+    setOfflineSaving(true);
+    try {
+      const snapshots = await readFreightIqOfflineSnapshots(
+        offlineStops.map((snapshot) => snapshot.stopId),
+      );
+      await saveOfflineStopSnapshots(userId, snapshots);
+      await refreshOfflineStops();
+      Alert.alert("Offline stops refreshed", "The saved time and Intel are now current.");
+    } catch (error) {
+      Alert.alert(
+        "Could not refresh offline stops",
+        `${freightIqReadMessage(error, "Please try again later.")} Your previous offline copies were kept.`,
+      );
+    } finally {
+      setOfflineSaving(false);
+    }
   }
 
   function clearSelection() {
@@ -1694,8 +1813,20 @@ export default function HomeScreen() {
       if (requestId !== selectedEntranceRequestIdRef.current) return;
 
       console.log("Delivery zone load failed", error);
-      setSelectedEntrance(null);
-      setSelectedEntranceStatus("error");
+      const snapshot = await loadSavedOfflineStop(p.id);
+      if (requestId !== selectedEntranceRequestIdRef.current) return;
+      if (snapshot) {
+        const offlineEntrance =
+          typeof snapshot.stop.entrance_lat === "number" &&
+          typeof snapshot.stop.entrance_lng === "number"
+            ? { lat: snapshot.stop.entrance_lat, lng: snapshot.stop.entrance_lng }
+            : null;
+        setSelectedEntrance(offlineEntrance);
+        setSelectedEntranceStatus("resolved");
+      } else {
+        setSelectedEntrance(null);
+        setSelectedEntranceStatus("error");
+      }
     }
   }
 
@@ -1874,11 +2005,29 @@ export default function HomeScreen() {
       const reportStatsLoaded = await reportStatsPromise;
 
       if (reportStatsRequestId === selectedReportStatsRequestIdRef.current) {
-        setSelectedReportStatsStatus(reportStatsLoaded ? "resolved" : "error");
+        if (reportStatsLoaded) {
+          setSelectedReportStatsStatus("resolved");
+        } else {
+          const snapshot = await loadSavedOfflineStop(p.id);
+          if (reportStatsRequestId !== selectedReportStatsRequestIdRef.current) return;
+          if (snapshot) {
+            applyOfflineReportSummary(snapshot);
+            setSelectedReportStatsStatus("resolved");
+          } else {
+            setSelectedReportStatsStatus("error");
+          }
+        }
       }
     } catch {
       if (reportStatsRequestId === selectedReportStatsRequestIdRef.current) {
-        setSelectedReportStatsStatus("error");
+        const snapshot = await loadSavedOfflineStop(p.id);
+        if (reportStatsRequestId !== selectedReportStatsRequestIdRef.current) return;
+        if (snapshot) {
+          applyOfflineReportSummary(snapshot);
+          setSelectedReportStatsStatus("resolved");
+        } else {
+          setSelectedReportStatsStatus("error");
+        }
       }
     }
   }
@@ -3957,6 +4106,31 @@ export default function HomeScreen() {
                           </Text>
                         </View>
                       </AppButton>
+
+                      <AppButton
+                        accessibilityLabel="Save this stop for offline use"
+                        loading={offlineSaving}
+                        onPress={() => void saveSelectedStopOffline()}
+                        size="compact"
+                        style={styles.previewActionTile}
+                        variant="tertiary"
+                      >
+                        <View style={styles.previewActionContent}>
+                          <View
+                            style={[
+                              styles.previewActionIcon,
+                              { backgroundColor: colors.accentMuted },
+                            ]}
+                          >
+                            <AppIcon name="download" color={colors.accentStrong} size={24} />
+                          </View>
+                          <Text style={[styles.previewActionLabel, { color: colors.textPrimary }]}>
+                            {offlineStops.some((snapshot) => snapshot.stopId === selectedStop?.id)
+                              ? "Refresh Offline"
+                              : "Save Offline"}
+                          </Text>
+                        </View>
+                      </AppButton>
                     </View>
                   </>
                 )}
@@ -4238,7 +4412,7 @@ export default function HomeScreen() {
 
             <View style={[styles.mapToolsSheetRow, { borderTopColor: colors.border }]}>
               <Text style={[styles.mapToolsSecondaryText, { color: colors.textSecondary }]}>
-                Cached Stops: {cachedStopCount}
+                Offline Stops: {offlineStops.length}
               </Text>
             </View>
 
@@ -4246,16 +4420,11 @@ export default function HomeScreen() {
               style={[styles.mapToolsSheetRow, { borderTopColor: colors.border }]}
               onPress={() => {
                 setMapToolsOpen(false);
-                clearCachedStops();
+                setOfflineStopsOpen(true);
               }}
             >
-              <Text
-                style={[
-                  styles.mapToolsSheetText,
-                  { color: colorScheme === "dark" ? "#f87171" : colors.danger },
-                ]}
-              >
-                Clear Cache
+              <Text style={[styles.mapToolsSheetText, { color: colors.textPrimary }]}>
+                Manage Offline Stops
               </Text>
             </Pressable>
 
@@ -4265,6 +4434,78 @@ export default function HomeScreen() {
             >
               <Text style={[styles.mapToolsSheetText, { color: colors.textPrimary }]}>Cancel</Text>
             </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={offlineStopsOpen}
+        transparent
+        animationType={reduceMotionEnabled ? "none" : "slide"}
+        onRequestClose={() => setOfflineStopsOpen(false)}
+      >
+        <View style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}>
+          <View style={[styles.modalCard, { backgroundColor: colors.surfaceElevated }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Offline Stops</Text>
+            <Text style={[styles.modalHelp, { color: colors.textSecondary }]}>
+              {offlineStops.length} of {MAX_OFFLINE_STOPS} saved on this phone
+            </Text>
+            <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator>
+              {offlineStops.length ? (
+                offlineStops.map((snapshot) => (
+                  <View
+                    key={snapshot.stopId}
+                    style={[styles.mapToolsSheetRow, { borderTopColor: colors.border }]}
+                  >
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <Text style={[styles.mapToolsSheetText, { color: colors.textPrimary }]}>
+                        {snapshot.stop.name}
+                      </Text>
+                      <Text style={[styles.mapToolsSecondaryText, { color: colors.textSecondary }]}>
+                        Saved {new Date(snapshot.savedAt).toLocaleString()}
+                      </Text>
+                    </View>
+                    <AppButton
+                      accessibilityLabel={`Remove offline copy of ${snapshot.stop.name}`}
+                      onPress={() => {
+                        void (async () => {
+                          const { data } = await supabase.auth.getSession();
+                          const userId = data.session?.user.id;
+                          if (!userId) return;
+                          await removeOfflineStopSnapshot(userId, snapshot.stopId);
+                          await refreshOfflineStops();
+                        })();
+                      }}
+                      size="compact"
+                      variant="tertiary"
+                    >
+                      Remove
+                    </AppButton>
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.modalHelp, { color: colors.textSecondary }]}>
+                  No stops have been deliberately saved offline.
+                </Text>
+              )}
+            </ScrollView>
+            {offlineStops.length ? (
+              <>
+                <AppButton
+                  loading={offlineSaving}
+                  onPress={() => void refreshAllOfflineStops()}
+                  variant="secondary"
+                >
+                  Refresh All
+                </AppButton>
+                <AppButton onPress={() => void clearSavedOfflineStops()} variant="tertiary">
+                  Remove All Offline Stops
+                </AppButton>
+              </>
+            ) : null}
+            <AppButton onPress={() => setOfflineStopsOpen(false)} variant="secondary">
+              Done
+            </AppButton>
           </View>
         </View>
       </Modal>

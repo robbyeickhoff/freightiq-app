@@ -114,6 +114,12 @@ export type FreightIqStopStatsRow = {
   vote_down_count: number;
 };
 
+export type FreightIqOfflineSnapshotRow = {
+  id: string;
+  stop: FreightIqStopReadRow;
+  reports: FreightIqReportReadRow[];
+};
+
 export type FreightIqOwnedReport = Pick<
   FreightIqReportReadRow,
   | "id"
@@ -211,6 +217,23 @@ export async function readFreightIqStopReports(stopId: string) {
     p_stop_id: stopId,
     p_result_limit: 100,
   });
+  return data;
+}
+
+export async function readFreightIqOfflineSnapshots(stopIds: string[]) {
+  const uniqueStopIds = [...new Set(stopIds)];
+  if (uniqueStopIds.length < 1 || uniqueStopIds.length > MAX_ROUTE_STOPS) {
+    throw new Error("Choose between 1 and 50 stops to save offline.");
+  }
+  const data = await readGuardedFreightIq<FreightIqOfflineSnapshotRow[]>("offline_snapshots", {
+    p_stop_ids: uniqueStopIds,
+  });
+  if (
+    data.length !== uniqueStopIds.length ||
+    data.some((row, index) => row.id !== uniqueStopIds[index] || row.stop?.id !== row.id)
+  ) {
+    throw new Error("Could not confirm a complete offline copy.");
+  }
   return data;
 }
 

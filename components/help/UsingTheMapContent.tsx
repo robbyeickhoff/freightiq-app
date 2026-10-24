@@ -149,9 +149,10 @@ export default function UsingTheMapContent() {
               </View>
 
               <Text style={styles.stepText}>
-                Tap Settings to save stop data for offline use or clear the saved cache. Offline
-                data can help when service is weak, but refresh it when you are connected so you
-                have current stop information.
+                Tap Settings to deliberately save up to 50 stops from the current map view. A saved
+                offline copy includes the stop location, Delivery Zone, Core Intel, and current
+                Driver Reports. FreightIQ shows when each copy was saved. Use Manage Offline Stops
+                to refresh or remove copies; ordinary map browsing does not add to this list.
               </Text>
             </View>
           </View>
