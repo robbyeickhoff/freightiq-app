@@ -59,6 +59,24 @@ The Pixel passed the same saved-stop Airplane Mode Preview Card and full Intel-p
 October 24. Physical iPhone and Pixel acceptance is complete. Production migration/deployment,
 commit/push, native builds, tester distribution, and release remain separate gates.
 
+Rob separately approved the production migration on October 24. Preflight confirmed the linked
+project `finjqunyuyfxiesumuxk` was healthy and had a scheduled physical backup from approximately
+three hours earlier. The normal broad CLI push remained intentionally blocked by the documented MDT
+hosted-version mapping, so no history repair, `--include-all`, seed, or role push was attempted. The
+exact committed migration (SHA-256
+`339ef9a40d927bd2b0f7542ca5ae678b135bb8dbe514b3c055083fc95397b4b6`) was installed once through
+the versioned Supabase migration interface as hosted version `20261024152452`. Production retained
+all 444 stops, 457 reports, and 19 Operations updates. The new private snapshot function, guarded
+dispatcher, and guard allowlist are installed; anonymous guarded access and direct authenticated or
+service-role execution of the private reader remain denied. A rollback-only authenticated probe
+returned one requested snapshot with three reports and no Locked Personal Intel, while the existing
+stop-detail and stop-stats operations still returned normally. Advisor categories and counts matched
+the pre-deployment baseline. No native build, tester distribution, or release occurred. Receipt:
+`scripts/fixtures/offline-stop-snapshots-production-receipt-20261024.json`.
+
+The production migration/deployment gate is complete. Native builds, tester distribution, and
+release remain separate gates.
+
 ### October 23 — On-demand map report summaries
 
 Rob approved a narrow client correction after a read-only investigation confirmed that his normal

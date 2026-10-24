@@ -1,0 +1,44 @@
+{
+  "deployedAtUtc": "2026-10-24T15:24:52Z",
+  "projectRef": "finjqunyuyfxiesumuxk",
+  "projectStatus": "ACTIVE_HEALTHY",
+  "backup": {
+    "type": "scheduled physical backup",
+    "dashboardAgeAtPreflight": "about 3 hours",
+    "verifiedInSupabaseDashboard": true
+  },
+  "migration": {
+    "localFile": "supabase/migrations/20261024142353_add_offline_stop_snapshots_v1.sql",
+    "localSha256": "339ef9a40d927bd2b0f7542ca5ae678b135bb8dbe514b3c055083fc95397b4b6",
+    "hostedVersion": "20261024152452",
+    "hostedName": "add_offline_stop_snapshots_v1"
+  },
+  "recordCounts": {
+    "stopsBefore": 444,
+    "stopsAfter": 444,
+    "reportsBefore": 457,
+    "reportsAfter": 457,
+    "operationsUpdatesBefore": 19,
+    "operationsUpdatesAfter": 19
+  },
+  "verification": {
+    "privateSnapshotFunctionInstalled": true,
+    "dispatcherIncludesOfflineSnapshots": true,
+    "guardIncludesOfflineSnapshots": true,
+    "anonymousGuardExecuteDenied": true,
+    "authenticatedPrivateExecuteDenied": true,
+    "serviceRolePrivateExecuteDenied": true,
+    "authenticatedSnapshotCount": 1,
+    "authenticatedSnapshotReportCount": 3,
+    "lockedPersonalIntelExposed": false,
+    "legacyStopDetailRows": 1,
+    "legacyStopStatsRows": 1,
+    "newAdvisorWarning": false,
+    "nativeBuildCreated": false
+  },
+  "notes": [
+    "The ordinary CLI dry run remained intentionally blocked by the previously documented Montana hosted-version mapping.",
+    "No migration-history repair, include-all push, seed, role push, Edge Function deployment, native build, tester distribution, or public release was performed.",
+    "The open Supabase platform incident was in monitoring; project health and the exact migration interface both responded normally before the single apply attempt."
+  ]
+}
