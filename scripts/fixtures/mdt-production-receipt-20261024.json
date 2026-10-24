@@ -1,0 +1,54 @@
+{
+  "deployedAtUtc": "2026-10-24T14:01:51Z",
+  "projectRef": "finjqunyuyfxiesumuxk",
+  "backup": {
+    "type": "scheduled physical backup",
+    "dashboardAgeAtPreflight": "about 2 hours",
+    "verifiedInSupabaseDashboard": true
+  },
+  "migration": {
+    "localFile": "supabase/migrations/20261023185618_add_mdt_official_conditions.sql",
+    "hostedVersion": "20261024140144",
+    "hostedName": "add_mdt_official_conditions"
+  },
+  "edgeFunction": {
+    "slug": "ingest-cotrip-conditions",
+    "versionBefore": 5,
+    "versionAfter": 6,
+    "verifyJwt": true,
+    "sha256": "89086d1e37bbc3cc646ffbc48db8b0a168692c9fcb84c62ddf71c7967fd88790"
+  },
+  "scheduler": {
+    "jobId": 8,
+    "name": "ingest-cotrip-conditions-every-15-minutes",
+    "schedule": "*/15 * * * *",
+    "active": true,
+    "changed": false
+  },
+  "firstRun": {
+    "httpStatus": 200,
+    "cotripIncidents": 19,
+    "cotripPlannedEvents": "isolated upstream http_500; last trusted snapshot preserved",
+    "udotEvents": 80,
+    "udotRoadConditions": 0,
+    "mdtEvents": 16,
+    "mdtRestrictions": 9,
+    "mdtRoadConditions": 145,
+    "mdtConstruction": 34,
+    "mdtTotal": 204
+  },
+  "verification": {
+    "repeatRunUsedConditionalUnchangedForAllFourMdtFeeds": true,
+    "mdtRowsDistinctBySourceId": true,
+    "missoulaActiveMatches": 133,
+    "legacyCotripReaderCode": null,
+    "legacyOfficialReaderCode": null,
+    "mdtGuardedReaderCode": null,
+    "directoryVersion": 1,
+    "anonymousIngestionExecuteDenied": true,
+    "authenticatedIngestionExecuteDenied": true,
+    "serviceRoleIngestionExecuteAllowed": true,
+    "newAdvisorWarning": false,
+    "mobileBuildCreated": false
+  }
+}

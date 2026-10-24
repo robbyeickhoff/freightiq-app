@@ -75,6 +75,9 @@ preparation for expanding the tester base.
       freshness migrations after confirming a current physical backup (October 23).
 - [x] Smoke-test the currently distributed production app against the migrated production database
       and confirm legacy Operations and Driver Report reads remain compatible (October 23).
+- [x] After confirming a current physical backup, deploy and production-verify the MDT migration and
+      authenticated collector while retaining the existing 15-minute official-feed schedule
+      (October 24). All four MDT feeds and legacy COtrip/UDOT readers passed backend verification.
 - [ ] Keep native builds, tester distribution, and release as separate approval gates.
 
 ## Official COtrip + UDOT Conditions V1

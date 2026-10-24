@@ -6,6 +6,20 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-10-24 — Official MDT production backend
+
+Confirmed a scheduled physical backup from approximately two hours earlier, then installed hosted
+migration `20261024140144_add_mdt_official_conditions` and deployed authenticated
+`ingest-cotrip-conditions` version 6. The existing protected 15-minute schedule remained active and
+unchanged. The first run accepted 204 Montana records across events, restrictions, non-routine road
+conditions, and truck-impacting construction; the repeat run used conditional unchanged responses
+for all four feeds. Missoula returned 133 relevant active records through the guarded reader.
+COtrip incidents and both UDOT feeds refreshed normally; the existing COtrip planned-events upstream
+HTTP 500 remained isolated with the last trusted snapshot preserved. Ingestion permissions remained
+service-role-only, legacy official readers returned successful response codes, and no new advisor
+warning appeared. No mobile build, tester distribution, or public app release occurred. Receipt:
+`scripts/fixtures/mdt-production-receipt-20261024.json`.
+
 ## 2026-10-10 — Recoverable Stop Lifecycle V1 hosted backend
 
 Rob approved the exact two-file hosted package after local/hosted migration labels were reconciled.

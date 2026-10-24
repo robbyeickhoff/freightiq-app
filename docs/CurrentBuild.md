@@ -112,6 +112,21 @@ inapplicable official source to Driver Updates; genuine feed-health warnings rem
 migration/function deployment, schedule activation, commit/push, native builds, distribution, and
 release remain separate gates.
 
+Rob approved the corrected production procedure on October 24 after preflight confirmed the existing
+official-feed job already ran every 15 minutes. A scheduled physical backup from approximately two
+hours earlier was visible before execution. Supabase installed hosted migration
+`20261024140144_add_mdt_official_conditions`, deployed authenticated collector version 6, and kept
+the existing 15-minute job active and unchanged. The first protected run returned HTTP 200 and
+accepted 16 MDT events, 9 restrictions, 145 road-condition records, and 34 truck-impacting
+construction records. A second run conditionally accepted all four feeds as unchanged. Missoula's
+guarded read returned 133 relevant active records; all 204 stored MDT rows had distinct source IDs.
+Anonymous and authenticated ingestion execution remained denied, service-role execution remained
+allowed, legacy COtrip/official readers returned successful response codes, and the area-directory
+contract remained version 1. COtrip incidents and both UDOT feeds refreshed normally. COtrip planned
+events retained their last trusted snapshot during the already-known isolated upstream HTTP 500.
+No new advisor warning, scheduler change, mobile build, tester distribution, or public app release
+was introduced. Receipt: `scripts/fixtures/mdt-production-receipt-20261024.json`.
+
 ### October 22 — Per-field Driver Report freshness dates
 
 Rob approved adding a separate freshness date beneath Delivery Details, Best Approach, Check-in
