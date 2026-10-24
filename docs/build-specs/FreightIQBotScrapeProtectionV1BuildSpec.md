@@ -1,5 +1,39 @@
 # FreightIQ Bot Scrape Protection V1 Build Specification
 
+## October 23 — Approved client-only excessive summary refresh correction
+
+Read-only case investigation confirmed case `73a8470c-6717-4669-a202-e74292732626` matched Rob's
+account. The case snapshot contained 21 denied requests, 4,801 disclosed rows, 19 newly charged
+metadata records, and 239 detailed records. Live detection thresholds of 20 denials / 100 rows /
+3 minutes explain the alert; the 250-detail / 15-minute warning was not reached. Gateway logs confirmed
+all 21 refusals belonged to the guarded library endpoint, not Operations. Hourly shadow data showed 105
+`stop_stats` calls with 4,732 returned rows from one session, versus 15 `stop_detail` calls and one
+five-stop route read. These hourly figures are not an exact per-case operation breakdown. The
+system does not retain the denied operation subtype, so attributing every denial to stats would
+overstate evidence. No raw tokens, salts, IPs, search terms or stop contents were exported.
+
+Approved implementation scope: remove the map effect that fetches report stats for every cached
+pin whenever pins/refreshAt change; make the loader require the selected stop ID. Retain the
+existing guarded reader, per-selection refresh, merging of cached results, and refusal/offline
+handling. Unopened markers keep only locally known/cached status until selected; do not imply
+their missing cached status proves an absence of shared reports. No backend quota/detection change,
+no exemption for Rob, no suppression of real security alerts, no changes to route or Operations.
+
+Candidate changed app/(tabs)/(map)/index.tsx and added tests/map-report-stats-demand.test.ts.
+Five regression checks enforce the sole selectStop caller and one-ID reads; success preserves
+other cached entries, while missing/offline/throttled results preserve all cached entries.
+All 226 tests, TypeScript, and focused lint passed. Physical iPhone acceptance passed October 24 for
+ordinary map use, marker/search selection, reopen, return after an Intel edit, and online recovery.
+The offline check confirmed a separate existing limitation rather than a regression in this patch:
+**Save Stops for Offline** persists stop identity/location pins, not shared Driver Reports/Core Intel,
+and the cached-stop count conflates deliberate saves with automatically persisted created stops and
+older view-cache entries. A true freshness-labeled, account-safe offline Intel snapshot and separated
+intentional/working caches require their own approved design and implementation. Pixel acceptance
+passed the same map, marker/search preview, reopen, Intel-return, and recovery checks on October 24;
+both-phone acceptance and Product Owner review are complete. Installed clients retain old behavior
+until a separately approved build/release; this local change does not retroactively resolve or delete
+the production case.
+
 ## October 6 — final approved production read-access closure
 
 Release Mode: executed the reviewed final closure after Rob explicitly chose immediate rollout,

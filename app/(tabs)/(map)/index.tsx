@@ -1114,13 +1114,6 @@ export default function HomeScreen() {
   }, [pins, params.refreshAt]);
 
   useEffect(() => {
-    if (!isMapReady) return;
-
-    loadCloudReportStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMapReady, pins, params.refreshAt]);
-
-  useEffect(() => {
     const focusStopId = String(params.focusStopId ?? "");
     const showEntrance = String(params.showEntrance ?? "") === "1";
     const hidePreview = String(params.hidePreview ?? "") === "1";
@@ -1261,15 +1254,11 @@ export default function HomeScreen() {
     router,
   ]);
 
-  async function loadCloudReportStats(stopIdsOverride?: string[]) {
+  // Read summaries only for the stop being opened. Map/cache changes must not
+  // spend the driver's detailed-read allowance on every previously cached pin.
+  async function loadCloudReportStats(stopId: string) {
     try {
-      const stopIds = [...new Set(stopIdsOverride ?? pins.map((p) => p.id))];
-
-      if (!stopIds.length) {
-        setReportStatsByStopId({});
-        return true;
-      }
-
+      const stopIds = [stopId];
       const rows = await readFreightIqStopStats(stopIds);
       const rowsByStopId = Object.fromEntries(rows.map((row) => [row.stop_id, row]));
       // A missing result is not evidence of zero reports. Preserve the cache and
@@ -1852,7 +1841,7 @@ export default function HomeScreen() {
 
     try {
       const reportStatsPromise = resolveWithin(
-        loadCloudReportStats([p.id]),
+        loadCloudReportStats(p.id),
         PREVIEW_REPORT_STATS_TIMEOUT_MS,
         false,
       );

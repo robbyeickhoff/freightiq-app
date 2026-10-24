@@ -671,6 +671,17 @@ Capture approved feature work that aligns with FreightIQ's long-term product dir
 
 ### User Experience
 
+#### Offline Stop Cache
+
+- [ ] Design a true driver-usable offline stop snapshot that includes the last successfully loaded
+      shared Driver Reports/Core Intel, a visible **Offline copy** and **Last updated** time, honest
+      stale-data treatment, reconnect refresh, and account/logout/block privacy invalidation. Preserve
+      the stricter Locked Personal Intel boundary.
+- [ ] Separate deliberately saved offline stops from automatically maintained working data. Audit and
+      migrate the current `PINS_KEY` / `VIEW_CACHE_KEY` behavior so newly created stops and older map
+      view entries do not silently inflate the user-facing **Cached Stops** count or imply deliberate
+      offline availability.
+
 #### Near-Term Search Expansion
 
 - [x] Implement [City & Driver Search V1](build-specs/FreightIQCityDriverSearchV1BuildSpec.md)

@@ -13,6 +13,34 @@ answer one question:
 
 ## Current Objective
 
+### October 23 — On-demand map report summaries
+
+Rob approved a narrow client correction after a read-only investigation confirmed that his normal
+use triggered security case `73a8470c-6717-4669-a202-e74292732626`. The 10:21–10:33 Mountain gateway
+window showed 21 guarded library refusals; hourly shadow observations showed 105 `stop_stats` calls
+returning 4,732 rows. Individual refused operations were not retained, so their precise breakdown is
+unknown. The map's pins/refresh effect requested summaries for all cached pins, including unopened
+stops, while the guard correctly charges those summaries as detailed reads.
+
+The local candidate removes that bulk effect and requires one explicit selected stop for each
+summary load. Opening/reopening a preview still refreshes that stop; existing cached marker stats
+remain, but unopened markers no longer receive background cloud-summary refreshes. Missing/offline/
+throttled reads preserve cached summaries and the existing preview error behavior. No server limits,
+alerts, account exemptions, database changes, new permissions, or production changes.
+
+All 226 tests, TypeScript, and focused ESLint passed. Five new regression tests cover on-demand
+selection and success/missing/offline/throttled cache preservation. Physical iPhone acceptance
+passed October 24 for ordinary map use, marker/search preview loading, reopen, return after an Intel
+edit, and online recovery. The offline check exposed a separate existing product gap: **Save Stops
+for Offline** stores map-pin identity/location but not shared Driver Reports/Core Intel, and the
+displayed cached-stop count also includes automatically stored created stops and older view-cache
+entries. True offline Intel snapshots, freshness labeling, account/privacy invalidation, and clear
+separation between deliberate offline saves and working caches are documented as separate backlog
+work and are not added to this security correction. Pixel acceptance passed the same map,
+marker/search preview, reopen, Intel-return, and recovery checks on October 24. Both-phone
+acceptance is complete. Commit/push and native release remain separate gates. See the existing
+[bot-defense specification](build-specs/FreightIQBotScrapeProtectionV1BuildSpec.md).
+
 ### October 21 — Carrier-neutral nationwide Operations area directory
 
 Real iPhone use of the COtrip/UDOT tester build confirmed that the flat six-area picker will not
