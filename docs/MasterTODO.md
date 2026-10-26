@@ -59,8 +59,8 @@ preparation for expanding the tester base.
       reports, Delivery Zone, route, offline, move, and remove/restore behavior.
 - [x] Deploy and verify the exact production database migration without altering migration history
       or record counts (October 26).
-- [ ] Publish the reviewed Canada source and create the iPhone production candidate for Rob's
-      existing one-person internal TestFlight group only.
+- [x] Publish source commit `e383933`, create iPhone production build 57, inspect the exact IPA, and
+      upload it for the existing one-person `Team (Expo)` internal TestFlight group only.
 - [ ] Install and verify that exact iPhone build before any external tester distribution.
 - [ ] Keep the Saskatchewan tester invitation and external Early Testers distribution separate.
 

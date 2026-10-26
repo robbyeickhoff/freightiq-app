@@ -17,6 +17,15 @@ permissions, rollback-only Canadian create checks, and unchanged advisor results
 app release or external tester distribution occurred. Receipt:
 `scripts/fixtures/canada-core-production-receipt-20261026.json`.
 
+Source commit `e383933` was pushed to `clean-main`. iOS production build 57
+(`c1ad1361-d7f2-4214-aacd-595d5d793367`) finished from that exact commit. Its downloaded IPA passed
+deep/strict signature verification, production push/TestFlight entitlement checks, and disabled
+debugging; SHA-256 is `283b80bf827a231ef9a43a80b95c1ae1bd8030ea607a46c6e73f6cfc0222932e`.
+Submission `04b6a69f-195d-4b30-a32d-53a7b590971c` was accepted by App Store Connect with only the
+existing `Team (Expo)` internal group specified. Apple processing and installed-iPhone acceptance
+remain pending. External Early Testers and public App Review were not included. Receipt:
+`scripts/fixtures/canada-ios57-release-receipt-20261026.json`.
+
 ## 2026-10-24 — Official MDT production backend
 
 Confirmed a scheduled physical backup from approximately two hours earlier, then installed hosted

@@ -57,6 +57,16 @@ Canadian Move Stop, permissions, rollback-only create verification, and unchange
 passed. External Early Testers and public App Review remain excluded. Receipt:
 `scripts/fixtures/canada-core-production-receipt-20261026.json`.
 
+Canada source commit `e383933` was pushed to `origin/clean-main` with unrelated Routing Lab work
+left unstaged. EAS iOS production build `c1ad1361-d7f2-4214-aacd-595d5d793367` finished as FreightIQ
+1.0.1 (57) from that exact commit. The downloaded IPA passed deep/strict signature verification,
+has the production push and TestFlight entitlements, disables debugging, and has SHA-256
+`283b80bf827a231ef9a43a80b95c1ae1bd8030ea607a46c6e73f6cfc0222932e`. Submission
+`04b6a69f-195d-4b30-a32d-53a7b590971c` was accepted by App Store Connect with only the existing
+`Team (Expo)` internal group specified. Apple processing and installed-iPhone acceptance remain
+pending; Early Testers and App Review were not included. Receipt:
+`scripts/fixtures/canada-ios57-release-receipt-20261026.json`.
+
 ### October 24 — Honest offline stop snapshots
 
 Physical testing of the on-demand map-summary correction confirmed that the current **Save Stops for

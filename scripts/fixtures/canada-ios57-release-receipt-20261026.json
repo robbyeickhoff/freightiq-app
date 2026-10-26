@@ -1,0 +1,34 @@
+{
+  "sourceCommit": "e3839330e90061e555ddb51f40ac8590980afe54",
+  "sourceBranch": "clean-main",
+  "build": {
+    "id": "c1ad1361-d7f2-4214-aacd-595d5d793367",
+    "platform": "ios",
+    "profile": "production",
+    "version": "1.0.1",
+    "buildNumber": "57",
+    "status": "FINISHED",
+    "completedAtUtc": "2026-10-26T20:32:48.714Z",
+    "ipaSha256": "283b80bf827a231ef9a43a80b95c1ae1bd8030ea607a46c6e73f6cfc0222932e"
+  },
+  "inspection": {
+    "bundleIdentifier": "com.robbyeickhof.mfi",
+    "codesignDeepStrict": true,
+    "productionPushEntitlement": true,
+    "betaReportsActive": true,
+    "debuggingDisabled": true
+  },
+  "submission": {
+    "id": "04b6a69f-195d-4b30-a32d-53a7b590971c",
+    "acceptedByAppStoreConnect": true,
+    "targetInternalGroups": ["Team (Expo)"],
+    "externalGroups": [],
+    "appReviewSubmitted": false,
+    "appleProcessingAtReceipt": true
+  },
+  "notes": [
+    "The first scheduling attempt was rejected before upload because this Expo plan does not support automatic changelog submission.",
+    "The identical build was resubmitted without the optional changelog and Apple accepted the binary.",
+    "The Early Testers group was not included."
+  ]
+}
