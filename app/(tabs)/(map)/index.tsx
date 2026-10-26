@@ -66,10 +66,13 @@ import {
 } from "@/utils/offline-stop-snapshots";
 import { createFreightIqStop } from "@/utils/freightiq-stop-writes";
 import { freightIqReadMessage, isFreightIqReadThrottled } from "@/utils/freightiq-read-protocol";
+import { readMapboxCoordinateLocality } from "@/utils/mapbox-stop-locality";
 import {
   readSearchResultLocality,
   resolveConfirmedStopLocality,
+  stopCountryName,
   type ConfirmedStopLocality,
+  type SupportedStopCountryCode,
 } from "@/utils/stop-locality";
 import {
   availableNavigationProviders,
@@ -98,6 +101,7 @@ type Pin = {
   address?: string;
   suggestedCity?: string;
   suggestedStateCode?: string;
+  suggestedCountryCode?: SupportedStopCountryCode;
   suggestedName?: string;
 };
 
@@ -660,6 +664,7 @@ export default function HomeScreen() {
   const [newPinAddress, setNewPinAddress] = useState("");
   const [newPinCity, setNewPinCity] = useState("");
   const [newPinStateCode, setNewPinStateCode] = useState("");
+  const [newPinCountryCode, setNewPinCountryCode] = useState<SupportedStopCountryCode | null>(null);
   const [newPinCityUnknown, setNewPinCityUnknown] = useState(false);
   const [newPinLocalityEditing, setNewPinLocalityEditing] = useState(false);
   const [createStopKeyboardTop, setCreateStopKeyboardTop] = useState<number | null>(null);
@@ -2112,16 +2117,37 @@ export default function HomeScreen() {
       setNewPinAddress(tempSearchPin.address ?? "");
       setNewPinCity(tempSearchPin.suggestedCity ?? "");
       setNewPinStateCode(tempSearchPin.suggestedStateCode ?? "");
-      setNewPinLocalityEditing(!tempSearchPin.suggestedCity || !tempSearchPin.suggestedStateCode);
+      setNewPinCountryCode(tempSearchPin.suggestedCountryCode ?? null);
+      setNewPinLocalityEditing(
+        !tempSearchPin.suggestedCity ||
+          !tempSearchPin.suggestedStateCode ||
+          !tempSearchPin.suggestedCountryCode,
+      );
+      setNewPinCityUnknown(false);
     } else {
       setNewPinName("");
       setNewPinAddress("");
-      setNewPinCity("");
-      setNewPinStateCode("");
-      setNewPinLocalityEditing(true);
+      const coordinate =
+        mapLayout.width > 0 && mapLayout.height > 0
+          ? await mapRef.current?.coordinateForPoint({
+              x: mapLayout.width / 2,
+              y: mapLayout.height / 2,
+            })
+          : null;
+      let locality: ConfirmedStopLocality | null = null;
+      try {
+        locality = await readMapboxCoordinateLocality(
+          MAPBOX_TOKEN,
+          coordinate?.latitude ?? region.latitude,
+          coordinate?.longitude ?? region.longitude,
+        );
+      } catch {}
+      setNewPinCity(locality?.city ?? "");
+      setNewPinStateCode(locality?.stateCode ?? "");
+      setNewPinCountryCode(locality?.countryCode ?? null);
+      setNewPinLocalityEditing(false);
+      setNewPinCityUnknown(!locality);
     }
-
-    setNewPinCityUnknown(false);
 
     setNewPinOpen(true);
   }
@@ -2192,6 +2218,7 @@ export default function HomeScreen() {
     const localityResult = resolveConfirmedStopLocality(
       newPinCity,
       newPinStateCode,
+      newPinCountryCode,
       newPinCityUnknown,
     );
 
@@ -2206,7 +2233,18 @@ export default function HomeScreen() {
     }
 
     if (localityResult.error === "state_required") {
-      Alert.alert("State required", "Enter the two-letter state code or choose City unknown.");
+      Alert.alert(
+        "State / province required",
+        "Enter the two-letter state or province code, or choose City unknown.",
+      );
+      return;
+    }
+
+    if (localityResult.error === "country_required") {
+      Alert.alert(
+        "Location not confirmed",
+        "Search for a US or Canadian address, or choose City unknown.",
+      );
       return;
     }
 
@@ -2274,7 +2312,12 @@ export default function HomeScreen() {
   }
 
   function finishNewPinLocalityEditing() {
-    const localityResult = resolveConfirmedStopLocality(newPinCity, newPinStateCode, false);
+    const localityResult = resolveConfirmedStopLocality(
+      newPinCity,
+      newPinStateCode,
+      newPinCountryCode,
+      false,
+    );
 
     if (localityResult.error === "city_required") {
       Alert.alert("City required", "Enter the stop's city or choose City unknown.");
@@ -2282,7 +2325,18 @@ export default function HomeScreen() {
     }
 
     if (localityResult.error === "state_required") {
-      Alert.alert("State required", "Enter the two-letter state code or choose City unknown.");
+      Alert.alert(
+        "State / province required",
+        "Enter the two-letter state or province code, or choose City unknown.",
+      );
+      return;
+    }
+
+    if (localityResult.error === "country_required") {
+      Alert.alert(
+        "Location not confirmed",
+        "Search for a US or Canadian address, or choose City unknown.",
+      );
       return;
     }
 
@@ -2394,7 +2448,7 @@ export default function HomeScreen() {
             `&access_token=${encodeURIComponent(MAPBOX_TOKEN)}` +
             `&limit=8` +
             `&language=en` +
-            `&country=US` +
+            `&country=US,CA` +
             `&proximity=${encodeURIComponent(proximity)}` +
             `&session_token=${encodeURIComponent(sessionToken)}`;
 
@@ -2556,7 +2610,9 @@ export default function HomeScreen() {
       const name = r.name;
 
       const props = feature?.properties ?? {};
-      const suggestedLocality = readSearchResultLocality(props.context);
+      const suggestedLocality =
+        readSearchResultLocality(props.context) ??
+        (await readMapboxCoordinateLocality(MAPBOX_TOKEN, lat, lng));
 
       const retrievedAddress = cleanAddress(
         props.full_address ||
@@ -2573,6 +2629,7 @@ export default function HomeScreen() {
         address: retrievedAddress || undefined,
         suggestedCity: suggestedLocality?.city,
         suggestedStateCode: suggestedLocality?.stateCode,
+        suggestedCountryCode: suggestedLocality?.countryCode,
         suggestedName: stopNamePrefill(props.feature_type, name),
       };
 
@@ -4560,7 +4617,7 @@ export default function HomeScreen() {
 
                 {newPinLocalityEditing ? (
                   <View style={styles.localityEditor}>
-                    <Text style={styles.localityEditorLabel}>City and state</Text>
+                    <Text style={styles.localityEditorLabel}>City and state / province</Text>
                     <View style={styles.localityRow}>
                       <TextInput
                         accessibilityLabel="Stop city"
@@ -4571,12 +4628,12 @@ export default function HomeScreen() {
                         value={newPinCity}
                       />
                       <TextInput
-                        accessibilityLabel="Stop state code"
+                        accessibilityLabel="Stop state or province code"
                         autoCapitalize="characters"
                         autoCorrect={false}
                         maxLength={2}
                         onChangeText={setNewPinStateCode}
-                        placeholder="State"
+                        placeholder="State / Province"
                         style={[styles.input, styles.localityStateInput]}
                         value={newPinStateCode}
                       />
@@ -4616,7 +4673,9 @@ export default function HomeScreen() {
                       <Text style={styles.localitySummaryValue}>
                         {newPinCityUnknown
                           ? "Unknown"
-                          : `${newPinCity.trim()}, ${newPinStateCode.trim().toUpperCase()}`}
+                          : `${newPinCity.trim()}, ${newPinStateCode.trim().toUpperCase()} · ${
+                              newPinCountryCode ? stopCountryName(newPinCountryCode) : "Unconfirmed"
+                            }`}
                       </Text>
                     </View>
                     <Text style={styles.localityChangeText}>Change</Text>

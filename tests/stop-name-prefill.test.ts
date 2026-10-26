@@ -34,6 +34,10 @@ test("Create Stop wiring retains address/locality and required-name validation",
   assert.match(source, /setNewPinAddress\(tempSearchPin\.address \?\? ""\)/);
   assert.match(source, /setNewPinCity\(tempSearchPin\.suggestedCity \?\? ""\)/);
   assert.match(source, /setNewPinStateCode\(tempSearchPin\.suggestedStateCode \?\? ""\)/);
+  assert.match(source, /setNewPinCountryCode\(tempSearchPin\.suggestedCountryCode \?\? null\)/);
+  assert.match(source, /suggestedCountryCode: suggestedLocality\?\.countryCode/);
+  assert.equal(source.match(/&country=US,CA/g)?.length, 1);
+  assert.match(source, /readMapboxCoordinateLocality\(/);
   assert.match(
     source,
     /if \(!name\) \{\s*Alert\.alert\("Name required", "Enter a business\/receiver name\."\);\s*return;/,

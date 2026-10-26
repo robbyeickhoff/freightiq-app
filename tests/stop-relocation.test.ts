@@ -22,6 +22,7 @@ const destination = {
   lng: -107,
   city: "Telluride",
   state_code: "CO",
+  country_code: "US" as const,
   entrance_lat: 38.01,
   entrance_lng: -107.01,
 };

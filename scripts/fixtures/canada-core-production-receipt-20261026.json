@@ -1,0 +1,31 @@
+{
+  "deployedAtUtc": "2026-10-26T20:25:04Z",
+  "projectRef": "finjqunyuyfxiesumuxk",
+  "projectStatus": "ACTIVE_HEALTHY",
+  "migration": {
+    "localFile": "supabase/migrations/20261026191300_canada_core_compatibility_v1.sql",
+    "localSha256": "1b96fa1b0159b35cf238f34c422d1e0720ca734b75efe47bb12c5639c8d3e903",
+    "hostedVersion": "20261026202504",
+    "hostedName": "canada_core_compatibility_v1"
+  },
+  "recordCounts": {
+    "stopsBefore": 458,
+    "stopsAfter": 458,
+    "reportsBefore": 466,
+    "reportsAfter": 466,
+    "operationsUpdatesBefore": 19,
+    "operationsUpdatesAfter": 19
+  },
+  "verification": {
+    "canadianMoveFunctionInstalled": true,
+    "anonymousMoveDenied": true,
+    "authenticatedMoveAllowed": true,
+    "rollbackOnlyCanadianCreateChecksPassed": 7,
+    "newAdvisorWarning": false
+  },
+  "notes": [
+    "The ordinary CLI dry run remained intentionally blocked by the documented hosted-version mapping.",
+    "The exact migration was installed once through the versioned Supabase migration interface.",
+    "No migration-history repair, include-all push, seed, role push, Edge Function deployment, or public app release was performed."
+  ]
+}

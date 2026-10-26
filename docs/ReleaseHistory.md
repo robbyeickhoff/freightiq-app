@@ -6,6 +6,17 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-10-26 — Canada Core Compatibility V1 production backend
+
+Production project `finjqunyuyfxiesumuxk` was healthy before deployment. The exact reviewed Canada
+migration was installed through the versioned Supabase migration interface as
+`20261026202504_canada_core_compatibility_v1`; the documented hosted-version mapping still blocks a
+safe broad CLI push, so no history repair or `--include-all` operation was attempted. All 458 stops,
+466 reports, and 19 Operations updates remained. The Canadian Move Stop contract, existing wrapper
+permissions, rollback-only Canadian create checks, and unchanged advisor results passed. No public
+app release or external tester distribution occurred. Receipt:
+`scripts/fixtures/canada-core-production-receipt-20261026.json`.
+
 ## 2026-10-24 — Official MDT production backend
 
 Confirmed a scheduled physical backup from approximately two hours earlier, then installed hosted

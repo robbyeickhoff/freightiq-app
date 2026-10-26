@@ -45,6 +45,25 @@ preparation for expanding the tester base.
 
 # Active Work
 
+## Canada Core Compatibility V1
+
+- [x] Approve the focused
+      [Canada Core Compatibility V1 specification](build-specs/FreightIQCanadaCoreCompatibilityV1BuildSpec.md)
+      for shared iPhone/Android search, locality, create, and Move Stop behavior (October 26).
+- [x] Implement the bounded local US/Canada search and locality contract without a country picker or
+      government-feed expansion (October 26).
+- [x] Verify live Regina Mapbox locality behavior, all 239 app tests, TypeScript, focused lint,
+      41 Move Stop assertions, 7 Canadian-create assertions, and clean public/private database lint.
+- [ ] Complete the Saskatchewan development flow; Regina iPhone Simulator launch/location passed.
+- [ ] Complete focused physical iPhone and Pixel acceptance for Canadian search, create, reopen,
+      reports, Delivery Zone, route, offline, move, and remove/restore behavior.
+- [x] Deploy and verify the exact production database migration without altering migration history
+      or record counts (October 26).
+- [ ] Publish the reviewed Canada source and create the iPhone production candidate for Rob's
+      existing one-person internal TestFlight group only.
+- [ ] Install and verify that exact iPhone build before any external tester distribution.
+- [ ] Keep the Saskatchewan tester invitation and external Early Testers distribution separate.
+
 ## Nationwide Operations Area Directory V1
 
 - [x] Approve revising the focused

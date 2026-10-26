@@ -6,7 +6,12 @@ export type StopPosition = {
   entrance_lng: number | null;
 };
 
-export type StopDestination = StopPosition & { address: string; city: string; state_code: string };
+export type StopDestination = StopPosition & {
+  address: string;
+  city: string;
+  state_code: string;
+  country_code: "US" | "CA";
+};
 
 export function stopPosition(row: StopPosition): StopPosition {
   return {

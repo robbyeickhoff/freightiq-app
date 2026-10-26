@@ -16,6 +16,7 @@ import MapView, { Marker, type Region } from "react-native-maps";
 import { useAppTheme } from "@/context/theme-context";
 import { readFreightIqStop, readOwnedFreightIqStopEditor } from "@/utils/freightiq-stop-reads";
 import { canMoveFreightIqStop, moveFreightIqStop } from "@/utils/freightiq-stop-writes";
+import { readMapboxCoordinateLocality } from "@/utils/mapbox-stop-locality";
 import { readSearchResultLocality } from "@/utils/stop-locality";
 import { stopPosition, type StopDestination, type StopPosition } from "@/utils/stop-relocation";
 
@@ -129,7 +130,7 @@ export function MoveStopEditor({ stopId, name, onCancel, onBusyChange, onSaved }
     session.current ??= Crypto.randomUUID();
     try {
       const response = await fetch(
-        `https://api.mapbox.com/search/searchbox/v1/suggest?q=${encodeURIComponent(query.trim())}&access_token=${encodeURIComponent(token)}&session_token=${session.current}&country=US&language=en&limit=5&types=address,poi`,
+        `https://api.mapbox.com/search/searchbox/v1/suggest?q=${encodeURIComponent(query.trim())}&access_token=${encodeURIComponent(token)}&session_token=${session.current}&country=US,CA&language=en&limit=5&types=address,poi`,
       );
       if (!response.ok) throw new Error();
       const data = await response.json();
@@ -164,7 +165,9 @@ export function MoveStopEditor({ stopId, name, onCancel, onBusyChange, onSaved }
       const feature = data.features?.[0];
       const props = feature?.properties;
       const coords = feature?.geometry?.coordinates;
-      const locality = readSearchResultLocality(props?.context);
+      const locality =
+        readSearchResultLocality(props?.context) ??
+        (await readMapboxCoordinateLocality(token, coords?.[1], coords?.[0]));
       const address =
         props?.full_address ||
         (props?.address && props?.place_formatted
@@ -185,6 +188,7 @@ export function MoveStopEditor({ stopId, name, onCancel, onBusyChange, onSaved }
         lng: coords[0],
         city: locality.city,
         state_code: locality.stateCode,
+        country_code: locality.countryCode,
         entrance_lat: null,
         entrance_lng: null,
       });
@@ -194,7 +198,7 @@ export function MoveStopEditor({ stopId, name, onCancel, onBusyChange, onSaved }
     } catch {
       if (active.current)
         setMessage(
-          "Could not confirm that address and city. Select a complete US address and try again.",
+          "Could not confirm that address and city. Select a complete US or Canadian address and try again.",
         );
     } finally {
       session.current = null;

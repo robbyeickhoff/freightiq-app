@@ -13,6 +13,50 @@ answer one question:
 
 ## Current Objective
 
+### October 26 — Canada Core Compatibility V1
+
+An enthusiastic prospective tester in southern Saskatchewan exposed a bounded prerequisite: the
+core FreightIQ stop workflow must support Canada correctly before he is invited. Rob approved the
+[Canada Core Compatibility V1 specification](build-specs/FreightIQCanadaCoreCompatibilityV1BuildSpec.md)
+on October 26. Government road-condition feeds, Canadian Operations expansion, internationalization
+beyond the United States and Canada, and store/tester actions are excluded.
+
+The local candidate now uses the same shared iPhone/Android locality contract for `US` and `CA`.
+Mapbox suggestion searches remain geographically bounded to those two countries. Complete retrieved
+locality is retained directly; incomplete selected results and manual pins use one reverse lookup at
+the exact chosen coordinates. Create Stop displays the resolved country without asking the driver to
+select it, never defaults an unresolved stop to the United States, and preserves City unknown.
+Canadian province/country values flow through creation, city discovery, and Move Stop. The reviewed
+Move Stop migration requires and atomically persists `country_code` while preserving the existing
+authorization, concurrency, duplicate, Delivery Zone, and attached-Intel boundaries.
+
+Live read-only Mapbox verification against Regina confirmed `CA`/Regina search results and the
+coordinate fallback's `Regina`/`SK`/`CA` result. All 239 app tests and TypeScript pass. Focused ESLint
+has no errors and one pre-existing hook warning. Rollback-only database verification passes 41 Move
+Stop and 7 Canadian-create assertions; the candidate is installed only in the local Docker database
+with no migration-history stamp, and public/private database lint is clean. Production, repository
+publication, native builds, tester distribution, and the tester invitation remain untouched.
+
+An iPhone Simulator launch check passed with its location set to Regina, Saskatchewan: FreightIQ
+opened normally and centered the Apple map in Regina without a country selector. All 239 app tests,
+the production-mode iOS JavaScript export, 7 Canada database checks, 41 move-stop checks, database
+lint, and live locality checks across five Saskatchewan cities plus a Denver US control pass. The
+repository-wide database runner still has unrelated pre-existing local
+permission/configuration failures in older bot-protection and area suites; the Canada-adjacent
+suites pass and those older fixtures were not changed. The remaining gates are the complete
+Saskatchewan development flow, physical iPhone and Pixel acceptance, scoped diff approval, then
+separately approved production migration, commit/push, native builds, owner build verification, and
+TestFlight distribution.
+
+Rob approved those bounded production/source/iPhone gates on October 26, with distribution limited
+to his existing one-person internal TestFlight group. Production project `finjqunyuyfxiesumuxk`
+was healthy. The normal CLI dry run remained blocked by the documented hosted-version mapping, so
+no history repair or broad push was attempted. The exact Canada migration was installed once as
+hosted version `20261026202504`; all 458 stops, 466 reports, and 19 Operations updates remained.
+Canadian Move Stop, permissions, rollback-only create verification, and unchanged advisor results
+passed. External Early Testers and public App Review remain excluded. Receipt:
+`scripts/fixtures/canada-core-production-receipt-20261026.json`.
+
 ### October 24 — Honest offline stop snapshots
 
 Physical testing of the on-demand map-summary correction confirmed that the current **Save Stops for
