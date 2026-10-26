@@ -63,8 +63,9 @@ left unstaged. EAS iOS production build `c1ad1361-d7f2-4214-aacd-595d5d793367` f
 has the production push and TestFlight entitlements, disables debugging, and has SHA-256
 `283b80bf827a231ef9a43a80b95c1ae1bd8030ea607a46c6e73f6cfc0222932e`. Submission
 `04b6a69f-195d-4b30-a32d-53a7b590971c` was accepted by App Store Connect with only the existing
-`Team (Expo)` internal group specified. Apple processing and installed-iPhone acceptance remain
-pending; Early Testers and App Review were not included. Receipt:
+`Team (Expo)` internal group specified. The completed TestFlight metadata job found exactly that one
+requested group and verified build 57 was assigned. Installed-iPhone acceptance remains pending;
+Early Testers and App Review were not included. Receipt:
 `scripts/fixtures/canada-ios57-release-receipt-20261026.json`.
 
 ### October 24 — Honest offline stop snapshots

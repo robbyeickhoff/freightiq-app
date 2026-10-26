@@ -22,8 +22,9 @@ Source commit `e383933` was pushed to `clean-main`. iOS production build 57
 deep/strict signature verification, production push/TestFlight entitlement checks, and disabled
 debugging; SHA-256 is `283b80bf827a231ef9a43a80b95c1ae1bd8030ea607a46c6e73f6cfc0222932e`.
 Submission `04b6a69f-195d-4b30-a32d-53a7b590971c` was accepted by App Store Connect with only the
-existing `Team (Expo)` internal group specified. Apple processing and installed-iPhone acceptance
-remain pending. External Early Testers and public App Review were not included. Receipt:
+existing `Team (Expo)` internal group specified. The completed metadata job found exactly that one
+requested group and verified build 57 was assigned. Installed-iPhone acceptance remains pending.
+External Early Testers and public App Review were not included. Receipt:
 `scripts/fixtures/canada-ios57-release-receipt-20261026.json`.
 
 ## 2026-10-24 — Official MDT production backend

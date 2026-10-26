@@ -24,11 +24,14 @@
     "targetInternalGroups": ["Team (Expo)"],
     "externalGroups": [],
     "appReviewSubmitted": false,
-    "appleProcessingAtReceipt": true
+    "appleProcessingComplete": true,
+    "internalGroupAssignmentVerified": true,
+    "appleBuildId": "73e2d481-689c-4cf2-b2ef-45d3cb44b432"
   },
   "notes": [
     "The first scheduling attempt was rejected before upload because this Expo plan does not support automatic changelog submission.",
     "The identical build was resubmitted without the optional changelog and Apple accepted the binary.",
+    "The completed TestFlight metadata job found exactly one requested group and verified that build 57 was assigned to Team (Expo).",
     "The Early Testers group was not included."
   ]
 }
