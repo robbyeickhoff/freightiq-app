@@ -109,6 +109,10 @@ assert.equal(
   buildCanonicalPhysicalAddressKey({ address: '630 N Cora St', city: 'RIDGEWAY', state: 'CO', postalCode: '81432' }),
   buildCanonicalPhysicalAddressKey({ address: '630 North Cora Street', city: 'RIDGWAY', state: 'Colorado', postalCode: '81432-0000' }),
 )
+assert.equal(
+  buildCanonicalPhysicalAddressKey({ address: '380 PALOMINIO TRL', city: 'RIDGEWAY', state: 'CO', postalCode: '81432' }),
+  buildCanonicalPhysicalAddressKey({ address: '380 Palomino Trail', city: 'Ridgway', state: 'Colorado', postalCode: '81432-0000' }),
+)
 
 assert.equal(resolveLearnedZone([]), null)
 assert.deepEqual(resolveLearnedZone([

@@ -1975,6 +1975,26 @@ directional checks remain open. Search retry passed; the board's no-cache failur
 was not explicitly tested. The later accepted-candidate record below supersedes the former pending
 commit and production-build state. Distribution and public release remain separately gated.
 
+### Completed Objective — Routing Lab Ridgway Manifest-Typo Classification Fix
+
+An October 27, 2026 Telluride-route test exposed two manifest spelling errors on the Fortenberry &
+Ricks stop: `PALOMINIO` instead of `PALOMINO` and `RIDGEWAY` instead of `RIDGWAY`. The Routing Lab
+already understood the city spelling when matching some learned addresses, but did not apply that
+correction before deciding whether polygon geocoding was allowed. It also did not recognize the
+street-name spelling error. The bounded correction now normalizes both errors for geocoding and
+canonical learned-address matching while preserving the original manifest text. Exact production
+evidence for 380 Palomino Trail remains classified as `Ridgway Proper` and its canonical key is
+corrected through a guarded Routing Lab-only migration.
+
+The isolated Routing Lab migration is installed and verified in project `bnhtwtcoalfgqtcgxmsh`.
+The exact Vercel deployment was promoted to `https://freightiq-routing-lab.vercel.app`; the live
+alias returns HTTP 200 and the post-deploy error check is clean. Vite was updated from 8.1.5 to
+8.1.6 and the transitive `source-map-js` package from 1.2.1 to 1.2.2 to clear their high-severity
+development-tool advisories. The dependency audit reports zero vulnerabilities. Focused polygon,
+zone-learning, macro-flow, proposal, taxonomy and reordering tests plus TypeScript, lint, build and
+diff checks pass. The Product Owner confirmed signed-in phone acceptance on October 27, 2026.
+Production FreightIQ mobile data and behavior remain unchanged.
+
 ### Completed Objective — Routing Lab Grand Junction Lesson-Replay Validation Fix
 
 A September 11, 2026 real-workday Grand Junction route exposed a false replay conflict after the

@@ -1,11 +1,12 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(39);
+select plan(40);
 
 select is(public.routing_lab_canonical_address_key('123 Main Street, Suite 200', 'Grand Junction', 'Colorado', '81501-1234'), '123 main st|grand junction|co|81501', 'suite, suffix, state, and ZIP+4 normalize safely');
 select is(public.routing_lab_canonical_address_key('123 U.S. Highway 550', 'Montrose', 'CO', '81401'), '123 us 550|montrose|co|81401', 'US highway formatting normalizes safely');
 select is(public.routing_lab_canonical_address_key('123 Co Rd 63L', 'Telluride', 'CO', '81435'), public.routing_lab_canonical_address_key('123 County Road 63L', 'Telluride', 'Colorado', '81435-1234'), 'county-road formatting normalizes safely');
 select isnt(public.routing_lab_canonical_address_key('123 Main St', 'Grand Junction', 'CO', '81501'), public.routing_lab_canonical_address_key('124 Main Street', 'Grand Junction', 'Colorado', '81501-1234'), 'different street numbers remain separate');
+select is(public.routing_lab_canonical_address_key('380 PALOMINIO TRL', 'RIDGEWAY', 'CO', '81432'), public.routing_lab_canonical_address_key('380 Palomino Trail', 'Ridgway', 'Colorado', '81432-0000'), 'known Ridgway locality and Palomino Trail spelling variants normalize safely');
 
 insert into auth.users (id, email, created_at, updated_at) values
 ('30000000-0000-4000-8000-000000000001', 'zone-owner@example.test', now(), now()),

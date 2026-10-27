@@ -84,6 +84,7 @@ const tellurideStop = {
 }
 assert.equal(isTellurideRouteGeocodingCandidate(tellurideStop), true)
 assert.equal(isTellurideRouteGeocodingCandidate({ ...tellurideStop, city: 'Montrose' }), false)
+assert.equal(isTellurideRouteGeocodingCandidate({ ...tellurideStop, city: 'Ridgeway' }), true)
 
 let requestedBody = ''
 const geocoded = await geocodeTellurideRouteStops(
@@ -106,5 +107,21 @@ const geocoded = await geocodeTellurideRouteStops(
 assert.match(requestedBody, /230 South Fir Street/)
 assert.match(requestedBody, /-108\.1,37\.75,-107\.55,38\.4/)
 assert.equal(geocoded.get(tellurideStop.id)?.status, 'accepted')
+
+let ridgwayRequestedBody = ''
+const ridgwayStop = {
+  address: '380 PALOMINIO TRL', city: 'RIDGEWAY', id: 'fortenberry-ricks',
+  postalCode: '81432', state: 'CO',
+}
+await geocodeTellurideRouteStops(
+  [ridgwayStop],
+  'server-only-token',
+  async (_input, init) => {
+    ridgwayRequestedBody = String(init?.body)
+    return new Response(JSON.stringify({ batch: [{ features: [] }] }), { status: 200 })
+  },
+)
+assert.match(ridgwayRequestedBody, /380 Palomino TRL, ridgway, CO 81432/)
+assert.doesNotMatch(ridgwayRequestedBody, /PALOMINIO|RIDGEWAY/)
 
 console.log('Telluride-route geocoding and polygon checks passed.')

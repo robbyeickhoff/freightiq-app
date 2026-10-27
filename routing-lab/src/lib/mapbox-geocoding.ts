@@ -51,9 +51,18 @@ function normalize(value: string) {
 }
 
 const LEADING_SECONDARY_ADDRESS = /^\s*(?:apt|apartment|bldg|building|dept|department|floor|fl|hangar|lot|room|rm|ste|suite|trailer|unit)\b[^,]*,\s*/iu
+const LOCALITY_ALIASES = new Map([['ridgeway', 'ridgway']])
+
+function geocodingLocality(value: string) {
+  const locality = normalize(value)
+  return LOCALITY_ALIASES.get(locality) ?? value.trim()
+}
 
 export function physicalStreetAddress(value: string) {
-  return value.replace(LEADING_SECONDARY_ADDRESS, '').trim()
+  return value
+    .replace(LEADING_SECONDARY_ADDRESS, '')
+    .replace(/\bpalominio\b/giu, 'Palomino')
+    .trim()
 }
 
 function houseNumber(value: string) {
@@ -85,7 +94,7 @@ export function isGrandJunctionGeocodingCandidate(stop: GeocodingInputStop) {
 
 export function isTellurideRouteGeocodingCandidate(stop: GeocodingInputStop) {
   return normalize(stop.state) === 'co' || normalize(stop.state) === 'colorado'
-    ? TELLURIDE_ROUTE_CITIES.has(normalize(stop.city))
+    ? TELLURIDE_ROUTE_CITIES.has(normalize(geocodingLocality(stop.city)))
     : false
 }
 
@@ -193,7 +202,7 @@ async function geocodeStops(
         bbox,
         country: 'us',
         limit: 1,
-        q: `${physicalStreetAddress(stop.address)}, ${stop.city}, ${stop.state} ${stop.postalCode}`.trim(),
+        q: `${physicalStreetAddress(stop.address)}, ${geocodingLocality(stop.city)}, ${stop.state} ${stop.postalCode}`.trim(),
         types: ['address'],
       }))),
       headers: { 'Content-Type': 'application/json' },

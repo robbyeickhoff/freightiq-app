@@ -152,6 +152,7 @@ const streetTokenAliases: Record<string, string> = {
   square: 'sq', street: 'st', terrace: 'ter', trail: 'trl',
   north: 'n', south: 's', east: 'e', west: 'w', northeast: 'ne', northwest: 'nw',
   southeast: 'se', southwest: 'sw',
+  palominio: 'palomino',
 }
 
 const localityAliases: Record<string, string> = {
