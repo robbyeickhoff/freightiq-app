@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import Constants from "expo-constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useIsFocused } from "expo-router/react-navigation";
 import { type PropsWithChildren, useEffect, useMemo, useRef, useState } from "react";
@@ -420,6 +421,7 @@ export default function StopScreen() {
   const quickIntelRequested = String(params.quickIntel ?? "") === "1";
   const openedAt = String(params.openedAt ?? "");
   const returnToPreviewRequested = String(params.returnToPreview ?? "") === "1";
+  const is3DYardViewEnabled = Constants.expoConfig?.extra?.enable3DYardView === true;
 
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
 
@@ -2361,48 +2363,77 @@ export default function StopScreen() {
                     ) : null}
                   </View>
 
-                  <View
-                    style={[
-                      styles.v2ActionRow,
-                      usesAccessibilityLayout && styles.accessibilityStack,
-                    ]}
-                  >
-                    <AppButton
-                      onPress={() =>
-                        router.navigate({
-                          pathname: "/(tabs)/(map)",
-                          params: {
-                            focusStopId: stopId,
-                            showEntrance: "1",
-                            hidePreview: "1",
-                            entranceLat: String(entranceLat),
-                            entranceLng: String(entranceLng),
-                            revealAt: String(Date.now()),
-                            ...(returnToPreviewRequested ? { returnToPreview: "1" } : {}),
-                          },
-                        })
-                      }
-                      size="compact"
+                  <View style={styles.deliveryZoneActions}>
+                    <View
                       style={[
-                        styles.v2ActionButton,
-                        usesAccessibilityLayout && styles.accessibilityActionButton,
+                        styles.v2ActionRow,
+                        usesAccessibilityLayout && styles.accessibilityStack,
                       ]}
-                      variant="secondary"
                     >
-                      View DZ
-                    </AppButton>
-                    <AppButton
-                      disabled={Boolean(offlineSavedAt)}
-                      onPress={() => void openEntrancePicker()}
-                      size="compact"
-                      style={[
-                        styles.v2ActionButton,
-                        usesAccessibilityLayout && styles.accessibilityActionButton,
-                      ]}
-                      variant="secondary"
-                    >
-                      Edit DZ
-                    </AppButton>
+                      <AppButton
+                        onPress={() =>
+                          router.navigate({
+                            pathname: "/(tabs)/(map)",
+                            params: {
+                              focusStopId: stopId,
+                              focusStopName: currentStopName,
+                              focusStopAddress: currentStopAddress,
+                              focusStopLat: String(previewStopLat),
+                              focusStopLng: String(previewStopLng),
+                              showEntrance: "1",
+                              hidePreview: "1",
+                              entranceLat: String(entranceLat),
+                              entranceLng: String(entranceLng),
+                              revealAt: String(Date.now()),
+                              ...(returnToPreviewRequested ? { returnToPreview: "1" } : {}),
+                            },
+                          })
+                        }
+                        size="compact"
+                        style={[
+                          styles.v2ActionButton,
+                          usesAccessibilityLayout && styles.accessibilityActionButton,
+                        ]}
+                        variant="secondary"
+                      >
+                        View DZ 2D
+                      </AppButton>
+                      <AppButton
+                        disabled={Boolean(offlineSavedAt)}
+                        onPress={() => void openEntrancePicker()}
+                        size="compact"
+                        style={[
+                          styles.v2ActionButton,
+                          usesAccessibilityLayout && styles.accessibilityActionButton,
+                        ]}
+                        variant="secondary"
+                      >
+                        Edit DZ
+                      </AppButton>
+                    </View>
+                    {is3DYardViewEnabled && Platform.OS === "ios" ? (
+                      <AppButton
+                        fullWidth
+                        onPress={() =>
+                          router.push({
+                            pathname: "/yard-view-3d",
+                            params: {
+                              stopId,
+                              stopName: currentStopName,
+                              stopAddress: currentStopAddress,
+                              stopLatitude: String(previewStopLat),
+                              stopLongitude: String(previewStopLng),
+                              deliveryZoneLatitude: String(entranceLat),
+                              deliveryZoneLongitude: String(entranceLng),
+                            },
+                          } as never)
+                        }
+                        size="compact"
+                        variant="secondary"
+                      >
+                        View DZ 3D
+                      </AppButton>
+                    ) : null}
                   </View>
                 </>
               ) : (
@@ -3999,6 +4030,9 @@ const styles = StyleSheet.create({
   },
   v2ActionRow: {
     flexDirection: "row",
+    gap: Spacing.xs,
+  },
+  deliveryZoneActions: {
     gap: Spacing.xs,
   },
   v2ActionButton: {

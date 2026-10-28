@@ -580,7 +580,7 @@ export default function HomeScreen() {
   const regionRef = useRef(region);
 
   const [mapInitialRegion, setMapInitialRegion] = useState<Region | null>(null);
-  const [isMapReady, setIsMapReady] = useState(Platform.OS === "ios");
+  const [isMapReady, setIsMapReady] = useState(false);
   const [mapLayout, setMapLayout] = useState({ width: 0, height: 0 });
   const [pins, setPins] = useState<Pin[]>([]);
   const [showingStops, setShowingStops] = useState(false);
@@ -627,6 +627,7 @@ export default function HomeScreen() {
 
   const [showSelectedEntrance, setShowSelectedEntrance] = useState(false);
   const handledShowEntranceKeyRef = useRef<string | null>(null);
+  const confirmedDeliveryZoneStopIdsRef = useRef<Set<string>>(new Set());
   const handledPreviewReturnKeyRef = useRef<string | null>(null);
   const handledCollectionStopKeyRef = useRef<string | null>(null);
   const openCollectionStopRef = useRef<(stop: Pin) => void>(() => {});
@@ -862,6 +863,7 @@ export default function HomeScreen() {
       delete next[deletedStopId];
       return next;
     });
+    confirmedDeliveryZoneStopIdsRef.current.delete(deletedStopId);
 
     setScoreByStopId((prev) => {
       const next = { ...prev };
@@ -1192,6 +1194,10 @@ export default function HomeScreen() {
 
         recentItems.splice(10);
 
+        confirmedDeliveryZoneStopIdsRef.current.forEach((stopId) => {
+          if (pins.some((pin) => pin.id === stopId)) intelFlags[stopId] = true;
+        });
+
         setIntelByStopId(intelFlags);
         setScoreByStopId(scores);
         // setRecent(recentItems);
@@ -1203,13 +1209,34 @@ export default function HomeScreen() {
     const focusStopId = String(params.focusStopId ?? "");
     const showEntrance = String(params.showEntrance ?? "") === "1";
     const hidePreview = String(params.hidePreview ?? "") === "1";
+    const focusStopLat = Number(params.focusStopLat);
+    const focusStopLng = Number(params.focusStopLng);
+    const hasRouteCoordinates = Number.isFinite(focusStopLat) && Number.isFinite(focusStopLng);
 
-    if (!focusStopId || !showEntrance || !pins.length) return;
+    if (
+      !focusStopId ||
+      !showEntrance ||
+      (!pins.length && !hasRouteCoordinates) ||
+      !mapInitialRegion ||
+      !isMapReady
+    ) {
+      return;
+    }
 
     const showEntranceKey = `${focusStopId}:${String(params.revealAt ?? "")}`;
     if (handledShowEntranceKeyRef.current === showEntranceKey) return;
 
-    const targetPin = pins.find((p) => p.id === focusStopId);
+    const existingPin = pins.find((p) => p.id === focusStopId);
+    const targetPin: Pin | undefined = existingPin ??
+      (hasRouteCoordinates
+        ? {
+            id: focusStopId,
+            name: String(params.focusStopName ?? "").trim() || "Stop",
+            address: String(params.focusStopAddress ?? "").trim() || undefined,
+            lat: focusStopLat,
+            lng: focusStopLng,
+          }
+        : undefined);
     if (!targetPin) return;
     handledShowEntranceKeyRef.current = showEntranceKey;
 
@@ -1248,6 +1275,19 @@ export default function HomeScreen() {
             setPreviewVisible(false);
           }
         }
+
+        router.setParams({
+          entranceLat: undefined,
+          entranceLng: undefined,
+          focusStopAddress: undefined,
+          focusStopId: undefined,
+          focusStopLat: undefined,
+          focusStopLng: undefined,
+          focusStopName: undefined,
+          hidePreview: undefined,
+          revealAt: undefined,
+          showEntrance: undefined,
+        });
       } catch {
         const next: Region = {
           latitude: targetPin.lat,
@@ -1260,15 +1300,25 @@ export default function HomeScreen() {
         mapRef.current?.animateToRegion(next, 300);
       }
     })();
+    // enterDeliveryZoneInspection is intentionally omitted: this effect consumes route params once,
+    // after the native map is ready, rather than reacting to helper identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     params.entranceLat,
     params.entranceLng,
     params.focusStopId,
+    params.focusStopAddress,
+    params.focusStopLat,
+    params.focusStopLng,
+    params.focusStopName,
     params.showEntrance,
     params.hidePreview,
     params.revealAt,
     params.returnToRoute,
+    isMapReady,
+    mapInitialRegion,
     pins,
+    router,
   ]);
 
   useEffect(() => {
@@ -1342,9 +1392,8 @@ export default function HomeScreen() {
 
   // Read summaries only for the stop being opened. Map/cache changes must not
   // spend the driver's detailed-read allowance on every previously cached pin.
-  async function loadCloudReportStats(stopId: string) {
+  async function loadCloudReportStatsForStops(stopIds: string[]) {
     try {
-      const stopIds = [stopId];
       const rows = await readFreightIqStopStats(stopIds);
       const rowsByStopId = Object.fromEntries(rows.map((row) => [row.stop_id, row]));
       // A missing result is not evidence of zero reports. Preserve the cache and
@@ -1376,6 +1425,10 @@ export default function HomeScreen() {
       console.log("Report stats load failed", e);
       return false;
     }
+  }
+
+  async function loadCloudReportStats(stopId: string) {
+    return loadCloudReportStatsForStops([stopId]);
   }
 
   useEffect(() => {
@@ -1597,6 +1650,16 @@ export default function HomeScreen() {
     stopLayerLoadingRef.current = true;
     setStopLayerLoading(true);
 
+    if (deliveryZoneInspectionSource) {
+      setDeliveryZoneInspectionSource(null);
+      setShowSelectedEntrance(false);
+      setEntranceHighlightOn(false);
+      setSelectedStopId(null);
+      setSelectedStop(null);
+      resetSelectedEntranceState();
+      setPreviewVisible(false);
+    }
+
     try {
       const data = await readFreightIqStopsInRegion(region);
 
@@ -1611,6 +1674,8 @@ export default function HomeScreen() {
           address: row.address ?? undefined,
         })),
       );
+
+      await loadCloudReportStatsForStops(visiblePins.map((pin) => pin.id));
 
       setClusterPoints([]);
       setPins(visiblePins);
@@ -1840,15 +1905,43 @@ export default function HomeScreen() {
     stop: Pin,
     entrance: { lat: number; lng: number },
   ) {
+    stopLayerRequestIdRef.current += 1;
+    stopLayerLoadingRef.current = false;
+    setStopLayerLoading(false);
+    setShowingStops(false);
+    setClusterPoints([]);
     selectedEntranceRequestIdRef.current += 1;
     setDeliveryZoneInspectionSource(source);
     setSelectedStopId(stop.id);
     setSelectedStop(stop);
+    confirmedDeliveryZoneStopIdsRef.current.add(stop.id);
+    setIntelByStopId((previous) => ({ ...previous, [stop.id]: true }));
+    void (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(stopKey(stop.id));
+        const cached: StopIntel = raw ? JSON.parse(raw) : {};
+        cached.entranceLat = entrance.lat;
+        cached.entranceLng = entrance.lng;
+        cached.updatedAt = new Date().toISOString();
+        await AsyncStorage.setItem(stopKey(stop.id), JSON.stringify(cached));
+      } catch {
+        // The in-memory status still covers the active map session if local storage is unavailable.
+      }
+    })();
     setSelectedEntrance(entrance);
     setSelectedEntranceStatus("resolved");
     setPreviewVisible(false);
     setShowSelectedEntrance(true);
     setEntranceHighlightOn(true);
+
+    const nextRegion: Region = {
+      latitude: (stop.lat + entrance.lat) / 2,
+      longitude: (stop.lng + entrance.lng) / 2,
+      latitudeDelta: Math.max(Math.abs(stop.lat - entrance.lat) * 2.8, 0.0035),
+      longitudeDelta: Math.max(Math.abs(stop.lng - entrance.lng) * 2.8, 0.0035),
+    };
+    setRegion(nextRegion);
+    recomputeClusters(nextRegion);
 
     mapRef.current?.fitToCoordinates(
       [
@@ -2972,6 +3065,8 @@ export default function HomeScreen() {
 
   const showRawPins = false;
   const showStopLayer = showingStops || mergeMode;
+  const selectedStopHasConfirmedDeliveryZone =
+    !!selectedStop && confirmedDeliveryZoneStopIdsRef.current.has(selectedStop.id);
   const showSelectedStopMarker =
     !showStopLayer && !!selectedStop && selectedStop.id !== "temp-search-result";
   const PREVIEW_COLLAPSED_Y = 165;
@@ -3214,6 +3309,7 @@ export default function HomeScreen() {
             const action = (e.nativeEvent as any)?.action;
             if (action === "marker-press" || action === "callout-press") return;
             if (Date.now() - lastMarkerPressAtRef.current < 500) return;
+            if (deliveryZoneInspectionSource) return;
             if (openStopNearMapPress(e.nativeEvent.coordinate)) return;
             clearSelection();
           }}
@@ -3222,13 +3318,19 @@ export default function HomeScreen() {
             ? showRawPins
               ? sanitizePins(pins).map((p) => {
                   const hasIntel = resolveStopHasIntel(p.id, intelByStopId, reportStatsByStopId);
+                  const score =
+                    (scoreByStopId[p.id]?.up ?? 0) - (scoreByStopId[p.id]?.down ?? 0);
 
                   return (
                     <Marker
-                      key={`raw-stop-${p.id}`}
+                      key={`raw-stop-${p.id}-${
+                        hasIntel === null ? "checking" : hasIntel ? "intel" : "no-intel"
+                      }-${score}`}
                       coordinate={{ latitude: p.lat, longitude: p.lng }}
                       stopPropagation
-                      tracksViewChanges={Platform.OS !== "android" || trackAndroidMarkerViewChanges}
+                      tracksViewChanges={
+                        Platform.OS === "android" ? trackAndroidMarkerViewChanges : false
+                      }
                       onPress={(e) => {
                         lastMarkerPressAtRef.current = Date.now();
                         e.stopPropagation();
@@ -3237,7 +3339,7 @@ export default function HomeScreen() {
                     >
                       <StopMarkerVisual
                         hasIntel={hasIntel}
-                        score={(scoreByStopId[p.id]?.up ?? 0) - (scoreByStopId[p.id]?.down ?? 0)}
+                        score={score}
                       />
                     </Marker>
                   );
@@ -3254,7 +3356,7 @@ export default function HomeScreen() {
                         coordinate={{ latitude: lat, longitude: lng }}
                         stopPropagation
                         tracksViewChanges={
-                          Platform.OS !== "android" || trackAndroidMarkerViewChanges
+                          Platform.OS === "android" ? trackAndroidMarkerViewChanges : false
                         }
                         onPress={() => {
                           lastMarkerPressAtRef.current = Date.now();
@@ -3272,14 +3374,18 @@ export default function HomeScreen() {
                   const hasIntel =
                     typeof f.properties.hasIntel === "boolean" ? f.properties.hasIntel : null;
                   const reportCount = Number(f.properties.reportCount ?? 0);
+                  const score =
+                    (scoreByStopId[stopId]?.up ?? 0) - (scoreByStopId[stopId]?.down ?? 0);
                   return (
                     <Marker
                       key={`stop-${stopId}-${
                         hasIntel === null ? "checking" : hasIntel ? "intel" : "no-intel"
-                      }-${reportCount}`}
+                      }-${reportCount}-${score}`}
                       coordinate={{ latitude: lat, longitude: lng }}
                       stopPropagation
-                      tracksViewChanges={Platform.OS !== "android" || trackAndroidMarkerViewChanges}
+                      tracksViewChanges={
+                        Platform.OS === "android" ? trackAndroidMarkerViewChanges : false
+                      }
                       onPress={() => {
                         lastMarkerPressAtRef.current = Date.now();
                         const p = pins.find((x) => x.id === stopId);
@@ -3297,9 +3403,7 @@ export default function HomeScreen() {
                     >
                       <StopMarkerVisual
                         hasIntel={hasIntel}
-                        score={
-                          (scoreByStopId[stopId]?.up ?? 0) - (scoreByStopId[stopId]?.down ?? 0)
-                        }
+                        score={score}
                       />
                     </Marker>
                   );
@@ -3308,21 +3412,41 @@ export default function HomeScreen() {
 
           {showSelectedStopMarker && selectedStop ? (
             <Marker
-              key={`selected-stop-${selectedStop.id}`}
+              key={`selected-stop-${selectedStop.id}-${
+                deliveryZoneInspectionSource || selectedStopHasConfirmedDeliveryZone
+                  ? "dz-inspection"
+                  : resolveStopHasIntel(selectedStop.id, intelByStopId, reportStatsByStopId) === null
+                  ? "checking"
+                  : resolveStopHasIntel(selectedStop.id, intelByStopId, reportStatsByStopId)
+                    ? "intel"
+                    : "no-intel"
+              }-${
+                (scoreByStopId[selectedStop.id]?.up ?? 0) -
+                (scoreByStopId[selectedStop.id]?.down ?? 0)
+              }`}
               coordinate={{ latitude: selectedStop.lat, longitude: selectedStop.lng }}
               stopPropagation
-              tracksViewChanges={Platform.OS !== "android" || trackAndroidMarkerViewChanges}
+              tracksViewChanges={
+                Platform.OS === "android" ? trackAndroidMarkerViewChanges : false
+              }
               onPress={(e) => {
                 lastMarkerPressAtRef.current = Date.now();
                 e.stopPropagation();
+                if (deliveryZoneInspectionSource) return;
                 selectStop(selectedStop);
               }}
             >
               <StopMarkerVisual
-                hasIntel={resolveStopHasIntel(selectedStop.id, intelByStopId, reportStatsByStopId)}
+                hasIntel={
+                  deliveryZoneInspectionSource || selectedStopHasConfirmedDeliveryZone
+                    ? true
+                    : resolveStopHasIntel(selectedStop.id, intelByStopId, reportStatsByStopId)
+                }
                 score={
-                  (scoreByStopId[selectedStop.id]?.up ?? 0) -
-                  (scoreByStopId[selectedStop.id]?.down ?? 0)
+                  deliveryZoneInspectionSource || selectedStopHasConfirmedDeliveryZone
+                    ? 0
+                    : (scoreByStopId[selectedStop.id]?.up ?? 0) -
+                      (scoreByStopId[selectedStop.id]?.down ?? 0)
                 }
               />
             </Marker>
@@ -3338,7 +3462,9 @@ export default function HomeScreen() {
               stopPropagation
               title={tempSearchPin.name}
               description={tempSearchPin.address ?? "Search result"}
-              tracksViewChanges={Platform.OS !== "android" || trackAndroidMarkerViewChanges}
+              tracksViewChanges={
+                Platform.OS === "android" ? trackAndroidMarkerViewChanges : false
+              }
               onPress={() => {
                 lastMarkerPressAtRef.current = Date.now();
                 setSelectedStop(tempSearchPin);
@@ -3371,7 +3497,9 @@ export default function HomeScreen() {
                 latitude: selectedEntrance.lat,
                 longitude: selectedEntrance.lng,
               }}
-              tracksViewChanges={Platform.OS !== "android" || trackAndroidMarkerViewChanges}
+              tracksViewChanges={
+                Platform.OS === "android" ? trackAndroidMarkerViewChanges : false
+              }
             >
               <View style={styles.entranceMarkerWrap}>
                 <View style={styles.deliveryZoneBullseyeOuter}>
@@ -4311,17 +4439,19 @@ export default function HomeScreen() {
             { bottom: 36 },
           ]}
         >
-          <AppButton
-            accessibilityLabel={showingStops ? "Hide stops" : "Show stops"}
-            loading={stopLayerLoading}
-            maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
-            onPress={refreshStopsInView}
-            size="compact"
-            style={[styles.stopLayerButton, Elevation.floating]}
-            variant="secondary"
-          >
-            {showingStops ? "Hide Stops" : "Show Stops"}
-          </AppButton>
+          {!deliveryZoneInspectionSource ? (
+            <AppButton
+              accessibilityLabel={showingStops ? "Hide stops" : "Show stops"}
+              loading={stopLayerLoading}
+              maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
+              onPress={refreshStopsInView}
+              size="compact"
+              style={[styles.stopLayerButton, Elevation.floating]}
+              variant="secondary"
+            >
+              {showingStops ? "Hide Stops" : "Show Stops"}
+            </AppButton>
+          ) : null}
 
           <AppCard clipContent elevation="floating">
             <AppButton
