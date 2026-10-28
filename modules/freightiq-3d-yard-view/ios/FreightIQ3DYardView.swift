@@ -213,7 +213,7 @@ final class FreightIQ3DYardView: ExpoView {
     stopLongitudeValue = stopLongitude
     deliveryZoneLatitudeValue = deliveryZoneLatitude
     deliveryZoneLongitudeValue = deliveryZoneLongitude
-    onError(["message": "3D Yard View is available only in the FreightIQ development build."])
+    onError(["message": "3D Yard View is not configured in this build."])
   }
 
   func resetCamera(token: Int) {}

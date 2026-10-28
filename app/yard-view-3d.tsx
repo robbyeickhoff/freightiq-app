@@ -73,7 +73,7 @@ export default function YardView3DScreen() {
   }
 
   const unavailableMessage = !isEnabled
-    ? "3D Yard View is available only in the FreightIQ development build."
+    ? "3D Yard View is not configured in this build."
     : Platform.OS !== "ios"
       ? "This first 3D Yard View test is available on iPhone only."
       : !hasValidCoordinates
