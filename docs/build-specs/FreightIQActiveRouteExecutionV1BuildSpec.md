@@ -1,145 +1,184 @@
 # FreightIQ Active Route Execution V1 — Proposed Build Specification
 
-> **Status: Specification plan approved; implementation not approved**
+> **Status: Revised implementation plan; Product Owner review required before implementation**
 >
-> The Product Owner approved preparation of this specification on September 28, 2026. This document
-> is a future implementation contract for review. It does not change the active objective in
-> `docs/CurrentBuild.md` and does not authorize application code, native configuration, dependency,
-> Supabase, build, distribution, commit, push, or release work.
+> The Product Owner approved creation of this revised plan on October 28, 2026 after a full-day
+> physical-iPhone test of the separate Mapbox Navigation Test app. This document does not change the
+> active objective in `docs/CurrentBuild.md` and does not authorize application code, native
+> configuration, Mapbox account or billing changes, Supabase work, builds, distribution, commit,
+> push, or release work.
 
 ## Document Control
 
-- **Title:** FreightIQ Active Route Execution V1 — Proposed Build Specification
-- **Purpose:** Turn the accepted Today's Route queue into a clear start, navigate, complete, and
-  advance workflow while FreightIQ remains the route authority
-- **Repository path:** `docs/build-specs/FreightIQActiveRouteExecutionV1BuildSpec.md`
+- **Purpose:** Put FreightIQ's approved route and delivery workflow around embedded Mapbox
+  turn-by-turn navigation so the driver remains inside one app
 - **Operating mode:** Product → Build Specification planning
-- **Repository status:** Proposed future Build Specification
 - **Implementation status:** Not started and not approved
-- **Specification-plan approval:** Product Owner, September 28, 2026
-- **Implementation approval:** Required separately after the current fix and security work are
-  complete
+- **Original specification-plan approval:** Product Owner, September 28, 2026
+- **Embedded-Mapbox revision approval:** Product Owner, October 28, 2026
+- **Implementation approval:** Required separately after this revision is reviewed and the active
+  3D Yard View work reaches an appropriate stopping point
 - **Foundations:**
+  - `docs/ProductVision.md`
   - `docs/build-specs/FreightIQRouteBuilderV1BuildSpec.md`
   - `docs/build-specs/FreightIQRouteOverviewMapV1BuildSpec.md`
   - `docs/build-specs/FreightIQNavigationAppChoiceBuildSpec.md`
-  - `docs/design/ReturnToFreightIQLiveActivity.md`
+  - `docs/design/AIRoutingAssistantVision.md`
 
 ## 1. Objective
 
 Give a driver one continuous FreightIQ-owned route workflow:
 
 ```text
-Build and review Today's Route
+Build, import, or receive Today's Route
+→ Review and approve FreightIQ's stop order
 → Start Route
-→ Navigate to the active stop in the selected external navigation app
-→ Return to FreightIQ
-→ Complete the active stop
-→ Advance to the next FreightIQ stop
-→ Navigate Next Stop
+→ Navigate inside FreightIQ using Mapbox
+→ Detect arrival or let the driver mark arrival manually
+→ Driver explicitly completes, skips, removes, or edits the stop
+→ FreightIQ persists the decision
+→ Mapbox advances to the FreightIQ-selected next stop
 → Repeat until finished
 ```
 
-FreightIQ owns the route, sequence, active stop, completion state, and next-stop decision. Apple
-Maps, Google Maps, or Waze owns turn-by-turn guidance for only the selected leg. External-provider
-behavior must never reorder, complete, or otherwise become authoritative over the FreightIQ route.
+FreightIQ owns stop order, active stop, arrival/work state, completion, route edits, and future
+learning. Mapbox owns road-following route generation, rerouting, map rendering, position matching,
+turn-by-turn instructions, road alternatives, and arrival signals.
 
-## 2. Product Principles
+The driver must not switch between FreightIQ and a separate navigation app during ordinary route
+execution.
 
-- **FreightIQ remains the route-intelligence layer.** Driver-approved ordering and future Routing
-  Lab sequencing remain authoritative.
-- **One leg leaves FreightIQ at a time.** Full-route provider handoff is not the dependable V1
+## 2. Why This Build Exists Now
+
+The Routing Lab can produce useful driver-reviewed stop sequences. Route Builder and Route Overview
+already preserve an ordered work queue. The remaining gap is execution: FreightIQ currently hands
+one stop to an external navigation app and loses the continuous in-app route experience.
+
+The separate Mapbox Navigation Test app established this physical-iPhone evidence:
+
+- Business and address search can produce usable navigation destinations.
+- A driver can navigate a multi-stop route in the supplied order.
+- Rerouting works when the driver chooses a different road.
+- Mapbox detects arrival and can advance through route legs.
+- Current-leg arrival time, time remaining, and distance can describe the next stop.
+- Alternative road routes can be displayed without changing stop order.
+- A full workday of field navigation was reported as generally reliable.
+- The remaining frustrations were application controls and route-building feedback, not failure of
+  Mapbox's basic navigation engine.
+
+This is enough evidence to plan a bounded FreightIQ integration. It is not evidence that every road
+choice, rural address, Android behavior, permission, or billing decision is accepted.
+
+## 3. Product Principles
+
+- **FreightIQ remains the route authority.** Mapbox never reorders, completes, deletes, or teaches
+  FreightIQ stops independently.
+- **One app for the driver.** Mapbox navigation is embedded inside FreightIQ.
+- **Arrival is not completion.** Mapbox can say the truck reached the stop area; only the driver can
+  say the delivery work is complete.
+- **Explicit controls are always available.** The driver can manually arrive, complete, skip,
+  remove, add, or reorder stops when location behavior does not match field reality.
+- **Real use shapes the interface.** V1 must be complete and safe, not visually perfect. Field
+  revisions follow physical use instead of delaying the first useful build for speculative polish.
+- **Keep one route state.** Extend `TodayRouteProvider`; do not create a second JavaScript route
+  store or let the native SDK become the business-state authority.
+- **Persist before claiming success.** FreightIQ saves a completion or route edit before the UI and
+  Mapbox session move forward.
+- **Preserve fallback navigation.** Existing Apple Maps, Google Maps, and Waze choices remain for
+  direct single-stop use and as fallback if embedded navigation cannot start.
+- **Do not confuse field adjustments with learning.** Active-route edits record the workday but do
+  not automatically become Routing Lab lessons.
+- **Keep driving interactions calm.** Essential controls must be prominent and intended for use
+  while safely parked or stopped.
+
+## 4. Governing Current State
+
+### FreightIQ Route Authority
+
+`TodayRouteProvider` already provides:
+
+- Account-scoped, versioned device-local persistence
+- Ordered saved-stop snapshots
+- Upcoming and Completed status with timestamps
+- Reorder, completion, undo, removal, clear, and stale-day handling
+- The next stop as the first Upcoming item
+- Map and list route views
+- Persistence across backgrounding, external navigation, and ordinary restart
+
+The route snapshot intentionally excludes Driver Reports, Locked Personal Intel, contacts, gate
+codes, and other sensitive Intel.
+
+### Current Navigation
+
+FreightIQ currently supports external Apple Maps, Google Maps, and Waze through a shared provider
+layer. Those paths remain useful for direct navigation and fallback, but they do not provide a
+continuous FreightIQ-owned navigation session.
+
+### Application Architecture
+
+FreightIQ is an Expo/React Native application. Mapbox Navigation SDK is native iOS and Android code,
+not a drop-in JavaScript replacement for the current map screen. Embedded V1 requires a bounded
+FreightIQ native module and Expo configuration on both platforms.
+
+The separate native iPhone test proves Mapbox iOS behavior. It is not production FreightIQ code and
+must not be copied wholesale into the application.
+
+## 5. Verified Mapbox Boundary
+
+Official Mapbox documentation was rechecked on October 28, 2026.
+
+### Supported Capability
+
+- Navigation SDK provides routing, rerouting, route progress, alternative routes, route rendering,
+  navigation-camera behavior, and voice instructions.
+- Standard automobile routing accepts up to 25 coordinates including the origin, allowing current
+  position plus up to 24 FreightIQ stops in one request.
+- Traffic-profile requests accept materially fewer coordinates and are not the full-workday V1
   contract.
-- **Reuse Today's Route.** Do not build a second route system or copy route state into a parallel
-  store.
-- **Completion is explicit.** Returning from another app is not proof of arrival or delivery.
-- **Advancement is automatic after explicit completion.** Launching the next navigation leg remains
-  a deliberate driver action.
-- **Persistence, not background execution, provides continuity.** Route execution must survive
-  ordinary interruption without route-specific background location.
-- **Provider differences must not change FreightIQ behavior.** Apple Maps, Google Maps, and Waze may
-  present the handoff differently, but FreightIQ state remains predictable.
-- **Keep the driving interaction short and calm.** Essential actions must be prominent and usable
-  while parked; FreightIQ must not encourage phone interaction while driving.
+- Route progress exposes route, leg, and step information, including current-leg distance and time.
+- Android supports arrival/next-leg events and a custom arrival controller so FreightIQ can prevent
+  automatic advancement.
+- iOS supports navigation progress and customizable arrival handling. The pinned v3 API used to
+  pause and advance a leg must be confirmed before implementation.
 
-## 3. Governing Current State
+### Installation and Runtime Requirements
 
-### Existing Route Authority
+- iOS requires Navigation SDK, a public runtime token, a protected download token, location
+  authorization, and appropriate navigation background modes.
+- Android requires Navigation SDK, public runtime token, protected download credential,
+  location/network permissions, and review of foreground-service and notification behavior.
+- The download token is a build secret and must never be committed or shipped as a runtime secret.
+- Mapbox attribution remains visible and unobstructed.
 
-`TodayRouteProvider` is the only route-state authority. Today's Route already provides:
+### Pricing Boundary
 
-- An account-scoped, versioned AsyncStorage route
-- An ordered list of saved FreightIQ stop snapshots
-- Upcoming and completed status with completion timestamps
-- Manual drag reordering and accessible move actions
-- Next-stop derivation from the first upcoming stop
-- Complete, undo, remove, clear, and stale-day handling
-- A map-first route overview and an ordered route list
-- Navigation to the next stop or any selected upcoming stop
-- Persistence across app backgrounding, external navigation, and ordinary restart
+Navigation SDK use is billable through Navigation monthly active users and either metered trips or
+unlimited trips. Delivery drivers may exceed Mapbox's lower-use examples.
 
-The existing route storage contains no Driver Reports, Locked Personal Intel, gate codes, contacts,
-or other sensitive stop Intel.
+Before production distribution, the Product Owner must review live Mapbox pricing and choose the
+appropriate billing model. This plan does not authorize a purchase, subscription, plan change, or
+account configuration.
 
-### Existing Navigation Authority
+### Official References
 
-The shared navigation layer already provides:
+- iOS SDK: https://docs.mapbox.com/ios/navigation/
+- iOS installation: https://docs.mapbox.com/ios/navigation/guides/install/
+- iOS route generation: https://docs.mapbox.com/ios/navigation/guides/turn-by-turn-navigation/route-generation/
+- iOS UI: https://docs.mapbox.com/ios/navigation/guides/turn-by-turn-navigation/user-interface/
+- iOS pricing: https://docs.mapbox.com/ios/navigation/guides/pricing/
+- Android SDK: https://docs.mapbox.com/android/navigation/guides/
+- Android installation: https://docs.mapbox.com/android/navigation/guides/install/
+- Android route generation: https://docs.mapbox.com/android/navigation/guides/turn-by-turn-navigation/build-the-route/
+- Android progress: https://docs.mapbox.com/android/navigation/guides/turn-by-turn-navigation/route-progress/
+- Android arrival: https://docs.mapbox.com/android/navigation/guides/ui-components/arrival-detection/
+- Directions API: https://docs.mapbox.com/api/navigation/directions/
 
-- FreightIQ Default
-- Ask Every Time
-- Apple Maps on iPhone
-- Google Maps on iPhone and Android
-- Waze on iPhone and Android
-- Device-local preference persistence
-- Provider availability checks, fallback messaging, and caught launch failures
-- Saved-address handoff with coordinate fallback for Apple Maps and Google Maps
-- Coordinate handoff for Waze
+## 6. V1 Product Model
 
-This layer must be reused without introducing another provider abstraction.
+Current Upcoming and Completed statuses remain authoritative. Embedded navigation must not replace
+them with Mapbox waypoint state.
 
-### Observed Physical-iPhone Provider Behavior
-
-The Product Owner reported the following real-device behavior on September 28, 2026:
-
-- If Apple Maps is not actively navigating, a FreightIQ Navigate action opens a proposed route to
-  the selected destination.
-- A subsequent FreightIQ Navigate action can replace that proposed Apple Maps route.
-- If Apple Maps is actively navigating, another FreightIQ Navigate action can prompt to add the new
-  stop, placing it at the beginning of Apple Maps' route.
-- Google Maps and Waze open and begin navigating to the selected FreightIQ destination immediately.
-
-These are provider-controlled presentations. FreightIQ must not interpret Apple Maps' proposed
-route, replacement, or Add Stop behavior as a route-state transition.
-
-## 4. Verified Platform Boundary
-
-- Apple Map Links and unified Maps URLs can launch directions, but FreightIQ cannot depend on a
-  navigation-completion callback from the Maps app.
-- Google Maps URLs can request navigation to a destination. Public Maps URL handoff does not return
-  trustworthy arrival or delivery completion to FreightIQ.
-- Waze Deep Links can start navigation to a destination. The public deep-link contract does not
-  provide an ordered FreightIQ route session or delivery-completion callback.
-- iOS and Android expose application foreground/resume lifecycle events. Those events establish only
-  that FreightIQ became active, not why it became active or whether the destination was reached.
-
-Official references to recheck immediately before implementation:
-
-- Apple Map Links: https://developer.apple.com/library/archive/featuredarticles/iPhoneURLScheme_Reference/MapLinks/MapLinks.html
-- Apple unified Maps URLs: https://developer.apple.com/documentation/mapkit/unified-map-urls
-- Google Maps URLs: https://developers.google.com/maps/documentation/urls/get-started
-- Google Maps Android intents: https://developer.android.com/guide/components/google-maps-intents
-- Waze Deep Links: https://developers.google.com/waze/deeplinks
-- Apple application activation: https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationdidbecomeactive(_:)
-- Android activity lifecycle: https://developer.android.com/guide/components/activities/activity-lifecycle
-
-## 5. V1 Product Model
-
-### Route Execution State
-
-Extend the existing versioned `TodayRoute` model. Do not create a second storage key or route
-provider solely for execution.
-
-The intended logical addition is:
+Extend the existing versioned `TodayRoute` model rather than creating parallel storage:
 
 ```text
 execution
@@ -147,371 +186,431 @@ execution
   activeStopId: FreightIQ stop ID or null
   startedAt: timestamp or null
   finishedAt: timestamp or null
-  lastNavigation:
+  arrival:
     stopId
-    provider
-    launchedAt
+    source: mapbox | driver
+    arrivedAt
   or null
+  navigation:
+    status: idle | previewing | navigating | pausedAtStop | failed
+    activeLegStopId: FreightIQ stop ID or null
+  lastError: safe local display value or null
 ```
 
-The exact TypeScript representation may be refined during approved implementation, but it must
-preserve these semantics and remain versioned and migratable.
+The exact TypeScript shape may be refined during implementation, but it must preserve these
+semantics, remain versioned, and avoid storing native SDK objects.
 
 ### State Meanings
 
-- **Draft:** The driver is building or reviewing the route. No stop is authoritative as the active
-  delivery.
-- **Active:** The route has started. `activeStopId` identifies the FreightIQ stop the driver is
-  currently working.
-- **Finished:** The active route has no upcoming stops. Completed items remain available for review
-  and undo until the route is cleared or started fresh.
-
-The existing `Upcoming` and `Completed` stop statuses remain authoritative. Execution state adds
-workflow context; it does not replace stop status.
+- **Draft:** The route is being built or reviewed.
+- **Active:** The route has started and `activeStopId` identifies the stop FreightIQ is working.
+- **Finished:** No Upcoming stops remain.
+- **Arrived:** Mapbox or the driver reported arrival; the stop remains Upcoming until completion.
+- **Paused at stop:** Guidance waits for FreightIQ's stop decision instead of silently advancing.
 
 ### Migration
 
-- Existing valid Today’s Route V1 state must migrate without losing order, status, completion time,
-  or stop snapshots.
-- A nonempty existing route migrates to **Draft** rather than pretending it was already started.
-- An empty route migrates to **Draft** with no active stop.
-- Invalid execution data fails safely without discarding an otherwise valid route.
-- Migration must remain account-scoped and device-local.
+- Existing routes migrate without losing order, status, timestamps, or snapshots.
+- A nonempty route migrates to Draft; an empty route migrates to Draft with no active stop.
+- Invalid execution data fails safely without erasing an otherwise valid route.
+- Migration remains account-scoped and device-local.
 
-## 6. User Experience Contract
+## 7. Native Navigation Bridge Contract
 
-### Before Start
+Create one small FreightIQ-owned Expo native module with equivalent iOS and Android behavior. It is
+the communication boundary between React Native route state and Mapbox Navigation SDK.
 
-- A nonempty Draft route retains the accepted map and list review behavior.
+### JavaScript-to-Native Commands
+
+- Start or preview navigation for ordered FreightIQ stop IDs, names, and coordinates
+- Choose a Mapbox road-route alternative without changing FreightIQ stop order
+- Pause or resume at a waypoint
+- Advance to the next FreightIQ-approved route leg
+- Replace remaining waypoints after add, remove, skip, or reorder
+- End navigation and release native resources
+- Request overview/following camera mode and voice mute state
+
+### Native-to-JavaScript Events
+
+- Route preview ready or failed
+- Navigation started, canceled, ended, or failed
+- Active leg and route progress
+- Current-leg ETA, remaining time, and remaining distance
+- Reroute and alternative-route changes
+- Approaching stop and Mapbox arrival detected
+- Native-session interruption or restoration result
+
+### Authority Boundary
+
+- Native code reports progress but cannot mark a FreightIQ stop Completed.
+- `TodayRouteProvider` persists Complete, Skip, Remove, Add, and Reorder.
+- Only after persistence succeeds may JavaScript command native advancement or route replacement.
+- If native state and the stored route disagree, the stored FreightIQ route wins and native
+  guidance is rebuilt.
+
+### Route Window
+
+Standard automobile routing accepts current position plus up to 24 stops. Today's Route allows more.
+
+V1 must:
+
+- Keep the complete route in FreightIQ.
+- Give Mapbox a rolling window containing the active stop and next stops up to the SDK limit.
+- Rebuild the window after completion, skip, removal, addition, or reorder.
+- Never discard later FreightIQ stops because they are outside the current Mapbox request.
+- Explain calculation failure without changing the saved route.
+
+## 8. Route Building and Review UX
+
+V1 consumes the existing Today's Route queue. A future manifest-to-FreightIQ import can populate the
+same queue without changing execution architecture.
+
+Routing Lab optimization, manifest extraction, and automatic production route creation are not
+bundled into this native-navigation build. Their eventual output must use this same ordered route.
+
+### Add-Stop Feedback
+
+When the driver selects **Add to Route**:
+
+- Immediately show **Added as Stop N** or equivalent confirmation.
+- Update a persistent route count.
+- Keep the current search/map context open so another stop can be added.
+- Provide one obvious **View Route** action without repeated close/edit/search cycles.
+- Prevent duplicates and explain when a stop is already present.
+
+Temporary results still need durable FreightIQ stop identity before entering Today's Route unless a
+separate manifest-import contract supplies that identity safely.
+
+### Review Before Start
+
+- Show the complete FreightIQ order and allow reorder, add, remove, and inspection.
+- Request Mapbox road routes without allowing Mapbox to reorder stops.
+- Show the primary road route and reasonable alternatives with time/distance differences.
+- Make clear that an alternative changes roads, not stop order.
 - Present one clear **Start Route** action.
-- Starting selects the first upcoming stop as `activeStopId`, persists the Active state, and then
-  presents the active-stop experience.
-- Start Route does not automatically launch an external navigation app.
-- A stale route must complete the existing Start Fresh / Keep This Route / Cancel decision before
-  it can start.
-- A route with no upcoming stops cannot start.
 
-### Active Stop
+## 9. Active Navigation UX
 
-The Route tab must clearly show:
+Mapbox map rendering and maneuver guidance appear inside a FreightIQ-owned full-screen surface.
 
-- **Stop X of Y** using the route's original work sequence and progress
-- Stop name and compact address
-- Existing relevant Core Intel already approved for the next-stop surface
-- **Navigate** or **Navigate Again**
-- **Complete Stop**
-- Access to the full route list
+### Always-Visible Information
 
-The exact final visual design requires Product Owner review during implementation. This
-specification approves the hierarchy and state behavior, not a pixel-level redesign.
+- Current maneuver and road guidance
+- Active FreightIQ stop name and Stop X of Y
+- Current-leg arrival time labeled for the next stop
+- Current-leg time and distance remaining
+- Route overview/follow control, voice mute, and a large stop-action control
 
-### Navigation Handoff
+Never show whole-route arrival time as though it were next-stop arrival time.
 
-Before opening the provider, FreightIQ must persist the active route and the intended navigation
-record. The provider then receives only that destination through the existing navigation layer.
+### Active Stop Actions
 
-- Apple Maps may show a proposed route, replace a proposed route, or offer Add Stop during active
-  guidance.
-- Google Maps or Waze may begin guidance immediately.
-- None of those outcomes changes FreightIQ order, active stop, or completion state.
-- Provider cancellation or launch failure preserves the complete FreightIQ route state.
-- The existing optional Driving Alerts offer remains a separate workflow and must not become a
-  requirement for Active Route Execution.
+- **Arrived** — manually mark arrival when legitimate parking/delivery position does not trigger
+  Mapbox arrival
+- **Complete Stop** — explicitly record completion and advance
+- **Skip for Now** — keep Upcoming, move behind remaining Upcoming stops, and advance
+- **Remove Stop** — remove after confirmation and advance safely
+- **Edit Route** — add, remove, or reorder remaining stops without ending the route
+- **End Navigation** — stop guidance while preserving Today's Route unless separately cleared
 
-### Return to FreightIQ
+### Automatic Arrival
 
-When FreightIQ becomes active again:
+When Mapbox detects arrival:
 
-- Reload or reconcile the persisted route before presenting execution controls.
-- Return to the active route context when the existing navigation stack permits it.
-- Show the same active stop with **Complete Stop** and **Navigate Again** available.
-- Never claim that the stop was reached.
-- Never complete, advance, or launch another provider solely because the app became active.
+1. Report it to FreightIQ.
+2. Persist Arrived for the active stop.
+3. Present FreightIQ arrival controls.
+4. Pause automatic next-leg advancement until the driver chooses Complete, Skip, Remove, or an
+   explicitly approved continue action.
 
-V1 does not need to distinguish returning from navigation from returning after a call, permission
-panel, app switch, or other interruption. The persisted active-stop presentation is safe for every
-case.
+Mapbox arrival alone never completes a stop.
 
-### Complete and Advance
+### Manual Arrival and Completion
 
-Completing the active stop must be one confirmed persisted transition:
+- Manual Arrived uses the same arrival state with source `driver`.
+- Complete Stop works without waiting for automatic arrival.
+- Completion persists first, then selects the first remaining Upcoming stop, rebuilds the Mapbox
+  window, and advances according to accepted physical behavior.
+- Persistence failure keeps the current stop visible and does not advance Mapbox.
 
-1. Mark the active stop Completed with its completion timestamp.
-2. Select the first remaining upcoming stop as the new `activeStopId`.
-3. Keep execution Active and present **Navigate Next Stop**.
-4. If no upcoming stops remain, set execution to Finished and clear `activeStopId`.
+### Editing While Navigating
 
-FreightIQ must not automatically launch the next provider after completion.
+- Reorder preserves the active stop unless the driver deliberately selects another.
+- Add enters a visible, predictable position and permits immediate reordering.
+- Removing the active stop selects the first remaining Upcoming stop or finishes the route.
+- Skip moves the active stop behind remaining Upcoming stops and clears its arrival state.
+- Recalculation shows a clear temporary state without hiding the FreightIQ route list.
+- A field edit does not automatically create a Routing Lab lesson.
 
-### Non-Active Stop Actions
-
-- Existing direct navigation to another upcoming stop remains available and does not silently
-  reorder, complete, or change the active stop.
-- Existing manual completion of a non-active stop remains route-management behavior. It does not
-  change the active stop.
-- Reordering remaining stops while Active preserves the current active stop. After the active stop
-  is completed, the first remaining upcoming stop in the newly saved order becomes active.
-- If the active stop is removed, FreightIQ selects the first remaining upcoming stop. If none
-  remains, the route becomes Finished.
-- Clearing the route clears execution state after the existing confirmation.
-
-### Undo and Finished Routes
-
-- Undoing a non-active completed stop restores it to the upcoming order without displacing a valid
-  active stop.
-- Undoing completion after the route is Finished changes execution back to Active and makes the
-  restored upcoming stop active.
-- Starting Fresh clears the prior route and returns execution to Draft.
-
-## 7. Persistence and Failure Contract
+## 10. Persistence and Recovery Contract
 
 | Event | Required result |
 | --- | --- |
-| FreightIQ backgrounds | Persisted route and active stop remain unchanged |
-| External navigation runs for a long time | No route-specific background task is required |
-| iOS suspends FreightIQ | State restores from local persistence |
-| Operating system kills the app | Relaunch restores the active route and stop |
-| Phone restarts | Relaunch restores state after the existing authentication state resolves |
-| Provider launch is cancelled or fails | Route, order, status, and active stop remain unchanged |
-| FreightIQ returns to foreground | Active stop is shown; arrival is not inferred |
-| Completion persistence fails | UI retains the last confirmed state and reports the failure |
-| Active stop is unavailable | Block navigation and use existing removal/reconciliation behavior |
+| FreightIQ backgrounds briefly | Route and active stop remain unchanged |
+| Screen locks or another app appears | Guidance follows the approved native background contract |
+| React Native UI is suspended | Native guidance and persisted route reconcile on return |
+| Operating system kills FreightIQ | Relaunch restores route and safely offers navigation resume |
+| Phone restarts | Route restores after authentication; navigation may require Resume |
+| Mapbox request fails | FreightIQ route remains intact and external fallback remains available |
+| Automatic arrival is missed | Driver can mark Arrived or Complete manually |
+| Mapbox reports false arrival | Driver can continue without completing the stop |
+| Completion persistence fails | Current stop remains active and Mapbox does not advance |
+| Active stop is removed | Next Upcoming becomes active or route becomes Finished |
 | Route data is invalid | Fail safely without blocking sign-in or normal map use |
-| App is uninstalled or local data is cleared | Device-local route may be lost; V1 does not promise recovery |
-| Driver changes devices | V1 does not sync the active route to another device |
+| App is uninstalled/local data cleared | Device-local route may be lost |
+| Driver changes devices | V1 does not sync the active route |
 
-Every state-changing action must persist before the UI claims success.
+Every state-changing action persists before the UI claims success.
 
-## 8. iOS and Android Contract
+## 11. iOS and Android Contract
 
 ### Shared
 
-- Use the existing selected-provider setting and launcher.
-- Treat foreground/resume as a UI refresh opportunity only.
-- Require explicit completion.
-- Require a deliberate Navigate Next Stop action.
-- Add no route-specific background location, geofence, or polling service.
+- Same FreightIQ route/completion semantics, visible actions, current-leg readouts, rolling window,
+  native event contract, external fallback, and no-automatic-learning boundary
 
-### iOS
+### iPhone
 
-- FreightIQ Default remains Apple Maps.
-- Apple Maps, Google Maps, and Waze remain supported choices.
-- Apple Maps' active-guidance Add Stop behavior remains external and non-authoritative.
-- V1 adds no Live Activity, Dynamic Island control, widget extension, or CarPlay entitlement.
+- Integrate supported Navigation SDK v3 through a bounded Expo module and config plugin.
+- Reuse lessons from the test project without importing its example architecture or rough UI.
+- Confirm the pinned SDK's arrival-pause/manual-advance APIs before implementation.
+- Add only required location/background declarations after privacy and App Store review.
+- First private field acceptance occurs on the Product Owner's iPhone.
 
 ### Android
 
-- FreightIQ Default remains Google Maps.
-- Google Maps and Waze remain supported choices.
-- Android activity recreation and process death must restore from persisted state rather than
-  assuming the original React component remains mounted.
-- V1 adds no route notification, foreground service, Android Auto surface, or new manifest
-  permission.
+- Integrate supported Navigation SDK v3 through the same Expo module contract.
+- Select the artifact compatible with FreightIQ's Android SDK, Kotlin, NDK, and 16 KB page
+  requirements after current build inspection.
+- Review foreground-service and notification requirements before implementation.
+- Physical Pixel acceptance is required; iPhone success is not Android evidence.
 
-## 9. Privacy, Security, and Store Boundaries
+The bridge may be implemented and field-validated on iPhone first. Android parity follows before
+public release; this sequence is not permission to ship a public iPhone-only feature.
 
-- Store only the existing minimum route snapshot plus execution timestamps, stop IDs, and provider
-  identifier.
-- Do not copy Driver Reports, Locked Personal Intel, gate codes, access instructions, contacts, or
-  private notes into execution state.
-- Do not add cloud route sync, a Supabase table, RPC, Edge Function, or analytics stream.
-- Do not add arrival tracking, background location, or a new location permission.
-- Do not broaden the existing `navigation_started` activity event or introduce route-history
-  tracking without separate review.
-- External providers continue to receive only the destination information already covered by the
-  accepted navigation contract.
-- The implementation gate must recheck current Apple and Google store requirements, but the bounded
-  V1 is not expected to require a new permission or privacy declaration because it adds local route
-  state and UI rather than new data collection.
+## 12. Privacy, Security, Billing, and Store Boundaries
 
-## 10. Included Scope
+- Store only minimum route snapshots, execution timestamps, IDs, arrival source, and safe local
+  error state.
+- Do not copy Driver Reports, Locked Personal Intel, contacts, gate codes, or private notes into the
+  native session.
+- Add no cloud route sync, Supabase object, or route-history analytics.
+- Do not turn active-route edits into learning events without separate approval.
+- Public runtime tokens use appropriate restrictions where supported.
+- Secret download credentials remain outside source control and application bundles.
+- Before implementation, verify Apple/Google privacy, background-location, notification,
+  foreground-service, and store-disclosure requirements.
+- Billing choice and any Mapbox account change require separate Product Owner approval.
+- No production driver receives the feature before private iPhone/Pixel acceptance, billing review,
+  privacy review, and release approval.
 
-- Versioned extension of the existing Today’s Route model
-- Safe migration from the current route version
-- Draft, Active, and Finished execution states
-- Persisted active stop
-- Start Route
-- Active-stop progress and controls in the existing Route tab
-- Navigate and Navigate Again through the existing provider layer
-- Explicit Complete Stop with deterministic advancement
-- Navigate Next Stop without automatic provider launch
-- Reorder, remove, clear, undo, stale-day, unavailable-stop, offline, and restart behavior
-- Focused pure state-transition and persistence tests
-- Local iOS and Android static/bundle validation
-- Focused physical iPhone and Pixel acceptance
+## 13. Included Scope
 
-## 11. Explicitly Out of Scope
+- Versioned execution state and Draft, Active, Arrived, Finished behavior
+- FreightIQ-owned embedded navigation surface
+- Bounded native Mapbox bridge for iOS and Android
+- Ordered multi-stop navigation using FreightIQ's sequence
+- Rolling window beyond the SDK coordinate limit
+- Road-route preview/alternatives without stop reordering
+- Current-leg arrival time, time remaining, and distance
+- Automatic arrival signal with explicit completion
+- Manual Arrived and Complete Stop
+- Skip, Remove, Add, Edit, and reorder during navigation
+- Clear add-stop confirmation and persistent route count
+- Safe native route replacement after edits
+- Rerouting, persistence, reconciliation, and external fallback
+- Focused tests and private physical iPhone/Pixel acceptance
 
-- A second route system, queue, provider, or storage authority
-- Route optimization, automatic sequencing, or Routing Lab integration
-- Letting Apple Maps, Google Maps, Waze, or MapQuest reorder FreightIQ stops
-- Full-route or multistop provider handoff
-- MapQuest APIs, SDKs, or account setup
-- Custom or embedded turn-by-turn navigation
-- Automatic arrival or delivery-completion detection
-- Route-specific background location or geofencing
-- Automatic launch of the next navigation leg
-- Live Activities, Dynamic Island, widgets, Android ongoing notifications, CarPlay, or Android Auto
-- Cloud route sync, cross-device recovery, route history, templates, sharing, or dispatch
-- ETA, traffic, mileage, route shapes, road polylines, or truck-restriction routing
-- Supabase, database, website, authentication, security-policy, or infrastructure changes
-- Redesign of Route Builder, the main map, or the navigation preference flow
-- Changes to the active Operations Driving Alerts objective
-- Native builds, tester distribution, store submission, release, commit, or push without their own
-  approvals
+## 14. Explicitly Out of Scope
 
-## 12. Likely Implementation Surface
+- Routing Lab model changes, new lesson types, or automatic learning from active edits
+- Manifest photo/PDF extraction or automatic production import
+- Letting Mapbox optimize or reorder FreightIQ stops
+- Truck height, weight, hazmat, clearance, or legal-road routing claims
+- Guaranteed perfect rural-road selection
+- Cloud route sync, dispatch, cross-device recovery, permanent history, templates, or sharing
+- Live Activities, Dynamic Island, widgets, CarPlay, or Android Auto
+- Public background tracking outside a driver-started navigation session
+- Supabase, database, website, authentication, or unrelated main-map redesign
+- Production billing changes, builds, TestFlight, Google Play, commit, push, or release without
+  separate approvals
 
-Repository inspection identifies the following likely files. Approval of this specification does
-not pre-authorize edits to every listed file; implementation must confirm the smallest actual diff.
+## 15. Likely Implementation Surface
 
-- `utils/todays-route.ts`
-  - Versioned execution model, parser/migration, and pure transitions
-- `context/todays-route-context.tsx`
-  - Start, active-stop selection, complete-and-advance, undo, remove, clear, and recovery commands
-- `app/(tabs)/(map)/todays-route.tsx`
-  - Draft, Active, and Finished presentation and primary actions
-- `tests/todays-route.test.ts`
-  - Migration and transition coverage
-- Existing route overview tests
-  - Regression coverage for marker order and next-stop derivation
-- Focused Help content only if the implementation changes driver instructions materially
+Approval of this plan does not pre-authorize every listed edit; implementation must confirm the
+smallest actual diff.
 
-The following should be reused without material redesign unless implementation inspection proves a
-specific defect:
+### Shared React Native
 
-- `utils/navigation-apps.ts`
-- `utils/navigation-urls.ts`
-- `components/navigation-app-picker.tsx`
-- `context/navigation-preference-context.tsx`
+- `utils/todays-route.ts` — versioned model, migration, and pure transitions
+- `context/todays-route-context.tsx` — start, arrive, complete, skip, remove, add, reorder, recovery
+- `app/(tabs)/(map)/todays-route.tsx` — review, active entry, edit, and Finished presentation
+- New focused active-navigation screen — FreightIQ controls around native Mapbox navigation
+- Focused bridge wrapper/hook — typed commands, events, reconciliation, teardown
+- Focused route-state, rolling-window, and bridge tests
 
-Expected complexity is small-to-medium. No new dependency, native module, database object, or
-external mapping service is expected.
+### Native and Configuration
 
-## 13. Implementation Sequence
+- One FreightIQ Expo native module with iOS and Android implementations
+- One focused config plugin for dependencies, tokens, permissions, background declarations, and
+  native setup
+- `app.config.js` changes limited to approved public runtime configuration and plugin wiring
+- Build secrets remain outside committed source
 
-Implementation may begin only after the Product Owner explicitly activates this work and approves
-this complete specification.
+### Reused
 
-1. Recheck `AGENTS.md`, `docs/EngineeringPlaybook.md`, `docs/CurrentBuild.md`, and the governing route
-   and navigation specifications.
-2. Confirm that the current fix and security work are complete or that the Product Owner has
-   deliberately changed the active objective.
-3. Recheck the current vendor documentation and physical provider behavior.
-4. Inspect the final route, navigation, logout/account-deletion, and test integration points.
-5. Add pure versioned route-execution parsing, migration, and transition helpers with tests.
-6. Extend `TodayRouteProvider` as the only state authority.
-7. Add the smallest Draft, Active, and Finished Route-tab presentation.
-8. Connect navigation exclusively through the existing provider layer.
-9. Verify failure, stale-day, offline, unavailable-stop, removal, undo, clear, and account boundaries.
-10. Run focused tests, TypeScript, lint, formatting, `git diff --check`, and local iOS/Android
-    production bundle exports.
-11. Review every changed file and compare the result against this specification.
-12. Request separate approval for any installed development or preview build.
-13. Complete focused parked iPhone and Pixel acceptance.
-14. Keep implementation acceptance, commit/push, candidate creation, tester distribution, store
-    submission, and release as separate gates.
+- Existing `TodayRouteProvider`, saved-stop identity, FreightIQ search/creation, Route Overview, and
+  external navigation provider layer
 
-## 14. Acceptance Matrix
+## 16. Implementation Slices and Approval Gates
 
-### State and Migration
+This is one product build delivered as small verifiable slices, not one unreviewable rewrite.
 
-- Existing valid routes migrate without losing stops, order, status, or completion timestamps.
-- Existing nonempty routes migrate to Draft.
-- Start Route persists Active state and the first upcoming stop as active.
-- Relaunch restores the same active route and active stop.
-- Completion atomically advances to the first remaining upcoming stop.
-- Completing the final upcoming stop produces Finished state.
-- Invalid execution state does not crash or erase an otherwise valid route.
+### Slice 0 — Final Preflight
 
-### Route Management
+- Finish or deliberately pause active 3D Yard View work.
+- Recheck repository state, SDK versions, vendor requirements, billing, disclosures, and overlapping
+  native/configuration work.
+- Approve this complete specification for implementation.
 
-- Reordering while Active preserves the current active stop.
-- Completing another stop does not displace the active stop.
-- Removing the active stop advances safely or finishes the route.
-- Undo after Finished restores an Active route predictably.
-- Clear Route and Start Fresh clear execution state through existing confirmations.
-- Stale routes require the existing explicit day-boundary choice.
+### Slice 1 — Pure FreightIQ Execution State
 
-### Navigation
+- Add versioned Draft/Active/Arrived/Finished state and transitions.
+- Add Complete, Skip, Remove, Add, Reorder, and recovery semantics.
+- Add tests without Mapbox dependency.
+- Review and accept state diff before native work.
 
-- Navigate targets only the persisted active stop.
-- Navigate Again targets the same active stop without changing route state.
-- Navigate Next Stop targets the newly active stop after explicit completion.
-- FreightIQ Default, Ask Every Time, Apple Maps, Google Maps, and Waze retain accepted behavior.
-- Apple Maps proposed-route, replacement, and Add Stop presentations do not mutate FreightIQ state.
-- Google Maps and Waze immediate navigation do not mutate FreightIQ state.
-- Provider cancellation, rejection, fallback, or user return preserves the route.
-- Foreground/resume never marks a stop complete.
+### Slice 2 — iPhone Native Foundation
 
-### Persistence and Recovery
+- Add smallest iOS Expo module and config integration.
+- Start one ordered route from Today's Route.
+- Send progress, current-leg readouts, arrival, error, and cancellation events.
+- Pause at arrival and require FreightIQ advancement.
+- Validate private iPhone behavior before broad UI work.
 
-- The route remains usable after backgrounding and a long external-navigation session.
-- Force-closing and reopening FreightIQ restores the active route.
-- Device restart followed by app launch restores the active route when local app data and account
-  access remain available.
-- Offline route viewing, completion, advancement, undo, reorder, remove, and clear remain usable.
-- Failed persistence leaves the last confirmed route visible and reports the error.
+### Slice 3 — FreightIQ Active Navigation UX
+
+- Add FreightIQ-owned navigation screen and essential stop controls.
+- Add route-building confirmation/count and route alternatives.
+- Complete a real iPhone workday acceptance route.
+
+### Slice 4 — Android Parity
+
+- Implement equivalent Android bridge and foreground behavior.
+- Match shared commands/events.
+- Complete physical Pixel background, arrival, editing, and recovery acceptance.
+
+### Slice 5 — Release Readiness
+
+- Recheck billing and account limits, privacy, and store declarations.
+- Run full validation and scoped diff review.
+- Keep commit/push, builds, tester assignment, and release as separate gates.
+
+## 17. Acceptance Matrix
+
+### Route State
+
+- Existing routes migrate without data loss.
+- Start persists Active and first Upcoming stop.
+- Relaunch restores the active stop.
+- Completion persists before advancement.
+- Final completion produces Finished.
+- Invalid execution data cannot erase an otherwise valid route.
+
+### Embedded Navigation
+
+- Navigation stays inside FreightIQ.
+- Mapbox receives FreightIQ order and never reorders stops.
+- Current-leg readouts describe the next stop.
+- Rerouting and road alternatives preserve stop order.
+- Routes beyond the request limit retain every FreightIQ stop and roll safely.
+
+### Arrival and Completion
+
+- Mapbox arrival marks Arrived but not Completed and pauses for a decision.
+- Manual Arrived works when automatic arrival does not.
+- Complete works without a Mapbox arrival event.
+- Persistence failure does not advance Mapbox.
+- False arrival can be ignored safely.
+
+### Live Editing
+
+- Skip retains the stop and moves it behind remaining Upcoming stops.
+- Remove advances or finishes after confirmation.
+- Reorder preserves the active stop unless deliberately changed.
+- Add confirms immediately and enters the remaining route.
+- Edited routes recalculate without state loss.
+- Edits do not automatically create Routing Lab lessons.
+
+### Recovery
+
+- Background, lock screen, force-close, and restart preserve/recover route state as specified.
+- Network or Mapbox failure preserves the route and offers external fallback.
 
 ### Accessibility and Safety
 
-- VoiceOver and TalkBack identify route state, active stop, progress, Navigate, Complete Stop, and
-  Navigate Next Stop.
-- Large text does not hide the active stop or essential actions.
-- Reduced motion preserves clear state transitions.
-- Essential actions remain usable without timing-dependent gestures.
-- Test instructions require the device to be operated while parked, never while driving.
+- VoiceOver/TalkBack identify guidance, active stop, progress, readouts, and stop actions.
+- Large text and reduced motion preserve essential controls.
+- Detailed editing is tested and intended only while parked or stopped.
 
-### Physical Provider Matrix
+### Physical Field Matrix
 
-- iPhone: Apple Maps with no navigation already active
-- iPhone: Apple Maps while navigation is active and Add Stop is offered
-- iPhone: Google Maps
-- iPhone: Waze
-- Pixel: Google Maps
-- Pixel: Waze
-- Both platforms: cancel/failure, background return, force-close/relaunch, and device restart
+- iPhone and Pixel urban multi-stop routes
+- Rural/mountain route with weak coverage
+- Missed and false arrival behavior
+- Completion, skip, removal, add, and reorder during navigation
+- Reroute and road-alternative selection
+- Background, lock screen, force-close, restart, and fallback
 
-## 15. Validation Requirements
+## 18. Validation Requirements
 
-Before implementation can be presented for Product Owner review:
+- Focused route-state, migration, rolling-window, and bridge tests pass.
+- Existing route/navigation/auth/logout regressions pass.
+- TypeScript, focused lint/formatting, and `git diff --check` pass.
+- iOS native build, linkage, permissions, token injection, and release export pass.
+- Android native build, linkage, permissions, foreground behavior, 16 KB compatibility, and release
+  export pass.
+- Diff review confirms no unrelated refactor, Supabase, website, or 3D Yard View change.
+- Privacy and billing review occurs before production distribution.
+- Physical acceptance remains separate for iPhone and Pixel.
 
-- All focused route-execution and existing route regression tests pass.
-- TypeScript passes with no errors.
-- Lint and formatting pass with no new warnings.
-- Local iOS and Android production JavaScript exports pass.
-- `git diff --check` passes.
-- Diff review confirms no unrelated refactor, provider change, native permission, Supabase change,
-  security change, or active-objective drift.
-- The complete acceptance matrix is prepared for parked physical iPhone and Pixel testing.
+The separate Mapbox test app, simulator launch, static validation, and uploaded artifacts are not
+physical acceptance of FreightIQ.
 
-Implementation is not accepted until the Product Owner completes the required physical-device
-review. Static validation, an uploaded artifact, or a successful build is not physical acceptance.
+## 19. Rollback
 
-## 16. Deferred Continuity Enhancements
+- Disable embedded-navigation entry without deleting Today's Route.
+- End and release the native Mapbox session.
+- Preserve Route Builder, Route Overview, route state, and external navigation.
+- Remove native integration only through a reviewed rollback build.
+- Unknown execution fields fail safely through versioned parsing.
+- No database rollback is required.
 
-After at least one week of real route use, field evidence may justify a separate investigation into:
+## 20. Deferred Enhancements
 
-- An iOS Live Activity that deep-links back to the active FreightIQ route
-- An Android ongoing notification that returns to the active route
-- A safer, faster return destination inside FreightIQ
-- CarPlay or Android Auto implications
-- Cloud route recovery across devices
+- Routing Lab/manifest intake directly populating Today's Route
+- Meaningful operational-reason capture for selected corrections
+- Live Activity or Android ongoing controls
+- CarPlay or Android Auto
+- Offline navigation-region management
+- Cloud route recovery
+- Validated truck-restriction routing
+- Route-history analytics with an approved privacy model
 
-These features must not be bundled into Active Route Execution V1. The existing
-`docs/design/ReturnToFreightIQLiveActivity.md` remains deferred and non-approved.
+These must not block a useful V1.
 
-## 17. Approval and Next Gate
+## 21. Approval and Next Gate
 
-The September 28, 2026 approval authorizes this specification plan only. It does not authorize
-implementation or change FreightIQ's active objective.
+The October 28 revision authorizes this specification update only. It does not activate the build or
+authorize implementation.
 
-The next gate is an explicit Product Owner instruction given after the current fix and security work
-are complete, such as:
+The next gate is Product Owner review. If accepted, implementation may begin only after active 3D
+Yard View work is complete or the Product Owner deliberately changes the active objective, followed
+by an explicit instruction such as:
 
-> Approve FreightIQ Active Route Execution V1 for implementation under the complete Build
-> Specification.
+> Approve FreightIQ Active Route Execution V1 for Slice 0 preflight and Slice 1 implementation under
+> the complete Build Specification.
 
-Before acting on that instruction, Codex must recheck repository state, current governing documents,
-vendor documentation, and any intervening route or navigation changes. Material changes to this
-specification require Product Owner approval before implementation begins.
+Before implementation, Codex must recheck repository state, governing documents, vendor
+requirements, Mapbox billing/account state, app permissions, and overlapping native/configuration
+work. Material changes require Product Owner approval.
