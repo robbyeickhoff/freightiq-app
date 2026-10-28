@@ -13,7 +13,7 @@ Pod::Spec.new do |s|
 
   s.dependency 'ExpoModulesCore'
 
-  if ENV['APP_VARIANT'] == 'development'
+  if ENV['EXPO_PUBLIC_GOOGLE_MAPS_3D_IOS_API_KEY'] && !ENV['EXPO_PUBLIC_GOOGLE_MAPS_3D_IOS_API_KEY'].empty?
     s.dependency 'GoogleMaps3DBinary', '1.0.0'
     s.pod_target_xcconfig = {
       'DEFINES_MODULE' => 'YES',
