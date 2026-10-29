@@ -303,6 +303,19 @@ Mapbox map rendering and maneuver guidance appear inside a FreightIQ-owned full-
 
 Never show whole-route arrival time as though it were next-stop arrival time.
 
+### In-Navigation Route List
+
+The driver can open the complete route list without ending navigation or leaving the active route
+workflow.
+
+- Highlight the active stop and show its current estimated arrival time.
+- Show an approximate cumulative arrival time for every remaining Upcoming stop in FreightIQ order.
+- Show the recorded completion time for Completed stops instead of an estimate.
+- Recalculate the remaining estimates after rerouting, traffic changes, completion, skip, add,
+  removal, or reorder.
+- Label future-stop times as estimates so they are not presented as guaranteed appointments.
+- Provide one obvious action to return to the active navigation screen.
+
 ### Active Stop Actions
 
 - **Arrived** — manually mark arrival when legitimate parking/delivery position does not trigger
@@ -522,6 +535,11 @@ This is one product build delivered as small verifiable slices, not one unreview
 - Navigation stays inside FreightIQ.
 - Mapbox receives FreightIQ order and never reorders stops.
 - Current-leg readouts describe the next stop.
+- The route list opens during navigation and shows the active stop plus approximate arrival times for
+  every remaining stop.
+- Route-list arrival estimates refresh after route progress, rerouting, traffic changes, completion,
+  skip, add, removal, or reorder.
+- Completed stops show their recorded completion time rather than a future estimate.
 - Rerouting and road alternatives preserve stop order.
 - Routes beyond the request limit retain every FreightIQ stop and roll safely.
 
