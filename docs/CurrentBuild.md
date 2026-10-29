@@ -48,8 +48,8 @@ paths were exercised: Preview Card -> View DZ -> 3D showed **Back to Stop**, and
 path also visibly rendered the green Stop marker and blue Delivery Zone marker. Simulator logs had
 no FreightIQ fatal or crash entry. A development-only Expo Notifications keychain warning displayed
 an error toast over the bottom controls, so the final return-button taps could not be completed in
-this simulator run. The existing physical-iPhone three-path pass remains the acceptance evidence,
-and a brief physical iPhone regression check is still required before Build 61 is accepted.
+this simulator run. Build 61 subsequently passed real-world physical-iPhone testing, including use
+in a weak-signal area, with no reported crash, error, or 3D DZ workflow defect.
 
 Rob approved the focused 3D DZ source publication and a new iPhone production candidate restricted
 to his one-person internal TestFlight group. Commit `3c23d3c` was pushed to `origin/clean-main`.
@@ -58,9 +58,12 @@ that exact commit. The downloaded IPA passed deep/strict signature, bundle/versi
 and TestFlight entitlement, disabled-debugging, and embedded 3D production-configuration checks;
 SHA-256 is `6b77a3df0c43053fad0dd580e6df7dfb12f9b7dece38939d67f3426fb0b34fae`.
 Submission `aee55868-7423-4ab0-8e35-a0fb025dd514` was accepted and processed by App Store Connect.
-Live TestFlight verification shows Build 61 assigned only to `Team (Expo)` with one invite. Neither
-external tester group was assigned, and no public App Review submission occurred. Installed-iPhone
-acceptance remains pending.
+Initial live TestFlight verification showed Build 61 assigned only to `Team (Expo)` with one invite.
+After physical-iPhone acceptance, Rob approved adding the existing `Early Testers` external group.
+Build 61 was submitted with focused 2D/3D DZ testing notes and automatic notifications enabled.
+App Store Connect now shows the build as **Testing**, assigned to `Team (Expo)` and `Early Testers`,
+with eight external invites. `Early Testers 2` was not assigned, and no public App Review submission
+occurred.
 
 ### October 26 — Canada Core Compatibility V1
 

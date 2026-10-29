@@ -18,9 +18,13 @@ SHA-256 is `6b77a3df0c43053fad0dd580e6df7dfb12f9b7dece38939d67f3426fb0b34fae`.
 The first submission scheduling attempt stopped before Apple because the optional What-to-Test
 field is unavailable on the current EAS plan. The same inspected IPA was resubmitted without that
 optional field. Submission `aee55868-7423-4ab0-8e35-a0fb025dd514` was accepted and processed by App
-Store Connect. Live TestFlight verification shows Build 61 assigned only to `Team (Expo)` with one
-invite. Neither external tester group was assigned, and the build was not submitted for public App
-Review. Installed-iPhone acceptance remains pending. Android and Google Play were unchanged.
+Store Connect. Initial live TestFlight verification showed Build 61 assigned only to `Team (Expo)`
+with one invite. Physical-iPhone acceptance subsequently passed during real-world use, including a
+weak-signal area, with no reported crash or error. Rob then approved adding the existing
+`Early Testers` group. The build was submitted with focused 2D/3D DZ testing notes and automatic
+notifications enabled; App Store Connect now shows **Testing**, assigned to `Team (Expo)` and
+`Early Testers`, with eight external invites. `Early Testers 2` was not assigned, and the build was
+not submitted for public App Review. Android and Google Play were unchanged.
 
 ## 2026-10-26 — Canada Core Compatibility V1 production backend
 
