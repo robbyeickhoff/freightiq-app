@@ -6,6 +6,22 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-10-29 — 3D Delivery Zone private iPhone candidate
+
+Rob approved the focused 3D Delivery Zone source publication and an iPhone production candidate
+restricted to his existing one-person internal TestFlight group. Commit `3c23d3c` was pushed to
+`clean-main`. Production build 61 (`3f30412e-b45c-41a1-b45e-47b059e188be`) finished from that exact
+commit. The downloaded IPA passed deep/strict signature, bundle/version, production push and
+TestFlight entitlement, disabled-debugging, and embedded 3D production-configuration checks;
+SHA-256 is `6b77a3df0c43053fad0dd580e6df7dfb12f9b7dece38939d67f3426fb0b34fae`.
+
+The first submission scheduling attempt stopped before Apple because the optional What-to-Test
+field is unavailable on the current EAS plan. The same inspected IPA was resubmitted without that
+optional field. Submission `aee55868-7423-4ab0-8e35-a0fb025dd514` was accepted and processed by App
+Store Connect. Live TestFlight verification shows Build 61 assigned only to `Team (Expo)` with one
+invite. Neither external tester group was assigned, and the build was not submitted for public App
+Review. Installed-iPhone acceptance remains pending. Android and Google Play were unchanged.
+
 ## 2026-10-26 — Canada Core Compatibility V1 production backend
 
 Production project `finjqunyuyfxiesumuxk` was healthy before deployment. The exact reviewed Canada

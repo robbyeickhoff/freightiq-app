@@ -15,7 +15,7 @@ answer one question:
 
 ### October 28 — 3D Yard View V1 private acceptance and focused-view UX
 
-Google Maps 3D Yard View is privately available in iPhone TestFlight Build 60. Production-device
+Google Maps 3D Yard View is privately available in iPhone TestFlight Build 61. Production-device
 testing across multiple saved Delivery Zones passed without a reported crash, marker, camera, or
 return-flow defect. Android's corresponding native implementation compiles and its private
 development APK is complete; physical Pixel acceptance remains pending and no Google Play audience
@@ -49,8 +49,18 @@ path also visibly rendered the green Stop marker and blue Delivery Zone marker. 
 no FreightIQ fatal or crash entry. A development-only Expo Notifications keychain warning displayed
 an error toast over the bottom controls, so the final return-button taps could not be completed in
 this simulator run. The existing physical-iPhone three-path pass remains the acceptance evidence,
-and a brief physical iPhone regression check is still required before any later iOS build is
-approved.
+and a brief physical iPhone regression check is still required before Build 61 is accepted.
+
+Rob approved the focused 3D DZ source publication and a new iPhone production candidate restricted
+to his one-person internal TestFlight group. Commit `3c23d3c` was pushed to `origin/clean-main`.
+EAS production build `3f30412e-b45c-41a1-b45e-47b059e188be` finished as FreightIQ 1.0.1 (61) from
+that exact commit. The downloaded IPA passed deep/strict signature, bundle/version, production push
+and TestFlight entitlement, disabled-debugging, and embedded 3D production-configuration checks;
+SHA-256 is `6b77a3df0c43053fad0dd580e6df7dfb12f9b7dece38939d67f3426fb0b34fae`.
+Submission `aee55868-7423-4ab0-8e35-a0fb025dd514` was accepted and processed by App Store Connect.
+Live TestFlight verification shows Build 61 assigned only to `Team (Expo)` with one invite. Neither
+external tester group was assigned, and no public App Review submission occurred. Installed-iPhone
+acceptance remains pending.
 
 ### October 26 — Canada Core Compatibility V1
 
