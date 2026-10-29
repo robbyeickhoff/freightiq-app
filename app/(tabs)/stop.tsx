@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import Constants from "expo-constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useIsFocused } from "expo-router/react-navigation";
 import { type PropsWithChildren, useEffect, useMemo, useRef, useState } from "react";
@@ -421,8 +420,6 @@ export default function StopScreen() {
   const quickIntelRequested = String(params.quickIntel ?? "") === "1";
   const openedAt = String(params.openedAt ?? "");
   const returnToPreviewRequested = String(params.returnToPreview ?? "") === "1";
-  const is3DYardViewEnabled = Constants.expoConfig?.extra?.enable3DYardView === true;
-
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
 
   const [myReportId, setMyReportId] = useState<string | null>(null);
@@ -2396,7 +2393,7 @@ export default function StopScreen() {
                         ]}
                         variant="secondary"
                       >
-                        View DZ 2D
+                        View DZ
                       </AppButton>
                       <AppButton
                         disabled={Boolean(offlineSavedAt)}
@@ -2411,29 +2408,6 @@ export default function StopScreen() {
                         Edit DZ
                       </AppButton>
                     </View>
-                    {is3DYardViewEnabled && Platform.OS === "ios" ? (
-                      <AppButton
-                        fullWidth
-                        onPress={() =>
-                          router.push({
-                            pathname: "/yard-view-3d",
-                            params: {
-                              stopId,
-                              stopName: currentStopName,
-                              stopAddress: currentStopAddress,
-                              stopLatitude: String(previewStopLat),
-                              stopLongitude: String(previewStopLng),
-                              deliveryZoneLatitude: String(entranceLat),
-                              deliveryZoneLongitude: String(entranceLng),
-                            },
-                          } as never)
-                        }
-                        size="compact"
-                        variant="secondary"
-                      >
-                        View DZ 3D
-                      </AppButton>
-                    ) : null}
                   </View>
                 </>
               ) : (

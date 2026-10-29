@@ -1,14 +1,13 @@
-# FreightIQ 3D Yard View V1 — Proposed Build Specification
+# FreightIQ 3D Yard View V1 — Build Specification
 
-> **Status: Narrowed specification and Phase 0 approved; cloud/native changes not started**
+> **Status: Implemented on iPhone, private production acceptance passed; Android physical acceptance pending**
 >
 > The Product Owner approved investigation and preparation of this specification on October 27,
 > 2026, then narrowed V1 to a usable 3D view of the existing stop and Delivery Zone. Entrance, exit,
-> path, staging, turnaround, Avoid, drawing, and shared yard-guide data are deferred until the Product
-> Owner has used the simple 3D view on real stops. This document does not authorize application code,
-> native modules, dependencies, Google Cloud configuration, billing, Supabase changes, builds,
-> distribution, commits, pushes, or releases beyond the separately approved Phase 0 procedure and
-> its later explicit configuration gate.
+> path, staging, turnaround, Avoid, drawing, and shared yard-guide data remain deferred. Subsequent
+> approvals authorized the isolated Google configuration, iPhone implementation, commit, private
+> production Build 60, and the Android implementation through its private development build. Pixel
+> acceptance and any wider distribution remain separate gates.
 
 ## Document Control
 
@@ -16,10 +15,12 @@
 - **Purpose:** Let a driver inspect an existing FreightIQ stop and Delivery Zone in Google's
   three-dimensional map imagery
 - **Repository path:** `docs/build-specs/FreightIQ3DYardViewV1BuildSpec.md`
-- **Operating mode:** Product → Build Specification planning
-- **Repository status:** Proposed future Build Specification
-- **Implementation status:** Phase 0 read-only preflight active; no dependencies, cloud
-  configuration, billing, keys, native code, or builds changed
+- **Operating mode:** Direct implementation and physical-device acceptance
+- **Repository status:** Active Build Specification
+- **Implementation status:** iPhone implementation is committed and privately accepted in TestFlight
+  Build 60. Android implementation compiles; focused-screen lifecycle replacement development build
+  `ea8450c9-4347-4558-bad3-88217ec9e726` is complete and awaiting installation and Pixel acceptance.
+  Commit and distribution remain pending.
 - **Investigation/specification approval:** Product Owner, October 27, 2026
 - **Scope correction:** DZ-only stops must be allowed to open 3D Yard View; richer yard guidance is
   deferred until hands-on use proves what is needed
@@ -156,8 +157,18 @@ in Expo Go and require development-client/native builds.
 
 The Stop Intel Delivery Zone card remains the home for spatial stop knowledge.
 
-- Keep **View DZ** and **Edit DZ** unchanged.
-- When a DZ is saved, show **3D Yard View** as an additional explicit action.
+- Keep separate **View DZ** and **Edit DZ** actions.
+- **View DZ** opens the focused 2D Delivery Zone inspection screen.
+- Every focused 2D Delivery Zone inspection screen replaces its irrelevant locate-me and
+  create-stop controls with a labeled **3D** control, whether opened from Intel or a stop preview
+  card. Normal map controls remain unchanged outside focused DZ inspection.
+- The **3D** control opens the same stop and Delivery Zone in 3D. **Open 2D Map** returns to the
+  focused DZ inspection screen.
+- The return action preserves the entry point: **Back to Intel** for the Intel flow and **Back to
+  Stop** for the stop preview-card flow, including preview cards opened while reviewing a route.
+- Physical iPhone acceptance passed October 29 across Intel, a normal Preview Card, and the expanded
+  next-stop Preview Card on the route map. Each path exposed the 3D control and returned to its
+  correct source.
 - A DZ-only stop qualifies. No additional data or setup is required.
 - A stop without a saved DZ does not show the V1 action.
 - Do not add a global 3D toggle to the main map.

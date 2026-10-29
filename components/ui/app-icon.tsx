@@ -47,6 +47,7 @@ const ICONS = {
   truckFit: { default: "local-shipping" },
   understandingIntel: { default: "fact-check" },
   usingMap: { default: "map" },
+  yardView3D: { default: "view-in-ar" },
   contributingIntel: { default: "edit-note" },
 } satisfies Record<
   string,

@@ -4,10 +4,13 @@ module.exports = ({ config }) => {
   const isDevelopment = process.env.APP_VARIANT === "development";
   const googleMaps3DIOSAPIKey =
     process.env.EXPO_PUBLIC_GOOGLE_MAPS_3D_IOS_API_KEY ?? "";
-  const enable3DYardView = googleMaps3DIOSAPIKey.length > 0;
+  const googleMaps3DAndroidAPIKey =
+    process.env.EXPO_PUBLIC_GOOGLE_MAPS_3D_ANDROID_API_KEY ?? "";
+  const enable3DYardViewIOS = googleMaps3DIOSAPIKey.length > 0;
+  const enable3DYardViewAndroid = googleMaps3DAndroidAPIKey.length > 0;
   const plugins = [...(appJson.expo.plugins ?? [])];
 
-  if (enable3DYardView) {
+  if (enable3DYardViewIOS || enable3DYardViewAndroid) {
     plugins.push("./plugins/withFreightIQ3DYardView.js");
   }
 
@@ -23,7 +26,7 @@ module.exports = ({ config }) => {
         : appJson.expo.ios.bundleIdentifier,
       infoPlist: {
         ...appJson.expo.ios?.infoPlist,
-        ...(enable3DYardView
+        ...(enable3DYardViewIOS
           ? {
               FreightIQGoogleMaps3DAPIKey: googleMaps3DIOSAPIKey,
             }
@@ -46,7 +49,8 @@ module.exports = ({ config }) => {
     extra: {
       ...appJson.expo.extra,
       mapboxPublicToken: process.env.EXPO_PUBLIC_MAPBOX_TOKEN,
-      enable3DYardView,
+      enable3DYardViewIOS,
+      enable3DYardViewAndroid,
     },
   };
 };

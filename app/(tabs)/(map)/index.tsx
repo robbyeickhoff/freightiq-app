@@ -268,6 +268,13 @@ const SEARCH_SCOPE_OPTIONS = [
 ] as const;
 
 const MAPBOX_TOKEN = (Constants.expoConfig?.extra?.mapboxPublicToken as string | undefined) ?? "";
+const IS_3D_YARD_VIEW_ENABLED =
+  Platform.OS === "ios"
+    ? Constants.expoConfig?.extra?.enable3DYardViewIOS === true ||
+      Constants.expoConfig?.extra?.enable3DYardView === true
+    : Platform.OS === "android"
+      ? Constants.expoConfig?.extra?.enable3DYardViewAndroid === true
+      : false;
 
 function stopKey(stopId: string) {
   return `mfi:stop:${stopId}:v1`;
@@ -1227,7 +1234,8 @@ export default function HomeScreen() {
     if (handledShowEntranceKeyRef.current === showEntranceKey) return;
 
     const existingPin = pins.find((p) => p.id === focusStopId);
-    const targetPin: Pin | undefined = existingPin ??
+    const targetPin: Pin | undefined =
+      existingPin ??
       (hasRouteCoordinates
         ? {
             id: focusStopId,
@@ -1251,14 +1259,18 @@ export default function HomeScreen() {
           : undefined;
 
         if (typeof entranceLat === "number" && typeof entranceLng === "number") {
-          enterDeliveryZoneInspection(
-            String(params.returnToRoute ?? "") === "1" ? "route" : "stop-intel",
-            targetPin,
-            {
-              lat: entranceLat,
-              lng: entranceLng,
-            },
-          );
+          const requestedSource = String(params.deliveryZoneSource ?? "");
+          const source: DeliveryZoneInspectionSource =
+            requestedSource === "preview" || requestedSource === "route"
+              ? requestedSource
+              : String(params.returnToRoute ?? "") === "1"
+                ? "route"
+                : "stop-intel";
+
+          enterDeliveryZoneInspection(source, targetPin, {
+            lat: entranceLat,
+            lng: entranceLng,
+          });
         } else {
           const next: Region = {
             latitude: targetPin.lat,
@@ -1284,6 +1296,7 @@ export default function HomeScreen() {
           focusStopLat: undefined,
           focusStopLng: undefined,
           focusStopName: undefined,
+          deliveryZoneSource: undefined,
           hidePreview: undefined,
           revealAt: undefined,
           showEntrance: undefined,
@@ -1311,6 +1324,7 @@ export default function HomeScreen() {
     params.focusStopLat,
     params.focusStopLng,
     params.focusStopName,
+    params.deliveryZoneSource,
     params.showEntrance,
     params.hidePreview,
     params.revealAt,
@@ -1992,6 +2006,32 @@ export default function HomeScreen() {
         },
       });
     }
+  }
+
+  function open3DYardView() {
+    if (
+      !deliveryZoneInspectionSource ||
+      !selectedStop ||
+      !selectedEntrance ||
+      !IS_3D_YARD_VIEW_ENABLED
+    ) {
+      return;
+    }
+
+    router.replace({
+      pathname: "/yard-view-3d",
+      params: {
+        stopId: selectedStop.id,
+        stopName: selectedStop.name,
+        stopAddress: selectedStop.address ?? "",
+        stopLatitude: String(selectedStop.lat),
+        stopLongitude: String(selectedStop.lng),
+        deliveryZoneLatitude: String(selectedEntrance.lat),
+        deliveryZoneLongitude: String(selectedEntrance.lng),
+        deliveryZoneSource: deliveryZoneInspectionSource,
+        ...(String(params.returnToPreview ?? "") === "1" ? { returnToPreview: "1" } : {}),
+      },
+    } as never);
   }
 
   async function selectStop(p: Pin, options?: { skipNearbyChoice?: boolean }) {
@@ -4345,14 +4385,22 @@ export default function HomeScreen() {
           </View>
           <Pressable
             accessibilityLabel={
-              deliveryZoneInspectionSource === "route" ? "Back to Route Map" : "Return to stop"
+              deliveryZoneInspectionSource === "stop-intel"
+                ? "Back to Intel"
+                : deliveryZoneInspectionSource === "route"
+                  ? "Back to Route Map"
+                  : "Back to Stop"
             }
             accessibilityRole="button"
             style={styles.deliveryZoneReturnPill}
             onPress={exitDeliveryZoneInspection}
           >
             <Text style={styles.deliveryZoneReturnTitle}>
-              {deliveryZoneInspectionSource === "route" ? "← Back to Route Map" : "← Back to Stop"}
+              {deliveryZoneInspectionSource === "stop-intel"
+                ? "← Back to Intel"
+                : deliveryZoneInspectionSource === "route"
+                  ? "← Back to Route Map"
+                  : "← Back to Stop"}
             </Text>
             <Text style={styles.deliveryZoneReturnSubtitle}>Viewing Delivery Zone</Text>
           </Pressable>
@@ -4454,29 +4502,48 @@ export default function HomeScreen() {
           ) : null}
 
           <AppCard clipContent elevation="floating">
-            <AppButton
-              accessibilityLabel="Center map on my location"
-              onPress={centerOnMe}
-              size="icon"
-              style={styles.mapControlIconButton}
-              variant="tertiary"
-            >
-              <AppIcon name="location" color={colors.textPrimary} size={26} />
-            </AppButton>
+            {deliveryZoneInspectionSource ? (
+              IS_3D_YARD_VIEW_ENABLED ? (
+                <AppButton
+                  accessibilityLabel="View Delivery Zone in 3D"
+                  onPress={open3DYardView}
+                  size="icon"
+                  style={[styles.mapControlIconButton, styles.map3DControlButton]}
+                  variant="tertiary"
+                >
+                  <AppIcon name="yardView3D" color={colors.accent} size={25} />
+                  <Text style={[styles.map3DControlLabel, { color: colors.textPrimary }]}>3D</Text>
+                </AppButton>
+              ) : null
+            ) : (
+              <>
+                <AppButton
+                  accessibilityLabel="Center map on my location"
+                  onPress={centerOnMe}
+                  size="icon"
+                  style={styles.mapControlIconButton}
+                  variant="tertiary"
+                >
+                  <AppIcon name="location" color={colors.textPrimary} size={26} />
+                </AppButton>
 
-            <View style={[styles.mapControlDivider, { backgroundColor: colors.border }]} />
+                <View style={[styles.mapControlDivider, { backgroundColor: colors.border }]} />
 
-            <AppButton
-              accessibilityLabel="Create a stop at the map center"
-              onPress={startDropAtCenter}
-              size="icon"
-              style={styles.mapControlIconButton}
-              variant="tertiary"
-            >
-              <AppIcon name="add" color={colors.textPrimary} size={26} />
-            </AppButton>
+                <AppButton
+                  accessibilityLabel="Create a stop at the map center"
+                  onPress={startDropAtCenter}
+                  size="icon"
+                  style={styles.mapControlIconButton}
+                  variant="tertiary"
+                >
+                  <AppIcon name="add" color={colors.textPrimary} size={26} />
+                </AppButton>
+              </>
+            )}
 
-            <View style={[styles.mapControlDivider, { backgroundColor: colors.border }]} />
+            {!deliveryZoneInspectionSource || IS_3D_YARD_VIEW_ENABLED ? (
+              <View style={[styles.mapControlDivider, { backgroundColor: colors.border }]} />
+            ) : null}
 
             <AppButton
               accessibilityLabel={
@@ -4862,6 +4929,18 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 0,
+  },
+
+  map3DControlButton: {
+    height: 62,
+    flexDirection: "column",
+    gap: 1,
+  },
+
+  map3DControlLabel: {
+    fontSize: 12,
+    fontWeight: "900",
+    lineHeight: 14,
   },
 
   mapControlDivider: {

@@ -1,6 +1,9 @@
 {
-  "platforms": ["apple"],
+  "platforms": ["apple", "android"],
   "apple": {
     "modules": ["FreightIQ3DYardViewModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.freightiq3dyardview.FreightIQ3DYardViewModule"]
   }
 }

@@ -13,6 +13,45 @@ answer one question:
 
 ## Current Objective
 
+### October 28 — 3D Yard View V1 private acceptance and focused-view UX
+
+Google Maps 3D Yard View is privately available in iPhone TestFlight Build 60. Production-device
+testing across multiple saved Delivery Zones passed without a reported crash, marker, camera, or
+return-flow defect. Android's corresponding native implementation compiles and its private
+development APK is complete; physical Pixel acceptance remains pending and no Google Play audience
+has access.
+
+The approved next increment keeps **View DZ** and **Edit DZ** as the two Intel actions. **View DZ**
+opens focused 2D inspection, where the irrelevant locate-me and create-stop controls are replaced
+with a labeled **3D** switch. The same 3D switch is available when focused DZ inspection is opened
+from a stop preview card. The return action follows the entry point: **Back to Intel** from Intel and
+**Back to Stop** from the preview card. Normal map controls and the existing DZ editing flow remain
+unchanged.
+Physical iPhone acceptance passed October 29 for all three real entry paths: a normal stop Preview
+Card returned through **Back to Stop**, Intel returned through **Back to Intel**, and the expanded
+next-stop Preview Card on the route map returned correctly. In every path the focused 2D screen
+showed the new 3D control and the 2D/3D transition worked. Pixel acceptance remains pending;
+commit, push, builds, and distribution remain separate gates.
+
+Initial Pixel testing authenticated successfully after the EAS signing certificate was added to
+the already-restricted Android API key, but exposed an Android view-lifecycle defect: the first map
+could remain on its loading screen and a later hidden/second view crashed because Google permits
+only one active `Map3DView`. The local candidate now renders the native view only while the 3D
+screen is focused and follows Google's create/callback/start/resume order. Replacement private EAS
+development build `ea8450c9-4347-4558-bad3-88217ec9e726` completed and its APK was downloaded and
+verified with SHA-256 `88d75c2c6859ac8c5cf072d1d2467363238b6acb64928a0edbd07c16958786b0`.
+Installation and physical Pixel retest remain pending until the phone is reconnected.
+The same local candidate also passed a clean iPhone Simulator native build and launch on October 29.
+Using the dedicated local phone-test account and local Supabase fixtures, both authenticated entry
+paths were exercised: Preview Card -> View DZ -> 3D showed **Back to Stop**, and Intel -> View DZ ->
+3D showed **Back to Intel**. Both paths rendered live Google 3D imagery without crashing; the Intel
+path also visibly rendered the green Stop marker and blue Delivery Zone marker. Simulator logs had
+no FreightIQ fatal or crash entry. A development-only Expo Notifications keychain warning displayed
+an error toast over the bottom controls, so the final return-button taps could not be completed in
+this simulator run. The existing physical-iPhone three-path pass remains the acceptance evidence,
+and a brief physical iPhone regression check is still required before any later iOS build is
+approved.
+
 ### October 26 — Canada Core Compatibility V1
 
 An enthusiastic prospective tester in southern Saskatchewan exposed a bounded prerequisite: the

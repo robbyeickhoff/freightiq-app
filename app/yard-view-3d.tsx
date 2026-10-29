@@ -1,6 +1,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Constants from "expo-constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useIsFocused } from "expo-router/react-navigation";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -16,6 +17,7 @@ import FreightIQ3DYardView from "../modules/freightiq-3d-yard-view/src/FreightIQ
 
 export default function YardView3DScreen() {
   const router = useRouter();
+  const isFocused = useIsFocused();
   const params = useLocalSearchParams();
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,23 @@ export default function YardView3DScreen() {
   const stopLongitude = Number(params.stopLongitude);
   const deliveryZoneLatitude = Number(params.deliveryZoneLatitude);
   const deliveryZoneLongitude = Number(params.deliveryZoneLongitude);
-  const isEnabled = Constants.expoConfig?.extra?.enable3DYardView === true;
+  const deliveryZoneSource =
+    params.deliveryZoneSource === "preview" || params.deliveryZoneSource === "route"
+      ? String(params.deliveryZoneSource)
+      : "stop-intel";
+  const returnToPreview = String(params.returnToPreview ?? "") === "1";
+  const returnLabel =
+    deliveryZoneSource === "preview"
+      ? "Back to Stop"
+      : deliveryZoneSource === "route"
+        ? "Back to Route Map"
+        : "Back to Intel";
+  const isEnabled =
+    Platform.OS === "ios"
+      ? Constants.expoConfig?.extra?.enable3DYardViewIOS === true
+      : Platform.OS === "android"
+        ? Constants.expoConfig?.extra?.enable3DYardViewAndroid === true
+        : false;
   const hasValidCoordinates = [
     stopLatitude,
     stopLongitude,
@@ -48,14 +66,32 @@ export default function YardView3DScreen() {
         hidePreview: "1",
         entranceLat: String(deliveryZoneLatitude),
         entranceLng: String(deliveryZoneLongitude),
+        deliveryZoneSource,
+        ...(returnToPreview ? { returnToPreview: "1" } : {}),
         revealAt: String(Date.now()),
       },
     });
   }
 
-  function returnToIntel() {
-    if (router.canGoBack()) {
-      router.back();
+  function returnToSource() {
+    if (deliveryZoneSource === "preview") {
+      router.replace({
+        pathname: "/(tabs)/(map)",
+        params: {
+          returnToPreview: "1",
+          focusStopId: stopId,
+          focusStopName: stopName,
+          focusStopAddress: stopAddress,
+          focusStopLat: String(stopLatitude),
+          focusStopLng: String(stopLongitude),
+          previewReturnAt: String(Date.now()),
+        },
+      });
+      return;
+    }
+
+    if (deliveryZoneSource === "route") {
+      router.replace({ pathname: "/(tabs)/route", params: { routeView: "map" } });
       return;
     }
 
@@ -68,21 +104,20 @@ export default function YardView3DScreen() {
         name: stopName,
         address: stopAddress,
         openedAt: String(Date.now()),
+        ...(returnToPreview ? { returnToPreview: "1" } : {}),
       },
     });
   }
 
   const unavailableMessage = !isEnabled
     ? "3D Yard View is not configured in this build."
-    : Platform.OS !== "ios"
-      ? "This first 3D Yard View test is available on iPhone only."
-      : !hasValidCoordinates
-        ? "This stop does not have valid stop and delivery-zone coordinates."
-        : null;
+    : !hasValidCoordinates
+      ? "This stop does not have valid stop and delivery-zone coordinates."
+      : null;
 
   return (
     <View style={styles.screen}>
-      {!unavailableMessage && !error ? (
+      {isFocused && !unavailableMessage && !error ? (
         <FreightIQ3DYardView
           coordinates={{
             stopLatitude,
@@ -110,14 +145,20 @@ export default function YardView3DScreen() {
         {!initialized && !unavailableMessage && !error ? (
           <View style={styles.loadingCard}>
             <ActivityIndicator color="#F4A259" />
-            <Text style={styles.loadingText}>Opening 3D yard view…</Text>
+            <Text style={styles.loadingText}>Opening 3D DZ View…</Text>
           </View>
         ) : null}
 
         <View style={styles.actions}>
-          <Pressable accessibilityLabel="Back to Intel" onPress={returnToIntel} style={styles.secondaryButton}>
+          <Pressable
+            accessibilityLabel={returnLabel}
+            onPress={returnToSource}
+            style={styles.secondaryButton}
+          >
             <MaterialIcons color="#FFFFFF" name="arrow-back" size={21} />
-            <Text style={styles.secondaryButtonText}>Back to Intel</Text>
+            <Text style={styles.secondaryButtonText}>
+              {returnLabel}
+            </Text>
           </Pressable>
           <Pressable onPress={open2DMap} style={styles.primaryButton}>
             <MaterialIcons color="#11161C" name="map" size={21} />
