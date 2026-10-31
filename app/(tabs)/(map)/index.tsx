@@ -1490,6 +1490,7 @@ export default function HomeScreen() {
     tempSearchPin,
     selectedEntrance,
     showSelectedEntrance,
+    entranceHighlightOn,
   ]);
 
   function recomputeClusters(r: Region) {

@@ -3,6 +3,7 @@ import Constants from "expo-constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useIsFocused } from "expo-router/react-navigation";
 import { useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -14,6 +15,7 @@ import {
 } from "react-native";
 
 import FreightIQ3DYardView from "../modules/freightiq-3d-yard-view/src/FreightIQ3DYardView";
+import FreightIQ3DYardViewModule from "../modules/freightiq-3d-yard-view/src/FreightIQ3DYardViewModule";
 
 export default function YardView3DScreen() {
   const router = useRouter();
@@ -21,6 +23,7 @@ export default function YardView3DScreen() {
   const params = useLocalSearchParams();
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const androidLaunchStarted = useRef(false);
 
   const stopId = String(params.stopId ?? "");
   const stopName = String(params.stopName ?? "Stop");
@@ -52,6 +55,53 @@ export default function YardView3DScreen() {
     deliveryZoneLatitude,
     deliveryZoneLongitude,
   ].every(Number.isFinite);
+
+  useEffect(() => {
+    if (
+      Platform.OS !== "android" ||
+      !isFocused ||
+      !isEnabled ||
+      !hasValidCoordinates ||
+      androidLaunchStarted.current
+    ) {
+      return;
+    }
+
+    androidLaunchStarted.current = true;
+    void FreightIQ3DYardViewModule.openAndroid3DYardView(
+      {
+        stopLatitude,
+        stopLongitude,
+        deliveryZoneLatitude,
+        deliveryZoneLongitude,
+      },
+      returnLabel,
+    )
+      .then((action) => {
+        if (action === "open2D") {
+          open2DMap();
+        } else {
+          returnToSource();
+        }
+      })
+      .catch((launchError: unknown) => {
+        androidLaunchStarted.current = false;
+        setError(
+          launchError instanceof Error
+            ? launchError.message
+            : "Google Maps 3D could not open this stop.",
+        );
+      });
+  }, [
+    deliveryZoneLatitude,
+    deliveryZoneLongitude,
+    hasValidCoordinates,
+    isEnabled,
+    isFocused,
+    returnLabel,
+    stopLatitude,
+    stopLongitude,
+  ]);
 
   function open2DMap() {
     router.replace({
@@ -117,7 +167,7 @@ export default function YardView3DScreen() {
 
   return (
     <View style={styles.screen}>
-      {isFocused && !unavailableMessage && !error ? (
+      {Platform.OS !== "android" && isFocused && !unavailableMessage && !error ? (
         <FreightIQ3DYardView
           coordinates={{
             stopLatitude,

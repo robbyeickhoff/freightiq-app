@@ -17,9 +17,8 @@ answer one question:
 
 Google Maps 3D Yard View is privately available in iPhone TestFlight Build 61. Production-device
 testing across multiple saved Delivery Zones passed without a reported crash, marker, camera, or
-return-flow defect. Android's corresponding native implementation compiles and its private
-development APK is complete; physical Pixel acceptance remains pending and no Google Play audience
-has access.
+return-flow defect. Android's corresponding dedicated native implementation now also has physical
+Pixel acceptance; no Google Play audience has access.
 
 The approved next increment keeps **View DZ** and **Edit DZ** as the two Intel actions. **View DZ**
 opens focused 2D inspection, where the irrelevant locate-me and create-stop controls are replaced
@@ -30,8 +29,17 @@ unchanged.
 Physical iPhone acceptance passed October 29 for all three real entry paths: a normal stop Preview
 Card returned through **Back to Stop**, Intel returned through **Back to Intel**, and the expanded
 next-stop Preview Card on the route map returned correctly. In every path the focused 2D screen
-showed the new 3D control and the 2D/3D transition worked. Pixel acceptance remains pending;
-commit, push, builds, and distribution remain separate gates.
+showed the new 3D control and the 2D/3D transition worked.
+
+Physical Pixel acceptance passed October 31 after moving Android's 3D map into a dedicated native
+activity and replacing terrain-relative markers with fixed-size geographic marker views. Daltile,
+Jabil Engineering, Consolidated Electrical Distributors, and Telluride Ski & Golf Warehouse opened
+without a gray-screen crash or MapConfigs authentication failure. Daltile passed repeated 2D/3D
+transitions, marker anchoring and zoom checks, Android background/resume, cold app restart, Preview
+Card -> View DZ -> 3D -> Back to Stop, and Intel -> View DZ -> 3D -> Back to Intel. Initial focused
+2D rendering showed the green Stop and blue Delivery Zone markers correctly. TypeScript, focused
+ESLint, and whitespace checks pass. Commit, push, production build, Google Play closed-test upload,
+tester distribution, and release remain separate gates.
 
 Initial Pixel testing authenticated successfully after the EAS signing certificate was added to
 the already-restricted Android API key, but exposed an Android view-lifecycle defect: the first map

@@ -2,7 +2,10 @@ package expo.modules.freightiq3dyardview
 
 import android.content.Context
 import android.graphics.Color
-import android.os.Bundle
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.findViewTreeLifecycleOwner
 import com.google.android.gms.maps3d.GoogleMap3D
 import com.google.android.gms.maps3d.Map3DInitConfig
 import com.google.android.gms.maps3d.Map3DView
@@ -38,8 +41,21 @@ class FreightIQ3DYardView(context: Context, appContext: AppContext) : ExpoView(c
   private var stopMarker: Marker? = null
   private var deliveryZoneMarker: Marker? = null
   private var resetToken = 0
-  private var mapStarted = false
   private var mapResumed = false
+  private var lifecycleOwner: LifecycleOwner? = null
+  private val lifecycleObserver = object : DefaultLifecycleObserver {
+    override fun onResume(owner: LifecycleOwner) {
+      resumeMap()
+    }
+
+    override fun onPause(owner: LifecycleOwner) {
+      pauseMap()
+    }
+
+    override fun onDestroy(owner: LifecycleOwner) {
+      destroyMap()
+    }
+  }
 
   init {
     setBackgroundColor(Color.BLACK)
@@ -76,36 +92,54 @@ class FreightIQ3DYardView(context: Context, appContext: AppContext) : ExpoView(c
     val config = Map3DInitConfig.create(
       centerLat = centerLatitude,
       centerLng = centerLongitude,
-      centerAlt = 220.0,
-      heading = 0.0,
-      tilt = 35.0,
-      roll = 0.0,
-      range = 520.0,
-      minAltitude = 25.0,
-      maxAltitude = 5000.0,
-      minTilt = 0.0,
-      maxTilt = 80.0,
       mapMode = Map3DMode.HYBRID
     )
-    val view = Map3DView(context, config)
+    val view = Map3DView(appContext.currentActivity ?: context, config)
     view.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
     addView(view)
     mapView = view
-    view.onCreate(Bundle())
+    view.onCreate(null)
     view.getMap3DViewAsync(this)
-    if (isAttachedToWindow) {
-      startAndResumeMap(view)
+    view.post {
+      if (mapView === view) {
+        bindToLifecycle()
+        resumeMap()
+      }
     }
   }
 
-  private fun startAndResumeMap(view: Map3DView) {
-    if (!mapStarted) {
-      view.onStart()
-      mapStarted = true
-    }
+  private fun resumeMap() {
+    val view = mapView ?: return
     if (!mapResumed) {
       view.onResume()
       mapResumed = true
+    }
+  }
+
+  private fun pauseMap() {
+    val view = mapView ?: return
+    if (mapResumed) {
+      view.onPause()
+      mapResumed = false
+    }
+  }
+
+  private fun bindToLifecycle() {
+    post {
+      if (!isAttachedToWindow || mapView == null) return@post
+      val owner = findViewTreeLifecycleOwner()
+        ?: (appContext.currentActivity as? LifecycleOwner)
+      if (owner == null) {
+        resumeMap()
+        return@post
+      }
+      if (lifecycleOwner === owner) return@post
+      lifecycleOwner?.lifecycle?.removeObserver(lifecycleObserver)
+      lifecycleOwner = owner
+      owner.lifecycle.addObserver(lifecycleObserver)
+      if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+        resumeMap()
+      }
     }
   }
 
@@ -134,15 +168,15 @@ class FreightIQ3DYardView(context: Context, appContext: AppContext) : ExpoView(c
       position = latLngAltitude {
         latitude = value.stopLatitude
         longitude = value.stopLongitude
-        altitude = 4.0
+        altitude = 0.0
       }
-      label = "Stop"
-      altitudeMode = AltitudeMode.RELATIVE_TO_MESH
+      altitudeMode = AltitudeMode.CLAMP_TO_GROUND
       collisionBehavior = CollisionBehavior.REQUIRED_AND_HIDES_OPTIONAL
       isDrawnWhenOccluded = true
       isSizePreserved = true
       zIndex = 1
       setStyle(pinConfiguration {
+        scale = 0.6f
         setBackgroundColor(Color.GREEN)
         setBorderColor(Color.WHITE)
         setGlyph(Glyph.fromColor(Color.RED))
@@ -153,15 +187,15 @@ class FreightIQ3DYardView(context: Context, appContext: AppContext) : ExpoView(c
       position = latLngAltitude {
         latitude = value.deliveryZoneLatitude
         longitude = value.deliveryZoneLongitude
-        altitude = 5.0
+        altitude = 0.0
       }
-      label = "Delivery Zone"
-      altitudeMode = AltitudeMode.RELATIVE_TO_MESH
+      altitudeMode = AltitudeMode.CLAMP_TO_GROUND
       collisionBehavior = CollisionBehavior.REQUIRED_AND_HIDES_OPTIONAL
       isDrawnWhenOccluded = true
       isSizePreserved = true
       zIndex = 2
       setStyle(pinConfiguration {
+        scale = 0.6f
         setBackgroundColor(Color.BLUE)
         setBorderColor(Color.WHITE)
         setGlyph(Glyph.fromColor(Color.WHITE))
@@ -196,34 +230,39 @@ class FreightIQ3DYardView(context: Context, appContext: AppContext) : ExpoView(c
 
   override fun onAttachedToWindow() {
     super.onAttachedToWindow()
-    mapView?.let(::startAndResumeMap)
+    bindToLifecycle()
   }
 
   override fun onDetachedFromWindow() {
+    lifecycleOwner?.lifecycle?.removeObserver(lifecycleObserver)
+    lifecycleOwner = null
+    pauseMap()
+    super.onDetachedFromWindow()
+  }
+
+  fun destroy() {
     destroyMap()
     if (activeView?.get() === this) {
       activeView = null
     }
-    super.onDetachedFromWindow()
   }
 
   private fun destroyMap() {
+    lifecycleOwner?.lifecycle?.removeObserver(lifecycleObserver)
+    lifecycleOwner = null
+    pauseMap()
+
     mapView?.let { view ->
-      if (mapResumed) {
-        view.onPause()
-        mapResumed = false
-      }
-      if (mapStarted) {
-        view.onStop()
-        mapStarted = false
-      }
+
+      stopMarker?.remove()
+      deliveryZoneMarker?.remove()
+      stopMarker = null
+      deliveryZoneMarker = null
+
+      view.onDestroy()
+      view.removeAllViews()
+      removeView(view)
     }
-    stopMarker?.remove()
-    deliveryZoneMarker?.remove()
-    stopMarker = null
-    deliveryZoneMarker = null
-    mapView?.onDestroy()
-    removeAllViews()
     googleMap = null
     mapView = null
   }
