@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Keyboard,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -71,6 +72,7 @@ export default function OperationsComposeScreen() {
   const [userId, setUserId] = useState("");
   const [areaSlug, setAreaSlug] = useState(params.area || "");
   const [postingAreas, setPostingAreas] = useState<OperationsDirectoryArea[]>([]);
+  const [areaPickerOpen, setAreaPickerOpen] = useState(false);
   const [category, setCategory] = useState<OperationsCategory>("weather_road_conditions");
   const [message, setMessage] = useState("");
   const [expiresAt, setExpiresAt] = useState(endOfLocalDay());
@@ -497,19 +499,82 @@ export default function OperationsComposeScreen() {
         {!params.editId ? (
           <>
             <Text style={[styles.label, { color: colors.textPrimary }]}>Area</Text>
-            <View style={styles.wrap}>
-              {postingAreas.map((a) => (
-                <AppButton
-                  accessibilityState={{ selected: areaSlug === a.slug }}
-                  key={a.slug}
-                  size="compact"
-                  variant={areaSlug === a.slug ? "primary" : "secondary"}
-                  onPress={() => setAreaSlug(a.slug)}
+            <AppButton
+              accessibilityLabel={`Posting area, ${postingAreas.find((a) => a.slug === areaSlug)?.display_name ?? "Choose area"}`}
+              accessibilityState={{ expanded: areaPickerOpen }}
+              disabled={!postingAreas.length}
+              fullWidth
+              variant="secondary"
+              onPress={() => {
+                Keyboard.dismiss();
+                setAreaPickerOpen(true);
+              }}
+            >
+              {(() => {
+                const selected = postingAreas.find((a) => a.slug === areaSlug);
+                return selected
+                  ? `${selected.state_code} · ${selected.display_name} ›`
+                  : "Choose area ›";
+              })()}
+            </AppButton>
+            <Modal
+              transparent
+              animationType="fade"
+              visible={areaPickerOpen}
+              onRequestClose={() => setAreaPickerOpen(false)}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: "center",
+                  padding: 24,
+                  backgroundColor: "rgba(0,0,0,0.5)",
+                }}
+              >
+                <View
+                  style={{
+                    maxHeight: "80%",
+                    padding: 16,
+                    borderRadius: 16,
+                    backgroundColor: colors.surface,
+                  }}
                 >
-                  {a.state_code} · {a.display_name}
-                </AppButton>
-              ))}
-            </View>
+                  <Text
+                    accessibilityRole="header"
+                    style={[styles.label, { color: colors.textPrimary }]}
+                  >
+                    Choose posting area
+                  </Text>
+                  <ScrollView keyboardShouldPersistTaps="handled">
+                    {[...new Set(postingAreas.map((a) => a.state_code))].sort().map((state) => (
+                      <View key={state}>
+                        <Text style={[styles.label, { color: colors.textSecondary }]}>{state}</Text>
+                        {postingAreas
+                          .filter((a) => a.state_code === state)
+                          .map((a) => (
+                            <AppButton
+                              key={a.slug}
+                              fullWidth
+                              accessibilityState={{ selected: areaSlug === a.slug }}
+                              variant={areaSlug === a.slug ? "primary" : "secondary"}
+                              style={{ marginBottom: 8 }}
+                              onPress={() => {
+                                setAreaSlug(a.slug);
+                                setAreaPickerOpen(false);
+                              }}
+                            >
+                              {`${a.state_code} · ${a.display_name}`}
+                            </AppButton>
+                          ))}
+                      </View>
+                    ))}
+                  </ScrollView>
+                  <AppButton variant="tertiary" onPress={() => setAreaPickerOpen(false)}>
+                    Cancel
+                  </AppButton>
+                </View>
+              </View>
+            </Modal>
           </>
         ) : null}
         <Text style={[styles.label, { color: colors.textPrimary }]}>Category</Text>
