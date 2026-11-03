@@ -44,6 +44,8 @@ import {
   type NavigationProvider,
 } from "@/utils/navigation-apps";
 import type { TodayRouteStop } from "@/utils/todays-route";
+import { hasEmbeddedNavigation } from "@/utils/embedded-navigation";
+import { RoutePlanSheet } from "@/components/route-plan-sheet";
 import {
   buildRouteOverviewMarkers,
   routeOverviewMarkerSignature,
@@ -196,6 +198,10 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     carryForward,
     clearRoute,
     completeStop,
+    startExecution,
+    arrive,
+    skipActiveStop,
+    isReady,
     isStale,
     moveStop,
     refreshStops,
@@ -213,6 +219,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
   const [trackRouteMarkerChanges, setTrackRouteMarkerChanges] = useState(Platform.OS === "android");
   const [showRouteList, setShowRouteList] = useState(!isTab);
   const [navigationLaunching, setNavigationLaunching] = useState(false);
+  const [routePlanOpen, setRoutePlanOpen] = useState(false);
   const [navigationPickerDestination, setNavigationPickerDestination] =
     useState<NavigationDestination | null>(null);
   const [navigationPickerProviders, setNavigationPickerProviders] = useState<NavigationProvider[]>(
@@ -292,7 +299,8 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     () => route.stops.filter((stop) => stop.status === "completed"),
     [route.stops],
   );
-  const nextStopId = upcoming[0]?.id ?? null;
+  const nextStop = upcoming.find((stop) => stop.id === route.execution.activeStopId) ?? upcoming[0];
+  const nextStopId = nextStop?.id ?? null;
 
   useEffect(() => {
     setNextStopExpanded(false);
@@ -607,6 +615,11 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
                 style={styles.stopCopy}
               >
                 <Text style={[styles.stopName, { color: colors.textPrimary }]}>{item.name}</Text>
+                {route.execution.activeStopId === item.id ? (
+                  <Text style={[styles.stopAddress, { color: colors.accentStrong }]}>
+                    {route.execution.arrival ? "Arrived" : "Active stop"}
+                  </Text>
+                ) : null}
                 <Text style={[styles.stopAddress, { color: colors.textSecondary }]}>
                   {compactAddress(item.address)}
                 </Text>
@@ -695,14 +708,14 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
       icon: "deliveryZone",
       label: "Delivery Zone",
       onPress:
-        currentNextStopIntel?.deliveryZone && upcoming[0]
+        currentNextStopIntel?.deliveryZone && nextStop
           ? () => {
               router.push({
                 pathname: "/(tabs)/(map)",
                 params: {
                   entranceLat: String(currentNextStopIntel.deliveryZone?.lat),
                   entranceLng: String(currentNextStopIntel.deliveryZone?.lng),
-                  focusStopId: upcoming[0].id,
+                  focusStopId: nextStop.id,
                   hidePreview: "1",
                   returnToRoute: "1",
                   returnToRouteView: "map",
@@ -745,6 +758,10 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
+      <RoutePlanSheet visible={routePlanOpen} onClose={() => setRoutePlanOpen(false)} />
+      {route.stops.some((stop) => stop.status === "upcoming") ? (
+        <AppButton variant="secondary" onPress={() => setRoutePlanOpen(true)}>Full Route &amp; ETAs</AppButton>
+      ) : null}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         {!isTab ? (
           <AppButton
@@ -917,11 +934,11 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
             ]}
           >
             <View style={styles.nextStopSheetContent}>
-              {upcoming[0] ? (
+              {nextStop ? (
                 <View style={styles.nextStopCopyRow}>
                   <Pressable
                     accessibilityHint="Returns to the ordered route list"
-                    accessibilityLabel={`Open route list at ${upcoming[0].name}`}
+                    accessibilityLabel={`Open route list at ${nextStop.name}`}
                     accessibilityRole="button"
                     onPress={() => setShowRouteList(true)}
                     style={({ pressed }) => [
@@ -944,19 +961,19 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
                         numberOfLines={usesAccessibilityLayout ? 2 : 1}
                         style={[styles.nextStopName, { color: colors.textPrimary }]}
                       >
-                        {upcoming[0].name}
+                        {nextStop.name}
                       </Text>
                       <Text
                         numberOfLines={usesAccessibilityLayout ? 2 : 1}
                         style={[styles.nextStopAddress, { color: colors.textSecondary }]}
                       >
-                        {compactAddress(upcoming[0].address)}
+                        {compactAddress(nextStop.address)}
                       </Text>
                     </View>
                   </Pressable>
                   <Pressable
                     accessibilityHint="Shows or hides the four core intel details for this stop"
-                    accessibilityLabel={`${nextStopExpanded ? "Collapse" : "Expand"} core intel for ${upcoming[0].name}`}
+                    accessibilityLabel={`${nextStopExpanded ? "Collapse" : "Expand"} core intel for ${nextStop.name}`}
                     accessibilityRole="button"
                     accessibilityState={{ expanded: nextStopExpanded }}
                     hitSlop={6}
@@ -999,7 +1016,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
               )}
             </View>
 
-            {upcoming[0] && nextStopExpanded ? (
+            {nextStop && nextStopExpanded ? (
               <View style={[styles.nextStopCoreIntel, { borderTopColor: colors.border }]}>
                 <Text style={[styles.nextStopCoreIntelHeading, { color: colors.textSecondary }]}>
                   CORE INTEL
@@ -1060,11 +1077,11 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
               </View>
             ) : null}
 
-            {upcoming[0] ? (
+            {nextStop ? (
               <AppButton
                 fullWidth
                 loading={navigationLaunching}
-                onPress={() => void launchStop(upcoming[0])}
+                onPress={() => void launchStop(nextStop)}
                 size="compact"
                 variant="primary"
               >
@@ -1086,7 +1103,61 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
           ListHeaderComponent={
             <View style={styles.listHeader}>
               <OperationsDrivingAlertControl origin="route" />
-              {upcoming[0] ? (
+              {upcoming.length > 0 ? (
+                <AppCard contentStyle={styles.stopCard}>
+                  {route.execution.status === "active" && nextStop ? (
+                    <>
+                      <Text style={[styles.stopName, { color: colors.textPrimary }]}>
+                        {route.execution.arrival ? "Arrived: " : "Current stop: "}
+                        {nextStop.name}
+                      </Text>
+                      <AppButton
+                        disabled={navigationLaunching || !isReady}
+                        onPress={() => hasEmbeddedNavigation
+                          ? router.push("/active-navigation")
+                          : void launchStop(nextStop)}
+                      >
+                        Resume Navigation
+                      </AppButton>
+                      <AppButton
+                        disabled={!isReady || Boolean(route.execution.arrival)}
+                        onPress={() => void arrive(nextStop.id).catch(showSaveError)}
+                        variant="secondary"
+                      >
+                        {route.execution.arrival ? "Arrived" : "Arrived at Stop"}
+                      </AppButton>
+                      <AppButton
+                        disabled={!isReady}
+                        onPress={() => void completeStop(nextStop.id, true).catch(showSaveError)}
+                        variant="secondary"
+                      >
+                        Complete Stop
+                      </AppButton>
+                      <AppButton
+                        disabled={!isReady || upcoming.length < 2}
+                        onPress={() => void skipActiveStop().catch(showSaveError)}
+                        variant="tertiary"
+                      >
+                        Skip for Now
+                      </AppButton>
+                    </>
+                  ) : (
+                    <AppButton
+                      disabled={!isReady}
+                      onPress={() => {
+                        const begin = () => void startExecution().then(() => {
+                          if (hasEmbeddedNavigation) router.push("/active-navigation");
+                        }).catch(showSaveError);
+                        if (isStale) showStaleRouteAlert(begin);
+                        else begin();
+                      }}
+                    >
+                      Start Route
+                    </AppButton>
+                  )}
+                </AppCard>
+              ) : null}
+              {nextStop ? (
                 <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Upcoming</Text>
               ) : (
                 <Text style={[styles.allDone, { color: colors.success }]}>All stops completed</Text>

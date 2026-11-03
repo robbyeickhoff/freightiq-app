@@ -13,6 +13,9 @@ import { supabase } from "@/utils/supabase";
 import { stopRouteDrivingAlerts } from "@/utils/operations-driving-alerts";
 import {
   addRouteStop,
+  arriveAtRouteStop,
+  startRouteExecution,
+  skipActiveRouteStop,
   carryRouteForward,
   clearStoredTodayRoute,
   emptyTodayRoute,
@@ -31,6 +34,9 @@ import {
 } from "@/utils/todays-route";
 
 type TodayRouteContextValue = {
+  startExecution: () => Promise<void>;
+  arrive: (stopId: string, source?: "driver" | "mapbox") => Promise<void>;
+  skipActiveStop: () => Promise<void>;
   addStop: (stop: RouteStopInput) => Promise<AddRouteStopResult["status"] | "signed_out" | "stale">;
   carryForward: () => Promise<void>;
   clearRoute: () => Promise<void>;
@@ -55,10 +61,32 @@ export function TodayRouteProvider({ children }: PropsWithChildren) {
   const routeRef = useRef(route);
   const userIdRef = useRef<string | null>(null);
   const loadIdRef = useRef(0);
+  const pendingWrite = useRef<Promise<unknown>>(Promise.resolve());
+  const loadedRef = useRef(false);
+
+  const enqueue = useCallback(<T,>(action: () => Promise<T>): Promise<T> => {
+    const user = userIdRef.current;
+    const generation = loadIdRef.current;
+    const next = pendingWrite.current
+      .catch(() => undefined)
+      .then(() => {
+        if (
+          !loadedRef.current ||
+          !user ||
+          user !== userIdRef.current ||
+          generation !== loadIdRef.current
+        )
+          throw new Error("Route account changed. Please try again.");
+        return action();
+      });
+    pendingWrite.current = next;
+    return next;
+  }, []);
 
   const applyLoadedUser = useCallback(async (nextUserId: string | null) => {
     const loadId = ++loadIdRef.current;
     setIsReady(false);
+    loadedRef.current = false;
     userIdRef.current = nextUserId;
     setUserId(nextUserId);
 
@@ -68,7 +96,10 @@ export function TodayRouteProvider({ children }: PropsWithChildren) {
       routeRef.current = nextRoute;
       setRoute(nextRoute);
     } finally {
-      if (loadId === loadIdRef.current) setIsReady(true);
+      if (loadId === loadIdRef.current) {
+        loadedRef.current = true;
+        setIsReady(true);
+      }
     }
   }, []);
 
@@ -88,11 +119,13 @@ export function TodayRouteProvider({ children }: PropsWithChildren) {
   }, [applyLoadedUser]);
 
   const persist = useCallback(async (nextRoute: TodayRoute) => {
+    const generation = loadIdRef.current;
     const activeUserId = userIdRef.current;
     if (!activeUserId) throw new Error("Sign in to manage Today's Route.");
     const hadUpcomingStops = routeRef.current.stops.some((stop) => stop.status === "upcoming");
     const hadStops = routeRef.current.stops.length > 0;
     await writeStoredTodayRoute(activeUserId, nextRoute);
+    if (activeUserId !== userIdRef.current || generation !== loadIdRef.current) return;
     routeRef.current = nextRoute;
     setRoute(nextRoute);
     if (
@@ -107,55 +140,90 @@ export function TodayRouteProvider({ children }: PropsWithChildren) {
     async (stop: RouteStopInput) => {
       if (!userIdRef.current) return "signed_out" as const;
       if (isRouteStale(routeRef.current)) return "stale" as const;
-      const result = addRouteStop(routeRef.current, stop);
-      if (result.status === "added") await persist(result.route);
-      return result.status;
+      return enqueue(async () => {
+        if (isRouteStale(routeRef.current)) return "stale" as const;
+        const result = addRouteStop(routeRef.current, stop);
+        if (result.status === "added") await persist(result.route);
+        return result.status;
+      });
     },
-    [persist],
+    [enqueue, persist],
   );
 
   const carryForward = useCallback(
-    async () => persist(carryRouteForward(routeRef.current)),
-    [persist],
+    async () => enqueue(() => persist(carryRouteForward(routeRef.current))),
+    [enqueue, persist],
   );
-  const startFresh = useCallback(async () => persist(emptyTodayRoute()), [persist]);
-  const clearRoute = useCallback(async () => {
-    const activeUserId = userIdRef.current;
-    if (!activeUserId) return;
-    await clearStoredTodayRoute(activeUserId);
-    const nextRoute = emptyTodayRoute();
-    routeRef.current = nextRoute;
-    setRoute(nextRoute);
-    await stopRouteDrivingAlerts(activeUserId);
-  }, []);
+  const startFresh = useCallback(
+    async () => enqueue(() => persist(emptyTodayRoute())),
+    [enqueue, persist],
+  );
+  const clearRoute = useCallback(
+    async () =>
+      enqueue(async () => {
+        const activeUserId = userIdRef.current;
+        if (!activeUserId) return;
+        await clearStoredTodayRoute(activeUserId);
+        if (activeUserId !== userIdRef.current) return;
+        const nextRoute = emptyTodayRoute();
+        routeRef.current = nextRoute;
+        setRoute(nextRoute);
+        await stopRouteDrivingAlerts(activeUserId);
+      }),
+    [enqueue],
+  );
   const completeStop = useCallback(
     async (stopId: string, completed: boolean) =>
-      persist(setRouteStopCompleted(routeRef.current, stopId, completed)),
-    [persist],
+      enqueue(() => persist(setRouteStopCompleted(routeRef.current, stopId, completed))),
+    [enqueue, persist],
   );
   const removeStop = useCallback(
-    async (stopId: string) => persist(removeRouteStop(routeRef.current, stopId)),
-    [persist],
+    async (stopId: string) => enqueue(() => persist(removeRouteStop(routeRef.current, stopId))),
+    [enqueue, persist],
   );
   const moveStop = useCallback(
     async (stopId: string, offset: -1 | 1) =>
-      persist(moveUpcomingStop(routeRef.current, stopId, offset)),
-    [persist],
+      enqueue(() => persist(moveUpcomingStop(routeRef.current, stopId, offset))),
+    [enqueue, persist],
   );
   const reorderStops = useCallback(
-    async (stops: TodayRouteStop[]) => persist(reorderUpcomingStops(routeRef.current, stops)),
-    [persist],
+    async (stops: TodayRouteStop[]) =>
+      enqueue(() => persist(reorderUpcomingStops(routeRef.current, stops))),
+    [enqueue, persist],
   );
   const refreshStops = useCallback(
-    async (stops: RouteStopInput[]) => {
-      const nextRoute = refreshRouteStopSnapshots(routeRef.current, stops);
-      if (nextRoute !== routeRef.current) await persist(nextRoute);
-    },
-    [persist],
+    async (stops: RouteStopInput[]) =>
+      enqueue(async () => {
+        const nextRoute = refreshRouteStopSnapshots(routeRef.current, stops);
+        if (nextRoute !== routeRef.current) await persist(nextRoute);
+      }),
+    [enqueue, persist],
+  );
+
+  const startExecution = useCallback(
+    async () =>
+      enqueue(async () => {
+        if (isRouteStale(routeRef.current))
+          throw new Error("Keep or replace the earlier route first.");
+        await persist(startRouteExecution(routeRef.current));
+      }),
+    [enqueue, persist],
+  );
+  const arrive = useCallback(
+    async (stopId: string, source: "driver" | "mapbox" = "driver") =>
+      enqueue(() => persist(arriveAtRouteStop(routeRef.current, stopId, source))),
+    [enqueue, persist],
+  );
+  const skipActiveStop = useCallback(
+    async () => enqueue(() => persist(skipActiveRouteStop(routeRef.current))),
+    [enqueue, persist],
   );
 
   const value = useMemo<TodayRouteContextValue>(
     () => ({
+      startExecution,
+      arrive,
+      skipActiveStop,
       addStop,
       carryForward,
       clearRoute,
@@ -171,6 +239,9 @@ export function TodayRouteProvider({ children }: PropsWithChildren) {
       userId,
     }),
     [
+      startExecution,
+      arrive,
+      skipActiveStop,
       addStop,
       carryForward,
       clearRoute,

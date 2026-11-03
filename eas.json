@@ -27,6 +27,13 @@
         "buildType": "apk"
       }
     },
+    "production-navigation-test": {
+      "extends": "production",
+      "environment": "production",
+      "env": {
+        "FREIGHTIQ_EMBEDDED_NAVIGATION": "1"
+      }
+    },
     "production": {
       "autoIncrement": true,
       "android": {

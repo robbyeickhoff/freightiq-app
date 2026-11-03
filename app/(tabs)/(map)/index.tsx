@@ -561,7 +561,11 @@ function resolveStopHasIntel(
   return null;
 }
 
-export default function HomeScreen() {
+export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onRouteAddDone }: {
+  routeAddMode?: boolean;
+  onRouteStopAdded?: (stopId: string) => void;
+  onRouteAddDone?: () => void;
+} = {}) {
   const router = useRouter();
   const { colorScheme, colors } = useAppTheme();
   const { navigationPreference } = useNavigationPreference();
@@ -2333,6 +2337,10 @@ export default function HomeScreen() {
     if (!pin) return;
 
     pendingCreatedStopNavigationRef.current = null;
+    if (routeAddMode) {
+      void addSelectedStopToRoute(pin);
+      return;
+    }
     router.push({
       pathname: "/(tabs)/stop",
       params: {
@@ -2421,6 +2429,10 @@ export default function HomeScreen() {
               setTempSearchPin(null);
               if (!pins.some((existing) => existing.id === matchingStop.id)) {
                 setPins((previous) => mergePinsById(previous, [matchingStop]));
+              }
+              if (routeAddMode) {
+                void addSelectedStopToRoute(matchingStop);
+                return;
               }
               jumpToStop(matchingStop);
               router.push({
@@ -2910,15 +2922,15 @@ export default function HomeScreen() {
     await launchNavigation(provider, destination);
   }
 
-  async function addSelectedStopToRoute() {
-    if (!selectedStop || selectedStop.id === "temp-search-result") return;
+  async function addSelectedStopToRoute(target = selectedStop) {
+    if (!target || target.id === "temp-search-result") return;
 
     const stop = {
-      address: selectedStop.address ?? "",
-      id: selectedStop.id,
-      lat: selectedStop.lat,
-      lng: selectedStop.lng,
-      name: selectedStop.name,
+      address: target.address ?? "",
+      id: target.id,
+      lat: target.lat,
+      lng: target.lng,
+      name: target.name,
     };
 
     try {
@@ -2961,7 +2973,14 @@ export default function HomeScreen() {
         return;
       }
       if (result === "added") {
-        Alert.alert("Added to route", `${selectedStop.name} was added to Today's Route.`, [
+        if (routeAddMode) {
+          onRouteStopAdded?.(target.id);
+          dismissPreviewCard();
+          setQuery("");
+          requestAnimationFrame(() => searchInputRef.current?.focus());
+          return;
+        }
+        Alert.alert("Added to route", `${target.name} was added to Today's Route.`, [
           { text: "Done", style: "cancel" },
           {
             text: "Open Route",
@@ -3560,7 +3579,7 @@ export default function HomeScreen() {
       </View>
 
       <View
-        style={styles.searchWrap}
+        style={[styles.searchWrap, routeAddMode && { top: 8 }]}
         onStartShouldSetResponder={() => true}
         onResponderRelease={() => Keyboard.dismiss()}
       >
@@ -3584,6 +3603,7 @@ export default function HomeScreen() {
             Elevation.floating,
           ]}
           autoCapitalize="none"
+          autoFocus={routeAddMode}
           autoCorrect={false}
           clearButtonMode="while-editing"
           accessibilityLabel="Search stops, cities, or drivers"
@@ -4227,7 +4247,7 @@ export default function HomeScreen() {
                     </AppCard>
 
                     <View style={[styles.previewActionShelf, { backgroundColor: colors.surface }]}>
-                      <AppButton
+                      {!routeAddMode ? <AppButton
                         accessibilityLabel="Navigate to this stop"
                         loading={navigationLaunching}
                         onPress={navToStop}
@@ -4248,7 +4268,7 @@ export default function HomeScreen() {
                             Navigate
                           </Text>
                         </View>
-                      </AppButton>
+                      </AppButton> : null}
 
                       <AppButton
                         accessibilityLabel={
@@ -4261,7 +4281,7 @@ export default function HomeScreen() {
                         }}
                         onPress={
                           todayRoute.stops.some((stop) => stop.id === selectedStop?.id)
-                            ? () => router.push("/(tabs)/route")
+                            ? () => routeAddMode ? onRouteAddDone?.() : router.push("/(tabs)/route")
                             : () => void addSelectedStopToRoute()
                         }
                         size="compact"

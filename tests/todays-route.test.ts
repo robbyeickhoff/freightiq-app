@@ -3,7 +3,7 @@ import test from "node:test";
 
 // prettier-ignore
 // @ts-expect-error Node's strip-types test runner requires the explicit TypeScript extension.
-import { addRouteStop, carryRouteForward, emptyTodayRoute, isRouteStale, moveUpcomingStop, parseTodayRoute, refreshRouteStopSnapshots, removeRouteStop, setRouteStopCompleted } from "../utils/todays-route.ts";
+import { startRouteExecution, arriveAtRouteStop, skipActiveRouteStop, addRouteStop, carryRouteForward, emptyTodayRoute, isRouteStale, moveUpcomingStop, parseTodayRoute, refreshRouteStopSnapshots, removeRouteStop, setRouteStopCompleted } from "../utils/todays-route.ts";
 
 const morning = new Date("2026-08-23T08:00:00.000Z");
 const later = new Date("2026-08-23T09:00:00.000Z");
@@ -11,12 +11,61 @@ const tomorrow = new Date("2026-08-24T08:00:00.000Z");
 
 const stop = (id: string) => ({ address: `${id} Main St`, id, lat: 39, lng: -108, name: id });
 
+test("execution survives reopening, arrival does not complete, and skip advances", () => {
+  let route = addRouteStop(emptyTodayRoute(morning), stop("A"), morning).route;
+  route = addRouteStop(route, stop("B"), morning).route;
+  route = startRouteExecution(route, morning);
+  route = arriveAtRouteStop(route, "A", "driver", later);
+  assert.equal(route.stops[0].status, "upcoming");
+  assert.deepEqual(parseTodayRoute(JSON.stringify(route)), route);
+  route = skipActiveRouteStop(route, later);
+  assert.equal(route.execution.activeStopId, "B");
+  assert.equal(route.execution.arrival, null);
+  assert.deepEqual(
+    route.stops.map((s) => s.id),
+    ["B", "A"],
+  );
+  route = setRouteStopCompleted(route, "B", true, later);
+  assert.equal(route.execution.activeStopId, "A");
+  route = removeRouteStop(route, "A", later);
+  assert.equal(route.execution.status, "finished");
+  assert.equal(route.execution.finishedAt, later.toISOString());
+});
+
+test("legacy and invalid execution preserve the saved route", () => {
+  const route = addRouteStop(emptyTodayRoute(morning), stop("A"), morning).route;
+  const legacy = { ...route, version: 1, execution: undefined };
+  const restored = parseTodayRoute(JSON.stringify(legacy))!;
+  assert.deepEqual(restored.stops, route.stops);
+  assert.equal(restored.execution.status, "draft");
+  assert.equal(restored.version, 2);
+  assert.deepEqual(
+    parseTodayRoute(JSON.stringify({ ...route, execution: { status: "broken" } })),
+    route,
+  );
+});
+
 test("adds unique route stops and rejects duplicates", () => {
   const first = addRouteStop(emptyTodayRoute(morning), stop("A"), later);
   assert.equal(first.status, "added");
   const duplicate = addRouteStop(first.route, stop("A"), later);
   assert.equal(duplicate.status, "duplicate");
   assert.equal(duplicate.route.stops.length, 1);
+});
+
+test("active stop survives reorder and unrelated completion, then advances on removal", () => {
+  let route = addRouteStop(emptyTodayRoute(morning), stop("A"), morning).route;
+  route = addRouteStop(route, stop("B"), morning).route;
+  route = addRouteStop(route, stop("C"), morning).route;
+  route = startRouteExecution(route, morning);
+  route = moveUpcomingStop(route, "B", -1, later);
+  assert.equal(route.execution.activeStopId, "A");
+  route = setRouteStopCompleted(route, "C", true, later);
+  assert.equal(route.execution.activeStopId, "A");
+  route = removeRouteStop(route, "A", later);
+  assert.equal(route.execution.activeStopId, "B");
+  assert.equal(skipActiveRouteStop(route, later), route);
+  assert.deepEqual(parseTodayRoute(JSON.stringify(route)), route);
 });
 
 test("moves only upcoming stops and preserves completed stops", () => {

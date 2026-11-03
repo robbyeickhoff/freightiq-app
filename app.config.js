@@ -9,6 +9,10 @@ module.exports = ({ config }) => {
   const enable3DYardViewIOS = googleMaps3DIOSAPIKey.length > 0;
   const enable3DYardViewAndroid = googleMaps3DAndroidAPIKey.length > 0;
   const plugins = [...(appJson.expo.plugins ?? [])];
+  if (process.env.FREIGHTIQ_EMBEDDED_NAVIGATION === "1") {
+    plugins.push("./plugins/withFreightIQNavigation.js");
+    plugins.push(["expo-build-properties", { ios: { enableSceneSupport: true } }]);
+  }
 
   if (enable3DYardViewIOS || enable3DYardViewAndroid) {
     plugins.push("./plugins/withFreightIQ3DYardView.js");
@@ -18,6 +22,12 @@ module.exports = ({ config }) => {
     ...config,
     ...appJson.expo,
     name: isDevelopment ? "FreightIQ Dev" : appJson.expo.name,
+    experiments: {
+      ...appJson.expo.experiments,
+      ...(process.env.FREIGHTIQ_EMBEDDED_NAVIGATION === "1"
+        ? { inlineModules: { watchedDirectories: ["native-navigation"] } }
+        : {}),
+    },
     plugins,
     ios: {
       ...appJson.expo.ios,

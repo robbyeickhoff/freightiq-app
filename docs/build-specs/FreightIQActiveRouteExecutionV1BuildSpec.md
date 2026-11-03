@@ -1,23 +1,21 @@
 # FreightIQ Active Route Execution V1 — Proposed Build Specification
 
-> **Status: Revised implementation plan; Product Owner review required before implementation**
+> **Status: Approved November 2, 2026 for preflight and incremental local implementation**
 >
-> The Product Owner approved creation of this revised plan on October 28, 2026 after a full-day
-> physical-iPhone test of the separate Mapbox Navigation Test app. This document does not change the
-> active objective in `docs/CurrentBuild.md` and does not authorize application code, native
-> configuration, Mapbox account or billing changes, Supabase work, builds, distribution, commit,
-> push, or release work.
+> The Product Owner approved the revised plan on October 28 and approved starting the build on
+> November 2, 2026. `docs/CurrentBuild.md` identifies this as the active objective. Operational and
+> publishing actions retain their separate approval gates.
 
 ## Document Control
 
 - **Purpose:** Put FreightIQ's approved route and delivery workflow around embedded Mapbox
   turn-by-turn navigation so the driver remains inside one app
 - **Operating mode:** Product → Build Specification planning
-- **Implementation status:** Not started and not approved
+- **Implementation status:** Local iPhone full-route preview and multistop guidance verified in simulator; physical acceptance pending
 - **Original specification-plan approval:** Product Owner, September 28, 2026
 - **Embedded-Mapbox revision approval:** Product Owner, October 28, 2026
-- **Implementation approval:** Required separately after this revision is reviewed and the active
-  3D Yard View work reaches an appropriate stopping point
+- **Implementation approval:** Product Owner, November 2, 2026, after 3D Yard View reached tester
+  follow-up status; operational and publishing gates remain separate
 - **Foundations:**
   - `docs/ProductVision.md`
   - `docs/build-specs/FreightIQRouteBuilderV1BuildSpec.md`
@@ -175,6 +173,67 @@ account configuration.
 
 ## 6. V1 Product Model
 
+### November 2 Technical Preflight Findings
+
+- Source baseline: Expo 57, React Native 0.86.3, Xcode 27.1; existing local Expo native
+  modules provide the bridge pattern. No Mapbox Navigation dependency is currently installed.
+- Candidate vendor baseline: Navigation SDK 3.34.1, as shown in the current iOS and Android
+  installation guides. Pin exact versions only after dependency resolution and a native build.
+- iOS installation is Swift Package Manager; the current guide explicitly says CocoaPods support
+  is pending. The existing 3D CocoaPods dependency pattern cannot simply be copied for navigation.
+  Reproducible package linkage from Expo-generated native projects remains a native-build gate.
+- Android's current guide offers `com.mapbox.navigationcore:android-ndk27:3.34.1`; exact Gradle,
+  Kotlin, SDK, native-library and 16 KB compatibility remain to be checked in a generated build.
+- Existing app appearance is automatic. The bridge must propagate FreightIQ's selected appearance
+  into Mapbox; existing search remains in FreightIQ.
+- Existing location configuration already enables background location and Android foreground
+  services for Driving Alerts. Navigation needs revised permission explanations and iOS audio
+  background mode. Concurrent Driving Alerts/navigation lifecycle behavior needs explicit testing.
+- The local test SDK source confirms manual multileg approval through `multilegAdvancing`;
+  FreightIQ completion can control next-leg advancement. The pinned version must compile and
+  demonstrate the same behavior before native acceptance.
+- Public-token wiring exists in app configuration. No `.netrc` was found at the conventional Mac
+  path during this check. Actual token scopes, build-secret availability, account eligibility,
+  current billing selection and account-specific rates have not been verified.
+- Vendor billing counts each route leg as an Active Guidance trip; changing remaining waypoint
+  count/order can start another trip. Avoid needless session replacement. Metered pricing is the
+  documented default; unlimited pricing is a separate account decision.
+- No inherent source-level collision with the separate Google 3D module was identified. Combined
+  native linkage, memory use, background/resume and repeated transitions remain untested.
+
+Preflight outcome: shared saved-state work may proceed independently. Native integration is not
+yet compatibility-certified: package linkage, credentials/account checks and generated native builds
+remain open. No account, permission, dependency or native-configuration change was performed by
+this inspection. This is an initial technical preflight, not a release-readiness pass.
+
+Additional reference: https://docs.expo.dev/workflow/customizing/
+
+November 2 local integration evidence: the exact 3.34.1 vendor packages resolve and compile in an
+isolated iPhone Simulator app. `withFreightIQNavigation.js` adds SPM products to the app target;
+SDK-57 inline modules compile the FreightIQ Swift bridge in that same target. Both are opt-in via
+`FREIGHTIQ_EMBEDDED_NAVIGATION=1`, leaving normal production configuration unchanged. Expo inline
+modules are experimental, so generated-project reproducibility and cloud-build acceptance remain
+release gates. See https://docs.expo.dev/modules/inline-modules-reference/.
+
+The first slice sends only the active destination, using the saved route as its queue. Resume,
+manual arrival, return, skip and complete-to-next passed simulator interaction checks. Native
+guidance is updated on the existing controller after a persisted stop change. SDK automatic
+end-of-route dismissal is intercepted; native arrival is status only. This is not acceptance of
+the complete bridge or V1: the multistop window, progress/ETA events, route-list ETAs, editing,
+automatic arrival, offline/permission/failure recovery, Android, combined Driving Alerts/3D,
+physical devices and production distribution remain open.
+
+The following November 2 increment implements the rolling native window and full-route planning
+view for all 50 saved stops. Overlapping 24-destination Directions requests supply full geometry,
+total remaining driving time/distance and cumulative per-stop ETAs. The native window supplies live
+current-leg progress and subsequent leg estimates; its automatic leg advance is denied until a saved
+FreightIQ action replaces the window. Native full-route totals are not mislabeled as next-stop ETA.
+Full Route & ETAs opens both before Start and while guiding, with completed stops listed separately.
+Estimates exclude delivery time and do not assume a return-to-yard stop. Native iPhone compilation,
+14 focused tests, live three-stop planning and simulator arrival/complete-to-next checks pass.
+This supersedes the single-destination limitation above, not the outstanding physical/offline,
+editing, Android, combined-feature or release gates.
+
 Current Upcoming and Completed statuses remain authoritative. Embedded navigation must not replace
 them with Mapbox waypoint state.
 
@@ -261,6 +320,20 @@ V1 must:
 - Explain calculation failure without changing the saved route.
 
 ## 8. Route Building and Review UX
+
+### November 2 UX Direction and First Usable Milestone
+
+Preserve the existing FreightIQ Route Builder, which the Product Owner accepts as working well.
+The first milestone is to build a route there, tap Start, and navigate inside FreightIQ with Mapbox.
+Use private iPhone field testing to identify subsequent interface refinements.
+
+- Apple Maps is the reference for simple, familiar controls and readable information.
+- Keep business/address search directly accessible from the existing FreightIQ main-map search bar.
+- Reuse FreightIQ search and stop identity when adding a stop during navigation, then return to the
+  active route; do not require the test app's Build Route -> Add Stop search detour.
+- Follow FreightIQ's appearance preference, including system light/dark mode when selected, across
+  navigation maps, search, panels, and controls.
+- Reuse accepted Route Builder behavior; improve add confirmation only where inspection shows a gap.
 
 V1 consumes the existing Today's Route queue. A future manifest-to-FreightIQ import can populate the
 same queue without changing execution architecture.
@@ -619,15 +692,11 @@ These must not block a useful V1.
 
 ## 21. Approval and Next Gate
 
-The October 28 revision authorizes this specification update only. It does not activate the build or
-authorize implementation.
-
-The next gate is Product Owner review. If accepted, implementation may begin only after active 3D
-Yard View work is complete or the Product Owner deliberately changes the active objective, followed
-by an explicit instruction such as:
-
-> Approve FreightIQ Active Route Execution V1 for Slice 0 preflight and Slice 1 implementation under
-> the complete Build Specification.
+On November 2, 2026, Rob approved the agreed UX direction, the active-objective transition,
+technical preflight, and incremental local implementation. Proceed through the slices below with
+their diff review and physical acceptance gates. The October 28 planning-only restriction below is
+historical and superseded by this approval. Commit/push, operational changes, builds, distribution,
+and release still require their separate applicable approvals.
 
 Before implementation, Codex must recheck repository state, governing documents, vendor
 requirements, Mapbox billing/account state, app permissions, and overlapping native/configuration

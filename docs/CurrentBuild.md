@@ -13,6 +13,197 @@ answer one question:
 
 ## Current Objective
 
+November 3 approved Operations posting adjustment before device testing: extracted the existing
+board bottom area menu into `components/operations-area-picker.tsx` and reused it from
+`app/(tabs)/(map)/operations.tsx` and `app/(tabs)/(map)/operations-compose.tsx`. Posting now offers
+Near Me, the same account-scoped Recent Areas, and Browse by State. Selection maps the directory
+scope ID to the existing posting slug; report text/category/location/expiration are preserved.
+Board filtering behavior remains unchanged. No backend or native configuration changes.
+TypeScript, focused ESLint, whitespace and all 12 Operations Board tests pass. Physical iPhone
+and Pixel interaction checks, including draft preservation and location permission handling,
+remain pending. These three files plus this document are the changes in this increment; all
+remain local and uncommitted alongside the separate route work.
+
+### November 2 — Active Route Execution V1
+
+November 3 private field-test candidate approved: Rob approved the compact navigation panel,
+production iPhone build restricted to his sole internal testing group, and commit/push of the
+route work plus accepted Operations selector. Navigation now keeps the map above a compact
+ETA/time/distance/business panel; Stop Actions expands Arrived/Complete/Skip/Remove and Back to
+Route, and Add Stop is inside Route & ETAs. Completion remains explicit. Added opt-in EAS profile
+`production-navigation-test`, inheriting production credentials/environment and enabling embedded
+navigation plus the SDK-57 scene startup fix. The default production profile remains unchanged.
+All 26 focused route/planning/Operations tests, TypeScript and whitespace pass. Physical iPhone
+already opened embedded Mapbox; new panel and scroll correction need ongoing acceptance. This
+candidate is for Rob's field acceptance only, not Early Testers, Android or public release.
+
+November 3 physical route-preview feedback: the third stop could not scroll fully into view.
+The draggable list's outer container had no height constraint beneath the fixed header/map,
+so its viewport extended past the screen. Constrained the list container and viewport to the
+remaining space in `components/route-plan-sheet.tsx`. TypeScript, focused lint and whitespace
+pass. Phone scroll retest pending; delivered through the running development server, no native
+rebuild. This file and this document remain uncommitted with the route implementation.
+The same preview now abbreviates Colorado to CO and omits trailing United States in displayed
+stop addresses, per Rob's phone feedback. Saved addresses are unchanged. Focused lint and
+whitespace pass; visual acceptance remains part of the ongoing phone test.
+
+November 3 phone testing: Operations posting selector accepted by Rob on his iPhone. Starting the
+saved three-stop route selected WestStar Aviation but did not open embedded navigation because
+the installed development binary lacked the Mapbox module. Rob approved replacing FreightIQ Dev.
+An isolated local Debug device build with Mapbox 3.34.1 and the inline module compiled successfully,
+passed code-signature verification, and was installed over `com.robbyeickhof.mfi.dev` on the paired
+iPhone. Reopened against the Mac development server. Production `com.robbyeickhof.mfi` was not
+replaced; no TestFlight/store distribution, commit or push. Physical embedded-navigation acceptance
+is pending. This focused build retains the unconfigured 3D fallback described below; combined
+3D/navigation acceptance remains separate. Rob also flagged the full-width route-preview button
+above the route title as visually awkward; its layout adjustment is pending.
+
+The first physical build immediately failed to launch on iOS 27.0.1. Device crash
+`FreightIQDev-2026-11-03-061623.ips` shows a main-thread SIGTRAP in
+`___UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption_block_invoke`, before JS or
+Mapbox startup. Xcode 27.1 generated an SDK-57 legacy AppDelegate without a scene manifest.
+Expo's documented SDK-57 fix is `expo-build-properties` `ios.enableSceneSupport: true` (runtime
+support already present in expo 57.0.25). Installed SDK-compatible plugin 57.0.22 and enabled it
+only for opted-in embedded-navigation builds. Clean prebuild in the temporary native copy now
+generates `EXExpoAppSceneDelegate` manifest and `ExpoReactNativeFactoryProvider` conformance;
+legacy window creation is removed. Source changes for this correction: `app.config.js`,
+`package.json`, `package-lock.json`, and this document. TypeScript, whitespace and enabled/disabled
+configuration checks pass. Corrected device build passed, signed verification passed, and the
+replacement was installed over FreightIQ Dev. Live launch logs show React Native loaded the Mac
+server bundle; process 27776 remained running across subsequent checks (the failed build exited
+immediately). Rob's visual confirmation and embedded-navigation test remain pending. Production
+was unchanged. All source changes remain uncommitted.
+
+Rob approved starting the [Active Route Execution V1 build](build-specs/FreightIQActiveRouteExecutionV1BuildSpec.md)
+after accepting the existing FreightIQ Route Builder as the foundation. The first usable milestone
+is Today's Route -> Start -> embedded Mapbox navigation inside FreightIQ, followed by private
+iPhone field testing to refine the interface. November 2 approval covers the agreed UX requirements,
+technical preflight, and incremental local implementation under the specification. Commit/push,
+account or billing changes, production builds, distribution, and release remain separate gates.
+
+Begin with preflight and saved execution state, then the iPhone navigation integration. Preserve the
+existing main-map search and Route Builder; use the same search flow when adding stops during
+navigation. Navigation follows FreightIQ's appearance setting, including system light/dark mode.
+
+The first local Slice 1 increment adds version-2 execution data and pure start, arrival and skip
+transitions to the existing route utility. Existing completion/removal transitions reconcile the
+active stop and finish time. Version-1 records migrate on read at the existing account-scoped key;
+invalid execution metadata falls back to Draft while preserving valid stops. Eight focused route
+tests and TypeScript pass. Provider command wiring, interaction serialization, driver controls and
+physical restart acceptance remain pending; embedded navigation has not been installed. Changes
+remain local and uncommitted.
+
+The next local increment wires Start Route, manual Arrived and Skip through the existing provider
+and adds execution controls to the Route list. Resume Navigation currently uses the existing external
+navigation choice; Mapbox integration follows. Map summary/Intel now follow the saved active stop
+even after reorder. Provider writes are queued and compute from the latest saved route; account
+changes invalidate queued actions. Nine focused tests pass, including active-stop preservation
+after reorder and unrelated completion. Physical tap, save-failure, rapid-action, account-switch and
+cold-restart checks remain pending.
+
+November 2 Mac validation: all 25 route/navigation regression tests, TypeScript, focused ESLint,
+whitespace checks and iOS JavaScript export pass. Broader suite: 238/242 pass; four map-report-summary
+tests fail because their extracted function references `loadCloudReportStatsForStops` outside the
+test context. Both that test and map source match HEAD and were not changed by this work.
+iPhone 18 Pro simulator boots but has no FreightIQ app installed. Subsequent inspection found
+both FreightIQ and FreightIQ Dev already installed on the iPhone 17 Pro simulator
+`94ED7E7C-E706-43C5-A090-8357C5F84239`. The existing Dev app was launched and Metro started
+with local test mode; no native build was created. UI interactions and app cold-restart persistence
+are still unverified. Automatic location arrival remains a future Mapbox
+integration test; the current Arrived action is manual.
+
+Subsequent November 2 simulator interaction checks passed using Xcode Device Hub, the actual
+simulator UI host in this Xcode version. Dismissed the development-only notification keychain
+LogBox that covered bottom actions. Through the app UI, created two fictional local stops
+Route Execution Test A/B, added them to Today's Route and verified add confirmation, Start Route,
+manual Arrived without completion, full terminate/relaunch restoring Arrived and 0/1 completed,
+Complete yielding 1/1, Undo Complete, adding B, Skip A -> B active/A later, and Complete B -> A
+active with 1/2 completed. Fixtures remain in the local test app/database for follow-up.
+No new native build or production change. Device Hub controls and local Metro/database settings
+were the test blockers; stop addition itself passed. Automatic arrival, native navigation,
+rapid taps, storage failures and account switches still require separate verification.
+
+November 2 first embedded iPhone increment: pinned Mapbox Navigation 3.34.1 resolved successfully.
+An opt-in config plugin adds the two vendor SPM products and Expo's SDK-57 inline Swift module
+to the application target; CocoaPods does not manage the Mapbox SDK. The isolated local iPhone
+Simulator build passes. Enable only with `FREIGHTIQ_EMBEDDED_NAVIGATION=1`; normal production
+configuration retains external navigation. Source additions: `app/active-navigation.tsx`,
+`utils/embedded-navigation.ts`, `native-navigation/FreightIQNavigation.swift`, and
+`plugins/withFreightIQNavigation.js`; integration edits: `app.config.js`, the existing route screen,
+and route context (Mapbox arrival source). All remain uncommitted along with the saved-state slice.
+
+Simulator UI checks: Resume opens real Mapbox road guidance inside FreightIQ; manual Arrived keeps
+the stop Upcoming; Back to Route shows the saved arrival; Skip changes the active destination;
+Complete saves completion and starts guidance for the remaining stop. System light/dark changes
+update the FreightIQ controls and Mapbox appearance without replacing the active request.
+The native controller is reused
+for destination changes to avoid an older controller's asynchronous cleanup stopping new guidance.
+SDK end-of-route dismissal is intercepted so arrival cannot complete or leave a delivery. Request IDs
+filter outdated native callbacks. TypeScript, focused ESLint, nine route tests and whitespace pass.
+The screenshot uses fictional local Route Execution Test A/B fixtures, not production route data.
+
+This first integration requests only the active destination, so the SDK's ETA is for that stop.
+It does not yet implement the full rolling multistop window, route-list ETAs, in-navigation search/edit,
+native progress bridge, automatic-arrival acceptance, offline recovery, permission denial, account
+switch/save-failure acceptance, or Android integration. Real-phone navigation and simultaneous
+Driving Alerts/3D behavior remain unverified. The isolated build includes the existing 3D module's
+unconfigured fallback, not an accepted combined 3D/navigation build. No cloud build, billing/account
+change, commit, distribution or production deployment occurred for this increment.
+
+November 2 full-route follow-up: added `components/route-plan-sheet.tsx`,
+`hooks/use-route-plan.ts`, `utils/route-plan.ts`, and `tests/route-plan.test.ts`; updated the route
+screen, active-navigation screen and Swift bridge. Full Route & ETAs is accessible before starting
+and during navigation. It shows a road-following route, total driving duration/distance and cumulative
+ETA per remaining stop; delivery/service time is explicitly excluded. Completed stops remain listed
+separately. All 50 saved stops are included through overlapping 24-destination Directions requests;
+partial/failed calculations do not produce a misleading total or modify the route. Active stop stays
+first if a driver reorders the remaining queue. Preview refreshes on open/foreground or explicit retry.
+
+Native guidance now receives a rolling window of up to 24 destinations. SDK multileg advancing is
+explicitly denied; only a saved FreightIQ action rebuilds the window. Current-leg progress supplies
+next-stop ETA/distance and updates the corresponding stop estimates in the full-route list. The SDK's
+last-stop bottom banner is hidden. Tail-only changes outside the current native window do not restart
+guidance. Totals cover the remaining driving route; they do not add an unrequested return to the yard.
+
+Verification: local iPhone native build, TypeScript, focused ESLint and whitespace pass; 14 route and
+planning tests pass, including 24/25/50-stop continuity, response ordering, cumulative ETAs and partial
+response rejection. A live three-coordinate GJ planning check retained order, returned three positive
+legs (about 6/10/10 minutes, 26 total) and 481 road geometry points. Simulator preview rendered the full
+road route and both test-stop ETAs. Existing A/B fixtures share a coordinate, so their ETAs coincide.
+Native multistop guidance showed a next-stop ETA; simulated GPS arrival marked B Arrived without
+advancing, and driver Complete moved guidance to A. Opening Full Route & ETAs during guidance showed
+remaining estimates plus the completed stop, and Close returned to the same active delivery.
+A modal safe-area issue was found and corrected.
+Physical driving, failure/offline recovery, in-navigation editing, background/alerts/3D combination,
+Android native integration and release acceptance remain open. All route work remains local and
+uncommitted; no cloud build or tester distribution was performed.
+
+November 2 approved UX polish: navigation now has compact Route & ETAs, Add Stop and More
+controls, with separate next-stop arrival/time/distance readouts. The route sheet supports adding,
+removing and reordering remaining stops while the current destination stays active. Move offers
+tap-based earlier/later options as well as the existing drag interaction. Add Stops reuses the
+existing FreightIQ main-map search and stop-creation flow, stays open for additional stops, and
+shows immediate added-name/count feedback. A newly created stop is added directly without the
+unnecessary nearby-stop chooser or Intel detour. Normal main-map behavior remains unchanged.
+
+Changed files in this increment: `app/active-navigation.tsx`, `components/route-plan-sheet.tsx`,
+`app/(tabs)/(map)/index.tsx`, and this document. TypeScript, whitespace and 14 route/planning tests
+pass. Focused lint has no errors and one existing main-map hook dependency warning. React review
+covered hook lifetimes, queued writes, visible control labels and conditional search mounting.
+Simulator UI verified: create C/D while navigating; immediate added confirmation; A/C/D -> A/D/C
+through Move Earlier; remove C -> two remaining stops; search existing C and add -> three stops;
+Resume returns to A guidance with arrival still saved and no completion. System light/dark updated
+both controls and navigation. Fixtures are fictional local-only stops. Drag gesture itself remains
+unverified because the Device Hub coordinate interface rejects drag; tap reorder passed. Physical
+iPhone/weak-signal/large-text checks remain pending. This increment needed no native or cloud build.
+All route changes remain uncommitted; production and tester builds were not changed.
+
+3D Yard View has reached tester follow-up status based on Rob's November 2 report. Its existing
+acceptance and distribution evidence is retained below; focused tester defects can be handled
+separately. No new store-state verification is implied by this objective transition.
+
+## Prior Work and Tester Follow-up
+
 ### October 28 — 3D Yard View V1 private acceptance and focused-view UX
 
 Google Maps 3D Yard View is privately available in iPhone TestFlight Build 61. Production-device

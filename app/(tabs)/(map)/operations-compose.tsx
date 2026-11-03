@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Keyboard,
-  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -13,6 +12,8 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Location from "expo-location";
+import { OperationsAreaPicker } from "@/components/operations-area-picker";
 import { AppButton } from "@/components/ui/app-button";
 import { AppCard } from "@/components/ui/app-card";
 import { useAppTheme } from "@/context/theme-context";
@@ -30,6 +31,11 @@ import {
 } from "@/utils/operations-board";
 import {
   readOperationsAreaDirectory,
+  readRecentOperationsAreas,
+  rememberRecentOperationsArea,
+  findNearbyOperationsArea,
+  directorySelection,
+  type OperationsAreaDirectory,
   type OperationsDirectoryArea,
 } from "@/utils/operations-area-directory";
 import { supabase } from "@/utils/supabase";
@@ -73,6 +79,53 @@ export default function OperationsComposeScreen() {
   const [areaSlug, setAreaSlug] = useState(params.area || "");
   const [postingAreas, setPostingAreas] = useState<OperationsDirectoryArea[]>([]);
   const [areaPickerOpen, setAreaPickerOpen] = useState(false);
+  const [directory, setDirectory] = useState<OperationsAreaDirectory | null>(null);
+  const [areaPickerView, setAreaPickerView] = useState<"root" | "states" | `state:${string}`>("root");
+  const [recentAreaIds, setRecentAreaIds] = useState<string[]>([]);
+  const [locatingArea, setLocatingArea] = useState(false);
+  const closeAreaPicker = () => { setAreaPickerOpen(false); setAreaPickerView("root"); };
+  const recentAreas = recentAreaIds.flatMap((scopeId) => {
+    const item = directorySelection(directory, scopeId);
+    return item?.area ? [{ scopeId, label: item.label }] : [];
+  });
+  const chooseArea = async (scopeId: string) => {
+    const selected = postingAreas.find((item) => item.scope_id === scopeId);
+    if (!selected) return;
+    setAreaSlug(selected.slug);
+    if (userId) {
+      try { setRecentAreaIds(await rememberRecentOperationsArea(userId, scopeId)); }
+      catch { /* Recent history must not prevent choosing a posting area. */ }
+    }
+  };
+  const chooseNearbyArea = async () => {
+    if (!directory || locatingArea) return;
+    setLocatingArea(true);
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Location unavailable", "Allow location access to find a nearby Operations area, or browse by state.");
+        return;
+      }
+      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const nearby = findNearbyOperationsArea(directory, current.coords.latitude, current.coords.longitude);
+      if (!nearby) {
+        Alert.alert("No supported area nearby", "FreightIQ does not have an Operations area near your current location yet. You can still browse by state.");
+        return;
+      }
+      await chooseArea(nearby.scope_id);
+      closeAreaPicker();
+    } catch {
+      Alert.alert("Location unavailable", "FreightIQ could not determine your current location. Browse by state instead.");
+    } finally { setLocatingArea(false); }
+  };
+  useEffect(() => {
+    let current = true;
+    setRecentAreaIds([]);
+    if (userId) void readRecentOperationsAreas(userId).then((ids) => {
+      if (current) setRecentAreaIds(ids);
+    }).catch(() => {});
+    return () => { current = false; };
+  }, [userId, areaPickerOpen]);
   const [category, setCategory] = useState<OperationsCategory>("weather_road_conditions");
   const [message, setMessage] = useState("");
   const [expiresAt, setExpiresAt] = useState(endOfLocalDay());
@@ -100,6 +153,7 @@ export default function OperationsComposeScreen() {
     void readOperationsAreaDirectory().then((result) => {
       if (!active || !result.data) return;
       const areas = result.data.groups.flatMap((group) => group.areas);
+      setDirectory(result.data);
       setPostingAreas(areas);
       if (!params.editId) setAreaSlug((current) => current || areas[0]?.slug || "");
     });
@@ -507,6 +561,7 @@ export default function OperationsComposeScreen() {
               variant="secondary"
               onPress={() => {
                 Keyboard.dismiss();
+                setAreaPickerView("root");
                 setAreaPickerOpen(true);
               }}
             >
@@ -517,64 +572,11 @@ export default function OperationsComposeScreen() {
                   : "Choose area ›";
               })()}
             </AppButton>
-            <Modal
-              transparent
-              animationType="fade"
-              visible={areaPickerOpen}
-              onRequestClose={() => setAreaPickerOpen(false)}
-            >
-              <View
-                style={{
-                  flex: 1,
-                  justifyContent: "center",
-                  padding: 24,
-                  backgroundColor: "rgba(0,0,0,0.5)",
-                }}
-              >
-                <View
-                  style={{
-                    maxHeight: "80%",
-                    padding: 16,
-                    borderRadius: 16,
-                    backgroundColor: colors.surface,
-                  }}
-                >
-                  <Text
-                    accessibilityRole="header"
-                    style={[styles.label, { color: colors.textPrimary }]}
-                  >
-                    Choose posting area
-                  </Text>
-                  <ScrollView keyboardShouldPersistTaps="handled">
-                    {[...new Set(postingAreas.map((a) => a.state_code))].sort().map((state) => (
-                      <View key={state}>
-                        <Text style={[styles.label, { color: colors.textSecondary }]}>{state}</Text>
-                        {postingAreas
-                          .filter((a) => a.state_code === state)
-                          .map((a) => (
-                            <AppButton
-                              key={a.slug}
-                              fullWidth
-                              accessibilityState={{ selected: areaSlug === a.slug }}
-                              variant={areaSlug === a.slug ? "primary" : "secondary"}
-                              style={{ marginBottom: 8 }}
-                              onPress={() => {
-                                setAreaSlug(a.slug);
-                                setAreaPickerOpen(false);
-                              }}
-                            >
-                              {`${a.state_code} · ${a.display_name}`}
-                            </AppButton>
-                          ))}
-                      </View>
-                    ))}
-                  </ScrollView>
-                  <AppButton variant="tertiary" onPress={() => setAreaPickerOpen(false)}>
-                    Cancel
-                  </AppButton>
-                </View>
-              </View>
-            </Modal>
+            <OperationsAreaPicker
+              {...{ areaPickerOpen, areaPickerView, setAreaPickerView, closeAreaPicker,
+                directory, recentAreas, locatingArea, chooseNearbyArea, chooseArea }}
+              area={postingAreas.find((item) => item.slug === areaSlug)?.scope_id ?? ""}
+            />
           </>
         ) : null}
         <Text style={[styles.label, { color: colors.textPrimary }]}>Category</Text>

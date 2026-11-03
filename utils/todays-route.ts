@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export const TODAY_ROUTE_STORAGE_VERSION = 1;
+export const TODAY_ROUTE_STORAGE_VERSION = 2;
 export const TODAY_ROUTE_MAX_STOPS = 50;
 
 export type TodayRouteStopStatus = "upcoming" | "completed";
@@ -16,12 +16,59 @@ export type TodayRouteStop = {
 };
 
 export type TodayRoute = {
+  execution: RouteExecution;
   createdAt: string;
   date: string;
   stops: TodayRouteStop[];
   updatedAt: string;
   version: typeof TODAY_ROUTE_STORAGE_VERSION;
 };
+
+export type RouteExecution = {
+  status: "draft" | "active" | "finished";
+  activeStopId: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  arrival: { stopId: string; source: "mapbox" | "driver"; arrivedAt: string } | null;
+};
+
+function draftExecution(): RouteExecution {
+  return { status: "draft", activeStopId: null, startedAt: null, finishedAt: null, arrival: null };
+}
+
+function restoreExecution(value: unknown, stops: TodayRouteStop[]): RouteExecution {
+  if (!value || typeof value !== "object") return draftExecution();
+  const state = value as RouteExecution;
+  if (state.status === "draft") return draftExecution();
+  if (
+    (state.status !== "active" && state.status !== "finished") ||
+    typeof state.startedAt !== "string" ||
+    !Number.isFinite(Date.parse(state.startedAt))
+  )
+    return draftExecution();
+  const upcoming = stops.filter((stop) => stop.status === "upcoming");
+  const activeStopId =
+    upcoming.find((stop) => stop.id === state.activeStopId)?.id ?? upcoming[0]?.id ?? null;
+  const arrival = state.arrival;
+  return {
+    status: activeStopId ? "active" : "finished",
+    activeStopId,
+    startedAt: state.startedAt,
+    finishedAt: activeStopId
+      ? null
+      : typeof state.finishedAt === "string"
+        ? state.finishedAt
+        : state.startedAt,
+    arrival:
+      arrival &&
+      arrival.stopId === activeStopId &&
+      (arrival.source === "driver" || arrival.source === "mapbox") &&
+      typeof arrival.arrivedAt === "string" &&
+      Number.isFinite(Date.parse(arrival.arrivedAt))
+        ? { stopId: arrival.stopId, source: arrival.source, arrivedAt: arrival.arrivedAt }
+        : null,
+  };
+}
 
 export type RouteStopInput = Pick<TodayRouteStop, "address" | "id" | "lat" | "lng" | "name">;
 
@@ -39,6 +86,7 @@ export function localDateKey(date = new Date()): string {
 export function emptyTodayRoute(now = new Date()): TodayRoute {
   const timestamp = now.toISOString();
   return {
+    execution: draftExecution(),
     createdAt: timestamp,
     date: localDateKey(now),
     stops: [],
@@ -84,7 +132,7 @@ export function parseTodayRoute(value: string | null): TodayRoute | null {
   try {
     const parsed = JSON.parse(value) as Partial<TodayRoute>;
     if (
-      parsed.version !== TODAY_ROUTE_STORAGE_VERSION ||
+      (parsed.version !== TODAY_ROUTE_STORAGE_VERSION && Number(parsed.version) !== 1) ||
       typeof parsed.date !== "string" ||
       typeof parsed.createdAt !== "string" ||
       typeof parsed.updatedAt !== "string" ||
@@ -100,6 +148,7 @@ export function parseTodayRoute(value: string | null): TodayRoute | null {
     if (uniqueIds.size !== stops.length || stops.length > TODAY_ROUTE_MAX_STOPS) return null;
 
     return {
+      execution: restoreExecution(parsed.execution, stops as TodayRouteStop[]),
       createdAt: parsed.createdAt,
       date: parsed.date,
       stops: stops as TodayRouteStop[],
@@ -116,7 +165,64 @@ export function isRouteStale(route: TodayRoute, now = new Date()): boolean {
 }
 
 function updatedRoute(route: TodayRoute, stops: TodayRouteStop[], now = new Date()): TodayRoute {
-  return { ...route, stops, updatedAt: now.toISOString() };
+  const execution = restoreExecution(route.execution, stops);
+  if (route.execution.status === "active" && execution.status === "finished")
+    execution.finishedAt = now.toISOString();
+  return { ...route, execution, stops, updatedAt: now.toISOString() };
+}
+
+export function startRouteExecution(route: TodayRoute, now = new Date()): TodayRoute {
+  if (
+    route.execution.status === "active" ||
+    !route.stops.some((stop) => stop.status === "upcoming")
+  )
+    return route;
+  return {
+    ...route,
+    updatedAt: now.toISOString(),
+    execution: {
+      status: "active",
+      activeStopId: route.stops.find((stop) => stop.status === "upcoming")!.id,
+      startedAt: now.toISOString(),
+      finishedAt: null,
+      arrival: null,
+    },
+  };
+}
+
+export function arriveAtRouteStop(
+  route: TodayRoute,
+  stopId: string,
+  source: "driver" | "mapbox",
+  now = new Date(),
+): TodayRoute {
+  if (
+    route.execution.status !== "active" ||
+    route.execution.activeStopId !== stopId ||
+    route.execution.arrival
+  )
+    return route;
+  return {
+    ...route,
+    updatedAt: now.toISOString(),
+    execution: { ...route.execution, arrival: { stopId, source, arrivedAt: now.toISOString() } },
+  };
+}
+
+export function skipActiveRouteStop(route: TodayRoute, now = new Date()): TodayRoute {
+  if (route.execution.status !== "active") return route;
+  const upcoming = route.stops.filter((stop) => stop.status === "upcoming");
+  const target = upcoming.find((stop) => stop.id === route.execution.activeStopId);
+  if (!target || upcoming.length < 2) return route;
+  const remaining = upcoming.filter((stop) => stop.id !== target.id);
+  return {
+    ...updatedRoute(
+      route,
+      [...remaining, target, ...route.stops.filter((stop) => stop.status === "completed")],
+      now,
+    ),
+    execution: { ...route.execution, activeStopId: remaining[0].id, arrival: null },
+  };
 }
 
 export function addRouteStop(
