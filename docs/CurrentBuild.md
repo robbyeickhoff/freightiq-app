@@ -26,6 +26,14 @@ remain local and uncommitted alongside the separate route work.
 
 ### November 2 — Active Route Execution V1
 
+November 3 internal candidate receipt: approved source committed/pushed as `081d10e`. iPhone
+production build 64 (`27dfb2bd-0a75-4628-b97d-77c3fe2dfe4b`) finished and the downloaded IPA passed
+signature, production entitlement, standalone bundle, Mapbox, scene and existing 3D configuration
+checks. Submission `fcbf88c1-f3ac-4350-94df-d722abf9d362` succeeded; its Apple metadata job confirmed
+only the requested `Team (Expo)` group, which has automatic build access. No Early Testers,
+public or Android distribution. Build 64 is the private field-acceptance candidate; Rob's
+installation and real-world acceptance remain pending. See `ReleaseHistory.md` for the receipt.
+
 November 3 private field-test candidate approved: Rob approved the compact navigation panel,
 production iPhone build restricted to his sole internal testing group, and commit/push of the
 route work plus accepted Operations selector. Navigation now keeps the map above a compact

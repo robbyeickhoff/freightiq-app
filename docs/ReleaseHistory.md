@@ -6,6 +6,33 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-11-03 — Active Route Execution private iPhone candidate
+
+Rob approved the compact navigation panel, commit/push, and an iPhone production candidate only
+for his existing one-person internal group. Commit `081d10e` was pushed to `clean-main`.
+Production build 64 (`27dfb2bd-0a75-4628-b97d-77c3fe2dfe4b`), profile
+`production-navigation-test`, finished from that commit. The opt-in profile enables Mapbox
+Navigation 3.34.1 and Expo's SDK-57 scene support. The first local device build had failed on
+iOS 27 due to missing scene lifecycle configuration; the corrected Dev build remained running,
+and Rob subsequently confirmed embedded Mapbox opened on his iPhone.
+
+The downloaded production IPA passed deep/strict signature verification, production push and
+TestFlight entitlement checks, disabled-debugging, production bundle ID/build number, embedded
+Mapbox token/module/framework, scene manifest, existing 3D production configuration and standalone
+JS-bundle checks. SHA-256: `1ff13bad8782164ec780f3fcfbb8bcc11cc7049b3d56b7ec8d258c3d22a80091`.
+All 26 focused route/planning/Operations tests, TypeScript and iOS release JS export passed.
+Focused lint had no errors and the existing main-map dependency warning.
+
+Submission `fcbf88c1-f3ac-4350-94df-d722abf9d362` succeeded after Apple processed the upload.
+The metadata job requested only `Team (Expo)`, found one matching group
+`fccf6d1c-2f13-4163-89ed-f0d0068470be`, and confirmed its automatic access to all builds.
+The initial scheduling request with optional What-to-Test text was rejected by EAS's plan
+restriction; retry without notes uploaded the same inspected IPA. No plan change, external-group
+assignment, Beta App Review, public submission or Android build occurred. Field acceptance of
+build 64, the compact panel, scrolling correction and combined navigation/3D behavior remains
+pending Rob's installed-build test. Route records are local to each app installation; a Dev-app
+route is not automatically transferred to the TestFlight app.
+
 ## 2026-10-29 — 3D Delivery Zone private iPhone candidate
 
 Rob approved the focused 3D Delivery Zone source publication and an iPhone production candidate
