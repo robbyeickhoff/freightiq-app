@@ -13,6 +13,22 @@ answer one question:
 
 ## Current Objective
 
+### November 4 — individual Navigate uses embedded navigation
+
+Rob reported Build 65's individual Navigate action still opened Apple Maps and approved fixing it.
+Updated the map and Today's Route Navigate handlers to use embedded navigation when installed.
+The selected destination is saved as the current stop with remaining stops preserved; a searched
+location is added to the saved route before guidance. Older builds without the native module
+retain their external navigation path. The shared context saves destination and execution together,
+retaining stale-route/account guards and the 50-stop limit. Reviewed the scoped diff and React
+hook dependencies. TypeScript, all 13 saved-route tests and whitespace pass; scoped lint has no
+errors and one pre-existing map callback dependency warning. Physical-device retest is pending.
+Rob approved committing and pushing this fix after reporting a solid real-world day with
+Build 65 and no additional issues. That field report covers the installed build, not this
+unreleased Navigate correction; its physical-device retest remains pending. No new build
+or distribution was requested.
+
+
 ### November 4 — private TestFlight candidate available
 
 Reviewed source committed/pushed as `a793ae1`. Private iPhone build **1.0.1 (65)**
@@ -21,7 +37,8 @@ IPA passed signing, entitlement, standalone bundle, scene, Mapbox and existing 3
 inspection. Submission `ef5747fd-97a9-49cd-aeb9-d1ed92d08789` finished. The completed metadata job
 waited through Apple processing, found exactly the requested `Team (Expo)` internal group and
 confirmed build assignment. No external, public or Android release was requested. Full receipt
-is in `ReleaseHistory.md`. Rob's installation and driving acceptance remain pending; the main
+is in `ReleaseHistory.md`. Rob confirmed installation and reported that the real-world workflow was solid and user-friendly,
+with no additional issues found during his busy day. The Navigate mismatch is tracked above; the main
 local iPhone workflow passed as recorded below. Deferred: clearer standalone drag handle and
 light/dark visual check. Real background reminders, arrival, rerouting, weak signal and ETA accuracy
 are the next field checks.

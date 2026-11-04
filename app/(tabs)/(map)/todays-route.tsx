@@ -199,6 +199,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     clearRoute,
     completeStop,
     startExecution,
+    navigateToStop,
     isReady,
     isStale,
     moveStop,
@@ -461,6 +462,16 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     }
     if (isStale && !staleResolved) {
       showStaleRouteAlert(() => void launchStop(stop, true));
+      return;
+    }
+
+    if (hasEmbeddedNavigation) {
+      setNavigationLaunching(true);
+      try {
+        await navigateToStop(stop);
+        router.push("/active-navigation");
+      } catch { showSaveError(); }
+      finally { setNavigationLaunching(false); }
       return;
     }
 

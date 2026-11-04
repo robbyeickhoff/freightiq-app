@@ -3,7 +3,7 @@ import test from "node:test";
 
 // prettier-ignore
 // @ts-expect-error Node's strip-types test runner requires the explicit TypeScript extension.
-import { startRouteExecution, arriveAtRouteStop, skipActiveRouteStop, addRouteStop, carryRouteForward, emptyTodayRoute, isRouteStale, moveUpcomingStop, parseTodayRoute, refreshRouteStopSnapshots, removeRouteStop, setRouteStopCompleted } from "../utils/todays-route.ts";
+import { navigateToRouteStop, startRouteExecution, arriveAtRouteStop, skipActiveRouteStop, addRouteStop, carryRouteForward, emptyTodayRoute, isRouteStale, moveUpcomingStop, parseTodayRoute, refreshRouteStopSnapshots, removeRouteStop, setRouteStopCompleted } from "../utils/todays-route.ts";
 
 const morning = new Date("2026-08-23T08:00:00.000Z");
 const later = new Date("2026-08-23T09:00:00.000Z");
@@ -155,4 +155,28 @@ test("refreshes saved stop display data without changing route progress", () => 
   );
   assert.equal(refreshed.stops[0].name, "Updated A");
   assert.equal(refreshed.stops[0].status, "completed");
+});
+
+
+test("individual Navigate selects the destination and preserves the interrupted route", () => {
+  let route = emptyTodayRoute(morning);
+  for (const id of ["A", "B", "C"]) route = addRouteStop(route, stop(id), morning).route;
+  route = startRouteExecution(route, morning);
+  route = arriveAtRouteStop(route, "A", "mapbox", later);
+  route = navigateToRouteStop(route, stop("C"), later);
+  assert.equal(route.execution.activeStopId, "C");
+  assert.equal(route.execution.arrival, null);
+  assert.deepEqual(route.stops.map((s) => s.id), ["C", "A", "B"]);
+  assert.deepEqual(parseTodayRoute(JSON.stringify(route)), route);
+  assert.equal(navigateToRouteStop(route, stop("C"), later), route);
+  route = setRouteStopCompleted(route, "C", true, later);
+  assert.equal(route.execution.activeStopId, "A");
+});
+
+test("Navigate starts a draft or new searched destination without losing other stops", () => {
+  let route = addRouteStop(emptyTodayRoute(morning), stop("A"), morning).route;
+  route = navigateToRouteStop(route, stop("B"), later);
+  assert.equal(route.execution.status, "active");
+  assert.equal(route.execution.activeStopId, "B");
+  assert.deepEqual(route.stops.map((s) => s.id), ["B", "A"]);
 });

@@ -1,3 +1,4 @@
+import { hasEmbeddedNavigation } from "@/utils/embedded-navigation";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import * as Crypto from "expo-crypto";
@@ -569,7 +570,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
   const router = useRouter();
   const { colorScheme, colors } = useAppTheme();
   const { navigationPreference } = useNavigationPreference();
-  const { addStop, carryForward, route: todayRoute, startFresh } = useTodayRoute();
+  const { addStop, carryForward, navigateToStop, route: todayRoute, startFresh } = useTodayRoute();
   const { fontScale, height: windowHeight } = useWindowDimensions();
   const safeAreaInsets = useSafeAreaInsets();
   const reduceMotionEnabled = useReducedMotion();
@@ -2895,6 +2896,21 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
 
   async function navToStop() {
     if (!selectedStop || navigationLaunching) return;
+
+    if (hasEmbeddedNavigation) {
+      setNavigationLaunching(true);
+      try {
+        await navigateToStop({
+          id: selectedStop.id === "temp-search-result" ? Crypto.randomUUID() : selectedStop.id,
+          name: selectedStop.name, address: selectedStop.address ?? "",
+          lat: selectedStop.lat, lng: selectedStop.lng,
+        });
+        router.push("/active-navigation");
+      } catch (error) {
+        Alert.alert("Couldn’t start navigation", error instanceof Error ? error.message : "Please try again.");
+      } finally { setNavigationLaunching(false); }
+      return;
+    }
 
     const destination: NavigationDestination = {
       address: selectedStop.address,

@@ -15,6 +15,7 @@ import {
   addRouteStop,
   arriveAtRouteStop,
   startRouteExecution,
+  navigateToRouteStop,
   skipActiveRouteStop,
   carryRouteForward,
   clearStoredTodayRoute,
@@ -35,6 +36,7 @@ import {
 
 type TodayRouteContextValue = {
   startExecution: () => Promise<void>;
+  navigateToStop: (stop: RouteStopInput) => Promise<void>;
   arrive: (stopId: string, source?: "driver" | "mapbox") => Promise<void>;
   skipActiveStop: () => Promise<void>;
   addStop: (stop: RouteStopInput) => Promise<AddRouteStopResult["status"] | "signed_out" | "stale">;
@@ -200,6 +202,14 @@ export function TodayRouteProvider({ children }: PropsWithChildren) {
     [enqueue, persist],
   );
 
+  const navigateToStop = useCallback(
+    async (stop: RouteStopInput) => enqueue(async () => {
+      if (isRouteStale(routeRef.current)) throw new Error("Keep or replace the earlier route first.");
+      await persist(navigateToRouteStop(routeRef.current, stop));
+    }),
+    [enqueue, persist],
+  );
+
   const startExecution = useCallback(
     async () =>
       enqueue(async () => {
@@ -222,6 +232,7 @@ export function TodayRouteProvider({ children }: PropsWithChildren) {
   const value = useMemo<TodayRouteContextValue>(
     () => ({
       startExecution,
+      navigateToStop,
       arrive,
       skipActiveStop,
       addStop,
@@ -240,6 +251,7 @@ export function TodayRouteProvider({ children }: PropsWithChildren) {
     }),
     [
       startExecution,
+      navigateToStop,
       arrive,
       skipActiveStop,
       addStop,
