@@ -13,6 +13,19 @@ answer one question:
 
 ## Current Objective
 
+### November 4 — private TestFlight candidate available
+
+Reviewed source committed/pushed as `a793ae1`. Private iPhone build **1.0.1 (65)**
+(`61f73f42-a79c-4f39-b1ad-b45c13aeaacb`) finished using `production-navigation-test`; the downloaded
+IPA passed signing, entitlement, standalone bundle, scene, Mapbox and existing 3D configuration
+inspection. Submission `ef5747fd-97a9-49cd-aeb9-d1ed92d08789` finished. The completed metadata job
+waited through Apple processing, found exactly the requested `Team (Expo)` internal group and
+confirmed build assignment. No external, public or Android release was requested. Full receipt
+is in `ReleaseHistory.md`. Rob's installation and driving acceptance remain pending; the main
+local iPhone workflow passed as recorded below. Deferred: clearer standalone drag handle and
+light/dark visual check. Real background reminders, arrival, rerouting, weak signal and ETA accuracy
+are the next field checks.
+
 ### November 4 — local iPhone acceptance session
 
 Rob passed the initial route-screen and plus/search/add checks, and accepted the overview layout

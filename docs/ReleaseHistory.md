@@ -6,6 +6,34 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-11-04 — Driver-tested route/navigation private iPhone candidate
+
+Rob accepted the local iPhone route screen, search/add, overview scrolling and per-leg metrics,
+current/future-stop Intel, expanded-card tap target, add-during-navigation, Skip, Complete, pinned
+current-stop reordering, End/Resume, full app reopen/recovery and Remove/advance flows. He approved
+commit/push and an iPhone TestFlight build for his internal group only. Source commit `a793ae1`
+was pushed directly to `clean-main`; all 28 focused route/planning/Operations Board tests,
+TypeScript, whitespace and scoped lint passed (two pre-existing unused StopScreen variable
+warnings, no lint errors).
+
+Build **1.0.1 (65)** (`61f73f42-a79c-4f39-b1ad-b45c13aeaacb`) finished from that exact commit using
+the existing `production-navigation-test` profile. The downloaded IPA passed deep/strict signature,
+production bundle ID/version, production push/TestFlight entitlements, disabled debugging,
+standalone JS, scene support, Mapbox token/module/frameworks and existing 3D configuration checks.
+SHA-256: `08a6ef6f998f46c281ddd3efcff1fae9089bac8a9a5a799edf88c6e1a752e0a2`.
+
+Submission `ef5747fd-97a9-49cd-aeb9-d1ed92d08789` finished. Its completed job waited through Apple
+processing, then updated metadata for Apple build `dded1b98-965d-4324-86f1-57d87775dab8`. Requested
+groups were exactly `["Team (Expo)"]`; one matching group was found and the job confirmed the
+build was already assigned to group `fccf6d1c-2f13-4163-89ed-f0d0068470be`. No Early Testers,
+external Beta App Review, public App Review or Android distribution was requested. Optional
+What-to-Test submission was omitted because of the existing EAS plan restriction.
+
+Installed-build acceptance and real-world automatic arrival, background alert timing/readability,
+rerouting, poor signal and ETA accuracy remain Rob's field test. Light/dark visual acceptance and
+the deferred standalone drag-handle refinement remain follow-up items. The Dev app's route is
+separate from the TestFlight installation's saved route.
+
 ## 2026-11-03 — Active Route Execution private iPhone candidate
 
 Rob approved the compact navigation panel, commit/push, and an iPhone production candidate only
