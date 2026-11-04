@@ -6,12 +6,37 @@
 > November 2, 2026. `docs/CurrentBuild.md` identifies this as the active objective. Operational and
 > publishing actions retain their separate approval gates.
 
+## November 3 field-feedback amendment — approved
+
+This amendment supersedes the earlier manual Arrived control and unspecified add position below.
+
+- Read the current stop's existing Intel, or any stop's Intel from View Route, above guidance;
+  returning must retain the active destination and saved route. Preserve existing private Intel locks.
+- Adding a new stop during an active run saves it as the immediate destination; the interrupted
+  stop follows next, then the other remaining stops in their existing order. Draft additions append.
+- Remove manual Arrived controls. Complete finishes the stop and advances; Skip keeps it for later.
+  Automatic arrival remains informational and never completes a delivery.
+- Route screen: remove the Full Route & ETAs banner, add a header plus leading to map search,
+  and place compact Start/Resume and Driving Alerts controls below the list.
+- Overview: title is the stop count, with clear Add/Edit/Resume controls; retain total time/distance,
+  omit the driving-only helper sentence, and use ETA / min / mi columns under each address.
+  Per November 4 physical-review approval, ETA is cumulative through the supplied order;
+  minutes and miles describe the leg from the previous stop (from current location for stop one).
+- Expose drag handles for reordering; retain accessible move options and keep the current stop first.
+- Guidance uses floating rounded maneuver and bottom cards. Expanded controls are compact grouped
+  function rows, including Complete, Skip, Remove, Add and End Navigation; ending preserves the route.
+- Background reminders include readable direction text and a contrasting arrow, with mile,
+  half-mile, quarter-mile and 500-foot milestones where the step permits, with duplicate/cooldown
+  protection. iOS owns the outer notification banner; this does not promise Apple's private UI.
+- Verify locally first. Phone driving, background timing, poor signal and final appearance remain
+  physical acceptance gates. No new release, distribution, backend or credential changes authorized.
+
 ## Document Control
 
 - **Purpose:** Put FreightIQ's approved route and delivery workflow around embedded Mapbox
   turn-by-turn navigation so the driver remains inside one app
 - **Operating mode:** Product → Build Specification planning
-- **Implementation status:** Local iPhone full-route preview and multistop guidance verified in simulator; physical acceptance pending
+- **Implementation status:** Local iPhone route/navigation workflow accepted November 4; driving and background-reminder field acceptance pending
 - **Original specification-plan approval:** Product Owner, September 28, 2026
 - **Embedded-Mapbox revision approval:** Product Owner, October 28, 2026
 - **Implementation approval:** Product Owner, November 2, 2026, after 3D Yard View reached tester

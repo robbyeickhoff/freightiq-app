@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Modal, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import DraggableFlatList from "react-native-draggable-flatlist";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { RouteMetrics } from "@/components/route-metrics";
+import { NavigationStopIntel } from "@/components/navigation-stop-intel";
+import type { TodayRouteStop } from "@/utils/todays-route";
 import HomeScreen from "@/app/(tabs)/(map)/index";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
@@ -19,10 +23,13 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, initialMode = "rout
   const [editing, setEditing] = useState(false);
   const [addedId, setAddedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [intelStop, setIntelStop] = useState<TodayRouteStop | null>(null);
   const savingRef = useRef(false);
   useEffect(() => { if (visible) { setMode(initialMode); setEditing(false); setAddedId(null); } }, [visible, initialMode]);
   const { colors, colorScheme } = useAppTheme();
   const stops = useMemo(() => orderedNavigationStops(route), [route]);
+  const pinnedStop = editing ? stops.find((stop) => stop.id === route.execution.activeStopId) : undefined;
+  const draggableStops = pinnedStop ? stops.filter((stop) => stop.id !== pinnedStop.id) : stops;
   const completed = route.stops.filter((stop) => stop.status === "completed");
   const { plan, error, loading, refresh } = useRoutePlan(stops, visible && mode === "route");
   const added = route.stops.find((stop) => stop.id === addedId);
@@ -46,10 +53,11 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, initialMode = "rout
     });
   };
   useEffect(() => { if (visible && plan) fit(); }, [visible, plan]); // eslint-disable-line react-hooks/exhaustive-deps
-  return <Modal visible={visible} animationType="slide" onRequestClose={onClose}><SafeAreaProvider>
+  return <Modal visible={visible} animationType="slide" onRequestClose={onClose}><GestureHandlerRootView style={{ flex: 1 }}><SafeAreaProvider>
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
+      {intelStop ? <NavigationStopIntel stop={intelStop} returnLabel="Back to Route" onClose={() => setIntelStop(null)} /> : null}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.textPrimary, flexShrink: 1 }]}>{mode === "search" ? "Add Stops" : completed.length ? "Remaining Route" : "Full Route"} · {stops.length}</Text>
+        <Text style={[styles.title, { color: colors.textPrimary, flexShrink: 1 }]}>{mode === "search" ? "Add Stop" : `${stops.length} Stops`}</Text>
         <AppButton variant="tertiary" onPress={onClose}>{route.execution.status === "active" ? "Resume" : "Done"}</AppButton>
       </View>
       {mode === "search" ? <>
@@ -57,7 +65,10 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, initialMode = "rout
           <AppButton variant="tertiary" size="compact" onPress={() => setMode("route")}>View Route</AppButton>
           <Text accessibilityLiveRegion="polite" style={{ color: colors.textPrimary, flex: 1 }}>{added ? `✓ Added ${added.name}` : "Search, select, and add a stop"}</Text>
         </View>
-        <HomeScreen routeAddMode onRouteStopAdded={setAddedId} onRouteAddDone={() => setMode("route")} />
+        <HomeScreen routeAddMode onRouteStopAdded={(id) => {
+          setAddedId(id);
+          if (route.execution.status === "active") onClose();
+        }} onRouteAddDone={() => setMode("route")} />
       </> : <>
       <View style={styles.header}>
         <AppButton size="compact" variant="secondary" onPress={() => { setEditing(false); setMode("search"); }}>Add Stop</AppButton>
@@ -66,7 +77,6 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, initialMode = "rout
       {plan && !editing ? <>
         <View style={styles.summary}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>{drivingTime(totals.seconds)} · {drivingDistance(totals.meters)}</Text>
-          <Text style={{ color: colors.textSecondary }}>Estimated driving only · delivery time not included</Text>
         </View>
         <MapView ref={map} style={styles.map} userInterfaceStyle={colorScheme} onMapReady={fit} onLayout={fit}>
           <Polyline coordinates={plan.coordinates} strokeColor={colors.accentStrong} strokeWidth={5} />
@@ -76,27 +86,38 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, initialMode = "rout
       {loading ? <View style={styles.summary}><ActivityIndicator color={colors.textPrimary} /><Text style={{ color: colors.textPrimary }}>Calculating the full route…</Text></View> : null}
       {error ? <View style={styles.summary}><Text style={{ color: colors.textPrimary }}>{error}</Text><AppButton onPress={refresh}>Try Again</AppButton></View> : null}
       {editing ? <Text style={[styles.hint, { color: colors.textSecondary }]}>Tap Move for options, or hold to drag. Your current destination stays first.</Text> : null}
+      {pinnedStop ? <View style={[styles.pinnedStop, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={{ color: colors.accentStrong, fontWeight: "700" }}>CURRENT STOP</Text>
+        <View style={styles.pinnedRow}>
+          <View style={{ flex: 1, gap: 5 }}>
+            <Text style={[styles.name, { color: colors.textPrimary }]}>1. {pinnedStop.name}</Text>
+            <Text style={{ color: colors.textSecondary }}>{pinnedStop.address.replace(/,?\s+United States\s*$/i, "").replace(/\bColorado\b/gi, "CO").trim()}</Text>
+          </View>
+          <AppButton size="compact" variant="tertiary" disabled={saving} accessibilityLabel={`Remove ${pinnedStop.name}`} onPress={() => Alert.alert("Remove stop?", `${pinnedStop.name} will be removed from today's route.`, [
+            { text: "Cancel", style: "cancel" }, { text: "Remove", style: "destructive", onPress: () => void save(() => removeStop(pinnedStop.id)) },
+          ])}>Remove</AppButton>
+        </View>
+      </View> : null}
       <DraggableFlatList
         containerStyle={styles.listContainer}
         style={styles.listViewport}
-        data={stops} keyExtractor={(stop) => stop.id} contentContainerStyle={styles.list}
+        data={draggableStops} dragItemOverflow={false} keyExtractor={(stop) => stop.id} contentContainerStyle={styles.list}
         onDragEnd={({ data }) => {
-          const current = data.find((stop) => stop.id === route.execution.activeStopId);
-          void save(() => reorderStops(current ? [current, ...data.filter((stop) => stop.id !== current.id)] : data));
+          void save(() => reorderStops(pinnedStop ? [pinnedStop, ...data] : data));
         }}
-        renderItem={({ item: stop, getIndex, drag, isActive }) => { const index = getIndex() ?? 0; const current = stop.id === route.execution.activeStopId;
+        renderItem={({ item: stop, getIndex, drag, isActive }) => { const index = (getIndex() ?? 0) + (pinnedStop ? 1 : 0); const current = stop.id === route.execution.activeStopId;
           return <View style={[styles.stop, { borderBottomColor: colors.textSecondary, opacity: isActive ? 0.6 : 1 }]}>
           {current ? <Text style={{ color: colors.accentStrong, fontWeight: "700" }}>CURRENT STOP</Text> : null}
+          <Pressable disabled={editing} accessibilityRole="button" accessibilityLabel={`View ${stop.name} stop Intel`} onPress={() => setIntelStop(stop)}>
           <Text style={[styles.name, { color: colors.textPrimary }]}>{index + 1}. {stop.name}</Text>
           <Text style={{ color: colors.textSecondary }}>{stop.address
             .replace(/,?\s+United States\s*$/i, "")
             .replace(/\bColorado\b/gi, "CO")
             .trim()}</Text>
-          <Text style={[styles.name, { color: colors.textPrimary }]}>{arrivals[index]
-            ? `Est. arrival ${new Date(arrivals[index].arrival).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} · ${drivingTime(legs[index].seconds)} driving from ${index ? "previous stop" : "here"}`
-            : "ETA unavailable"}</Text>
+          {arrivals[index] ? <RouteMetrics arrival={arrivals[index].arrival} seconds={legs[index].seconds} meters={legs[index].meters} /> : <Text style={{ color: colors.textSecondary }}>ETA unavailable</Text>}
+          </Pressable>
           {editing ? <View style={styles.header}>
-            <AppButton size="compact" variant="secondary" disabled={saving || current} accessibilityLabel={`Move ${stop.name}`} onLongPress={drag} onPress={() => {
+            <AppButton size="compact" variant="secondary" disabled={saving || current} accessibilityLabel={`Move ${stop.name}`} accessibilityHint="Hold and drag to reorder, or tap for move options" delayLongPress={150} onLongPress={drag} onPress={() => {
               const move = (offset: number) => {
                 const next = [...stops];
                 [next[index], next[index + offset]] = [next[index + offset], next[index]];
@@ -107,7 +128,7 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, initialMode = "rout
                 ...(index < stops.length - 1 ? [{ text: "Move Later", onPress: () => move(1) }] : []),
                 { text: "Cancel", style: "cancel" },
               ]);
-            }}>Move</AppButton>
+            }}>☰ Move</AppButton>
             <AppButton size="compact" variant="tertiary" disabled={saving} accessibilityLabel={`Remove ${stop.name}`} onPress={() => Alert.alert("Remove stop?", `${stop.name} will be removed from today's route.`, [
               { text: "Cancel", style: "cancel" }, { text: "Remove", style: "destructive", onPress: () => void save(() => removeStop(stop.id)) },
             ])}>Remove</AppButton>
@@ -123,7 +144,7 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, initialMode = "rout
       />
       </>}
     </SafeAreaView>
-  </SafeAreaProvider></Modal>;
+  </SafeAreaProvider></GestureHandlerRootView></Modal>;
 }
 
 const styles = StyleSheet.create({
@@ -132,6 +153,8 @@ const styles = StyleSheet.create({
   map: { height: "36%" }, list: { padding: 16, gap: 12 }, stop: { paddingBottom: 12, gap: 5, borderBottomWidth: StyleSheet.hairlineWidth },
   name: { fontSize: 16, fontWeight: "600" },
   hint: { padding: 16 },
+  pinnedStop: { marginHorizontal: 16, marginBottom: 8, padding: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, gap: 6 },
+  pinnedRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   listContainer: { flex: 1, minHeight: 0 },
   listViewport: { flex: 1 },
 });

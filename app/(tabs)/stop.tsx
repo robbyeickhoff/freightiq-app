@@ -341,7 +341,12 @@ function fitDeliveryZonePreviewMap(
   );
 }
 
-export default function StopScreen() {
+export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMap, embeddedReturnLabel = "Back to Navigation" }: {
+  embeddedStop?: { id: string; name: string; address: string; lat: number; lng: number };
+  onEmbeddedClose?: () => void;
+  onEmbeddedMap?: (latitude: number, longitude: number) => void;
+  embeddedReturnLabel?: string;
+} = {}) {
   const scrollViewRef = useRef<ScrollView | null>(null);
   const additionalIntelScrollRef = useRef<ScrollView | null>(null);
   const contactPhoneInputRefs = useRef(new Map<string, TextInput>());
@@ -408,7 +413,11 @@ export default function StopScreen() {
   const { fontScale } = useWindowDimensions();
   const reduceMotionEnabled = useReducedMotion();
   const usesAccessibilityLayout = fontScale >= 1.5;
-  const params = useLocalSearchParams();
+  const routeParams = useLocalSearchParams();
+  const params = embeddedStop ? {
+    id: embeddedStop.id, name: embeddedStop.name, address: embeddedStop.address,
+    lat: String(embeddedStop.lat), lng: String(embeddedStop.lng),
+  } as typeof routeParams : routeParams;
 
   const stopId = String(params.id ?? "");
   const lat = Number(params.lat ?? 0);
@@ -562,6 +571,7 @@ export default function StopScreen() {
   );
 
   function returnToMap(options?: { includeMergeState?: boolean }) {
+    if (onEmbeddedClose) { onEmbeddedClose(); return; }
     const returnAt = String(Date.now());
     const restorePreviewParams = returnToPreviewRequested
       ? {
@@ -2228,7 +2238,7 @@ export default function StopScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView edges={embeddedStop ? [] : undefined} style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView
         style={{ flex: 1, backgroundColor: colors.background }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -2369,7 +2379,7 @@ export default function StopScreen() {
                     >
                       <AppButton
                         onPress={() =>
-                          router.navigate({
+                          onEmbeddedMap ? onEmbeddedMap(Number(entranceLat), Number(entranceLng)) : router.navigate({
                             pathname: "/(tabs)/(map)",
                             params: {
                               focusStopId: stopId,
@@ -2981,7 +2991,7 @@ export default function StopScreen() {
                   returnToMap({ includeMergeState: true });
                 }}
               >
-                Back to Map
+                {onEmbeddedClose ? embeddedReturnLabel : "Back to Map"}
               </AppButton>
             </View>
 

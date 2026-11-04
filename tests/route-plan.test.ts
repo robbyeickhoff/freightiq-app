@@ -31,7 +31,7 @@ test("active delivery stays first after reorder and completed stops are excluded
 test("whole-route totals and cumulative stop ETAs include every leg", () => {
   const legs = [{ stopId: "A", seconds: 600, meters: 1000 }, { stopId: "B", seconds: 1200, meters: 2000 }];
   assert.deepEqual(routePlanTotals(legs), { seconds: 1800, meters: 3000 });
-  assert.deepEqual(estimatedArrivals(legs, 1000), [{ stopId: "A", arrival: 601000 }, { stopId: "B", arrival: 1801000 }]);
+  assert.deepEqual(estimatedArrivals(legs, 1000), [{ stopId: "A", arrival: 601000, seconds: 600, meters: 1000 }, { stopId: "B", arrival: 1801000, seconds: 1800, meters: 3000 }]);
 });
 
 test("all chunk results are assembled in saved order even if responses finish out of order", async () => {

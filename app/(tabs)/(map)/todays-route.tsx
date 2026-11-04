@@ -199,8 +199,6 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     clearRoute,
     completeStop,
     startExecution,
-    arrive,
-    skipActiveStop,
     isReady,
     isStale,
     moveStop,
@@ -217,9 +215,10 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
   const lastFittedMarkerSignatureRef = useRef("");
   const [isOverviewMapReady, setIsOverviewMapReady] = useState(false);
   const [trackRouteMarkerChanges, setTrackRouteMarkerChanges] = useState(Platform.OS === "android");
-  const [showRouteList, setShowRouteList] = useState(!isTab);
+  const [showRouteList, setShowRouteList] = useState(true);
   const [navigationLaunching, setNavigationLaunching] = useState(false);
   const [routePlanOpen, setRoutePlanOpen] = useState(false);
+  const [routePlanMode, setRoutePlanMode] = useState<"route" | "search">("route");
   const [navigationPickerDestination, setNavigationPickerDestination] =
     useState<NavigationDestination | null>(null);
   const [navigationPickerProviders, setNavigationPickerProviders] = useState<NavigationProvider[]>(
@@ -757,11 +756,8 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
   ];
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
-      <RoutePlanSheet visible={routePlanOpen} onClose={() => setRoutePlanOpen(false)} />
-      {route.stops.some((stop) => stop.status === "upcoming") ? (
-        <AppButton variant="secondary" onPress={() => setRoutePlanOpen(true)}>Full Route &amp; ETAs</AppButton>
-      ) : null}
+    <SafeAreaView edges={isTab ? ["top", "left", "right"] : undefined} style={[styles.screen, { backgroundColor: colors.background }]}>
+      <RoutePlanSheet visible={routePlanOpen} initialMode={routePlanMode} onClose={() => setRoutePlanOpen(false)} />
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         {!isTab ? (
           <AppButton
@@ -779,30 +775,25 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
             {completed.length} of {route.stops.length} done
           </Text>
         </View>
+        <AppButton size="icon" variant="tertiary" accessibilityLabel="Add stop" onPress={() => { setRoutePlanMode("search"); setRoutePlanOpen(true); }}>
+          <AppIcon name="add" color={colors.accentStrong} />
+        </AppButton>
         {isTab ? (
           <AppButton
-            accessibilityLabel={showRouteList ? "Show route map" : "Show route list"}
-            onPress={() => {
-              if (showRouteList) {
-                lastFittedMarkerSignatureRef.current = "";
-                setIsOverviewMapReady(false);
-                setShowRouteList(false);
-              } else {
-                setShowRouteList(true);
-              }
-            }}
+            accessibilityLabel="View full route map and estimates"
+            onPress={() => { setRoutePlanMode("route"); setRoutePlanOpen(true); }}
             size="compact"
             style={styles.headerMapAction}
             variant="tertiary"
           >
             <View style={styles.headerMapActionContent}>
               <AppIcon
-                name={showRouteList ? "map" : "route"}
+                name="map"
                 color={colors.accentStrong}
                 size={20}
               />
               <Text style={[styles.headerMapActionLabel, { color: colors.accentStrong }]}>
-                {showRouteList ? "Map" : "List"}
+                Map
               </Text>
             </View>
           </AppButton>
@@ -1097,66 +1088,13 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
         </View>
       ) : (
         <DraggableFlatList
+          containerStyle={{ flex: 1, minHeight: 0 }}
+          style={{ flex: 1 }}
           contentContainerStyle={styles.listContent}
           data={upcoming}
           keyExtractor={(item) => item.id}
           ListHeaderComponent={
             <View style={styles.listHeader}>
-              <OperationsDrivingAlertControl origin="route" />
-              {upcoming.length > 0 ? (
-                <AppCard contentStyle={styles.stopCard}>
-                  {route.execution.status === "active" && nextStop ? (
-                    <>
-                      <Text style={[styles.stopName, { color: colors.textPrimary }]}>
-                        {route.execution.arrival ? "Arrived: " : "Current stop: "}
-                        {nextStop.name}
-                      </Text>
-                      <AppButton
-                        disabled={navigationLaunching || !isReady}
-                        onPress={() => hasEmbeddedNavigation
-                          ? router.push("/active-navigation")
-                          : void launchStop(nextStop)}
-                      >
-                        Resume Navigation
-                      </AppButton>
-                      <AppButton
-                        disabled={!isReady || Boolean(route.execution.arrival)}
-                        onPress={() => void arrive(nextStop.id).catch(showSaveError)}
-                        variant="secondary"
-                      >
-                        {route.execution.arrival ? "Arrived" : "Arrived at Stop"}
-                      </AppButton>
-                      <AppButton
-                        disabled={!isReady}
-                        onPress={() => void completeStop(nextStop.id, true).catch(showSaveError)}
-                        variant="secondary"
-                      >
-                        Complete Stop
-                      </AppButton>
-                      <AppButton
-                        disabled={!isReady || upcoming.length < 2}
-                        onPress={() => void skipActiveStop().catch(showSaveError)}
-                        variant="tertiary"
-                      >
-                        Skip for Now
-                      </AppButton>
-                    </>
-                  ) : (
-                    <AppButton
-                      disabled={!isReady}
-                      onPress={() => {
-                        const begin = () => void startExecution().then(() => {
-                          if (hasEmbeddedNavigation) router.push("/active-navigation");
-                        }).catch(showSaveError);
-                        if (isStale) showStaleRouteAlert(begin);
-                        else begin();
-                      }}
-                    >
-                      Start Route
-                    </AppButton>
-                  )}
-                </AppCard>
-              ) : null}
               {nextStop ? (
                 <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Upcoming</Text>
               ) : (
@@ -1225,10 +1163,28 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
               </AppButton>
             </View>
           }
-          onDragEnd={({ data }) => void reorderStops(data).catch(showSaveError)}
+          onDragEnd={({ data }) => {
+            const current = data.find((stop) => stop.id === route.execution.activeStopId);
+            void reorderStops(current ? [current, ...data.filter((stop) => stop.id !== current.id)] : data).catch(showSaveError);
+          }}
           renderItem={renderUpcoming}
         />
       )}
+
+      {upcoming.length > 0 ? <View style={[styles.executionBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
+        <OperationsDrivingAlertControl origin="route" menuOnly />
+        <AppButton size="compact" disabled={navigationLaunching || !isReady} style={{ flex: 1 }} onPress={() => {
+          if (route.execution.status === "active" && nextStop) {
+            if (hasEmbeddedNavigation) router.push("/active-navigation");
+            else void launchStop(nextStop);
+            return;
+          }
+          const begin = () => void startExecution().then(() => {
+            if (hasEmbeddedNavigation) router.push("/active-navigation");
+          }).catch(showSaveError);
+          if (isStale) showStaleRouteAlert(begin); else begin();
+        }}>{route.execution.status === "active" ? "Resume" : "Start Route"}</AppButton>
+      </View> : null}
 
       <NavigationAppPicker
         destinationLabel={navigationPickerDestination?.label ?? ""}
@@ -1253,6 +1209,7 @@ export default function MapTodaysRouteScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  executionBar: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderTopWidth: StyleSheet.hairlineWidth },
   header: {
     alignItems: "center",
     borderBottomWidth: Borders.thin,
@@ -1260,9 +1217,9 @@ const styles = StyleSheet.create({
     minHeight: 64,
     paddingHorizontal: Spacing.sm,
   },
-  headerCopy: { flex: 1, paddingRight: 48 },
-  headerCopyTab: { paddingLeft: 48 },
-  headerMapAction: { position: "absolute", right: Spacing.sm },
+  headerCopy: { flex: 1 },
+  headerCopyTab: { paddingLeft: 0 },
+  headerMapAction: {},
   headerMapActionContent: { alignItems: "center", flexDirection: "row", gap: Spacing.xxs },
   headerMapActionLabel: { ...Typography.buttonLabel },
   backText: { fontSize: 38, fontWeight: "400", lineHeight: 40 },

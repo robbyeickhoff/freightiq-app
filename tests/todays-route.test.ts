@@ -11,6 +11,22 @@ const tomorrow = new Date("2026-08-24T08:00:00.000Z");
 
 const stop = (id: string) => ({ address: `${id} Main St`, id, lat: 39, lng: -108, name: id });
 
+test("adding during guidance immediately navigates there and preserves the interrupted route", () => {
+  let route = emptyTodayRoute(morning);
+  for (const id of ["A", "B", "C"]) route = addRouteStop(route, stop(id), morning).route;
+  route = startRouteExecution(route, morning);
+  route = arriveAtRouteStop(route, "A", "mapbox", later);
+  route = moveUpcomingStop(route, "B", -1, later);
+  route = addRouteStop(route, stop("D"), later).route;
+  assert.equal(route.execution.activeStopId, "D");
+  assert.equal(route.execution.arrival, null);
+  assert.deepEqual(route.stops.map((s) => s.id), ["D", "A", "B", "C"]);
+  assert.deepEqual(parseTodayRoute(JSON.stringify(route)), route);
+  assert.equal(addRouteStop(route, stop("D"), later).route, route);
+  route = setRouteStopCompleted(route, "D", true, later);
+  assert.equal(route.execution.activeStopId, "A");
+});
+
 test("execution survives reopening, arrival does not complete, and skip advances", () => {
   let route = addRouteStop(emptyTodayRoute(morning), stop("A"), morning).route;
   route = addRouteStop(route, stop("B"), morning).route;
@@ -30,6 +46,16 @@ test("execution survives reopening, arrival does not complete, and skip advances
   route = removeRouteStop(route, "A", later);
   assert.equal(route.execution.status, "finished");
   assert.equal(route.execution.finishedAt, later.toISOString());
+});
+
+test("a full active route refuses an addition without interrupting its destination", () => {
+  let route = emptyTodayRoute(morning);
+  for (let index = 0; index < 50; index++) route = addRouteStop(route, stop(String(index)), morning).route;
+  route = startRouteExecution(route, morning);
+  const result = addRouteStop(route, stop("extra"), later);
+  assert.equal(result.status, "full");
+  assert.equal(result.route, route);
+  assert.equal(result.route.execution.activeStopId, "0");
 });
 
 test("legacy and invalid execution preserve the saved route", () => {

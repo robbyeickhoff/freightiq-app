@@ -72,9 +72,11 @@ export function routePlanTotals(legs: PlannedLeg[]) {
 
 export function estimatedArrivals(legs: PlannedLeg[], departure: number) {
   let elapsed = 0;
+  let meters = 0;
   return legs.map((leg) => {
     elapsed += leg.seconds;
-    return { stopId: leg.stopId, arrival: departure + elapsed * 1000 };
+    meters += leg.meters;
+    return { stopId: leg.stopId, arrival: departure + elapsed * 1000, seconds: elapsed, meters };
   });
 }
 

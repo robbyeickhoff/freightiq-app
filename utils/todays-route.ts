@@ -235,18 +235,26 @@ export function addRouteStop(
   }
   if (route.stops.length >= TODAY_ROUTE_MAX_STOPS) return { route, status: "full" };
 
+  const added: TodayRouteStop = {
+    ...input, address: input.address.trim(), name: input.name.trim(),
+    completedAt: null, status: "upcoming",
+  };
+  // A stop added to an active run is the driver's immediate destination. Save
+  // its order and execution pointer together, so reopening cannot split them.
+  if (route.execution.status === "active") {
+    const active = route.stops.find((stop) => stop.id === route.execution.activeStopId);
+    const stops = [added, ...(active ? [active] : []), ...route.stops.filter((stop) => stop.id !== active?.id)];
+    return {
+      route: updatedRoute({ ...route, execution: { ...route.execution, activeStopId: added.id, arrival: null } }, stops, now),
+      status: "added",
+    };
+  }
   return {
     route: updatedRoute(
       route,
       [
         ...route.stops,
-        {
-          ...input,
-          address: input.address.trim(),
-          completedAt: null,
-          name: input.name.trim(),
-          status: "upcoming",
-        },
+        added,
       ],
       now,
     ),

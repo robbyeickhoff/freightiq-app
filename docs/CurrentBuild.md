@@ -13,6 +13,95 @@ answer one question:
 
 ## Current Objective
 
+### November 4 — local iPhone acceptance session
+
+Rob passed the initial route-screen and plus/search/add checks, and accepted the overview layout
+and scrolling. He then approved changing the overview's per-stop minutes/miles to measure from
+the previous stop, while retaining cumulative ETA and whole-route totals. Applied that focused
+display correction in `components/route-plan-sheet.tsx`; the first stop uses the current-location
+leg. The navigation panel and saved route calculations are unchanged. TypeScript, focused lint,
+all five route-plan tests and whitespace pass. Rob passed the phone metric retest.
+Opening current-stop Intel and returning to navigation also passed. Rob flagged that the chevron
+alone did not explain the action and approved an accent-colored `Stop Intel ›` label beside the
+business name. Applied in `app/active-navigation.tsx`, retaining the tappable row and a minimum
+44-point target. Rob accepted the Stop Intel label. He then approved enlarging the bottom-card
+expansion target: the grabber and full ETA/minutes/miles area now toggle expansion, with a minimum
+44-point target even before estimates load. Stop Intel, View Route and action buttons remain
+separate targets. Rob passed the enlarged expansion target, add-during-navigation (new stop
+becomes immediate destination), Skip for Now and Complete Stop tests. Reordering remaining stops
+worked, but dragging above the current destination exposed a misleading drop position. Rob
+approved pinning the current stop first. In `components/route-plan-sheet.tsx`, edit mode now places
+the current stop in a separate fixed card outside the draggable viewport; only later stops are
+drag data, and their saved order is appended after the pinned destination. Numbering, move options
+and per-leg metrics retain their full-route indexes. Current-stop removal remains available.
+TypeScript, focused lint, all 16 route/planning tests and whitespace pass. Rob accepted the pinned
+current-stop fix. He also passed End Navigation/Resume, full app close/reopen with route recovery,
+future-stop Intel without changing the active destination, and Remove Stop with advancement.
+The main local workflow is accepted. Light/dark appearance, automatic arrival, real background
+reminder timing/readability, rerouting, poor signal and driving ETA accuracy remain field checks.
+Rob approved commit/push and a new private iPhone TestFlight candidate for his internal group only.
+Final TypeScript, scoped lint (zero errors, two existing unused StopScreen tractor-type warnings),
+all 28 route/planning/Operations Board tests and whitespace passed before publication.
+
+Rob is home and approved local testing before the next internal candidate. Re-ran all 28 focused
+route/planning/Operations Board tests, TypeScript and whitespace successfully. Rebuilt the current
+navigation source in an isolated local development project, verified its signature, scene support,
+Mapbox configuration and development bundle identifier, then installed over FreightIQ Dev on Rob's
+paired iPhone. Launch succeeded, the process remained running, and the Mac server delivered the
+current iOS bundle. TestFlight build 64 was not replaced. The development server is running at
+`http://192.168.1.160:8081` for this physical acceptance session. Owner acceptance is recorded above;
+actual driving/background timing remains field acceptance. The clearer standalone drag-handle
+refinement remains deferred as agreed. Approved publication procedure: commit the reviewed scoped
+changes on `clean-main`, push directly to `origin/clean-main`, build iOS using the existing opt-in
+`production-navigation-test` profile, inspect the exact finished IPA, then submit that build using
+the existing production submit profile with only `Team (Expo)` requested. Verify processing and
+the internal-group metadata result. No Early Testers, Beta App Review, public or Android release.
+
+### November 3 — approved route/navigation field-feedback corrections
+
+Rob approved starting all eight field-feedback corrections. Local implementation now adds active
+stops as the immediate destination, preserving the interrupted stop next; removes manual Arrived
+controls; opens the existing stop Intel above guidance; adds the route-header plus/search entry;
+moves Start/Resume and Driving Alerts into a compact bottom bar; uses stop-count headings and
+ETA/min/mi columns; exposes drag handles with accessible move alternatives; and presents rounded
+floating guidance/function panels. The native camera and map credits clear the bottom panel.
+The existing build specification contains the approved field-feedback amendment.
+
+Native background reminders now include direction text plus an opaque contrasting maneuver image,
+and distance milestones with a cooldown. Mapbox's last-instruction-only reminders are disabled;
+Operations notifications and the notification delegate are unchanged. iOS owns the outer banner.
+
+Verified: 28 route/planning/Operations Board tests, TypeScript, focused ESLint (zero errors;
+two pre-existing unused tractor-type warnings in StopScreen), whitespace, iPhone simulator native
+compilation, and reminder-milestone/cooldown assertions against the actual Swift policy. Simulator
+interaction opened Intel above guidance, returned to the same destination, completed a stop and
+advanced to the next saved destination, and opened full-route estimates. The layout check exposed
+and corrected an unconstrained route-list viewport hiding the new bottom bar; a fresh launch then
+confirmed Resume opens guidance. No production test fixtures or backend changes.
+
+Pending physical acceptance: actual drag/drop and long-route scrolling, adding a stop during a
+drive, current/future stop Intel including saved/locked Intel and Delivery Zone viewing, light/dark
+and large text, real background alert visibility/timing, weak signal, and final panel placement.
+Simulator UI automation could not perform a scroll/drag gesture (Device Hub reported no available
+window), so those are not claimed passed. Existing simulator notification keychain warning was
+dismissed for UI checks; this is not a phone-notification acceptance result.
+
+Changed files in this increment (all local/uncommitted):
+
+- `app/(tabs)/(map)/todays-route.tsx`, `app/(tabs)/stop.tsx`, `app/active-navigation.tsx`
+- `components/operations-driving-alert-control.tsx`, `components/route-plan-sheet.tsx`
+- new `components/navigation-stop-intel.tsx`, `components/route-metrics.tsx`
+- `native-navigation/FreightIQNavigation.swift`
+- `utils/todays-route.ts`, `utils/route-plan.ts`
+- `tests/todays-route.test.ts`, `tests/route-plan.test.ts`
+- `docs/build-specs/FreightIQActiveRouteExecutionV1BuildSpec.md`, this document
+
+No commit/push, cloud build, TestFlight group change, Android distribution or public release has
+been performed for this increment. Build 64 remains the installed field candidate.
+The temporary local test server and simulator guidance session were stopped after verification.
+
+### Earlier November 3 groundwork
+
 November 3 approved Operations posting adjustment before device testing: extracted the existing
 board bottom area menu into `components/operations-area-picker.tsx` and reused it from
 `app/(tabs)/(map)/operations.tsx` and `app/(tabs)/(map)/operations-compose.tsx`. Posting now offers

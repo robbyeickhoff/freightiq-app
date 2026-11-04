@@ -3,6 +3,7 @@ import {
   Alert,
   AppState,
   Linking,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -30,10 +31,12 @@ export function OperationsDrivingAlertControl({
   origin,
   showCategories = false,
   compact = false,
+  menuOnly = false,
 }: {
   origin: "route" | "operations" | "settings";
   showCategories?: boolean;
   compact?: boolean;
+  menuOnly?: boolean;
 }) {
   const { colors } = useAppTheme();
   const { width, fontScale } = useWindowDimensions();
@@ -42,6 +45,7 @@ export function OperationsDrivingAlertControl({
   const [status, setStatus] = useState("Off");
   const [active, setActive] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [categories, setCategories] = useState<OperationsCategory[]>([]);
   const update = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
@@ -106,7 +110,7 @@ export function OperationsDrivingAlertControl({
         },
       ],
     );
-  return (
+  const content = (
     <AppCard contentStyle={[styles.card, compact && styles.compactCard]}>
       <View style={[styles.row, stackCompact && styles.stackedRow]}>
         <View style={[styles.copy, stackCompact && styles.stackedCopy]}>
@@ -175,6 +179,21 @@ export function OperationsDrivingAlertControl({
       ) : null}
     </AppCard>
   );
+  if (!menuOnly) return content;
+  return <>
+    <AppButton size="compact" variant="tertiary" onPress={() => setMenuOpen(true)} accessibilityLabel={`Driving alerts ${status}`}>
+      {active ? "Alerts On" : "Alerts Off"}
+    </AppButton>
+    <Modal visible={menuOpen} transparent animationType="slide" onRequestClose={() => setMenuOpen(false)}>
+      <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "#0008" }}>
+        <Pressable style={StyleSheet.absoluteFill} accessibilityLabel="Close alert settings" onPress={() => setMenuOpen(false)} />
+        <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, paddingBottom: 36, gap: 12 }}>
+          {content}
+          <AppButton variant="tertiary" onPress={() => setMenuOpen(false)}>Done</AppButton>
+        </View>
+      </View>
+    </Modal>
+  </>;
 }
 const styles = StyleSheet.create({
   card: { padding: 14, gap: 12 },

@@ -2,14 +2,18 @@ import { requireNativeView } from "expo";
 import * as Location from "expo-location";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, Text, View, type ViewProps } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View, type ViewProps } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { NavigationStopIntel } from "@/components/navigation-stop-intel";
+import { RouteMetrics } from "@/components/route-metrics";
+import { AppIcon, type AppIconName } from "@/components/ui/app-icon";
 import { AppButton } from "@/components/ui/app-button";
 import { useTodayRoute } from "@/context/todays-route-context";
 import { useAppTheme } from "@/context/theme-context";
 import { hasEmbeddedNavigation } from "@/utils/embedded-navigation";
 import { RoutePlanSheet } from "@/components/route-plan-sheet";
-import { drivingDistance, drivingTime, orderedNavigationStops, routePlanSignature, type PlannedLeg } from "@/utils/route-plan";
+import type { TodayRouteStop } from "@/utils/todays-route";
+import { orderedNavigationStops, routePlanSignature, type PlannedLeg } from "@/utils/route-plan";
 
 type Request = {
   id: string; stopId: string; name: string; latitude: number; longitude: number;
@@ -19,12 +23,16 @@ type Request = {
 type StateEvent = { state: string; requestId: string; stopId: string; message: string; legs: PlannedLeg[] };
 const NavigationView = hasEmbeddedNavigation
   ? requireNativeView<ViewProps & {
-      request: Request; dark: boolean; onState: (event: { nativeEvent: StateEvent }) => void;
+      request: Request; dark: boolean; bottomInset: number; onState: (event: { nativeEvent: StateEvent }) => void;
     }>("FreightIQNavigation")
   : null;
 
 export default function ActiveNavigationScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const [panelHeight, setPanelHeight] = useState(180);
+  const [intelStop, setIntelStop] = useState<TodayRouteStop | null>(null);
+  const [planMode, setPlanMode] = useState<"route" | "search">("route");
   const { route, isReady, arrive, completeStop, skipActiveStop, removeStop } = useTodayRoute();
   const { colors, colorScheme } = useAppTheme();
   const active = route.stops.find((s) => s.id === route.execution.activeStopId && s.status === "upcoming");
@@ -95,15 +103,16 @@ export default function ActiveNavigationScreen() {
     // Native arrival may follow immediately after a completion write. Queue it in
     // the provider rather than dropping it behind the driver's tap guard.
     if (event.state === "arrived") void arrive(event.stopId, "mapbox").catch(() => {
-      Alert.alert("Arrival not saved", "You can still tap Arrived or Complete Stop. Your route remains saved.");
+      Alert.alert("Arrival not saved", "You can still tap Complete Stop. Your route remains saved.");
     });
   };
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={["top"]} style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <RoutePlanSheet visible={routePlanOpen} onClose={() => setRoutePlanOpen(false)} liveLegs={liveLegs} />
+      <RoutePlanSheet initialMode={planMode} visible={routePlanOpen} onClose={() => setRoutePlanOpen(false)} liveLegs={liveLegs} />
+      {intelStop ? <NavigationStopIntel stop={intelStop} onClose={() => setIntelStop(null)} /> : null}
       <View style={styles.map}>
-        {active && request && NavigationView ? <NavigationView style={styles.map} request={request} dark={colorScheme === "dark"} onState={onState} /> : null}
+        {active && request && NavigationView ? <NavigationView style={styles.map} request={request} bottomInset={panelHeight + insets.bottom + 20} dark={colorScheme === "dark"} onState={onState} /> : null}
         {message && active ? <View style={[styles.notice, { backgroundColor: colors.surface }]}>
           <Text style={{ color: colors.textPrimary }}>{message}</Text>
           {failed
@@ -112,41 +121,69 @@ export default function ActiveNavigationScreen() {
         </View> : null}
         {!NavigationView ? <Text style={{ color: colors.textPrimary }}>Embedded navigation needs the new iPhone development build.</Text> : null}
       </View>
-      {active ? <View style={styles.controls}>
-        {liveLegs?.legs[0]?.stopId === active.id ? <View style={styles.toolbar}>
-          {[
-            [new Date(liveLegs.updatedAt + liveLegs.legs[0].seconds * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }), "arrival"],
-            [drivingTime(liveLegs.legs[0].seconds), "to next stop"],
-            [drivingDistance(liveLegs.legs[0].meters), "remaining"],
-          ].map(([value, label]) => <View key={label}><Text style={[styles.title, { color: colors.textPrimary }]}>{value}</Text><Text style={{ color: colors.textSecondary }}>{label}</Text></View>)}
-        </View> : null}
-        <Text numberOfLines={2} style={[styles.title, { color: colors.textPrimary }]}>{active.name}</Text>
-        {route.execution.arrival ? <Text style={{ color: colors.accentStrong }}>Arrived · Delivery awaiting completion</Text> : null}
+      <View onLayout={(event) => setPanelHeight(event.nativeEvent.layout.height)} style={[styles.controls, { backgroundColor: colors.surface, borderColor: colors.border, bottom: Math.max(insets.bottom, 12) }]}>
+      {active ? <>
+        <Pressable accessibilityRole="button" accessibilityLabel={actionsOpen ? "Collapse route actions" : "Expand route actions"} accessibilityState={{ expanded: actionsOpen }} onPress={() => setActionsOpen((open) => !open)} style={styles.grabberTarget}>
+          <View style={[styles.grabber, { backgroundColor: colors.textSecondary }]} />
+          {liveLegs?.legs[0]?.stopId === active.id ? <View style={styles.metricsTarget}>
+            <RouteMetrics arrival={liveLegs.updatedAt + liveLegs.legs[0].seconds * 1000} {...liveLegs.legs[0]} />
+          </View> : null}
+        </Pressable>
+        <Pressable onPress={() => setIntelStop(active)} accessibilityRole="button" accessibilityLabel={`View ${active.name} stop Intel`} style={styles.business}>
+          <Text numberOfLines={2} style={[styles.title, { color: colors.textPrimary, flex: 1 }]}>{active.name}</Text>
+          <View style={styles.intelAction}>
+            <Text style={[styles.intelLabel, { color: colors.accentStrong }]}>Stop Intel</Text>
+            <AppIcon name="chevronRight" color={colors.accentStrong} size={20} />
+          </View>
+        </Pressable>
         <View style={styles.toolbar}>
-          <AppButton size="compact" variant="tertiary" onPress={() => setRoutePlanOpen(true)}>Route &amp; ETAs</AppButton>
-          <AppButton size="compact" variant="secondary" accessibilityState={{ expanded: actionsOpen }} onPress={() => setActionsOpen(!actionsOpen)}>{actionsOpen ? "Hide Actions ˅" : "Stop Actions ˄"}</AppButton>
+          <AppButton size="compact" variant="tertiary" onPress={() => { setPlanMode("route"); setRoutePlanOpen(true); }}>View Route</AppButton>
+          <AppButton size="compact" variant="tertiary" accessibilityState={{ expanded: actionsOpen }} onPress={() => setActionsOpen(!actionsOpen)}>{actionsOpen ? "Less" : "Actions"}</AppButton>
         </View>
-        {actionsOpen ? <>
-        <Text style={{ color: colors.textSecondary }}>{active.address.replace(/,?\s+United States\s*$/i, "").replace(/\bColorado\b/gi, "CO").trim()}</Text>
-        <AppButton disabled={busy || !isReady} onPress={() => void save(() => completeStop(active.id, true))}>Complete Stop</AppButton>
-        <View style={styles.row}>
-          <AppButton disabled={busy || !isReady || Boolean(route.execution.arrival)} variant="secondary" onPress={() => void save(() => arrive(active.id))}>Arrived</AppButton>
-          <AppButton disabled={busy || !isReady || route.stops.filter((s) => s.status === "upcoming").length < 2} variant="secondary" onPress={() => void save(skipActiveStop)}>Skip for Now</AppButton>
-        </View>
-        <View style={styles.toolbar}>
-          <AppButton size="compact" variant="tertiary" disabled={busy || !isReady} onPress={() => Alert.alert("Remove stop?", active.name, [
-            { text: "Cancel", style: "cancel" }, { text: "Remove", style: "destructive", onPress: () => void save(() => removeStop(active.id)) },
-          ])}>Remove Stop</AppButton>
-          <AppButton size="compact" variant="tertiary" onPress={() => router.back()}>Back to Route</AppButton>
-        </View>
-        </> : null}
-      </View> : <View style={styles.controls}><AppButton onPress={() => router.back()}>Back to Route</AppButton></View>}
+        {actionsOpen ? <ScrollView style={{ maxHeight: 260 }} contentContainerStyle={{ gap: 10 }}>
+          <View style={[styles.group, { backgroundColor: colors.background }]}>
+            <NavigationAction icon="complete" label="Complete Stop" disabled={busy || !isReady} onPress={() => void save(() => completeStop(active.id, true))} />
+            <NavigationAction icon="route" label="Skip for Now" disabled={busy || !isReady || stops.length < 2} onPress={() => void save(skipActiveStop)} />
+            <NavigationAction icon="delete" label="Remove Stop" destructive disabled={busy || !isReady} onPress={() => Alert.alert("Remove stop?", active.name, [
+              { text: "Cancel", style: "cancel" }, { text: "Remove", style: "destructive", onPress: () => void save(() => removeStop(active.id)) },
+            ])} />
+          </View>
+          <View style={[styles.group, { backgroundColor: colors.background }]}>
+            <Pressable accessibilityRole="button" onPress={() => { setPlanMode("search"); setRoutePlanOpen(true); }} style={styles.action}>
+              <AppIcon name="add" color={colors.accentStrong} /><Text style={[styles.actionLabel, { color: colors.textPrimary }]}>Add Stop</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.action}>
+              <AppIcon name="close" color={colors.danger} /><Text style={[styles.actionLabel, { color: colors.danger }]}>End Navigation</Text>
+            </Pressable>
+          </View>
+        </ScrollView> : null}
+      </> : <AppButton onPress={() => router.back()}>Back to Route</AppButton>}
+      </View>
     </SafeAreaView>
   );
 }
 
+function NavigationAction({ icon, label, disabled, destructive, onPress }: {
+  icon: AppIconName; label: string; disabled?: boolean; destructive?: boolean; onPress: () => void;
+}) {
+  const { colors } = useAppTheme();
+  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[styles.action, { opacity: disabled ? 0.4 : 1 }]}>
+    <AppIcon name={icon} color={destructive ? colors.danger : colors.accentStrong} />
+    <Text style={[styles.actionLabel, { color: destructive ? colors.danger : colors.textPrimary }]}>{label}</Text>
+  </Pressable>;
+}
+
 const styles = StyleSheet.create({
-  screen: { flex: 1 }, map: { flex: 1 }, controls: { padding: 12, gap: 8 },
+  screen: { flex: 1 }, map: { flex: 1 }, controls: { position: "absolute", left: 12, right: 12, padding: 12, gap: 4, borderRadius: 28, borderWidth: StyleSheet.hairlineWidth },
+  grabberTarget: { alignItems: "center", justifyContent: "center", minHeight: 44, paddingVertical: 6 },
+  metricsTarget: { alignSelf: "stretch" },
+  grabber: { width: 36, height: 4, borderRadius: 2 },
+  business: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingVertical: 4, paddingHorizontal: 8 },
+  intelAction: { flexDirection: "row", alignItems: "center", flexShrink: 0, gap: 2 },
+  intelLabel: { fontSize: 15, fontWeight: "600" },
+  group: { borderRadius: 18, overflow: "hidden" },
+  action: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, minHeight: 48 },
+  actionLabel: { fontSize: 17, fontWeight: "500" },
   title: { fontSize: 20, fontWeight: "700" }, row: { flexDirection: "row", gap: 12 },
   toolbar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 4 },
   notice: { position: "absolute", top: 16, left: 16, right: 16, padding: 16, borderRadius: 12, gap: 12 },
