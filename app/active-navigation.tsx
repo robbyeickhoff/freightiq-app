@@ -33,7 +33,7 @@ export default function ActiveNavigationScreen() {
   const [panelHeight, setPanelHeight] = useState(180);
   const [intelStop, setIntelStop] = useState<TodayRouteStop | null>(null);
   const [planMode, setPlanMode] = useState<"route" | "search">("route");
-  const { route, isReady, arrive, completeStop, skipActiveStop, removeStop } = useTodayRoute();
+  const { route, isReady, arrive, completeStop, skipActiveStop, endExecution } = useTodayRoute();
   const { colors, colorScheme } = useAppTheme();
   const active = route.stops.find((s) => s.id === route.execution.activeStopId && s.status === "upcoming");
   const [request, setRequest] = useState<Request | null>(null);
@@ -119,7 +119,12 @@ export default function ActiveNavigationScreen() {
             ? <AppButton variant="secondary" onPress={() => setRetry((value) => value + 1)}>Try Again</AppButton>
             : <ActivityIndicator color={colors.textPrimary} />}
         </View> : null}
-        {!NavigationView ? <Text style={{ color: colors.textPrimary }}>Embedded navigation needs the new iPhone development build.</Text> : null}
+        {!isReady ? <ActivityIndicator style={styles.emptyState} color={colors.textPrimary} /> : null}
+        {isReady && !active ? <View style={styles.emptyState}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>No active stop</Text>
+          <Text style={{ color: colors.textSecondary }}>Navigation has ended.</Text>
+        </View> : null}
+        {!NavigationView && active ? <Text style={{ color: colors.textPrimary }}>Embedded navigation needs the new iPhone development build.</Text> : null}
       </View>
       <View onLayout={(event) => setPanelHeight(event.nativeEvent.layout.height)} style={[styles.controls, { backgroundColor: colors.surface, borderColor: colors.border, bottom: Math.max(insets.bottom, 12) }]}>
       {active ? <>
@@ -138,43 +143,50 @@ export default function ActiveNavigationScreen() {
         </Pressable>
         <View style={styles.toolbar}>
           <AppButton size="compact" variant="tertiary" onPress={() => { setPlanMode("route"); setRoutePlanOpen(true); }}>View Route</AppButton>
-          <AppButton size="compact" variant="tertiary" accessibilityState={{ expanded: actionsOpen }} onPress={() => setActionsOpen(!actionsOpen)}>{actionsOpen ? "Less" : "Actions"}</AppButton>
+          <AppButton size="compact" variant="tertiary" accessibilityState={{ expanded: actionsOpen }} onPress={() => setActionsOpen(!actionsOpen)}>{actionsOpen ? "Hide Actions" : "Actions"}</AppButton>
         </View>
         {actionsOpen ? <ScrollView style={{ maxHeight: 260 }} contentContainerStyle={{ gap: 10 }}>
           <View style={[styles.group, { backgroundColor: colors.background }]}>
             <NavigationAction icon="complete" label="Complete Stop" disabled={busy || !isReady} onPress={() => void save(() => completeStop(active.id, true))} />
             <NavigationAction icon="route" label="Skip for Now" disabled={busy || !isReady || stops.length < 2} onPress={() => void save(skipActiveStop)} />
-            <NavigationAction icon="delete" label="Remove Stop" destructive disabled={busy || !isReady} onPress={() => Alert.alert("Remove stop?", active.name, [
-              { text: "Cancel", style: "cancel" }, { text: "Remove", style: "destructive", onPress: () => void save(() => removeStop(active.id)) },
-            ])} />
           </View>
           <View style={[styles.group, { backgroundColor: colors.background }]}>
             <Pressable accessibilityRole="button" onPress={() => { setPlanMode("search"); setRoutePlanOpen(true); }} style={styles.action}>
               <AppIcon name="add" color={colors.accentStrong} /><Text style={[styles.actionLabel, { color: colors.textPrimary }]}>Add Stop</Text>
             </Pressable>
-            <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.action}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: busy || !isReady }}
+              disabled={busy || !isReady}
+              onPress={() => void save(async () => {
+                await endExecution();
+                router.back();
+              })}
+              style={styles.action}
+            >
               <AppIcon name="close" color={colors.danger} /><Text style={[styles.actionLabel, { color: colors.danger }]}>End Navigation</Text>
             </Pressable>
           </View>
         </ScrollView> : null}
-      </> : <AppButton onPress={() => router.back()}>Back to Route</AppButton>}
+      </> : <AppButton onPress={() => router.back()}>Back</AppButton>}
       </View>
     </SafeAreaView>
   );
 }
 
-function NavigationAction({ icon, label, disabled, destructive, onPress }: {
-  icon: AppIconName; label: string; disabled?: boolean; destructive?: boolean; onPress: () => void;
+function NavigationAction({ icon, label, disabled, onPress }: {
+  icon: AppIconName; label: string; disabled?: boolean; onPress: () => void;
 }) {
   const { colors } = useAppTheme();
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[styles.action, { opacity: disabled ? 0.4 : 1 }]}>
-    <AppIcon name={icon} color={destructive ? colors.danger : colors.accentStrong} />
-    <Text style={[styles.actionLabel, { color: destructive ? colors.danger : colors.textPrimary }]}>{label}</Text>
+    <AppIcon name={icon} color={colors.accentStrong} />
+    <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>{label}</Text>
   </Pressable>;
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 }, map: { flex: 1 }, controls: { position: "absolute", left: 12, right: 12, padding: 12, gap: 4, borderRadius: 28, borderWidth: StyleSheet.hairlineWidth },
+  emptyState: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8, padding: 24 },
   grabberTarget: { alignItems: "center", justifyContent: "center", minHeight: 44, paddingVertical: 6 },
   metricsTarget: { alignSelf: "stretch" },
   grabber: { width: 36, height: 4, borderRadius: 2 },

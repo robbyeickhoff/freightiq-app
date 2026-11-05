@@ -590,6 +590,12 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
 
   function renderUpcoming({ item, drag, getIndex, isActive }: RenderItemParams<TodayRouteStop>) {
     const index = getIndex() ?? 0;
+    const firstMovableIndex = route.execution.activeStopId ? 1 : 0;
+    const canMoveEarlier = index > firstMovableIndex;
+    const canMoveLater = index >= firstMovableIndex && index < upcoming.length - 1;
+    const canReorder = canMoveEarlier || canMoveLater;
+    const moveEarlier = () => void moveStop(item.id, -1).catch(showSaveError);
+    const moveLater = () => void moveStop(item.id, 1).catch(showSaveError);
     return (
       <ScaleDecorator activeScale={1.02}>
         <AppCard
@@ -597,26 +603,36 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
           elevation={isActive ? "floating" : "none"}
           style={styles.stopCardOuter}
         >
-          <View
-            accessibilityActions={[
-              ...(index > 0 ? [{ name: "moveUp" as const, label: "Move earlier" }] : []),
-              ...(index < upcoming.length - 1
-                ? [{ name: "moveDown" as const, label: "Move later" }]
-                : []),
-            ]}
-            accessibilityLabel={`${item.name}, stop ${index + 1} of ${upcoming.length}`}
-            onAccessibilityAction={(event) => {
-              const action = event.nativeEvent.actionName;
-              if (action === "moveUp") void moveStop(item.id, -1).catch(showSaveError);
-              if (action === "moveDown") void moveStop(item.id, 1).catch(showSaveError);
-            }}
-          >
+          <View>
             <View style={styles.stopHeader}>
-              <View style={[styles.positionBadge, { backgroundColor: colors.accentMuted }]}>
-                <Text style={[styles.positionText, { color: colors.accentStrong }]}>
-                  {index + 1}
-                </Text>
-              </View>
+              <Pressable
+                accessibilityActions={[
+                  ...(canMoveEarlier ? [{ name: "moveUp", label: "Move earlier" }] : []),
+                  ...(canMoveLater ? [{ name: "moveDown", label: "Move later" }] : []),
+                ]}
+                accessibilityHint={canReorder ? "Hold and drag, or tap for move options" : undefined}
+                accessibilityLabel={`Stop ${index + 1}, ${item.name}`}
+                accessibilityRole={canReorder ? "button" : undefined}
+                disabled={!canReorder}
+                delayLongPress={150}
+                onLongPress={canReorder ? drag : undefined}
+                onPress={canReorder ? () => Alert.alert("Move stop", item.name, [
+                  ...(canMoveEarlier ? [{ text: "Move Earlier", onPress: moveEarlier }] : []),
+                  ...(canMoveLater ? [{ text: "Move Later", onPress: moveLater }] : []),
+                  { text: "Cancel", style: "cancel" },
+                ]) : undefined}
+                onAccessibilityAction={(event) => {
+                  if (canMoveEarlier && event.nativeEvent.actionName === "moveUp") moveEarlier();
+                  if (canMoveLater && event.nativeEvent.actionName === "moveDown") moveLater();
+                }}
+                style={styles.dragHandle}
+              >
+                <View style={[styles.positionBadge, { backgroundColor: colors.accentMuted }]}>
+                  <Text style={[styles.positionText, { color: colors.accentStrong }]}>
+                    {index + 1}
+                  </Text>
+                </View>
+              </Pressable>
               <Pressable
                 accessibilityHint="Opens the FreightIQ stop preview"
                 accessibilityRole="button"
@@ -639,16 +655,14 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
                   </Text>
                 ) : null}
               </Pressable>
-              <Pressable
-                accessibilityHint="Drag to reorder this stop"
-                accessibilityLabel={`Reorder ${item.name}`}
-                accessibilityRole="button"
-                delayLongPress={150}
-                onLongPress={drag}
-                style={styles.dragHandle}
+              <AppButton
+                accessibilityLabel={`Remove ${item.name}`}
+                onPress={() => confirmRemove(item)}
+                size="icon"
+                variant="tertiary"
               >
-                <AppIcon name="drag" color={colors.textSecondary} size={28} />
-              </Pressable>
+                <AppIcon name="delete" color={colors.danger} size={22} />
+              </AppButton>
             </View>
 
             <View style={[styles.actionRow, usesAccessibilityLayout && styles.actionStack]}>
@@ -679,14 +693,6 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
                     Complete
                   </Text>
                 </View>
-              </AppButton>
-              <AppButton
-                accessibilityLabel={`More actions for ${item.name}`}
-                onPress={() => confirmRemove(item)}
-                size="icon"
-                variant="tertiary"
-              >
-                <AppIcon name="more" color={colors.textSecondary} />
               </AppButton>
             </View>
           </View>
@@ -1107,7 +1113,14 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
           ListHeaderComponent={
             <View style={styles.listHeader}>
               {nextStop ? (
-                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Upcoming</Text>
+                <>
+                  <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Upcoming</Text>
+                  {upcoming.length > (route.execution.activeStopId ? 2 : 1) ? (
+                    <Text style={[styles.stopAddress, { color: colors.textSecondary }]}>
+                      Hold a stop number to reorder.
+                    </Text>
+                  ) : null}
+                </>
               ) : (
                 <Text style={[styles.allDone, { color: colors.success }]}>All stops completed</Text>
               )}

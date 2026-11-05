@@ -9,6 +9,7 @@ import HomeScreen from "@/app/(tabs)/(map)/index";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AppButton } from "@/components/ui/app-button";
+import { AppIcon } from "@/components/ui/app-icon";
 import { useAppTheme } from "@/context/theme-context";
 import { useTodayRoute } from "@/context/todays-route-context";
 import { useRoutePlan } from "@/hooks/use-route-plan";
@@ -93,9 +94,11 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, initialMode = "rout
             <Text style={[styles.name, { color: colors.textPrimary }]}>1. {pinnedStop.name}</Text>
             <Text style={{ color: colors.textSecondary }}>{pinnedStop.address.replace(/,?\s+United States\s*$/i, "").replace(/\bColorado\b/gi, "CO").trim()}</Text>
           </View>
-          <AppButton size="compact" variant="tertiary" disabled={saving} accessibilityLabel={`Remove ${pinnedStop.name}`} onPress={() => Alert.alert("Remove stop?", `${pinnedStop.name} will be removed from today's route.`, [
+          <AppButton size="icon" variant="tertiary" disabled={saving} accessibilityLabel={`Remove ${pinnedStop.name}`} onPress={() => Alert.alert("Remove stop?", `${pinnedStop.name} will be removed from today's route.`, [
             { text: "Cancel", style: "cancel" }, { text: "Remove", style: "destructive", onPress: () => void save(() => removeStop(pinnedStop.id)) },
-          ])}>Remove</AppButton>
+          ])}>
+            <AppIcon name="delete" color={saving ? colors.disabled : colors.danger} size={22} />
+          </AppButton>
         </View>
       </View> : null}
       <DraggableFlatList
@@ -129,9 +132,11 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, initialMode = "rout
                 { text: "Cancel", style: "cancel" },
               ]);
             }}>☰ Move</AppButton>
-            <AppButton size="compact" variant="tertiary" disabled={saving} accessibilityLabel={`Remove ${stop.name}`} onPress={() => Alert.alert("Remove stop?", `${stop.name} will be removed from today's route.`, [
+            <AppButton size="icon" variant="tertiary" disabled={saving} accessibilityLabel={`Remove ${stop.name}`} onPress={() => Alert.alert("Remove stop?", `${stop.name} will be removed from today's route.`, [
               { text: "Cancel", style: "cancel" }, { text: "Remove", style: "destructive", onPress: () => void save(() => removeStop(stop.id)) },
-            ])}>Remove</AppButton>
+            ])}>
+              <AppIcon name="delete" color={saving ? colors.disabled : colors.danger} size={22} />
+            </AppButton>
           </View> : null}
         </View>; }}
         ListFooterComponent={<View style={{ gap: 12 }}>

@@ -190,6 +190,11 @@ export function startRouteExecution(route: TodayRoute, now = new Date()): TodayR
   };
 }
 
+export function endRouteExecution(route: TodayRoute, now = new Date()): TodayRoute {
+  if (route.execution.status !== "active") return route;
+  return { ...route, execution: draftExecution(), updatedAt: now.toISOString() };
+}
+
 export function navigateToRouteStop(route: TodayRoute, input: RouteStopInput, now = new Date()): TodayRoute {
   const result = addRouteStop(route, input, now);
   if (result.status === "full") throw new Error("Today's Route can contain up to 50 stops.");
@@ -269,7 +274,7 @@ export function addRouteStop(
   }
   return {
     route: updatedRoute(
-      route,
+      { ...route, execution: draftExecution() },
       [
         ...route.stops,
         added,

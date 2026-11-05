@@ -3,7 +3,7 @@ import test from "node:test";
 
 // prettier-ignore
 // @ts-expect-error Node's strip-types test runner requires the explicit TypeScript extension.
-import { navigateToRouteStop, startRouteExecution, arriveAtRouteStop, skipActiveRouteStop, addRouteStop, carryRouteForward, emptyTodayRoute, isRouteStale, moveUpcomingStop, parseTodayRoute, refreshRouteStopSnapshots, removeRouteStop, setRouteStopCompleted } from "../utils/todays-route.ts";
+import { endRouteExecution, navigateToRouteStop, startRouteExecution, arriveAtRouteStop, skipActiveRouteStop, addRouteStop, carryRouteForward, emptyTodayRoute, isRouteStale, moveUpcomingStop, parseTodayRoute, refreshRouteStopSnapshots, removeRouteStop, setRouteStopCompleted } from "../utils/todays-route.ts";
 
 const morning = new Date("2026-08-23T08:00:00.000Z");
 const later = new Date("2026-08-23T09:00:00.000Z");
@@ -179,4 +179,30 @@ test("Navigate starts a draft or new searched destination without losing other s
   assert.equal(route.execution.status, "active");
   assert.equal(route.execution.activeStopId, "B");
   assert.deepEqual(route.stops.map((s) => s.id), ["B", "A"]);
+});
+
+
+test("ending navigation preserves stops and appends new stops after a reload", () => {
+  let route = emptyTodayRoute(morning);
+  for (const id of ["A", "B", "C"]) route = addRouteStop(route, stop(id), morning).route;
+  route = startRouteExecution(route, morning);
+  route = setRouteStopCompleted(route, "A", true, later);
+  route = arriveAtRouteStop(route, "B", "mapbox", later);
+  const ended = endRouteExecution(route, later);
+  assert.deepEqual(ended.stops, route.stops);
+  assert.equal(ended.execution.status, "draft");
+  assert.equal(ended.execution.activeStopId, null);
+  assert.equal(ended.execution.arrival, null);
+  const restored = parseTodayRoute(JSON.stringify(ended))!;
+  const edited = addRouteStop(restored, stop("D"), later).route;
+  assert.deepEqual(edited.stops.filter((s) => s.status === "upcoming").map((s) => s.id), ["B", "C", "D"]);
+  assert.equal(startRouteExecution(edited, later).execution.activeStopId, "B");
+});
+
+test("adding a stop after finishing the route leaves it ready to start", () => {
+  let route = addRouteStop(emptyTodayRoute(morning), stop("A"), morning).route;
+  route = startRouteExecution(route, morning);
+  route = setRouteStopCompleted(route, "A", true, later);
+  assert.equal(route.execution.status, "finished");
+  assert.equal(addRouteStop(route, stop("B"), later).route.execution.status, "draft");
 });

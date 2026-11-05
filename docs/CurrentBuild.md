@@ -13,6 +13,28 @@ answer one question:
 
 ## Current Objective
 
+### November 5 — End Navigation returns the route to editing
+
+Rob found that End Navigation left the saved route active, so Today’s Route still
+offered Resume, pinned the current stop, and inserted new stops first. End Navigation
+now saves a draft before closing guidance, retaining stop order and completed stops.
+New additions append after ending navigation or finishing the last stop. An interrupted
+active route can still be resumed after reopening. All 15 route tests pass, including
+save/reload and adding after ending or finishing. iPhone acceptance is pending.
+
+### November 5 — local Navigate acceptance and Actions cleanup
+
+Rob confirmed that Navigate opens embedded guidance from every available entry point on
+his iPhone in FreightIQ Dev. He then found the empty guidance screen after removing the
+only active stop from either Preview or Today's Route. The Actions menu now leaves
+removal to View Route → Edit Stops and uses Hide Actions as its collapse label. When
+guidance has no active stop, it explains that navigation has ended and offers Back to
+the previous screen. Rob confirmed the Actions and end-state changes on iPhone. Edit Stops now uses a red
+trash icon for the current and upcoming stops, with the existing confirmation prompt.
+Rob confirmed the Edit Stops icon on iPhone. Today’s Route now uses the stop number
+for drag and move options and a red trash icon for confirmed removal. The current stop
+stays first. The Today’s Route changes are pending iPhone acceptance.
+
 ### November 4 — individual Navigate uses embedded navigation
 
 Rob reported Build 65's individual Navigate action still opened Apple Maps and approved fixing it.

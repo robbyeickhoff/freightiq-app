@@ -596,6 +596,12 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
   const [mapLayout, setMapLayout] = useState({ width: 0, height: 0 });
   const [pins, setPins] = useState<Pin[]>([]);
   const [showingStops, setShowingStops] = useState(false);
+  const showingStopsRef = useRef(false);
+
+  function setStopLayerVisible(visible: boolean) {
+    showingStopsRef.current = visible;
+    setShowingStops(visible);
+  }
   const [stopLayerLoading, setStopLayerLoading] = useState(false);
   const stopLayerLoadingRef = useRef(false);
   const stopLayerRequestIdRef = useRef(0);
@@ -926,7 +932,10 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
         if (savedPins.length) {
           const savedPinsById = new Map(savedPins.map((pin) => [pin.id, pin]));
 
-          setPins((previous) => mergePinsById(previous, savedPins));
+          // An explicit Show Stops result owns the visible layer until it is hidden.
+          if (!showingStopsRef.current) {
+            setPins((previous) => mergePinsById(previous, savedPins));
+          }
           setSelectedStop((previous) =>
             previous ? (savedPinsById.get(previous.id) ?? previous) : previous,
           );
@@ -1654,7 +1663,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
 
     if (showingStops) {
       stopLayerRequestIdRef.current += 1;
-      setShowingStops(false);
+      setStopLayerVisible(false);
       setClusterPoints([]);
       setSelectedStopId(null);
       setSelectedStop(null);
@@ -1696,10 +1705,11 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
       );
 
       await loadCloudReportStatsForStops(visiblePins.map((pin) => pin.id));
+      if (requestId !== stopLayerRequestIdRef.current) return;
 
       setClusterPoints([]);
       setPins(visiblePins);
-      setShowingStops(true);
+      setStopLayerVisible(true);
       setSelectedStopId(null);
       setSelectedStop(null);
       resetSelectedEntranceState();
@@ -1711,7 +1721,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
     } catch (error) {
       if (requestId !== stopLayerRequestIdRef.current) return;
 
-      setShowingStops(false);
+      setStopLayerVisible(false);
       Alert.alert(
         "Could not refresh stops",
         freightIqReadMessage(error, "Could not load stops in view."),
@@ -1928,7 +1938,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
     stopLayerRequestIdRef.current += 1;
     stopLayerLoadingRef.current = false;
     setStopLayerLoading(false);
-    setShowingStops(false);
+    setStopLayerVisible(false);
     setClusterPoints([]);
     selectedEntranceRequestIdRef.current += 1;
     setDeliveryZoneInspectionSource(source);
