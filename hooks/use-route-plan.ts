@@ -23,7 +23,6 @@ export function useRoutePlan(stops: TodayRouteStop[], enabled = true) {
     const timeout = setTimeout(() => {
       controller.abort();
       if (current) {
-        setResult(null);
         setError("Route calculation timed out. Please try again.");
         setLoading(false);
         current = false;
@@ -38,7 +37,7 @@ export function useRoutePlan(stops: TodayRouteStop[], enabled = true) {
         const plan = await calculateRoutePlan(location.coords, latest.current, Constants.expoConfig?.extra?.mapboxPublicToken ?? "", controller.signal);
         if (current) setResult({ signature, plan });
       } catch (failure) {
-        if (current) { setResult(null); setError(failure instanceof Error && failure.name !== "AbortError" ? failure.message : "Route calculation timed out. Please try again."); }
+        if (current) { setError(failure instanceof Error && failure.name !== "AbortError" ? failure.message : "Route calculation timed out. Please try again."); }
       } finally {
         clearTimeout(timeout);
         if (current) setLoading(false);

@@ -45,6 +45,8 @@ import {
 } from "@/utils/navigation-apps";
 import type { TodayRouteStop } from "@/utils/todays-route";
 import { hasEmbeddedNavigation } from "@/utils/embedded-navigation";
+import { OfflineRouteDownload } from "@/components/offline-route-download";
+import { orderedNavigationStops } from "@/utils/route-plan";
 import { RoutePlanSheet } from "@/components/route-plan-sheet";
 import {
   buildRouteOverviewMarkers,
@@ -816,6 +818,8 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
           </AppButton>
         ) : null}
       </View>
+
+      <OfflineRouteDownload stops={orderedNavigationStops(route)} enabled={isReady && !isStale} />
 
       {routeReadError ? (
         <View style={styles.staleBanner}>

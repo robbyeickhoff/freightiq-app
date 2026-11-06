@@ -31,6 +31,7 @@ import {
   writeStoredTodayRoute,
   type AddRouteStopResult,
   type RouteStopInput,
+  type RouteArrivalSource,
   type TodayRoute,
   type TodayRouteStop,
 } from "@/utils/todays-route";
@@ -39,7 +40,7 @@ type TodayRouteContextValue = {
   startExecution: () => Promise<void>;
   endExecution: () => Promise<void>;
   navigateToStop: (stop: RouteStopInput) => Promise<void>;
-  arrive: (stopId: string, source?: "driver" | "mapbox") => Promise<void>;
+  arrive: (stopId: string, source?: RouteArrivalSource) => Promise<void>;
   skipActiveStop: () => Promise<void>;
   addStop: (stop: RouteStopInput) => Promise<AddRouteStopResult["status"] | "signed_out" | "stale">;
   carryForward: () => Promise<void>;
@@ -230,7 +231,7 @@ export function TodayRouteProvider({ children }: PropsWithChildren) {
   );
 
   const arrive = useCallback(
-    async (stopId: string, source: "driver" | "mapbox" = "driver") =>
+    async (stopId: string, source: RouteArrivalSource = "driver") =>
       enqueue(() => persist(arriveAtRouteStop(routeRef.current, stopId, source))),
     [enqueue, persist],
   );

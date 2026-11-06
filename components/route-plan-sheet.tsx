@@ -43,8 +43,8 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, initialMode = "rout
     finally { savingRef.current = false; setSaving(false); }
   };
   const map = useRef<MapView>(null);
-  const liveMatches = liveLegs && liveLegs.legs.every((leg, index) => leg.stopId === stops[index]?.id);
-  const legs = plan?.legs.map((leg, index) => liveMatches && liveLegs.legs[index] ? liveLegs.legs[index] : leg) ?? [];
+  const liveMatches = liveLegs && liveLegs.legs.length > 0 && liveLegs.legs.every((leg, index) => leg.stopId === stops[index]?.id);
+  const legs = liveMatches ? [...liveLegs.legs, ...(plan?.legs.slice(liveLegs.legs.length) ?? [])] : plan?.legs ?? [];
   const departure = liveMatches ? liveLegs.updatedAt : plan?.calculatedAt ?? 0;
   const arrivals = estimatedArrivals(legs, departure);
   const totals = routePlanTotals(legs);
@@ -54,7 +54,7 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, initialMode = "rout
     });
   };
   useEffect(() => { if (visible && plan) fit(); }, [visible, plan]); // eslint-disable-line react-hooks/exhaustive-deps
-  return <Modal visible={visible} animationType="slide" onRequestClose={onClose}><GestureHandlerRootView style={{ flex: 1 }}><SafeAreaProvider>
+  return <Modal visible={visible} animationType="slide" presentationStyle="overFullScreen" onRequestClose={onClose}><GestureHandlerRootView style={{ flex: 1 }}><SafeAreaProvider>
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
       {intelStop ? <NavigationStopIntel stop={intelStop} returnLabel="Back to Route" onClose={() => setIntelStop(null)} /> : null}
       <View style={styles.header}>
@@ -85,7 +85,7 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, initialMode = "rout
         </MapView>
       </> : null}
       {loading ? <View style={styles.summary}><ActivityIndicator color={colors.textPrimary} /><Text style={{ color: colors.textPrimary }}>Calculating the full route…</Text></View> : null}
-      {error ? <View style={styles.summary}><Text style={{ color: colors.textPrimary }}>{error}</Text><AppButton onPress={refresh}>Try Again</AppButton></View> : null}
+      {error ? <View style={styles.summary}><Text style={{ color: colors.textPrimary }}>{legs.length ? "Can’t refresh estimates. Showing the latest available." : "Route estimates are unavailable. Check your connection and try again."}</Text></View> : null}
       {editing ? <Text style={[styles.hint, { color: colors.textSecondary }]}>Tap Move for options, or hold to drag. Your current destination stays first.</Text> : null}
       {pinnedStop ? <View style={[styles.pinnedStop, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={{ color: colors.accentStrong, fontWeight: "700" }}>CURRENT STOP</Text>

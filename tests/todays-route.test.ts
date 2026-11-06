@@ -27,6 +27,20 @@ test("adding during guidance immediately navigates there and preserves the inter
   assert.equal(route.execution.activeStopId, "A");
 });
 
+test("proximity arrival survives reload without completing or advancing the stop", () => {
+  let route = addRouteStop(emptyTodayRoute(morning), stop("A"), morning).route;
+  route = addRouteStop(route, stop("B"), morning).route;
+  route = startRouteExecution(route, morning);
+  assert.equal(arriveAtRouteStop(route, "B", "proximity", later), route);
+  route = arriveAtRouteStop(route, "A", "proximity", later);
+  assert.equal(route.execution.activeStopId, "A");
+  assert.equal(route.stops[0].status, "upcoming");
+  assert.equal(route.execution.arrival?.source, "proximity");
+  assert.deepEqual(parseTodayRoute(JSON.stringify(route)), route);
+  assert.equal(arriveAtRouteStop(route, "A", "mapbox", later), route);
+  assert.equal(setRouteStopCompleted(route, "A", true, later).execution.activeStopId, "B");
+});
+
 test("execution survives reopening, arrival does not complete, and skip advances", () => {
   let route = addRouteStop(emptyTodayRoute(morning), stop("A"), morning).route;
   route = addRouteStop(route, stop("B"), morning).route;

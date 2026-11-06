@@ -43,7 +43,7 @@ export default function ActiveNavigationScreen() {
   const [retry, setRetry] = useState(0);
   const [routePlanOpen, setRoutePlanOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
-  const [liveLegs, setLiveLegs] = useState<{ legs: PlannedLeg[]; updatedAt: number } | null>(null);
+  const [liveLegs, setLiveLegs] = useState<{ legs: PlannedLeg[]; updatedAt: number; requestId: string } | null>(null);
   const savingRef = useRef(false);
   const stops = useMemo(() => orderedNavigationStops(route), [route]);
   const activeKey = `${routePlanSignature(stops.slice(0, 24))}:${retry}`;
@@ -97,14 +97,19 @@ export default function ActiveNavigationScreen() {
     if (event.state === "started") setMessage("");
     if ((event.state === "started" || event.state === "progress") && event.legs?.length &&
         event.legs.every((leg, index) => leg.stopId === stops[index]?.id && Number.isFinite(leg.seconds) && leg.seconds >= 0 && Number.isFinite(leg.meters) && leg.meters >= 0)) {
-      setLiveLegs({ legs: event.legs, updatedAt: Date.now() });
+      const updatedAt = Date.now();
+      setLiveLegs((previous) => event.state === "started" && previous?.requestId === event.requestId
+        ? previous
+        : { legs: event.legs, updatedAt, requestId: event.requestId });
     }
     if (event.state === "error") { setFailed(true); setMessage(event.message); }
     // Native arrival may follow immediately after a completion write. Queue it in
     // the provider rather than dropping it behind the driver's tap guard.
-    if (event.state === "arrived") void arrive(event.stopId, "mapbox").catch(() => {
-      Alert.alert("Arrival not saved", "You can still tap Complete Stop. Your route remains saved.");
-    });
+    if (event.state === "arrived" || event.state === "arrivedNearby") {
+      void arrive(event.stopId, event.state === "arrivedNearby" ? "proximity" : "mapbox").catch(() => {
+        Alert.alert("Arrival not saved", "You can still tap Complete Stop. Your route remains saved.");
+      });
+    }
   };
   return (
     <SafeAreaView edges={["top"]} style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -130,7 +135,9 @@ export default function ActiveNavigationScreen() {
       {active ? <>
         <Pressable accessibilityRole="button" accessibilityLabel={actionsOpen ? "Collapse route actions" : "Expand route actions"} accessibilityState={{ expanded: actionsOpen }} onPress={() => setActionsOpen((open) => !open)} style={styles.grabberTarget}>
           <View style={[styles.grabber, { backgroundColor: colors.textSecondary }]} />
-          {liveLegs?.legs[0]?.stopId === active.id ? <View style={styles.metricsTarget}>
+          {route.execution.arrival?.stopId === active.id ? (
+            <Text style={[styles.actionLabel, { color: colors.textPrimary, textAlign: "center" }]}>Arrived</Text>
+          ) : liveLegs?.legs[0]?.stopId === active.id ? <View style={styles.metricsTarget}>
             <RouteMetrics arrival={liveLegs.updatedAt + liveLegs.legs[0].seconds * 1000} {...liveLegs.legs[0]} />
           </View> : null}
         </Pressable>

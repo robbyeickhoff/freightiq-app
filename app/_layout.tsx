@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { Stack, usePathname, useRouter } from "expo-router";
@@ -47,6 +48,8 @@ Notifications.setNotificationHandler({
   }),
 });
 
+const completedProfileKey = (userId: string) => `freightiq:verified-profile:v1:${userId}`;
+
 const ONBOARDING_SEEN_KEY = "freightiq:onboarding-seen:v1";
 
 export const unstable_settings = {
@@ -68,6 +71,7 @@ function RootNavigator() {
   const [isAppLocked, setIsAppLocked] = useState(false);
   const [isAppContentCovered, setIsAppContentCovered] = useState(false);
   const [pendingAlert, setPendingAlert] = useState<{ conditionId?: string } | null>(null);
+  const offlineStartupUserIdRef = useRef<string | null>(null);
   const appLockUserIdRef = useRef<string | null>(null);
   const isAppLockEnabledRef = useRef(false);
   const appLockBackgroundTimeoutRef = useRef<AppLockBackgroundTimeout>(
@@ -106,6 +110,11 @@ function RootNavigator() {
       );
       const route = hasCompleteProfile ? "(tabs)" : "setup-profile";
 
+      const profileKey = completedProfileKey(userId);
+      const saveProfileStatus = hasCompleteProfile
+        ? AsyncStorage.setItem(profileKey, "true")
+        : AsyncStorage.removeItem(profileKey);
+      await saveProfileStatus.catch(() => undefined);
       if (replace) {
         router.replace(route === "(tabs)" ? "/(tabs)/(map)" : "/setup-profile");
       }
@@ -161,8 +170,15 @@ function RootNavigator() {
           return;
         }
 
+        const storedUserId = sessionResult.data.session.user.id;
         const userResult = await supabase.auth.getUser();
-        if (userResult.error || !userResult.data.user) {
+        let signedInRoute: "(tabs)" | "setup-profile";
+        let userId = storedUserId;
+        if (isAuthRetryableFetchError(userResult.error) &&
+            await AsyncStorage.getItem(completedProfileKey(storedUserId)) === "true") {
+          offlineStartupUserIdRef.current = storedUserId;
+          signedInRoute = "(tabs)";
+        } else if (userResult.error || !userResult.data.user) {
           await stopPriorDrivingAccount(null);
           if (isInvalidStoredSessionError(userResult.error)) {
             await clearInvalidStoredSession();
@@ -171,18 +187,28 @@ function RootNavigator() {
             setInitialRouteName(onboardingValue === "true" ? "auth" : "onboarding");
           }
           return;
+        } else {
+          userId = userResult.data.user.id;
+          try {
+            signedInRoute = await routeSignedInUser(userId, false);
+          } catch (error) {
+            // PostgREST uses an empty code for transport failures. Server errors
+            // and incomplete profiles still go through normal account checks.
+            if (!(error && typeof error === "object" && "code" in error && error.code === "") ||
+                await AsyncStorage.getItem(completedProfileKey(userId)) !== "true") throw error;
+            offlineStartupUserIdRef.current = userId;
+            signedInRoute = "(tabs)";
+          }
         }
-
-        const signedInRoute = await routeSignedInUser(userResult.data.user.id, false);
         const [appLockEnabled, appLockBackgroundTimeout] = await Promise.all([
-          getAppLockEnabled(userResult.data.user.id),
-          getAppLockBackgroundTimeout(userResult.data.user.id),
+          getAppLockEnabled(userId),
+          getAppLockBackgroundTimeout(userId),
         ]);
         if (mounted) {
-          appLockUserIdRef.current = userResult.data.user.id;
+          appLockUserIdRef.current = userId;
           isAppLockEnabledRef.current = appLockEnabled;
           appLockBackgroundTimeoutRef.current = appLockBackgroundTimeout;
-          setAppLockUserId(userResult.data.user.id);
+          setAppLockUserId(userId);
           setIsAppLockEnabled(appLockEnabled);
           setIsAppLocked(appLockEnabled);
           setInitialRouteName(signedInRoute);
@@ -364,6 +390,7 @@ function RootNavigator() {
 
     const { data: authSubscription } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
+        offlineStartupUserIdRef.current = null;
         void stopPriorDrivingAccount(null);
         appLockUserIdRef.current = null;
         isAppLockEnabledRef.current = false;
@@ -375,6 +402,8 @@ function RootNavigator() {
         router.replace("/auth");
         return;
       }
+
+      if (event === "SIGNED_IN" && session?.user.id === offlineStartupUserIdRef.current) return;
 
       if (
         (event === "SIGNED_IN" || event === "USER_UPDATED") &&

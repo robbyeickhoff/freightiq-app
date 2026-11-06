@@ -13,7 +13,7 @@ import type { TodayRouteStop } from "@/utils/todays-route";
 export function NavigationStopIntel({ stop, onClose, returnLabel = "Back to Navigation" }: { stop: TodayRouteStop | null; onClose: () => void; returnLabel?: string }) {
   const { colors, colorScheme } = useAppTheme();
   const [zone, setZone] = useState<{ latitude: number; longitude: number } | null>(null);
-  return <Modal visible={Boolean(stop)} animationType="slide" onRequestClose={() => { setZone(null); onClose(); }}>
+  return <Modal visible={Boolean(stop)} animationType="slide" presentationStyle="overFullScreen" onRequestClose={() => { setZone(null); onClose(); }}>
     <GestureHandlerRootView style={{ flex: 1 }}><SafeAreaProvider><SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
       <View style={styles.header}><AppButton size="compact" variant="tertiary" onPress={() => {
         if (zone) setZone(null); else onClose();

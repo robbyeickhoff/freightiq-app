@@ -24,12 +24,14 @@ export type TodayRoute = {
   version: typeof TODAY_ROUTE_STORAGE_VERSION;
 };
 
+export type RouteArrivalSource = "driver" | "mapbox" | "proximity";
+
 export type RouteExecution = {
   status: "draft" | "active" | "finished";
   activeStopId: string | null;
   startedAt: string | null;
   finishedAt: string | null;
-  arrival: { stopId: string; source: "mapbox" | "driver"; arrivedAt: string } | null;
+  arrival: { stopId: string; source: RouteArrivalSource; arrivedAt: string } | null;
 };
 
 function draftExecution(): RouteExecution {
@@ -62,7 +64,7 @@ function restoreExecution(value: unknown, stops: TodayRouteStop[]): RouteExecuti
     arrival:
       arrival &&
       arrival.stopId === activeStopId &&
-      (arrival.source === "driver" || arrival.source === "mapbox") &&
+      (arrival.source === "driver" || arrival.source === "mapbox" || arrival.source === "proximity") &&
       typeof arrival.arrivedAt === "string" &&
       Number.isFinite(Date.parse(arrival.arrivedAt))
         ? { stopId: arrival.stopId, source: arrival.source, arrivedAt: arrival.arrivedAt }
@@ -216,7 +218,7 @@ export function navigateToRouteStop(route: TodayRoute, input: RouteStopInput, no
 export function arriveAtRouteStop(
   route: TodayRoute,
   stopId: string,
-  source: "driver" | "mapbox",
+  source: RouteArrivalSource,
   now = new Date(),
 ): TodayRoute {
   if (
