@@ -25,6 +25,7 @@ import MapView, { Marker, Region } from "react-native-maps";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { MapIcon } from "../../components/MapIcon";
 import { StopIntelSummary } from "../../components/stop-intel-summary";
+import { StopRoadRestrictionEditor } from "../../components/stop-road-restriction-editor";
 import { MoveStopEditor } from "../../components/move-stop-editor";
 import { useTodayRoute } from "../../context/todays-route-context";
 import { replaceMovedPin, replaceMovedDz, type StopDestination } from "../../utils/stop-relocation";
@@ -3204,6 +3205,11 @@ export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMa
                       style={intelStyles.input}
                       multiline
                     />
+
+                    {__DEV__ && sessionUserId && stopId && Number.isFinite(lat) && Number.isFinite(lng) ? (
+                      <StopRoadRestrictionEditor key={`${sessionUserId}:${stopId}`} userId={sessionUserId}
+                        stopId={stopId} destination={{ latitude: lat, longitude: lng }} />
+                    ) : null}
 
                     <Text style={intelStyles.sectionLabel}>Contact / Check-In</Text>
                     <View style={intelStyles.contactEditorCard}>

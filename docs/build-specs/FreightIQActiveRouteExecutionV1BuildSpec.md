@@ -710,7 +710,8 @@ physical acceptance of FreightIQ.
 - CarPlay or Android Auto
 - Offline navigation-region management
 - Cloud route recovery
-- Validated truck-restriction routing
+- Validated truck-restriction routing. See the
+  [Stop-Specific Road Restrictions follow-up](FreightIQStopSpecificRoadRestrictionsBuildSpec.md).
 - Route-history analytics with an approved privacy model
 
 These must not block a useful V1.

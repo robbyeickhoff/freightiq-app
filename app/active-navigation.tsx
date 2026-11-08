@@ -13,11 +13,13 @@ import { useAppTheme } from "@/context/theme-context";
 import { hasEmbeddedNavigation } from "@/utils/embedded-navigation";
 import { RoutePlanSheet } from "@/components/route-plan-sheet";
 import type { TodayRouteStop } from "@/utils/todays-route";
-import { orderedNavigationStops, routePlanSignature, type PlannedLeg } from "@/utils/route-plan";
+import { readStopRoadRestriction } from "@/utils/stop-road-restriction";
+import { orderedNavigationStops, routePlanSignature, type PlannedLeg, type RouteCoordinate } from "@/utils/route-plan";
 
 type Request = {
   id: string; stopId: string; name: string; latitude: number; longitude: number;
   originLatitude: number; originLongitude: number; dark: boolean;
+  restrictedRoad?: RouteCoordinate[]; exclusionPoints?: RouteCoordinate[];
   stops: { id: string; name: string; latitude: number; longitude: number }[];
 };
 type StateEvent = { state: string; requestId: string; stopId: string; message: string; legs: PlannedLeg[] };
@@ -33,11 +35,12 @@ export default function ActiveNavigationScreen() {
   const [panelHeight, setPanelHeight] = useState(180);
   const [intelStop, setIntelStop] = useState<TodayRouteStop | null>(null);
   const [planMode, setPlanMode] = useState<"route" | "search">("route");
-  const { route, isReady, arrive, completeStop, skipActiveStop, endExecution } = useTodayRoute();
+  const { route, isReady, userId, arrive, completeStop, skipActiveStop, endExecution } = useTodayRoute();
   const { colors, colorScheme } = useAppTheme();
   const active = route.stops.find((s) => s.id === route.execution.activeStopId && s.status === "upcoming");
   const [request, setRequest] = useState<Request | null>(null);
   const [message, setMessage] = useState("Finding your location…");
+  const [restrictionWarning, setRestrictionWarning] = useState("");
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [retry, setRetry] = useState(0);
@@ -53,6 +56,7 @@ export default function ActiveNavigationScreen() {
     if (!active || !NavigationView || !isReady) return;
     setMessage("Finding your location…");
     setFailed(false);
+    setRestrictionWarning("");
     setLiveLegs(null);
     setActionsOpen(false);
     void (async () => {
@@ -60,8 +64,11 @@ export default function ActiveNavigationScreen() {
         const permission = await Location.requestForegroundPermissionsAsync();
         if (!permission.granted) throw new Error("Allow location access to start navigation.");
         const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        const restriction = __DEV__ && userId ? await readStopRoadRestriction(userId, active.id) : null;
         if (!current) return;
         const next = {
+          restrictedRoad: restriction?.coordinates ?? [],
+          exclusionPoints: restriction?.exclusionPoints ?? [],
           id: `${active.id}:${Date.now()}`, stopId: active.id, name: active.name,
           latitude: active.lat, longitude: active.lng,
           originLatitude: location.coords.latitude, originLongitude: location.coords.longitude,
@@ -81,7 +88,7 @@ export default function ActiveNavigationScreen() {
     return () => { current = false; };
     // Saved stop changes rebuild the ordered window. Theme updates are native props.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeKey, isReady]);
+  }, [activeKey, isReady, userId]);
 
   const save = async (action: () => Promise<void>) => {
     if (savingRef.current) return;
@@ -95,6 +102,7 @@ export default function ActiveNavigationScreen() {
     if (event.requestId !== request?.id || event.stopId !== active?.id) return;
     if (event.state === "closed") { router.back(); return; }
     if (event.state === "started") setMessage("");
+    if (event.state === "restriction") setRestrictionWarning(event.message);
     if ((event.state === "started" || event.state === "progress") && event.legs?.length &&
         event.legs.every((leg, index) => leg.stopId === stops[index]?.id && Number.isFinite(leg.seconds) && leg.seconds >= 0 && Number.isFinite(leg.meters) && leg.meters >= 0)) {
       const updatedAt = Date.now();
@@ -133,6 +141,9 @@ export default function ActiveNavigationScreen() {
       </View>
       <View onLayout={(event) => setPanelHeight(event.nativeEvent.layout.height)} style={[styles.controls, { backgroundColor: colors.surface, borderColor: colors.border, bottom: Math.max(insets.bottom, 12) }]}>
       {active ? <>
+        {restrictionWarning ? <Text accessibilityLiveRegion="polite" style={[styles.actionLabel, { color: colors.accentStrong }]}>
+          {restrictionWarning}
+        </Text> : null}
         <Pressable accessibilityRole="button" accessibilityLabel={actionsOpen ? "Collapse route actions" : "Expand route actions"} accessibilityState={{ expanded: actionsOpen }} onPress={() => setActionsOpen((open) => !open)} style={styles.grabberTarget}>
           <View style={[styles.grabber, { backgroundColor: colors.textSecondary }]} />
           {route.execution.arrival?.stopId === active.id ? (
