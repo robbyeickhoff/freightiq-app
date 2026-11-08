@@ -64,7 +64,7 @@ export default function ActiveNavigationScreen() {
         const permission = await Location.requestForegroundPermissionsAsync();
         if (!permission.granted) throw new Error("Allow location access to start navigation.");
         const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-        const restriction = __DEV__ && userId ? await readStopRoadRestriction(userId, active.id) : null;
+        const restriction = (__DEV__ || process.env.EXPO_PUBLIC_FREIGHTIQ_STOP_RESTRICTION_TEST === "1") && userId ? await readStopRoadRestriction(userId, active.id) : null;
         if (!current) return;
         const next = {
           restrictedRoad: restriction?.coordinates ?? [],

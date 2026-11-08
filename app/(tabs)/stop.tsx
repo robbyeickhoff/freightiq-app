@@ -3206,7 +3206,7 @@ export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMa
                       multiline
                     />
 
-                    {__DEV__ && sessionUserId && stopId && Number.isFinite(lat) && Number.isFinite(lng) ? (
+                    {(__DEV__ || process.env.EXPO_PUBLIC_FREIGHTIQ_STOP_RESTRICTION_TEST === "1") && sessionUserId && stopId && Number.isFinite(lat) && Number.isFinite(lng) ? (
                       <StopRoadRestrictionEditor key={`${sessionUserId}:${stopId}`} userId={sessionUserId}
                         stopId={stopId} destination={{ latitude: lat, longitude: lng }} />
                     ) : null}

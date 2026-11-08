@@ -2,11 +2,7 @@ internal import ExpoModulesCore
 import class Combine.AnyCancellable
 import CoreLocation
 import MapboxCommon
-#if DEBUG
 @_spi(ExperimentalMapboxAPI) import MapboxDirections
-#else
-import MapboxDirections
-#endif
 import MapboxMaps
 import Turf
 import MapboxNavigationCore
@@ -64,11 +60,14 @@ struct FreightIQRoadCoordinate: Record {
   }
 }
 
-#if DEBUG
 private final class StopRestrictionSession: @unchecked Sendable {
   static let shared = StopRestrictionSession()
-  static let enabled = ProcessInfo.processInfo.environment["FREIGHTIQ_STOP_RESTRICTION_TEST"] == "1"
-    || (Bundle.main.object(forInfoDictionaryKey: "FreightIQStopRestrictionTest") as? Bool) == true
+  static let enabled: Bool = {
+#if DEBUG
+    if ProcessInfo.processInfo.environment["FREIGHTIQ_STOP_RESTRICTION_TEST"] == "1" { return true }
+#endif
+    return (Bundle.main.object(forInfoDictionaryKey: "FreightIQStopRestrictionTest") as? Bool) == true
+  }()
   private let lock = NSLock()
   private var destination: CLLocationCoordinate2D?
   private var points: [CLLocationCoordinate2D] = []
@@ -132,7 +131,6 @@ private final class StopRestrictionSession: @unchecked Sendable {
     return ""
   }
 }
-#endif
 
 struct FreightIQNavigationStop: Record {
   @Field var id = ""
@@ -154,11 +152,9 @@ struct FreightIQNavigationRequest: Record {
   @Field var restrictedRoad: [FreightIQRoadCoordinate] = []
   @Field var exclusionPoints: [FreightIQRoadCoordinate] = []
 
-#if DEBUG
   var hasRestriction: Bool {
     StopRestrictionSession.enabled && restrictedRoad.count >= 2 && (1...50).contains(exclusionPoints.count)
   }
-#endif
 }
 
 class FreightIQNavigation: Module {
@@ -333,10 +329,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   }
 
   private func legEstimates(_ route: Route, _ request: FreightIQNavigationRequest, progress: RouteProgress? = nil) -> [[String: Any]] {
-    var expectedLegs = request.stops.count
-#if DEBUG
-    if request.hasRestriction { expectedLegs = 1 }
-#endif
+    let expectedLegs = request.hasRestriction ? 1 : request.stops.count
     guard route.legs.count == expectedLegs else { return [] }
     return route.legs.enumerated().map { index, leg in
       ["stopId": request.stops[index].id,
@@ -346,12 +339,10 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   }
 
   private func reportRestriction(_ route: Route, _ request: FreightIQNavigationRequest, location: CLLocation? = nil) {
-#if DEBUG
     guard request.hasRestriction else { return }
     let warning = StopRestrictionSession.warning(for: route, road: LineString(request.restrictedRoad.map(\.coordinate)),
                                                  exclusionPoints: request.exclusionPoints.map(\.coordinate), location: location)
     emit("restriction", request, message: warning)
-#endif
   }
 
   private func calculate(_ next: FreightIQNavigationRequest) {
@@ -370,19 +361,14 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
           self?.emit("error", next, message: "Your route could not be opened. Return to your route and try again.")
           return
         }
-        var destinations = next.stops
-#if DEBUG
         let restricted = next.hasRestriction
-        if restricted { destinations = Array(destinations.prefix(1)) }
-#endif
+        let destinations = restricted ? Array(next.stops.prefix(1)) : next.stops
         let coordinates = [CLLocationCoordinate2D(latitude: next.originLatitude, longitude: next.originLongitude)]
           + destinations.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
         let options = NavigationRouteOptions(coordinates: coordinates, profileIdentifier: .automobile)
-#if DEBUG
         if restricted { options.excludedLocations = next.exclusionPoints.map(\.coordinate) }
         StopRestrictionSession.shared.update(destination: restricted ? coordinates.last : nil,
                                              points: options.excludedLocations)
-#endif
         let provider = Self.provider
         let routes = try await provider.routingProvider().calculateRoutes(options: options).value
         guard !Task.isCancelled, let self, self.window != nil, self.request?.id == next.id else { return }
@@ -431,9 +417,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   }
 
   private func stop() {
-#if DEBUG
     if request?.hasRestriction == true { StopRestrictionSession.shared.update(destination: nil) }
-#endif
     clearTurnNotification()
     task?.cancel()
     task = nil
@@ -583,13 +567,11 @@ private final class FreightIQOfflineRoute {
     store = configuration.navigatorLocation.tileStore
     MapboxMapsOptions.tileStore = store
     var routingConfig = RoutingConfig(datasetProfileIdentifier: .automobile)
-#if DEBUG
     if StopRestrictionSession.enabled {
       routingConfig.rerouteConfig.urlOptionsCustomization = .init(StopRestrictionSession.shared.rerouteURL)
       routingConfig.fasterRouteDetectionConfig = nil
       routingConfig.alternativeRoutesDetectionConfig = nil
     }
-#endif
     provider = MapboxNavigationProvider(coreConfig: CoreConfig(
       routingConfig: routingConfig,
       multilegAdvancing: .manually { _ in false },

@@ -4,7 +4,7 @@ const { withInfoPlist, withXcodeProject } = require("@expo/config-plugins");
 module.exports = function withFreightIQNavigation(config) {
   config = withInfoPlist(config, (mod) => {
     mod.modResults.MBXAccessToken = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
-    if (process.env.APP_VARIANT === "development" && process.env.FREIGHTIQ_STOP_RESTRICTION_TEST === "1") {
+    if (process.env.FREIGHTIQ_STOP_RESTRICTION_TEST === "1") {
       mod.modResults.FreightIQStopRestrictionTest = true;
     } else {
       delete mod.modResults.FreightIQStopRestrictionTest;
