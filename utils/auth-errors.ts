@@ -1,4 +1,4 @@
-export function friendlyAuthError(error: { message: string } | null): string {
+export function friendlyAuthError(error: { message: string; code?: string } | null): string {
   const message = error?.message.toLowerCase() ?? "";
 
   if (message.includes("invalid login credentials")) return "Incorrect email or password.";
@@ -9,8 +9,8 @@ export function friendlyAuthError(error: { message: string } | null): string {
   if (message.includes("network") || message.includes("fetch")) {
     return "FreightIQ could not connect. Check your connection and try again.";
   }
-  if (message.includes("weak password")) {
-    return "Choose a stronger password with at least 8 characters.";
+  if (error?.code === "weak_password" || message.includes("weak password")) {
+    return "Please choose a stronger password.";
   }
 
   return "Something went wrong. Please try again.";
