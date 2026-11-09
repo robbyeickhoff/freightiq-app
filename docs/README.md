@@ -107,6 +107,12 @@ Examples:
 - Backend structure
 - Major engineering decisions
 
+### Dated security records
+
+- [Supabase Security Hardening — 2026-11-09](architecture/SupabaseSecurityHardening2026-11-09.md)
+  records the production Supabase advisor review, approved hardening migrations, leaked-password
+  protection, verification evidence, expected remaining warnings, and deliberate non-changes.
+
 ---
 
 ## Design
