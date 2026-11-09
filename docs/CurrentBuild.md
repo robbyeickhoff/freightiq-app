@@ -13,6 +13,31 @@ answer one question:
 
 ## Current Objective
 
+### November 9 — internal authorization helper hardening deployed
+
+The reviewed Supabase advisor follow-up found that authenticated clients did not need direct
+execution of `private.can_contribute_operations(uuid)` or
+`private.is_contributor_restricted(uuid)`. The focused migration now revokes only those two
+grants. It deliberately retains authenticated private-schema usage plus direct execution of
+`private.is_moderation_admin()` and `private.is_trusted_stop_editor()` because active RLS policies
+call those helpers directly. No public function definition, policy, table permission, app code, or
+user data changes.
+
+The new 11-assertion transaction-only database test passes: both direct helper calls are denied,
+the public Operations eligibility wrapper still succeeds for an eligible driver, the public
+moderation wrapper preserves ordinary/admin behavior, and the two RLS-required helper grants
+remain available. Existing Operations-contribution and stop-relocation suites pass; broader legacy
+database suites still stop on their previously documented post-cutover direct-access assumptions
+and are not evidence for this candidate. Public/private database lint and whitespace checks pass.
+Independent boundary and candidate-diff reviews found no concrete bypass or regression. After Rob's
+separate production approval, live preflight confirmed the exact two unnecessary grants and the
+required moderation/trusted-editor grants, schema usage, policies, and guarded public wrappers.
+Supabase installed hosted migration `20261109230525_restrict_internal_helper_execution`.
+Post-deployment verification confirmed both unwanted grants are closed, all required grants and
+policies remain, and the authenticated public Operations/moderation wrappers still execute without
+permission errors. The expected 20 reviewed public-function advisor warnings remain unchanged; no
+new security warning appeared. Commit and push remain separate approval gates.
+
 ### November 5 — End Navigation returns the route to editing
 
 Rob found that End Navigation left the saved route active, so Today’s Route still

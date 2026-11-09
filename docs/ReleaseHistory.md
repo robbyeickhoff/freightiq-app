@@ -6,6 +6,24 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-11-09 — Internal authorization helper hardening
+
+Rob approved a narrow defense-in-depth correction after a live audit of the Supabase
+`SECURITY DEFINER` advisor warning. Production preflight confirmed that authenticated clients had
+unnecessary direct execution grants on `private.can_contribute_operations(uuid)` and
+`private.is_contributor_restricted(uuid)`. It also confirmed that private-schema usage plus direct
+execution of `private.is_moderation_admin()` and `private.is_trusted_stop_editor()` must remain for
+three active RLS policies.
+
+Supabase installed only hosted migration
+`20261109230525_restrict_internal_helper_execution`. Post-deployment checks confirmed the two
+unnecessary grants are closed; the two RLS-required grants, private-schema usage, both moderation
+policies, and the trusted-editor update policy remain. Authenticated calls through the existing
+public Operations eligibility and moderation wrappers completed without permission errors. The
+expected 20 previously reviewed public-function advisor warnings remain unchanged and no new
+security warning appeared. No function body, RLS policy, table privilege, app code, user data,
+native build, tester distribution, commit, or push changed in this deployment.
+
 ## 2026-11-04 — Driver-tested route/navigation private iPhone candidate
 
 Rob accepted the local iPhone route screen, search/add, overview scrolling and per-leg metrics,
