@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { operationsScreenPaths } from "@/utils/operations-screen-paths";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -100,12 +101,14 @@ function officialSourceShortLabel(source: "cotrip" | "udot" | "mdt") {
 export default function OperationsBoardScreen() {
   const router = useRouter();
   const pathname = usePathname();
+  const paths = operationsScreenPaths(pathname);
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const { fontScale, height: windowHeight } = useWindowDimensions();
   const largeText = fontScale >= 1.5;
   const params = useLocalSearchParams<{ area?: string }>();
   const [userId, setUserId] = useState("");
+  const areaChosenManually = useRef(false);
   const [area, setArea] = useState(() => legacyAreaToScope(params.area ?? ""));
   const [directory, setDirectory] = useState<OperationsAreaDirectory | null>(null);
   const [areaPickerOpen, setAreaPickerOpen] = useState(false);
@@ -187,11 +190,14 @@ export default function OperationsBoardScreen() {
           params.area ? Promise.resolve(null) : readOperationsPreference(id),
           readRecentOperationsAreas(id),
         ]);
-        if (!params.area) setArea(legacyAreaToScope(preference ?? ""));
+        if (!params.area && !areaChosenManually.current) {
+          const savedArea = legacyAreaToScope(preference ?? "");
+          setArea((current) => paths.overNavigation ? current || savedArea : savedArea);
+        }
         setRecentAreaIds(recent);
       }
     });
-  }, [params.area]);
+  }, [params.area, paths.overNavigation]);
   useEffect(() => {
     let active = true;
     void readOperationsAreaDirectory().then((result) => {
@@ -201,6 +207,20 @@ export default function OperationsBoardScreen() {
       active = false;
     };
   }, []);
+  useEffect(() => {
+    if (!paths.overNavigation || params.area || !directory) return;
+    let active = true;
+    void (async () => {
+      const permission = await Location.getForegroundPermissionsAsync();
+      if (!active || !permission.granted || areaChosenManually.current) return;
+      const position = await Location.getLastKnownPositionAsync({ maxAge: 30_000, requiredAccuracy: 150 })
+        ?? await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      if (!active || areaChosenManually.current) return;
+      const nearby = findNearbyOperationsArea(directory, position.coords.latitude, position.coords.longitude);
+      if (nearby) setArea(nearby.scope_id);
+    })().catch(() => undefined);
+    return () => { active = false; };
+  }, [directory, params.area, paths.overNavigation]);
   useEffect(() => {
     if (source === "drivers" || source === "official") return;
     if (source === "all" ? !availableSources.length : !availableSources.includes(source)) {
@@ -352,6 +372,7 @@ export default function OperationsBoardScreen() {
     }, [load]),
   );
   const chooseArea = async (scopeId: string) => {
+    areaChosenManually.current = true;
     setArea(scopeId);
     if (userId) {
       await writeOperationsPreference(userId, scopeId);
@@ -431,12 +452,17 @@ export default function OperationsBoardScreen() {
 
   const controls = (
     <View key={`controls-${fontScale}`} style={styles.controls}>
+      {paths.overNavigation ? (
+        <Pressable onPress={() => router.back()} accessibilityRole="button" style={styles.navigationBack}>
+          <Text style={[styles.back, { color: colors.accentStrong }]}>‹ Navigation</Text>
+        </Pressable>
+      ) : null}
       <View key={`header-${fontScale}`} style={styles.header}>
-        {isOperationsTab ? null : (
+        {!isOperationsTab && !paths.overNavigation ? (
           <Pressable onPress={() => router.back()} accessibilityRole="button">
             <Text style={[styles.back, { color: colors.accentStrong }]}>‹ Map</Text>
           </Pressable>
-        )}
+        ) : null}
         <View style={styles.titleBlock}>
           <Text
             style={[
@@ -451,7 +477,7 @@ export default function OperationsBoardScreen() {
             Current conditions from local drivers
           </Text>
         </View>
-        {!isOperationsTab ? <View style={{ width: 52 }} /> : null}
+        {!isOperationsTab && !paths.overNavigation ? <View style={{ width: 52 }} /> : null}
       </View>
       <View style={[styles.areaHeader, largeText && styles.stackedHeader]}>
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>AREA</Text>
@@ -461,7 +487,7 @@ export default function OperationsBoardScreen() {
           accessibilityRole="button"
           style={styles.mapLinkTarget}
           onPress={() =>
-            router.push({ pathname: "/(tabs)/operations/map", params: { area } } as never)
+            router.push({ pathname: paths.map, params: { area } } as never)
           }
         >
           <Text style={[styles.mapLink, { color: colors.accentStrong }]}>View Map ›</Text>
@@ -811,7 +837,7 @@ export default function OperationsBoardScreen() {
                 return;
               }
               router.push({
-                pathname: "/(tabs)/operations/compose",
+                pathname: paths.compose,
                 params: { area: selectedDirectoryItem.area.slug },
               } as never);
             }}
@@ -973,7 +999,7 @@ export default function OperationsBoardScreen() {
                     accessibilityLabel={`Open ${categoryLabel(alert.category)} nearby alert`}
                     onPress={() =>
                       router.push({
-                        pathname: "/(tabs)/operations/map",
+                        pathname: paths.map,
                         params: { alertId: alert.id, area: alert.areaSlug },
                       } as never)
                     }
@@ -1098,7 +1124,7 @@ export default function OperationsBoardScreen() {
                   variant="secondary"
                   onPress={() =>
                     router.push({
-                      pathname: "/(tabs)/operations/map",
+                      pathname: paths.map,
                       params: { area, officialId: item.id },
                     } as never)
                   }
@@ -1147,7 +1173,7 @@ export default function OperationsBoardScreen() {
                       variant="secondary"
                       onPress={() =>
                         router.push({
-                          pathname: "/(tabs)/operations/compose",
+                          pathname: paths.compose,
                           params: { editId: item.id },
                         } as never)
                       }
@@ -1180,14 +1206,14 @@ export default function OperationsBoardScreen() {
                       variant="tertiary"
                       onPress={() =>
                         router.push({
-                          pathname: "/(tabs)/profile/report-content",
+                          pathname: paths.reportContent,
                           params: {
                             subjectType: "operations_update",
                             subjectId: item.id,
                             ownerId: item.author_user_id,
                             ownerName: item.username,
                           },
-                        })
+                        } as never)
                       }
                     >
                       Report
@@ -1214,6 +1240,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 8,
   },
+  navigationBack: { alignSelf: "flex-start", marginHorizontal: 20, minHeight: 44, justifyContent: "center" },
   back: { fontSize: 17, fontWeight: "700" },
   titleBlock: { flex: 1, minWidth: 0, gap: 4 },
   title: { fontSize: 34, fontWeight: "800", letterSpacing: -0.8, width: "100%" },

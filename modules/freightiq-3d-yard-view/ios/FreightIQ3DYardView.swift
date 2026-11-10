@@ -8,6 +8,7 @@ private struct YardMap: View {
   let stopLongitude: Double
   let deliveryZoneLatitude: Double
   let deliveryZoneLongitude: Double
+  let embedded: Bool
   let resetToken: Int
   @State private var cameraTrigger = 0
 
@@ -20,20 +21,11 @@ private struct YardMap: View {
   }
 
   private var camera: Camera {
-    let tilt = 35.0
-    let range = 520.0
-    let lookAheadMeters = range * sin(tilt * .pi / 180)
-    let center = LatLngAltitude(
-      latitude: deliveryZoneLatitude - lookAheadMeters / 111_000,
-      longitude: deliveryZoneLongitude,
-      altitude: 220
-    )
-
     return Camera(
-      center: center,
+      center: deliveryZone,
       heading: 0,
-      tilt: tilt,
-      range: range,
+      tilt: 35,
+      range: 180,
       fieldOfView: .degrees(45),
       altitudeMode: .relativeToMesh
     )
@@ -95,7 +87,7 @@ private struct YardMap: View {
       RotateControl()
     }
     .onAppear {
-      cameraTrigger += 1
+      if !embedded { cameraTrigger += 1 }
     }
     .onChange(of: resetToken) { _ in
       cameraTrigger += 1
@@ -111,6 +103,7 @@ final class FreightIQ3DYardView: ExpoView {
   private var stopLongitude = 0.0
   private var deliveryZoneLatitude = 0.0
   private var deliveryZoneLongitude = 0.0
+  private var embedded = false
   private var resetToken = 0
   private var hasCoordinates = false
   private var hostingController: UIHostingController<YardMap>?
@@ -127,11 +120,13 @@ final class FreightIQ3DYardView: ExpoView {
   }
 
   func setCoordinates(
+    embedded: Bool,
     stopLatitude: Double,
     stopLongitude: Double,
     deliveryZoneLatitude: Double,
     deliveryZoneLongitude: Double
   ) {
+    self.embedded = embedded
     self.stopLatitude = stopLatitude
     self.stopLongitude = stopLongitude
     self.deliveryZoneLatitude = deliveryZoneLatitude
@@ -141,11 +136,31 @@ final class FreightIQ3DYardView: ExpoView {
   }
 
   func resetCamera(token: Int) {
+    guard resetToken != token else { return }
     resetToken = token
     renderMap()
   }
 
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    if embedded && hostingController == nil { renderMap() }
+  }
+
+  override func didMoveToWindow() {
+    super.didMoveToWindow()
+    if window == nil, let hostingController, embedded {
+      hostingController.willMove(toParent: nil)
+      hostingController.view.removeFromSuperview()
+      hostingController.removeFromParent()
+      self.hostingController = nil
+    } else if embedded && hostingController == nil {
+      renderMap()
+    }
+  }
+
   private func renderMap() {
+    // An embedded map can receive coordinates before its modal has a viewport.
+    if embedded && (window == nil || bounds.isEmpty) { return }
     guard hasCoordinates else { return }
     guard
       (-90...90).contains(stopLatitude),
@@ -171,13 +186,19 @@ final class FreightIQ3DYardView: ExpoView {
       stopLongitude: stopLongitude,
       deliveryZoneLatitude: deliveryZoneLatitude,
       deliveryZoneLongitude: deliveryZoneLongitude,
+      embedded: embedded,
       resetToken: resetToken
     )
 
     if let hostingController {
       hostingController.rootView = yardMap
     } else {
+      let parent = embedded ? sequence(first: self as UIResponder, next: { $0.next })
+        .lazy.compactMap { $0 as? UIViewController }.first : nil
+      if embedded && parent == nil { return }
       let controller = UIHostingController(rootView: yardMap)
+      parent?.addChild(controller)
+      controller.view.frame = bounds
       controller.view.backgroundColor = .black
       controller.view.translatesAutoresizingMaskIntoConstraints = false
       addSubview(controller.view)
@@ -188,6 +209,7 @@ final class FreightIQ3DYardView: ExpoView {
         controller.view.bottomAnchor.constraint(equalTo: bottomAnchor),
       ])
       hostingController = controller
+      if let parent { controller.didMove(toParent: parent) }
     }
 
     onInitialized()
@@ -204,6 +226,7 @@ final class FreightIQ3DYardView: ExpoView {
   var deliveryZoneLongitudeValue = 0.0
 
   func setCoordinates(
+    embedded: Bool,
     stopLatitude: Double,
     stopLongitude: Double,
     deliveryZoneLatitude: Double,

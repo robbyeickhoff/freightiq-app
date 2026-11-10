@@ -20,6 +20,14 @@ export const OPERATIONS_CATEGORIES = [
 ] as const;
 
 export type OperationsCategory = (typeof OPERATIONS_CATEGORIES)[number]["value"];
+export const QUICK_OPERATIONS_REPORTS = [
+  { id: "crash", label: "Crash", category: "temporary_hazard", message: "Crash" },
+  { id: "closure", label: "Road Closure", category: "road_closure", message: "" },
+  { id: "construction", label: "Construction", category: "construction", message: "" },
+  { id: "hazard", label: "Road Hazard", category: "temporary_hazard", message: "" },
+  { id: "weather", label: "Weather / Road Conditions", category: "weather_road_conditions", message: "" },
+] as const satisfies readonly { id: string; label: string; category: OperationsCategory; message: string }[];
+
 export type OperationsUpdate = {
   id: string;
   area_slug: string;
@@ -290,12 +298,12 @@ export function parseOperationsDraft(value: string | null) {
     return null;
   }
 }
-export async function readOperationsDraft(userId: string) {
-  return parseOperationsDraft(await AsyncStorage.getItem(key(userId, "draft")));
+export async function readOperationsDraft(userId: string, quick = false) {
+  return parseOperationsDraft(await AsyncStorage.getItem(key(userId, quick ? "quick-draft" : "draft")));
 }
-export async function writeOperationsDraft(userId: string, draft: OperationsDraft | null) {
-  if (draft) await AsyncStorage.setItem(key(userId, "draft"), JSON.stringify(draft));
-  else await AsyncStorage.removeItem(key(userId, "draft"));
+export async function writeOperationsDraft(userId: string, draft: OperationsDraft | null, quick = false) {
+  if (draft) await AsyncStorage.setItem(key(userId, quick ? "quick-draft" : "draft"), JSON.stringify(draft));
+  else await AsyncStorage.removeItem(key(userId, quick ? "quick-draft" : "draft"));
 }
 export async function readOperationsCache(
   userId: string,

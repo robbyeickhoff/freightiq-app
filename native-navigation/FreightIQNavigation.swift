@@ -197,6 +197,8 @@ private final class DeliveryNavigationController: NavigationViewController {
     didSet { view.setNeedsLayout() }
   }
   private var cameraStateSubscription: AnyCancellable?
+  var onReportCondition: (() -> Void)?
+  private let conditionButton = UIButton(type: .system)
   private let overviewToggle = UIButton(type: .system)
   private let recenterButton = UIButton(type: .system)
   private var recenterBottom: NSLayoutConstraint?
@@ -205,7 +207,7 @@ private final class DeliveryNavigationController: NavigationViewController {
     super.viewDidLoad()
     guard let camera = navigationMapView?.navigationCamera else { return }
 
-    for button in [overviewToggle, recenterButton] {
+    for button in [overviewToggle, recenterButton, conditionButton] {
       button.translatesAutoresizingMaskIntoConstraints = false
       button.tintColor = .white
       button.backgroundColor = UIColor(red: 0.14, green: 0.22, blue: 0.31, alpha: 1)
@@ -216,9 +218,12 @@ private final class DeliveryNavigationController: NavigationViewController {
       ])
     }
     overviewToggle.addTarget(self, action: #selector(toggleOverview), for: .touchUpInside)
-    if let buttons = navigationView.floatingButtons, !buttons.isEmpty {
-      navigationView.floatingButtons = [overviewToggle] + Array(buttons.dropFirst())
-    }
+    conditionButton.setImage(UIImage(systemName: "exclamationmark.bubble.fill"), for: .normal)
+    conditionButton.accessibilityLabel = "Report a Condition"
+    conditionButton.addTarget(self, action: #selector(reportCondition), for: .touchUpInside)
+    // The pinned Mapbox SDK orders its default controls as overview, mute, feedback.
+    let middleButtons = navigationView.floatingButtons?.dropFirst().dropLast() ?? []
+    navigationView.floatingButtons = [overviewToggle] + Array(middleButtons) + [conditionButton]
 
     recenterButton.setImage(UIImage(systemName: "location.fill"), for: .normal)
     recenterButton.accessibilityLabel = "Recenter on current location"
@@ -248,6 +253,10 @@ private final class DeliveryNavigationController: NavigationViewController {
     camera.update(cameraState: camera.currentCameraState == .overview ? .following : .overview)
   }
 
+  @objc private func reportCondition() {
+    onReportCondition?()
+  }
+
   @objc private func followLocation() {
     navigationMapView?.navigationCamera.update(cameraState: .following)
   }
@@ -272,7 +281,10 @@ private final class DeliveryNavigationController: NavigationViewController {
     recenterBottom?.constant = -(bottomOcclusion + 40)
     // Keep required map credits above FreightIQ's floating panel.
     navigationMapView?.mapView.ornaments.options.logo.margins.y = bottomOcclusion + 8
-    navigationMapView?.mapView.ornaments.options.attributionButton.margins.y = bottomOcclusion + 8
+    // Group the map credits on the left, clear of the driving controls.
+    navigationMapView?.mapView.ornaments.options.attributionButton.position = .bottomLeading
+    navigationMapView?.mapView.ornaments.options.attributionButton.margins = CGPoint(x: 96, y: bottomOcclusion + 8)
+    navigationMapView?.mapView.ornaments.options.attributionButton.tintColor = .lightGray
   }
   override func dismiss(animated flag: Bool, completion: (() -> Void)? = nil) {
     completion?()
@@ -389,7 +401,11 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
         navigation.delegate = self
         navigation.sendsNotifications = false
         navigation.bottomOcclusion = self.bottomInset
-        navigation.showsEndOfRouteFeedback = false
+        navigation.onReportCondition = { [weak self] in
+          guard let self, let request = self.request, request.id == self.guidanceId else { return }
+          self.emit("reportCondition", request)
+        }
+        navigation.showsReportFeedback = false
         navigation.navigationView.bottomBannerContainerView.isHidden = true
         navigation.automaticallyAdjustsStyleForTimeOfDay = false
         navigation.overrideUserInterfaceStyle = self.dark ? .dark : .light

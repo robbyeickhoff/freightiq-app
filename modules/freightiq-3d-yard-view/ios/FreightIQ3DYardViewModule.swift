@@ -1,6 +1,7 @@
 import ExpoModulesCore
 
 struct YardCoordinates: Record {
+  @Field var embedded = false
   @Field var stopLatitude = 0.0
   @Field var stopLongitude = 0.0
   @Field var deliveryZoneLatitude = 0.0
@@ -16,6 +17,7 @@ public class FreightIQ3DYardViewModule: Module {
 
       Prop("coordinates") { (view: FreightIQ3DYardView, value: YardCoordinates) in
         view.setCoordinates(
+          embedded: value.embedded,
           stopLatitude: value.stopLatitude,
           stopLongitude: value.stopLongitude,
           deliveryZoneLatitude: value.deliveryZoneLatitude,

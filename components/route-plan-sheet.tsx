@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { RouteMetrics } from "@/components/route-metrics";
@@ -15,10 +15,12 @@ import { useTodayRoute } from "@/context/todays-route-context";
 import { useRoutePlan } from "@/hooks/use-route-plan";
 import { drivingDistance, drivingTime, estimatedArrivals, orderedNavigationStops, routePlanTotals, type PlannedLeg } from "@/utils/route-plan";
 
-export function RoutePlanSheet({ visible, onClose, liveLegs, initialMode = "route" }: {
+export function RoutePlanSheet({ visible, onClose, liveLegs, duringGuidance = false, initialMode = "route" }: {
   visible: boolean; onClose: () => void; liveLegs?: { legs: PlannedLeg[]; updatedAt: number } | null;
+  duringGuidance?: boolean;
   initialMode?: "route" | "search";
 }) {
+  const inline = duringGuidance && Platform.OS === "ios";
   const { route, reorderStops, removeStop } = useTodayRoute();
   const [mode, setMode] = useState(initialMode);
   const [editing, setEditing] = useState(false);
@@ -54,9 +56,9 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, initialMode = "rout
     });
   };
   useEffect(() => { if (visible && plan) fit(); }, [visible, plan]); // eslint-disable-line react-hooks/exhaustive-deps
-  return <Modal visible={visible} animationType="slide" presentationStyle="overFullScreen" onRequestClose={onClose}><GestureHandlerRootView style={{ flex: 1 }}><SafeAreaProvider>
+  const content = (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
-      {intelStop ? <NavigationStopIntel stop={intelStop} returnLabel="Back to Route" onClose={() => setIntelStop(null)} /> : null}
+      {intelStop ? <NavigationStopIntel stop={intelStop} duringGuidance={duringGuidance} returnLabel="Back to Route" onClose={() => setIntelStop(null)} /> : null}
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.textPrimary, flexShrink: 1 }]}>{mode === "search" ? "Add Stop" : `${stops.length} Stops`}</Text>
         <AppButton variant="tertiary" onPress={onClose}>{route.execution.status === "active" ? "Resume" : "Done"}</AppButton>
@@ -149,10 +151,17 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, initialMode = "rout
       />
       </>}
     </SafeAreaView>
-  </SafeAreaProvider></GestureHandlerRootView></Modal>;
+  );
+  if (inline) {
+    return visible ? <View accessibilityViewIsModal style={styles.overlay}>{content}</View> : null;
+  }
+  return <Modal visible={visible} animationType="slide" presentationStyle="overFullScreen" onRequestClose={onClose}>
+    <GestureHandlerRootView style={styles.screen}><SafeAreaProvider>{content}</SafeAreaProvider></GestureHandlerRootView>
+  </Modal>;
 }
 
 const styles = StyleSheet.create({
+  overlay: { ...StyleSheet.absoluteFill, zIndex: 10 },
   screen: { flex: 1 }, header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16 },
   title: { fontSize: 20, fontWeight: "700" }, summary: { padding: 16, gap: 8 },
   map: { height: "36%" }, list: { padding: 16, gap: 12 }, stop: { paddingBottom: 12, gap: 5, borderBottomWidth: StyleSheet.hairlineWidth },

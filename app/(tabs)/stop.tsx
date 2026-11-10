@@ -342,10 +342,11 @@ function fitDeliveryZonePreviewMap(
   );
 }
 
-export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMap, embeddedReturnLabel = "Back to Navigation" }: {
+export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMap, embeddedMapOpen = false, embeddedReturnLabel = "Back to Navigation" }: {
   embeddedStop?: { id: string; name: string; address: string; lat: number; lng: number };
   onEmbeddedClose?: () => void;
-  onEmbeddedMap?: (latitude: number, longitude: number) => void;
+  onEmbeddedMap?: (stopLatitude: number, stopLongitude: number, zoneLatitude: number, zoneLongitude: number) => void;
+  embeddedMapOpen?: boolean;
   embeddedReturnLabel?: string;
 } = {}) {
   const scrollViewRef = useRef<ScrollView | null>(null);
@@ -2317,7 +2318,7 @@ export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMa
                       { borderColor: colors.border, backgroundColor: colors.surface },
                     ]}
                   >
-                    {isFocused ? (
+                    {isFocused && !embeddedMapOpen ? (
                       <MapView
                         key={`delivery-zone-preview-${previewStopLat}-${previewStopLng}-${entranceLat}-${entranceLng}`}
                         ref={deliveryZonePreviewMapRef}
@@ -2380,7 +2381,7 @@ export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMa
                     >
                       <AppButton
                         onPress={() =>
-                          onEmbeddedMap ? onEmbeddedMap(Number(entranceLat), Number(entranceLng)) : router.navigate({
+                          onEmbeddedMap ? onEmbeddedMap(previewStopLat, previewStopLng, entranceLat, entranceLng) : router.navigate({
                             pathname: "/(tabs)/(map)",
                             params: {
                               focusStopId: stopId,

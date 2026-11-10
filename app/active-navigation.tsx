@@ -2,7 +2,7 @@ import { requireNativeView } from "expo";
 import * as Location from "expo-location";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View, type ViewProps } from "react-native";
+import { ActionSheetIOS, ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, type ViewProps } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NavigationStopIntel } from "@/components/navigation-stop-intel";
 import { RouteMetrics } from "@/components/route-metrics";
@@ -10,6 +10,7 @@ import { AppIcon, type AppIconName } from "@/components/ui/app-icon";
 import { AppButton } from "@/components/ui/app-button";
 import { useTodayRoute } from "@/context/todays-route-context";
 import { useAppTheme } from "@/context/theme-context";
+import { QUICK_OPERATIONS_REPORTS } from "@/utils/operations-board";
 import { hasEmbeddedNavigation } from "@/utils/embedded-navigation";
 import { RoutePlanSheet } from "@/components/route-plan-sheet";
 import type { TodayRouteStop } from "@/utils/todays-route";
@@ -32,6 +33,7 @@ const NavigationView = hasEmbeddedNavigation
 export default function ActiveNavigationScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const [panelHeight, setPanelHeight] = useState(180);
   const [intelStop, setIntelStop] = useState<TodayRouteStop | null>(null);
   const [planMode, setPlanMode] = useState<"route" | "search">("route");
@@ -45,7 +47,7 @@ export default function ActiveNavigationScreen() {
   const [busy, setBusy] = useState(false);
   const [retry, setRetry] = useState(0);
   const [routePlanOpen, setRoutePlanOpen] = useState(false);
-  const [actionsOpen, setActionsOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [liveLegs, setLiveLegs] = useState<{ legs: PlannedLeg[]; updatedAt: number; requestId: string } | null>(null);
   const savingRef = useRef(false);
   const stops = useMemo(() => orderedNavigationStops(route), [route]);
@@ -58,7 +60,7 @@ export default function ActiveNavigationScreen() {
     setFailed(false);
     setRestrictionWarning("");
     setLiveLegs(null);
-    setActionsOpen(false);
+    setPanelOpen(false);
     void (async () => {
       try {
         const permission = await Location.requestForegroundPermissionsAsync();
@@ -100,6 +102,20 @@ export default function ActiveNavigationScreen() {
   };
   const onState = ({ nativeEvent: event }: { nativeEvent: StateEvent }) => {
     if (event.requestId !== request?.id || event.stopId !== active?.id) return;
+    if (event.state === "reportCondition") {
+      ActionSheetIOS.showActionSheetWithOptions({
+        title: "Report a Condition",
+        options: [...QUICK_OPERATIONS_REPORTS.map((report) => report.label), "Cancel"],
+        cancelButtonIndex: QUICK_OPERATIONS_REPORTS.length,
+      }, (index) => {
+        const report = QUICK_OPERATIONS_REPORTS[index];
+        if (report) router.push({
+          pathname: "/navigation-operations/compose",
+          params: { quickDraft: "1", quickReport: report.id },
+        } as never);
+      });
+      return;
+    }
     if (event.state === "closed") { router.back(); return; }
     if (event.state === "started") setMessage("");
     if (event.state === "restriction") setRestrictionWarning(event.message);
@@ -122,8 +138,8 @@ export default function ActiveNavigationScreen() {
   return (
     <SafeAreaView edges={["top"]} style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <RoutePlanSheet initialMode={planMode} visible={routePlanOpen} onClose={() => setRoutePlanOpen(false)} liveLegs={liveLegs} />
-      {intelStop ? <NavigationStopIntel stop={intelStop} onClose={() => setIntelStop(null)} /> : null}
+      <RoutePlanSheet initialMode={planMode} visible={routePlanOpen} onClose={() => setRoutePlanOpen(false)} liveLegs={liveLegs} duringGuidance />
+      {intelStop ? <NavigationStopIntel stop={intelStop} duringGuidance onClose={() => setIntelStop(null)} /> : null}
       <View style={styles.map}>
         {active && request && NavigationView ? <NavigationView style={styles.map} request={request} bottomInset={panelHeight + insets.bottom + 20} dark={colorScheme === "dark"} onState={onState} /> : null}
         {message && active ? <View style={[styles.notice, { backgroundColor: colors.surface }]}>
@@ -144,7 +160,7 @@ export default function ActiveNavigationScreen() {
         {restrictionWarning ? <Text accessibilityLiveRegion="polite" style={[styles.actionLabel, { color: colors.accentStrong }]}>
           {restrictionWarning}
         </Text> : null}
-        <Pressable accessibilityRole="button" accessibilityLabel={actionsOpen ? "Collapse route actions" : "Expand route actions"} accessibilityState={{ expanded: actionsOpen }} onPress={() => setActionsOpen((open) => !open)} style={styles.grabberTarget}>
+        <Pressable accessibilityRole="button" accessibilityLabel={panelOpen ? "Collapse navigation controls" : "Expand navigation controls"} accessibilityState={{ expanded: panelOpen }} onPress={() => setPanelOpen((open) => !open)} style={styles.grabberTarget}>
           <View style={[styles.grabber, { backgroundColor: colors.textSecondary }]} />
           {route.execution.arrival?.stopId === active.id ? (
             <Text style={[styles.actionLabel, { color: colors.textPrimary, textAlign: "center" }]}>Arrived</Text>
@@ -152,18 +168,20 @@ export default function ActiveNavigationScreen() {
             <RouteMetrics arrival={liveLegs.updatedAt + liveLegs.legs[0].seconds * 1000} {...liveLegs.legs[0]} />
           </View> : null}
         </Pressable>
-        <Pressable onPress={() => setIntelStop(active)} accessibilityRole="button" accessibilityLabel={`View ${active.name} stop Intel`} style={styles.business}>
-          <Text numberOfLines={2} style={[styles.title, { color: colors.textPrimary, flex: 1 }]}>{active.name}</Text>
-          <View style={styles.intelAction}>
-            <Text style={[styles.intelLabel, { color: colors.accentStrong }]}>Stop Intel</Text>
-            <AppIcon name="chevronRight" color={colors.accentStrong} size={20} />
+        {panelOpen ? <ScrollView style={[styles.expandedControls, { maxHeight: height * 0.45 }]} contentContainerStyle={styles.expandedContent}>
+          <Pressable onPress={() => setIntelStop(active)} accessibilityRole="button" accessibilityLabel={`View ${active.name} stop Intel`} style={styles.business}>
+            <Text numberOfLines={2} style={[styles.title, { color: colors.textPrimary, flex: 1 }]}>{active.name}</Text>
+            <View style={styles.intelAction}>
+              <Text style={[styles.intelLabel, { color: colors.accentStrong }]}>Stop Intel</Text>
+              <AppIcon name="chevronRight" color={colors.accentStrong} size={20} />
+            </View>
+          </Pressable>
+          <View style={styles.toolbar}>
+            <AppButton size="compact" variant="tertiary" onPress={() => { setPlanMode("route"); setRoutePlanOpen(true); }}>View Route</AppButton>
           </View>
-        </Pressable>
-        <View style={styles.toolbar}>
-          <AppButton size="compact" variant="tertiary" onPress={() => { setPlanMode("route"); setRoutePlanOpen(true); }}>View Route</AppButton>
-          <AppButton size="compact" variant="tertiary" accessibilityState={{ expanded: actionsOpen }} onPress={() => setActionsOpen(!actionsOpen)}>{actionsOpen ? "Hide Actions" : "Actions"}</AppButton>
-        </View>
-        {actionsOpen ? <ScrollView style={{ maxHeight: 260 }} contentContainerStyle={{ gap: 10 }}>
+          <View style={[styles.group, { backgroundColor: colors.background }]}>
+            <NavigationAction icon="operations" label="Operations Board" onPress={() => router.push("/navigation-operations" as never)} />
+          </View>
           <View style={[styles.group, { backgroundColor: colors.background }]}>
             <NavigationAction icon="complete" label="Complete Stop" disabled={busy || !isReady} onPress={() => void save(() => completeStop(active.id, true))} />
             <NavigationAction icon="route" label="Skip for Now" disabled={busy || !isReady || stops.length < 2} onPress={() => void save(skipActiveStop)} />
@@ -211,6 +229,8 @@ const styles = StyleSheet.create({
   business: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingVertical: 4, paddingHorizontal: 8 },
   intelAction: { flexDirection: "row", alignItems: "center", flexShrink: 0, gap: 2 },
   intelLabel: { fontSize: 15, fontWeight: "600" },
+  expandedControls: { flexGrow: 0 },
+  expandedContent: { gap: 8 },
   group: { borderRadius: 18, overflow: "hidden" },
   action: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, minHeight: 48 },
   actionLabel: { fontSize: 17, fontWeight: "500" },

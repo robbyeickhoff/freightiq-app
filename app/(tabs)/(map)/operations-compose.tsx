@@ -1,3 +1,4 @@
+import { operationsScreenPaths } from "@/utils/operations-screen-paths";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -10,7 +11,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Location from "expo-location";
 import { OperationsAreaPicker } from "@/components/operations-area-picker";
@@ -23,6 +24,7 @@ import {
   operationsDisplayAddress,
   endOfLocalDay,
   expirationAfterHours,
+  QUICK_OPERATIONS_REPORTS,
   readOperationsDraft,
   validateOperationsDraft,
   writeOperationsDraft,
@@ -65,6 +67,7 @@ function formatExpiration(value: string) {
 }
 export default function OperationsComposeScreen() {
   const router = useRouter();
+  const paths = operationsScreenPaths(usePathname());
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const { fontScale } = useWindowDimensions();
@@ -72,9 +75,13 @@ export default function OperationsComposeScreen() {
   const params = useLocalSearchParams<{
     area?: string;
     editId?: string;
+    quickDraft?: string;
+    quickReport?: string;
     latitude?: string;
     longitude?: string;
   }>();
+  const quickDraft = paths.overNavigation && params.quickDraft === "1" && !params.editId;
+  const quickReport = quickDraft ? QUICK_OPERATIONS_REPORTS.find((report) => report.id === params.quickReport) : undefined;
   const [userId, setUserId] = useState("");
   const [areaSlug, setAreaSlug] = useState(params.area || "");
   const [postingAreas, setPostingAreas] = useState<OperationsDirectoryArea[]>([]);
@@ -126,8 +133,8 @@ export default function OperationsComposeScreen() {
     }).catch(() => {});
     return () => { current = false; };
   }, [userId, areaPickerOpen]);
-  const [category, setCategory] = useState<OperationsCategory>("weather_road_conditions");
-  const [message, setMessage] = useState("");
+  const [category, setCategory] = useState<OperationsCategory>(quickReport?.category ?? "weather_road_conditions");
+  const [message, setMessage] = useState<string>(quickReport?.message ?? "");
   const [expiresAt, setExpiresAt] = useState(endOfLocalDay());
   const [expirationChoice, setExpirationChoice] = useState<ExpirationChoice>("today");
   const [latitude, setLatitude] = useState<number | undefined>(
@@ -152,15 +159,28 @@ export default function OperationsComposeScreen() {
     let active = true;
     void readOperationsAreaDirectory().then((result) => {
       if (!active || !result.data) return;
-      const areas = result.data.groups.flatMap((group) => group.areas);
-      setDirectory(result.data);
+      const areaDirectory = result.data;
+      const areas = areaDirectory.groups.flatMap((group) => group.areas);
+      setDirectory(areaDirectory);
       setPostingAreas(areas);
-      if (!params.editId) setAreaSlug((current) => current || areas[0]?.slug || "");
+      if (!params.editId && !quickDraft) setAreaSlug((current) => current || areas[0]?.slug || "");
+      if (quickReport && !params.area) {
+        void (async () => {
+          const recent = await Location.getLastKnownPositionAsync({ maxAge: 30_000, requiredAccuracy: 150 });
+          if (recent) return recent;
+          const permission = await Location.getForegroundPermissionsAsync();
+          return permission.granted ? Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }) : null;
+        })().then((position) => {
+          if (!active || !position) return;
+          const nearby = findNearbyOperationsArea(areaDirectory, position.coords.latitude, position.coords.longitude);
+          if (nearby) setAreaSlug((current) => current || nearby.slug);
+        }).catch(() => undefined);
+      }
     });
     return () => {
       active = false;
     };
-  }, [params.editId]);
+  }, [params.area, params.editId, quickDraft, quickReport]);
   useEffect(() => {
     duplicateCheckMounted.current = true;
     return () => {
@@ -293,7 +313,7 @@ export default function OperationsComposeScreen() {
       const id = data.user?.id ?? "";
       setUserId(id);
       if (id) {
-        const draft = await readOperationsDraft(id);
+        const draft = quickReport ? null : await readOperationsDraft(id, quickDraft);
         if (!active) return;
         if (draft) {
           setAreaSlug(params.area || draft.areaSlug);
@@ -313,7 +333,7 @@ export default function OperationsComposeScreen() {
     return () => {
       active = false;
     };
-  }, [params.area, params.editId, params.latitude, params.longitude]);
+  }, [params.area, params.editId, params.latitude, params.longitude, quickDraft, quickReport]);
   const draft = useMemo<OperationsDraft>(
     () => ({
       areaSlug,
@@ -333,17 +353,17 @@ export default function OperationsComposeScreen() {
     latestDraft.current = draft;
   }, [draft]);
   useEffect(() => {
-    if (draftReady && userId && !params.editId) void writeOperationsDraft(userId, draft);
-  }, [draft, draftReady, params.editId, userId]);
+    if (draftReady && userId && !params.editId) void writeOperationsDraft(userId, draft, quickDraft);
+  }, [draft, draftReady, params.editId, quickDraft, userId]);
   const selectedCategory = OPERATIONS_CATEGORIES.find((item) => item.value === category);
   const locationRequired =
     selectedCategory?.pinRequired || ["delivery_access", "customer_notice"].includes(category);
   const openLocationPicker = async () => {
     Keyboard.dismiss();
-    if (userId) await writeOperationsDraft(userId, draft);
+    if (userId) await writeOperationsDraft(userId, draft, quickDraft);
     router.replace({
-      pathname: "/(tabs)/operations/map",
-      params: { area: areaSlug, pickLocation: "true" },
+      pathname: paths.map,
+      params: { area: areaSlug, pickLocation: "true", ...(quickDraft ? { quickDraft: "1" } : {}) },
     } as never);
   };
   const searchStops = async () => {
@@ -453,9 +473,10 @@ export default function OperationsComposeScreen() {
       Alert.alert("Could not save update", result.error.message);
       return;
     }
-    if (userId) await writeOperationsDraft(userId, null);
+    if (userId) await writeOperationsDraft(userId, null, quickDraft);
     void refreshCurrentDrivingSnapshot();
-    router.replace({ pathname: "/(tabs)/operations", params: { area: areaSlug } } as never);
+    if (paths.overNavigation) router.back();
+    else router.replace({ pathname: paths.board, params: { area: areaSlug } } as never);
   };
   if (params.editId && (!draftReady || loadedEditId !== params.editId)) {
     return (
@@ -472,7 +493,7 @@ export default function OperationsComposeScreen() {
           ) : null}
           <AppButton
             variant="secondary"
-            onPress={() => router.replace("/(tabs)/operations" as never)}
+            onPress={() => router.replace(paths.board as never)}
           >
             Back to Operations
           </AppButton>
@@ -499,7 +520,7 @@ export default function OperationsComposeScreen() {
                 variant="secondary"
                 onPress={() =>
                   router.replace({
-                    pathname: "/(tabs)/operations",
+                    pathname: paths.board,
                     params: { area: areaSlug },
                   } as never)
                 }

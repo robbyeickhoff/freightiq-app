@@ -3,6 +3,7 @@ import type { NativeSyntheticEvent, StyleProp, ViewStyle } from 'react-native';
 export type YardViewErrorEvent = NativeSyntheticEvent<{ message: string }>;
 
 export type YardCoordinates = {
+  embedded?: boolean;
   stopLatitude: number;
   stopLongitude: number;
   deliveryZoneLatitude: number;

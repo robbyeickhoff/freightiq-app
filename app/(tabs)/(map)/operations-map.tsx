@@ -1,8 +1,9 @@
+import { operationsScreenPaths } from "@/utils/operations-screen-paths";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import * as Location from "expo-location";
 import MapView, { Marker, Region } from "react-native-maps";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppIcon } from "@/components/ui/app-icon";
 import { AppButton } from "@/components/ui/app-button";
@@ -37,12 +38,14 @@ import {
 
 export default function OperationsMapScreen() {
   const router = useRouter();
+  const paths = operationsScreenPaths(usePathname());
   const mapRef = useRef<MapView | null>(null);
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const params = useLocalSearchParams<{
     area?: string;
     pickLocation?: string;
+    quickDraft?: string;
     alertId?: string;
     officialId?: string;
   }>();
@@ -131,9 +134,10 @@ export default function OperationsMapScreen() {
   }, [centerOnCurrentLocation, fromCompose]);
   const returnToCompose = (coordinate?: { latitude: number; longitude: number }) => {
     router.replace({
-      pathname: "/(tabs)/operations/compose",
+      pathname: paths.compose,
       params: {
-        area: params.area || selected.slug,
+        area: params.area || (params.quickDraft === "1" ? "" : selected.slug),
+        ...(params.quickDraft === "1" ? { quickDraft: "1" } : {}),
         ...(coordinate
           ? {
               latitude: String(coordinate.latitude),
@@ -174,7 +178,7 @@ export default function OperationsMapScreen() {
           Alert.alert("Condition unavailable", "Couldn’t load this nearby condition right now.", [
             {
               text: "Back to Operations",
-              onPress: () => router.replace("/(tabs)/operations" as never),
+              onPress: () => router.replace(paths.board as never),
             },
           ]);
         }
@@ -225,7 +229,7 @@ export default function OperationsMapScreen() {
           Alert.alert("Condition unavailable", "This condition is no longer active.", [
             {
               text: "Back to Operations",
-              onPress: () => router.replace("/(tabs)/operations" as never),
+              onPress: () => router.replace(paths.board as never),
             },
           ]);
         }
@@ -235,7 +239,7 @@ export default function OperationsMapScreen() {
       );
       setLoadError(false);
     },
-    [isDirectoryScope, params.area, params.alertId, params.officialId, router],
+    [isDirectoryScope, params.area, params.alertId, params.officialId, paths.board, router],
   );
   useFocusEffect(
     useCallback(() => {

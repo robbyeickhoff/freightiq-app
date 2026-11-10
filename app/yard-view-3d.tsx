@@ -2,8 +2,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Constants from "expo-constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useIsFocused } from "expo-router/react-navigation";
-import { useState } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -17,10 +16,24 @@ import {
 import FreightIQ3DYardView from "../modules/freightiq-3d-yard-view/src/FreightIQ3DYardView";
 import FreightIQ3DYardViewModule from "../modules/freightiq-3d-yard-view/src/FreightIQ3DYardViewModule";
 
+export type EmbeddedYardView = {
+  stopLatitude: number;
+  stopLongitude: number;
+  deliveryZoneLatitude: number;
+  deliveryZoneLongitude: number;
+  onBack: () => void;
+  onOpen2D: () => void;
+};
+
 export default function YardView3DScreen() {
+  return <YardView3D />;
+}
+
+export function YardView3D({ embedded }: { embedded?: EmbeddedYardView }) {
   const router = useRouter();
   const isFocused = useIsFocused();
   const params = useLocalSearchParams();
+  const [viewportReady, setViewportReady] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const androidLaunchStarted = useRef(false);
@@ -28,17 +41,24 @@ export default function YardView3DScreen() {
   const stopId = String(params.stopId ?? "");
   const stopName = String(params.stopName ?? "Stop");
   const stopAddress = String(params.stopAddress ?? "");
-  const stopLatitude = Number(params.stopLatitude);
-  const stopLongitude = Number(params.stopLongitude);
-  const deliveryZoneLatitude = Number(params.deliveryZoneLatitude);
-  const deliveryZoneLongitude = Number(params.deliveryZoneLongitude);
+  const stopLatitude = embedded?.stopLatitude ?? Number(params.stopLatitude);
+  const stopLongitude = embedded?.stopLongitude ?? Number(params.stopLongitude);
+  const deliveryZoneLatitude = embedded?.deliveryZoneLatitude ?? Number(params.deliveryZoneLatitude);
+  const deliveryZoneLongitude = embedded?.deliveryZoneLongitude ?? Number(params.deliveryZoneLongitude);
+  const isEmbedded = Boolean(embedded);
+  const coordinates = useMemo(
+    () => ({ embedded: isEmbedded, stopLatitude, stopLongitude, deliveryZoneLatitude, deliveryZoneLongitude }),
+    [isEmbedded, stopLatitude, stopLongitude, deliveryZoneLatitude, deliveryZoneLongitude],
+  );
   const deliveryZoneSource =
     params.deliveryZoneSource === "preview" || params.deliveryZoneSource === "route"
       ? String(params.deliveryZoneSource)
       : "stop-intel";
   const returnToPreview = String(params.returnToPreview ?? "") === "1";
+  const fromGuidance = params.fromGuidance === "1";
   const returnLabel =
-    deliveryZoneSource === "preview"
+    fromGuidance ? "Back to Intel"
+      : embedded ? "Back to Intel" : deliveryZoneSource === "preview"
       ? "Back to Stop"
       : deliveryZoneSource === "route"
         ? "Back to Route Map"
@@ -104,6 +124,7 @@ export default function YardView3DScreen() {
   ]);
 
   function open2DMap() {
+    if (embedded) { embedded.onOpen2D(); return; }
     router.replace({
       pathname: "/(tabs)/(map)",
       params: {
@@ -124,6 +145,8 @@ export default function YardView3DScreen() {
   }
 
   function returnToSource() {
+    if (embedded) { embedded.onBack(); return; }
+    if (fromGuidance) { router.back(); return; }
     if (deliveryZoneSource === "preview") {
       router.replace({
         pathname: "/(tabs)/(map)",
@@ -166,15 +189,15 @@ export default function YardView3DScreen() {
       : null;
 
   return (
-    <View style={styles.screen}>
-      {Platform.OS !== "android" && isFocused && !unavailableMessage && !error ? (
+    <View
+      style={styles.screen}
+      onLayout={embedded && !viewportReady ? ({ nativeEvent: { layout } }) => {
+        if (layout.width > 0 && layout.height > 0) setViewportReady(true);
+      } : undefined}
+    >
+      {Platform.OS !== "android" && isFocused && (!embedded || viewportReady) && !unavailableMessage && !error ? (
         <FreightIQ3DYardView
-          coordinates={{
-            stopLatitude,
-            stopLongitude,
-            deliveryZoneLatitude,
-            deliveryZoneLongitude,
-          }}
+          coordinates={coordinates}
           onError={(event) => setError(event.nativeEvent.message)}
           onInitialized={() => setInitialized(true)}
           resetToken={0}
@@ -210,10 +233,10 @@ export default function YardView3DScreen() {
               {returnLabel}
             </Text>
           </Pressable>
-          <Pressable onPress={open2DMap} style={styles.primaryButton}>
+          {!fromGuidance ? <Pressable onPress={open2DMap} style={styles.primaryButton}>
             <MaterialIcons color="#11161C" name="map" size={21} />
             <Text style={styles.primaryButtonText}>Open 2D map</Text>
-          </Pressable>
+          </Pressable> : null}
         </View>
       </SafeAreaView>
     </View>
