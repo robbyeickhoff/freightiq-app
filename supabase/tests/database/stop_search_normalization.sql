@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(25);
 
 insert into auth.users (id, email, created_at, updated_at)
 values ('71000000-0000-4000-8000-000000000001','normalized-search@example.test',now(),now());
@@ -17,6 +17,15 @@ values
   ('normalized-search-hyphen','Smith-Jones Freight / Receiving','10 Test Rd, Grand Junction, CO',39.0800,-108.5800,'71000000-0000-4000-8000-000000000001','Grand Junction','CO','US','visible'),
   ('normalized-search-hidden','St. Mary''s Hidden Test','11 Test Rd, Grand Junction, CO',39.0800,-108.5800,'71000000-0000-4000-8000-000000000001','Grand Junction','CO','US','hidden'),
   ('normalized-search-accent','Café del Sol','12 Test Rd, Grand Junction, CO',39.0800,-108.5800,'71000000-0000-4000-8000-000000000001','Grand Junction','CO','US','visible');
+
+insert into public.mfi_stops
+  (id,name,address,lat,lng,user_id,city,state_code,country_code,moderation_status)
+values
+  ('house-search-ranch','Ranch Search Fixture','7419 Last Dollar Rd',38.0,-107.9,'71000000-0000-4000-8000-000000000001','Grand Junction','CO','US','visible'),
+  ('house-search-exact','Exact Search Fixture','741 Sample Rd',37.99,-107.9,'71000000-0000-4000-8000-000000000001','Grand Junction','CO','US','visible'),
+  ('house-search-substring','Substring Search Fixture','17419 Sample Rd',39.09,-108.57,'71000000-0000-4000-8000-000000000001','Grand Junction','CO','US','visible'),
+  ('house-search-hidden-number','Hidden Search Fixture','7410 Sample Rd',39.09,-108.57,'71000000-0000-4000-8000-000000000001','Grand Junction','CO','US','hidden'),
+  ('house-search-near','Near Search Fixture','7418 Sample Rd',39.09,-108.57,'71000000-0000-4000-8000-000000000001','Grand Junction','CO','US','visible');
 
 select is(
   (select id from public.search_mfi_stops('st m',39.09,-108.57,50000,10) limit 1),
@@ -130,6 +139,38 @@ select ok(
     '$[*] ? (@.id == "normalized-search-hidden")'
   ),
   'guarded stop search still excludes hidden stops'
+);
+select is(
+  public.read_freightiq_guarded_v1(
+    'search_stops',
+    '{"p_search_text":"741","p_center_lat":39.09,"p_center_lng":-108.57,"p_radius_meters":50000,"p_result_limit":10}'
+  )->'data' @? '$[*] ? (@.id == "house-search-ranch")',
+  true,
+  'three digits find a house-number prefix beyond the map radius'
+);
+select is(
+  public.read_freightiq_guarded_v1(
+    'search_stops',
+    '{"p_search_text":"741","p_center_lat":39.09,"p_center_lng":-108.57,"p_radius_meters":50000,"p_result_limit":10}'
+  )->'data'->0->>'id',
+  'house-search-exact',
+  'exact house number outranks a closer prefix match'
+);
+select is(
+  public.read_freightiq_guarded_v1(
+    'search_stops',
+    '{"p_search_text":"741","p_center_lat":39.09,"p_center_lng":-108.57,"p_radius_meters":50000,"p_result_limit":10}'
+  )->'data'->1->>'id',
+  'house-search-near',
+  'closest visible prefix ranks ahead of distant prefixes and incidental digits'
+);
+select is(
+  public.read_freightiq_guarded_v1(
+    'search_stops',
+    '{"p_search_text":"7419","p_center_lat":39.09,"p_center_lng":-108.57,"p_radius_meters":50000,"p_result_limit":10}'
+  )->'data'->0->>'id',
+  'house-search-ranch',
+  'full house number finds the distant stop without matching a longer leading number'
 );
 select ok(
   not has_function_privilege('authenticated','public.search_mfi_stops(text,double precision,double precision,double precision,integer)','execute'),
