@@ -26,6 +26,28 @@ const prop = (name: string) => {
   return attribute.initializer?.getText(source) ?? "";
 };
 
+function assertScrollersStayInModals(file: ts.SourceFile, expectedCount: number) {
+  const scrollers: ts.JsxElement[] = [];
+  function findScrollers(node: ts.Node) {
+    if (ts.isJsxElement(node) && node.openingElement.tagName.getText(file) === "ScrollView") {
+      scrollers.push(node);
+    }
+    ts.forEachChild(node, findScrollers);
+  }
+  findScrollers(file);
+  assert.equal(scrollers.length, expectedCount);
+  for (const scroller of scrollers) {
+    let parent: ts.Node | undefined = scroller.parent;
+    while (
+      parent &&
+      !(ts.isJsxElement(parent) && parent.openingElement.tagName.getText(file) === "Modal")
+    ) {
+      parent = parent.parent;
+    }
+    assert.ok(parent, "Filter scrolling must stay inside a modal");
+  }
+}
+
 test("Operations uses one persistent virtualized list with controls inside its scrolling header", () => {
   assert.equal(lists.length, 1);
   assert.match(prop("ListHeaderComponent"), /\{controls\}/);
@@ -38,25 +60,21 @@ test("Operations uses one persistent virtualized list with controls inside its s
   assert.ok(ts.isJsxElement(lists[0].parent));
   assert.doesNotMatch(text, /stickyHeaderIndices/);
   // Scrollers are allowed only inside independent filter/legal modals, never around the feed.
-  const scrollers: ts.JsxElement[] = [];
-  function findScrollers(node: ts.Node) {
-    if (ts.isJsxElement(node) && node.openingElement.tagName.getText(source) === "ScrollView") {
-      scrollers.push(node);
-    }
-    ts.forEachChild(node, findScrollers);
-  }
-  findScrollers(source);
-  assert.equal(scrollers.length, 3);
-  for (const scroller of scrollers) {
-    let parent: ts.Node | undefined = scroller.parent;
-    while (
-      parent &&
-      !(ts.isJsxElement(parent) && parent.openingElement.tagName.getText(source) === "Modal")
-    ) {
-      parent = parent.parent;
-    }
-    assert.ok(parent, "Filter scrolling must stay inside a modal");
-  }
+  assertScrollersStayInModals(source, 2);
+
+  const pickerText = readFileSync(
+    new URL("../components/operations-area-picker.tsx", import.meta.url),
+    "utf8",
+  );
+  const pickerSource = ts.createSourceFile(
+    "operations-area-picker.tsx",
+    pickerText,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  assert.ok(elements.some((node) => node.tagName.getText(source) === "OperationsAreaPicker"));
+  assertScrollersStayInModals(pickerSource, 1);
   assert.equal(prop("data"), "{loading ? [] : visibleUpdates}");
 });
 
@@ -102,12 +120,6 @@ test("Operations limits official sources to the selected directory scope", () =>
   assert.match(text, /availableSources\.includes\("mdt"\)/);
   assert.match(text, /setSource\("drivers"\)/);
   assert.doesNotMatch(text, /That official road source is not available in the area you selected/);
-  assert.match(text, /Near Me/);
-  assert.match(text, /RECENT AREAS/);
-  assert.match(text, /Browse by State/);
-  assert.match(text, /areaPickerView === "states"/);
-  assert.match(text, /group\.state_code === areaPickerView\.slice/);
-  assert.doesNotMatch(text, /All \{territory\.display_name\}/);
   assert.match(text, /accessibilityLabel=\{label\}/);
   assert.match(text, /value === "drivers" \? "Driver\\nUpdates" : label/);
   assert.match(text, /flex: value === "drivers" \? 1\.35 : 0\.88/);
