@@ -2,6 +2,10 @@ const appJson = require("./app.json");
 
 module.exports = ({ config }) => {
   const isDevelopment = process.env.APP_VARIANT === "development";
+  const enableNavigation = process.env.FREIGHTIQ_EMBEDDED_NAVIGATION === "1";
+  const iosBundleIdentifier = isDevelopment
+    ? "com.robbyeickhof.mfi.dev"
+    : appJson.expo.ios.bundleIdentifier;
   const googleMaps3DIOSAPIKey =
     process.env.EXPO_PUBLIC_GOOGLE_MAPS_3D_IOS_API_KEY ?? "";
   const googleMaps3DAndroidAPIKey =
@@ -12,7 +16,7 @@ module.exports = ({ config }) => {
   if (isDevelopment) {
     plugins.push(["expo-dev-client", { addGeneratedScheme: false }]);
   }
-  if (process.env.FREIGHTIQ_EMBEDDED_NAVIGATION === "1") {
+  if (enableNavigation) {
     plugins.push("./plugins/withFreightIQNavigation.js");
     plugins.push(["expo-build-properties", { ios: { enableSceneSupport: true } }]);
   }
@@ -28,16 +32,14 @@ module.exports = ({ config }) => {
     name: isDevelopment ? "FreightIQ Dev" : appJson.expo.name,
     experiments: {
       ...appJson.expo.experiments,
-      ...(process.env.FREIGHTIQ_EMBEDDED_NAVIGATION === "1"
+      ...(enableNavigation
         ? { inlineModules: { watchedDirectories: ["native-navigation"] } }
         : {}),
     },
     plugins,
     ios: {
       ...appJson.expo.ios,
-      bundleIdentifier: isDevelopment
-        ? "com.robbyeickhof.mfi.dev"
-        : appJson.expo.ios.bundleIdentifier,
+      bundleIdentifier: iosBundleIdentifier,
       infoPlist: {
         ...appJson.expo.ios?.infoPlist,
         ...(enable3DYardViewIOS
@@ -62,6 +64,21 @@ module.exports = ({ config }) => {
     },
     extra: {
       ...appJson.expo.extra,
+      ...(enableNavigation && {
+        eas: {
+          ...appJson.expo.extra.eas,
+          build: {
+            experimental: {
+              ios: {
+                appExtensions: [{
+                  targetName: "FreightIQNavigationActivity",
+                  bundleIdentifier: `${iosBundleIdentifier}.navigation-activity`,
+                }],
+              },
+            },
+          },
+        },
+      }),
       mapboxPublicToken: process.env.EXPO_PUBLIC_MAPBOX_TOKEN,
       enable3DYardViewIOS,
       enable3DYardViewAndroid,
