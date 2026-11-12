@@ -1,8 +1,11 @@
 const { withInfoPlist, withXcodeProject } = require("@expo/config-plugins");
 
+const addNavigationActivityTarget = require("./addNavigationActivityTarget");
+
 // Opt-in native integration until owner acceptance; production keeps its current behavior.
 module.exports = function withFreightIQNavigation(config) {
   config = withInfoPlist(config, (mod) => {
+    mod.modResults.NSSupportsLiveActivities = true;
     mod.modResults.MBXAccessToken = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
     if (process.env.FREIGHTIQ_STOP_RESTRICTION_TEST === "1") {
       mod.modResults.FreightIQStopRestrictionTest = true;
@@ -53,6 +56,7 @@ module.exports = function withFreightIQNavigation(config) {
         value: buildId, comment: `${product} in Frameworks`,
       });
     }
+    addNavigationActivityTarget(project, mod.ios.bundleIdentifier);
     return mod;
   });
 };

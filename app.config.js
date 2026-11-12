@@ -9,6 +9,9 @@ module.exports = ({ config }) => {
   const enable3DYardViewIOS = googleMaps3DIOSAPIKey.length > 0;
   const enable3DYardViewAndroid = googleMaps3DAndroidAPIKey.length > 0;
   const plugins = [...(appJson.expo.plugins ?? [])];
+  if (isDevelopment) {
+    plugins.push(["expo-dev-client", { addGeneratedScheme: false }]);
+  }
   if (process.env.FREIGHTIQ_EMBEDDED_NAVIGATION === "1") {
     plugins.push("./plugins/withFreightIQNavigation.js");
     plugins.push(["expo-build-properties", { ios: { enableSceneSupport: true } }]);
@@ -21,6 +24,7 @@ module.exports = ({ config }) => {
   return {
     ...config,
     ...appJson.expo,
+    scheme: isDevelopment ? ["mfi-dev", "exp+mfi-dev"] : appJson.expo.scheme,
     name: isDevelopment ? "FreightIQ Dev" : appJson.expo.name,
     experiments: {
       ...appJson.expo.experiments,

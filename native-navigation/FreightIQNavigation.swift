@@ -306,6 +306,8 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   private var bottomInset: CGFloat = 180
   private var alertMilestones = NavigationAlertMilestones()
   private var alertStep = ""
+  private var isRerouting = false
+  private let liveActivity = NavigationLiveActivity()
   private let notificationId = "com.freightiq.navigation.maneuver"
   private static var provider: MapboxNavigationProvider { FreightIQOfflineRoute.shared.provider }
 
@@ -359,6 +361,8 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
 
   private func calculate(_ next: FreightIQNavigationRequest) {
     task?.cancel()
+    liveActivity.end()
+    isRerouting = false
     clearTurnNotification()
     arrivalProximity = NavigationArrivalProximity()
     lastProgressAt = .distantPast
@@ -387,6 +391,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
         if self.controller != nil {
           provider.tripSession().startActiveGuidance(with: routes, startLegIndex: 0)
           self.guidanceId = next.id
+          self.liveActivity.start()
           self.emit("started", next, legs: self.legEstimates(routes.mainRoute.route, next))
           self.reportRestriction(routes.mainRoute.route, next)
           return
@@ -423,6 +428,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
         navigation.didMove(toParent: parent)
         self.controller = navigation
         self.guidanceId = next.id
+        self.liveActivity.start()
         self.emit("started", next, legs: self.legEstimates(routes.mainRoute.route, next))
         self.reportRestriction(routes.mainRoute.route, next)
       } catch {
@@ -433,6 +439,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   }
 
   private func stop() {
+    liveActivity.end()
     if request?.hasRestriction == true { StopRestrictionSession.shared.update(destination: nil) }
     clearTurnNotification()
     task?.cancel()
@@ -456,6 +463,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   private func reportArrival(_ state: String, _ request: FreightIQNavigationRequest) {
     guard reportedArrivalStopId != request.stopId else { return }
     reportedArrivalStopId = request.stopId
+    liveActivity.end()
     emit(state, request)
   }
 
@@ -471,8 +479,53 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
     guard now.timeIntervalSince(lastProgressAt) >= 5 else { return }
     lastProgressAt = now
     reportRestriction(progress.route, request, location: rawLocation)
+    if !isRerouting, reportedArrivalStopId != request.stopId { updateLiveActivity(progress) }
     updateTurnNotification(progress)
     emit("progress", request, legs: legEstimates(progress.route, request, progress: progress))
+  }
+
+  func navigationViewController(_ navigationViewController: NavigationViewController, willRerouteFrom location: CLLocation?) {
+    guard navigationViewController === controller, let request, request.id == guidanceId,
+          reportedArrivalStopId != request.stopId else { return }
+    isRerouting = true
+    liveActivity.update(.init(instruction: "Rerouting…", arrow: "location.fill", distance: "", eta: nil))
+  }
+
+  func navigationViewController(_ navigationViewController: NavigationViewController, didRerouteAlong route: Route) {
+    guard navigationViewController === controller else { return }
+    isRerouting = false
+    lastProgressAt = .distantPast
+  }
+
+  func navigationViewController(_ navigationViewController: NavigationViewController, didFailToRerouteWith error: Error) {
+    guard navigationViewController === controller, isRerouting else { return }
+    liveActivity.update(.init(instruction: "Guidance unavailable", arrow: "location.slash", distance: "", eta: nil))
+  }
+
+  private func updateLiveActivity(_ progress: RouteProgress) {
+    let leg = progress.currentLegProgress
+    guard let instruction = leg.currentStep.instructionsDisplayedAlongStep?.last else { return }
+    let primary = instruction.primaryInstruction
+    let arrow: String
+    switch primary.maneuverDirection?.rawValue {
+    case "left", "sharp left": arrow = "arrow.turn.up.left"
+    case "right", "sharp right": arrow = "arrow.turn.up.right"
+    case "slight left": arrow = "arrow.up.left"
+    case "slight right": arrow = "arrow.up.right"
+    case "uturn": arrow = "arrow.uturn.left"
+    default: arrow = "arrow.up"
+    }
+    let meters = leg.currentStepProgress.distanceRemaining
+    guard meters.isFinite, meters >= 0 else { return }
+    let distance = meters < 160.934
+      ? "\(Int((meters * 3.28084 / 10).rounded()) * 10) ft"
+      : String(format: "%.1f mi", meters / 1609.344)
+    let seconds = leg.durationRemaining
+    let eta = seconds.isFinite && seconds >= 0 ? Date().addingTimeInterval(seconds) : nil
+    liveActivity.update(.init(
+      instruction: primary.text ?? "Continue",
+      arrow: arrow, distance: distance, eta: eta
+    ))
   }
 
   private func clearTurnNotification() {

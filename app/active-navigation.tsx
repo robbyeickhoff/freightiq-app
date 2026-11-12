@@ -1,6 +1,6 @@
 import { requireNativeView } from "expo";
 import * as Location from "expo-location";
-import { Stack, useRouter } from "expo-router";
+import { Redirect, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActionSheetIOS, ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, type ViewProps } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -32,6 +32,7 @@ const NavigationView = hasEmbeddedNavigation
 
 export default function ActiveNavigationScreen() {
   const router = useRouter();
+  const { fromLiveActivity } = useLocalSearchParams<{ fromLiveActivity?: string }>();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [panelHeight, setPanelHeight] = useState(180);
@@ -135,6 +136,10 @@ export default function ActiveNavigationScreen() {
       });
     }
   };
+  if (fromLiveActivity === "1" && isReady && (!active || route.execution.status !== "active")) {
+    return <Redirect href="/(tabs)/route" />;
+  }
+
   return (
     <SafeAreaView edges={["top"]} style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
