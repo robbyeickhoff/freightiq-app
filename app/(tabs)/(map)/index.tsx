@@ -71,7 +71,6 @@ import { readMapboxCoordinateLocality } from "@/utils/mapbox-stop-locality";
 import {
   readSearchResultLocality,
   resolveConfirmedStopLocality,
-  stopCountryName,
   type ConfirmedStopLocality,
   type SupportedStopCountryCode,
 } from "@/utils/stop-locality";
@@ -102,6 +101,7 @@ type Pin = {
   address?: string;
   suggestedCity?: string;
   suggestedStateCode?: string;
+  suggestedStateName?: string;
   suggestedCountryCode?: SupportedStopCountryCode;
   suggestedName?: string;
 };
@@ -331,12 +331,36 @@ function cleanAddress(input: string) {
     .trim();
 }
 
-function formatAddressForDisplay(address: string) {
+function omitUnitedStatesSuffix(address: string) {
   return address
     .replace(/,\s*United States$/i, "")
     .replace(/\s+United States$/i, "")
-    .replace(/\bColorado\b/g, "CO")
     .trim();
+}
+
+function formatAddressForDisplay(address: string) {
+  return omitUnitedStatesSuffix(address).replace(/\bColorado\b/g, "CO");
+}
+
+function formatNewStopAddress(pin: Pin | null) {
+  const address = omitUnitedStatesSuffix(pin?.address ?? "");
+  const stateCode = pin?.suggestedStateCode;
+  const stateName = pin?.suggestedStateName?.trim();
+  if (!stateCode || !stateName) return address;
+
+  const parts = address.split(",");
+  // Only replace the region in the address suffix, never in the street or city.
+  for (let index = parts.length - 1; index >= 2; index -= 1) {
+    const part = parts[index].trim();
+    if (
+      part.toLowerCase() === stateName.toLowerCase() ||
+      part.toLowerCase().startsWith(`${stateName.toLowerCase()} `)
+    ) {
+      parts[index] = ` ${stateCode}${part.slice(stateName.length)}`;
+      break;
+    }
+  }
+  return parts.join(",");
 }
 
 function normalizePlaceSearchText(value: string) {
@@ -679,6 +703,9 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
   }
 
   const [newPinOpen, setNewPinOpen] = useState(false);
+  const [createPinStep, setCreatePinStep] = useState<"check" | "adjust" | "details">("details");
+  const [createPinLocation, setCreatePinLocation] = useState<Region | null>(null);
+  const adjustedPinRegion = useRef<Region | null>(null);
   const [newPinName, setNewPinName] = useState("");
   const [newPinAddress, setNewPinAddress] = useState("");
   const [newPinCity, setNewPinCity] = useState("");
@@ -2261,9 +2288,10 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
   async function startDropAtCenter() {
     if (!(await requireSignedIn())) return;
 
+    prepareCreatePinLocation();
     if (tempSearchPin) {
       setNewPinName(tempSearchPin.suggestedName ?? "");
-      setNewPinAddress(tempSearchPin.address ?? "");
+      setNewPinAddress(formatNewStopAddress(tempSearchPin));
       setNewPinCity(tempSearchPin.suggestedCity ?? "");
       setNewPinStateCode(tempSearchPin.suggestedStateCode ?? "");
       setNewPinCountryCode(tempSearchPin.suggestedCountryCode ?? null);
@@ -2299,6 +2327,20 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
     }
 
     setNewPinOpen(true);
+  }
+
+  function prepareCreatePinLocation() {
+    setCreatePinLocation(
+      tempSearchPin
+        ? {
+            latitude: tempSearchPin.lat,
+            longitude: tempSearchPin.lng,
+            latitudeDelta: 0.004,
+            longitudeDelta: 0.004,
+          }
+        : null,
+    );
+    setCreatePinStep(tempSearchPin ? "check" : "details");
   }
 
   async function createStopPin(pin: Pin, locality: ConfirmedStopLocality | null) {
@@ -2402,20 +2444,15 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
     }
 
     const crosshairCoordinate =
-      !tempSearchPin && mapLayout.width > 0 && mapLayout.height > 0
+      !createPinLocation && mapLayout.width > 0 && mapLayout.height > 0
         ? await mapRef.current?.coordinateForPoint({
             x: mapLayout.width / 2,
             y: mapLayout.height / 2,
           })
         : null;
 
-    const sourceLat = tempSearchPin
-      ? tempSearchPin.lat
-      : (crosshairCoordinate?.latitude ?? region.latitude);
-
-    const sourceLng = tempSearchPin
-      ? tempSearchPin.lng
-      : (crosshairCoordinate?.longitude ?? region.longitude);
+    const sourceLat = createPinLocation?.latitude ?? crosshairCoordinate?.latitude ?? region.latitude;
+    const sourceLng = createPinLocation?.longitude ?? crosshairCoordinate?.longitude ?? region.longitude;
 
     const pin: Pin = {
       id: `${Date.now()}`,
@@ -2786,6 +2823,8 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
         address: retrievedAddress || undefined,
         suggestedCity: suggestedLocality?.city,
         suggestedStateCode: suggestedLocality?.stateCode,
+        suggestedStateName:
+          typeof props.context?.region?.name === "string" ? props.context.region.name : undefined,
         suggestedCountryCode: suggestedLocality?.countryCode,
         suggestedName: stopNamePrefill(props.feature_type, name),
       };
@@ -4198,8 +4237,9 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
 
                       <AppButton
                         onPress={() => {
+                          prepareCreatePinLocation();
                           setNewPinName("");
-                          setNewPinAddress(tempSearchPin?.address ?? "");
+                          setNewPinAddress(formatNewStopAddress(tempSearchPin));
                           setNewPinCity("");
                           setNewPinStateCode("");
                           setNewPinCityUnknown(false);
@@ -4817,10 +4857,66 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
         animationType={reduceMotionEnabled ? "none" : "slide"}
         onDismiss={openPendingCreatedStop}
         onRequestClose={() => {
+          if (createPinStep === "adjust") {
+            setCreatePinStep("check");
+            return;
+          }
           Keyboard.dismiss();
           setNewPinOpen(false);
         }}
       >
+        {createPinStep === "adjust" && createPinLocation ? (
+          <View style={[
+            styles.createPinAdjustScreen,
+            { paddingTop: safeAreaInsets.top, paddingBottom: safeAreaInsets.bottom },
+          ]}>
+            <View style={styles.createPinAdjustControls}>
+              <Text style={styles.modalTitle}>Adjust Pin</Text>
+              <Text style={styles.modalHelp}>{newPinAddress || "Selected stop"}</Text>
+              <Text style={styles.modalHelp}>Move the map until the crosshair is over the correct stop location.</Text>
+            </View>
+            <View style={styles.createPinAdjustMap}>
+              <MapView
+                style={StyleSheet.absoluteFill}
+                mapType="satellite"
+                initialRegion={createPinLocation}
+                rotateEnabled={false}
+                pitchEnabled={false}
+                onRegionChange={() => { adjustedPinRegion.current = null; }}
+                onRegionChangeComplete={(next) => { adjustedPinRegion.current = next; }}
+              />
+              <View pointerEvents="none" style={styles.crosshairWrap}>
+                <View style={styles.crosshairOuter} />
+                <View style={styles.crosshairDot} />
+              </View>
+            </View>
+            <View style={styles.createPinAdjustControls}>
+              <AppButton
+                onPress={() => {
+                  const next = adjustedPinRegion.current;
+                  if (!next) {
+                    Alert.alert("Map is moving", "Wait for the map to settle, then try again.");
+                    return;
+                  }
+                  setCreatePinLocation(next);
+                  setCreatePinStep("details");
+                }}
+              >
+                Use This Location
+              </AppButton>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setCreatePinStep("check")}
+                style={({ pressed }) => [
+                  styles.createPinDismiss,
+                  pressed && styles.createPinDismissPressed,
+                ]}
+              >
+                <Text style={styles.createPinDismissText}>Back</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
         <View style={styles.modalBackdrop}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -4836,121 +4932,182 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
                 createStopCardMaxHeight !== undefined && { maxHeight: createStopCardMaxHeight },
               ]}
             >
-              <Text style={styles.modalTitle}>Create Stop</Text>
-              <Text style={styles.modalHelp}>Confirm the stop details.</Text>
-
-              <ScrollView
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={styles.createStopFormContent}
-                style={styles.createStopFormScroll}
-              >
-                <TextInput
-                  value={newPinName}
-                  onChangeText={setNewPinName}
-                  placeholder="Business / Receiver name (required)"
-                  style={styles.input}
-                  autoFocus={!tempSearchPin}
-                />
-
-                <TextInput
-                  value={newPinAddress}
-                  onChangeText={setNewPinAddress}
-                  placeholder="Address (optional)"
-                  style={styles.input}
-                />
-
-                {newPinLocalityEditing ? (
-                  <View style={styles.localityEditor}>
-                    <Text style={styles.localityEditorLabel}>City and state / province</Text>
-                    <View style={styles.localityRow}>
-                      <TextInput
-                        accessibilityLabel="Stop city"
-                        autoCapitalize="words"
-                        onChangeText={setNewPinCity}
-                        placeholder="City"
-                        style={[styles.input, styles.localityCityInput]}
-                        value={newPinCity}
-                      />
-                      <TextInput
-                        accessibilityLabel="Stop state or province code"
-                        autoCapitalize="characters"
-                        autoCorrect={false}
-                        maxLength={2}
-                        onChangeText={setNewPinStateCode}
-                        placeholder="State / Province"
-                        style={[styles.input, styles.localityStateInput]}
-                        value={newPinStateCode}
-                      />
-                    </View>
-                    <View style={styles.localityEditorActions}>
-                      <Pressable
-                        accessibilityRole="button"
-                        onPress={() => {
-                          setNewPinCityUnknown(true);
-                          setNewPinLocalityEditing(false);
-                          Keyboard.dismiss();
-                        }}
-                        style={styles.localityUnknownButton}
-                      >
-                        <Text style={styles.localityUnknownButtonText}>City unknown</Text>
-                      </Pressable>
-                      <Pressable
-                        accessibilityRole="button"
-                        onPress={finishNewPinLocalityEditing}
-                        style={styles.localityDoneButton}
-                      >
-                        <Text style={styles.localityDoneButtonText}>Done</Text>
-                      </Pressable>
-                    </View>
+              {createPinStep === "check" && createPinLocation ? (
+                <>
+                  <Text style={styles.modalTitle}>Check Stop Location</Text>
+                  <Text style={styles.modalHelp}>
+                    Make sure the pin is in the correct location
+                  </Text>
+                  <View style={styles.createPinMap}>
+                    <MapView
+                      style={StyleSheet.absoluteFill}
+                      mapType="satellite"
+                      initialRegion={createPinLocation}
+                      scrollEnabled={false}
+                      zoomEnabled={false}
+                      rotateEnabled={false}
+                      pitchEnabled={false}
+                    >
+                      <Marker coordinate={createPinLocation} />
+                    </MapView>
                   </View>
-                ) : (
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => {
-                      setNewPinCityUnknown(false);
-                      setNewPinLocalityEditing(true);
-                    }}
-                    style={styles.localitySummaryRow}
-                  >
-                    <View style={styles.localitySummaryCopy}>
-                      <Text style={styles.localitySummaryLabel}>City</Text>
-                      <Text style={styles.localitySummaryValue}>
-                        {newPinCityUnknown
-                          ? "Unknown"
-                          : `${newPinCity.trim()}, ${newPinStateCode.trim().toUpperCase()} · ${
-                              newPinCountryCode ? stopCountryName(newPinCountryCode) : "Unconfirmed"
-                            }`}
-                      </Text>
-                    </View>
-                    <Text style={styles.localityChangeText}>Change</Text>
-                  </Pressable>
-                )}
-              </ScrollView>
+                      <AppButton onPress={() => setCreatePinStep("details")}>
+                        Pin Looks Right
+                      </AppButton>
+                      <AppButton
+                        variant="secondary"
+                        onPress={() => {
+                          adjustedPinRegion.current = createPinLocation;
+                          setCreatePinStep("adjust");
+                        }}
+                      >
+                        Adjust Pin
+                      </AppButton>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => setNewPinOpen(false)}
+                        style={({ pressed }) => [
+                          styles.createPinDismiss,
+                          pressed && styles.createPinDismissPressed,
+                        ]}
+                      >
+                        <Text style={styles.createPinDismissText}>Cancel</Text>
+                      </Pressable>
+                </>
+              ) : (
+              <>
+                <Text style={styles.modalTitle}>Create Stop</Text>
+                <Text style={styles.modalHelp}>Confirm the stop details.</Text>
 
-              <View style={styles.modalRow}>
-                <Pressable
-                  style={[styles.modalBtn, styles.modalBtnGhost]}
-                  onPress={() => {
-                    Keyboard.dismiss();
-                    setNewPinOpen(false);
-                  }}
+                <ScrollView
+                  keyboardShouldPersistTaps="handled"
+                  contentContainerStyle={styles.createStopFormContent}
+                  style={styles.createStopFormScroll}
                 >
-                  <Text style={[styles.modalBtnText, styles.modalBtnTextGhost]}>Cancel</Text>
-                </Pressable>
+                  <TextInput
+                    value={newPinName}
+                    onChangeText={setNewPinName}
+                    placeholder="Business / Receiver name (required)"
+                    style={styles.input}
+                    autoFocus={!tempSearchPin}
+                  />
 
-                <Pressable style={styles.modalBtn} onPress={saveNewPinAtCenter}>
-                  <Text style={styles.modalBtnText}>Create Stop</Text>
-                </Pressable>
-              </View>
+                  <TextInput
+                    value={newPinAddress}
+                    onChangeText={setNewPinAddress}
+                    placeholder="Address (optional)"
+                    style={styles.input}
+                  />
+
+                  {newPinLocalityEditing ? (
+                    <View style={styles.localityEditor}>
+                      <Text style={styles.localityEditorLabel}>City and state / province</Text>
+                      <View style={styles.localityRow}>
+                        <TextInput
+                          accessibilityLabel="Stop city"
+                          autoCapitalize="words"
+                          onChangeText={setNewPinCity}
+                          placeholder="City"
+                          style={[styles.input, styles.localityCityInput]}
+                          value={newPinCity}
+                        />
+                        <TextInput
+                          accessibilityLabel="Stop state or province code"
+                          autoCapitalize="characters"
+                          autoCorrect={false}
+                          maxLength={2}
+                          onChangeText={setNewPinStateCode}
+                          placeholder="State / Province"
+                          style={[styles.input, styles.localityStateInput]}
+                          value={newPinStateCode}
+                        />
+                      </View>
+                      <View style={styles.localityEditorActions}>
+                        <Pressable
+                          accessibilityRole="button"
+                          onPress={() => {
+                            setNewPinCityUnknown(true);
+                            setNewPinLocalityEditing(false);
+                            Keyboard.dismiss();
+                          }}
+                          style={styles.localityUnknownButton}
+                        >
+                          <Text style={styles.localityUnknownButtonText}>City unknown</Text>
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          onPress={finishNewPinLocalityEditing}
+                          style={styles.localityDoneButton}
+                        >
+                          <Text style={styles.localityDoneButtonText}>Done</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ) : (
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => {
+                        setNewPinCityUnknown(false);
+                        setNewPinLocalityEditing(true);
+                      }}
+                      style={styles.localitySummaryRow}
+                    >
+                      <View style={styles.localitySummaryCopy}>
+                        <Text style={styles.localitySummaryLabel}>City</Text>
+                        <Text style={styles.localitySummaryValue}>
+                          {newPinCityUnknown
+                            ? "Unknown"
+                            : [newPinCity.trim(), newPinStateCode.trim().toUpperCase()]
+                                .filter(Boolean)
+                                .join(", ") || "Unconfirmed"}
+                        </Text>
+                      </View>
+                      <Text style={styles.localityChangeText}>Change</Text>
+                    </Pressable>
+                  )}
+                </ScrollView>
+
+                <View style={styles.modalRow}>
+                  <Pressable
+                    style={[styles.modalBtn, styles.modalBtnGhost]}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      setNewPinOpen(false);
+                    }}
+                  >
+                    <Text style={[styles.modalBtnText, styles.modalBtnTextGhost]}>Cancel</Text>
+                  </Pressable>
+
+                  <Pressable style={styles.modalBtn} onPress={saveNewPinAtCenter}>
+                    <Text style={styles.modalBtnText}>Create Stop</Text>
+                  </Pressable>
+                </View>
+              </>
+              )}
             </View>
           </KeyboardAvoidingView>
         </View>
+        )}
       </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  createPinDismiss: {
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  createPinDismissPressed: { backgroundColor: "#f0f0f0" },
+  createPinDismissText: { color: "#30343a", fontSize: 17, fontWeight: "600" },
+  createPinAdjustScreen: { flex: 1, backgroundColor: "white" },
+  createPinAdjustMap: { flex: 1 },
+  createPinAdjustControls: { padding: 14, gap: 8 },
+  createPinMap: { height: 220, flexShrink: 1, minHeight: 100, overflow: "hidden", borderRadius: 12 },
   container: { flex: 1 },
   map: { flex: 1 },
 

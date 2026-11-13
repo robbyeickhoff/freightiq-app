@@ -115,6 +115,20 @@ preparation for expanding the tester base.
 - [ ] Separately approve any production secret, migration, deployment, schedule, device build,
       commit, or push.
 
+## November 13 Stop Pin Follow-up
+
+- [x] Create Stop passed on iPhone and Pixel: **Pin Looks Right**, **Adjust Pin**, and **Back/Cancel**.
+      Reopening each saved stop confirmed the intended pin and address.
+- [ ] Verify manual map-pin creation separately.
+- [x] **Use This Stop Position** stayed steady in Move Stop on iPhone and Pixel.
+- [x] **Move Stop and Save** worked on the first tap on iPhone and Pixel. Reopening confirmed the
+      new address and pin, with the Delivery Zone replaced on one stop and cleared on the other.
+- [x] Completed the initial pin investigation for CHS in Missoula and Lowe’s in Grand Junction.
+      The Lowe’s street-address pin landed on the store roof and the business pin landed about
+      235 meters north. The CHS business result returned 4570 N Reserve St, while CHS lists its
+      Missoula retail store at 7719 Thornton Dr.
+      Keep **Check Stop Location** as is. Revisit the mismatch flag if more cases like Lowe’s appear.
+
 ## October 4 Release Fixes
 
 - [x] Accept the local Create Stop name-prefill correction on iPhone and Pixel (October 4).

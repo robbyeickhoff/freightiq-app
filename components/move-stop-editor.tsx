@@ -3,7 +3,6 @@ import * as Crypto from "expo-crypto";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   Pressable,
   ScrollView,
@@ -73,7 +72,7 @@ export function MoveStopEditor({ stopId, name, onCancel, onBusyChange, onSaved }
   const [destination, setDestination] = useState<StopDestination | null>(null);
   const [region, setRegion] = useState<Region>(regionFor(39, -108));
   const [step, setStep] = useState<"search" | "stop" | "dz" | "confirm">("search");
-  const [movingMap, setMovingMap] = useState(false);
+  const settledRegion = useRef<Region | null>(null);
   const [saved, setSaved] = useState(false);
   const active = useRef(true);
   const request = useRef(0);
@@ -192,7 +191,9 @@ export function MoveStopEditor({ stopId, name, onCancel, onBusyChange, onSaved }
         entrance_lat: null,
         entrance_lng: null,
       });
-      setRegion(regionFor(coords[1], coords[0]));
+      const initialRegion = regionFor(coords[1], coords[0]);
+      settledRegion.current = initialRegion;
+      setRegion(initialRegion);
       setStep("stop");
       setResults([]);
     } catch {
@@ -240,6 +241,16 @@ export function MoveStopEditor({ stopId, name, onCancel, onBusyChange, onSaved }
       busyRef.current = false;
       if (active.current) setBusy(false);
     }
+  }
+
+  function readSettledRegion() {
+    const position = settledRegion.current;
+    if (!position) {
+      setMessage("Wait for the map to settle, then try again.");
+      return null;
+    }
+    setMessage("");
+    return position;
   }
 
   return (
@@ -302,11 +313,12 @@ export function MoveStopEditor({ stopId, name, onCancel, onBusyChange, onSaved }
                 pointerEvents="box-none"
                 style={StyleSheet.absoluteFill}
                 mapType="satellite"
-                region={region}
-                onRegionChange={() => setMovingMap(true)}
+                initialRegion={region}
+                onRegionChange={() => {
+                  settledRegion.current = null;
+                }}
                 onRegionChangeComplete={(next) => {
-                  setRegion(next);
-                  setMovingMap(false);
+                  settledRegion.current = next;
                 }}
               >
                 {step === "dz" ? (
@@ -323,9 +335,11 @@ export function MoveStopEditor({ stopId, name, onCancel, onBusyChange, onSaved }
             {step === "stop" ? (
               <MoveAction
                 label="Use This Stop Position"
-                disabled={busy || movingMap}
+                disabled={busy}
                 onPress={() => {
-                  setDestination({ ...destination, lat: region.latitude, lng: region.longitude });
+                  const position = readSettledRegion();
+                  if (!position) return;
+                  setDestination({ ...destination, lat: position.latitude, lng: position.longitude });
                   setStep("dz");
                 }}
               />
@@ -333,12 +347,14 @@ export function MoveStopEditor({ stopId, name, onCancel, onBusyChange, onSaved }
               <>
                 <MoveAction
                   label="Use This Delivery Zone"
-                  disabled={busy || movingMap}
+                  disabled={busy}
                   onPress={() => {
+                    const position = readSettledRegion();
+                    if (!position) return;
                     setDestination({
                       ...destination,
-                      entrance_lat: region.latitude,
-                      entrance_lng: region.longitude,
+                      entrance_lat: position.latitude,
+                      entrance_lng: position.longitude,
                     });
                     setStep("confirm");
                   }}
@@ -347,6 +363,7 @@ export function MoveStopEditor({ stopId, name, onCancel, onBusyChange, onSaved }
                   label="Clear Delivery Zone"
                   disabled={busy}
                   onPress={() => {
+                    setMessage("");
                     setDestination({ ...destination, entrance_lat: null, entrance_lng: null });
                     setStep("confirm");
                   }}
@@ -364,20 +381,9 @@ export function MoveStopEditor({ stopId, name, onCancel, onBusyChange, onSaved }
               Existing Intel and reports stay with this stop.
             </Text>
             <MoveAction
-              label={saved ? "Retry Refresh" : "Move Stop and Save"}
+              label={busy ? "Saving…" : saved ? "Retry Refresh" : "Move Stop and Save"}
               disabled={busy}
-              onPress={() => {
-                if (saved) void save();
-                else
-                  Alert.alert(
-                    "Move this stop?",
-                    "Save the new address, stop position and Delivery Zone together?",
-                    [
-                      { text: "Cancel", style: "cancel" },
-                      { text: "Move Stop", onPress: () => void save() },
-                    ],
-                  );
-              }}
+              onPress={() => void save()}
             />
           </>
         ) : null}
