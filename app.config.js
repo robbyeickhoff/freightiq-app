@@ -3,6 +3,8 @@ const appJson = require("./app.json");
 module.exports = ({ config }) => {
   const isDevelopment = process.env.APP_VARIANT === "development";
   const enableNavigation = process.env.FREIGHTIQ_EMBEDDED_NAVIGATION === "1";
+  const enableAndroidNavigation =
+    isDevelopment && process.env.FREIGHTIQ_ANDROID_EMBEDDED_NAVIGATION === "1";
   const iosBundleIdentifier = isDevelopment
     ? "com.robbyeickhof.mfi.dev"
     : appJson.expo.ios.bundleIdentifier;
@@ -18,7 +20,18 @@ module.exports = ({ config }) => {
   }
   if (enableNavigation) {
     plugins.push("./plugins/withFreightIQNavigation.js");
-    plugins.push(["expo-build-properties", { ios: { enableSceneSupport: true } }]);
+  }
+
+  if (enableAndroidNavigation) {
+    plugins.push("./plugins/withFreightIQAndroidNavigation.js");
+  }
+  if (enableNavigation || enableAndroidNavigation) {
+    plugins.push(["expo-build-properties", {
+      ...(enableNavigation && { ios: { enableSceneSupport: true } }),
+      ...(enableAndroidNavigation && {
+        android: { extraMavenRepos: ["https://api.mapbox.com/downloads/v2/releases/maven"] },
+      }),
+    }]);
   }
 
   if (enable3DYardViewIOS || enable3DYardViewAndroid) {
@@ -32,8 +45,11 @@ module.exports = ({ config }) => {
     name: isDevelopment ? "FreightIQ Dev" : appJson.expo.name,
     experiments: {
       ...appJson.expo.experiments,
-      ...(enableNavigation
-        ? { inlineModules: { watchedDirectories: ["native-navigation"] } }
+      ...(enableNavigation || enableAndroidNavigation
+        ? { inlineModules: { watchedDirectories: [
+            ...(enableNavigation ? ["native-navigation"] : []),
+            ...(enableAndroidNavigation ? ["native-navigation-android"] : []),
+          ] } }
         : {}),
     },
     plugins,

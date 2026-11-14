@@ -2,7 +2,7 @@ import { requireNativeView } from "expo";
 import * as Location from "expo-location";
 import { Redirect, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActionSheetIOS, ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, type ViewProps } from "react-native";
+import { ActionSheetIOS, Platform, ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, type ViewProps } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NavigationStopIntel } from "@/components/navigation-stop-intel";
 import { RouteMetrics } from "@/components/route-metrics";
@@ -11,7 +11,7 @@ import { AppButton } from "@/components/ui/app-button";
 import { useTodayRoute } from "@/context/todays-route-context";
 import { useAppTheme } from "@/context/theme-context";
 import { QUICK_OPERATIONS_REPORTS } from "@/utils/operations-board";
-import { hasEmbeddedNavigation } from "@/utils/embedded-navigation";
+import { embeddedNavigationModule, hasEmbeddedNavigation } from "@/utils/embedded-navigation";
 import { RoutePlanSheet } from "@/components/route-plan-sheet";
 import type { TodayRouteStop } from "@/utils/todays-route";
 import { readStopRoadRestriction } from "@/utils/stop-road-restriction";
@@ -27,7 +27,7 @@ type StateEvent = { state: string; requestId: string; stopId: string; message: s
 const NavigationView = hasEmbeddedNavigation
   ? requireNativeView<ViewProps & {
       request: Request; dark: boolean; bottomInset: number; onState: (event: { nativeEvent: StateEvent }) => void;
-    }>("FreightIQNavigation")
+    }>(embeddedNavigationModule)
   : null;
 
 export default function ActiveNavigationScreen() {
@@ -48,6 +48,7 @@ export default function ActiveNavigationScreen() {
   const [busy, setBusy] = useState(false);
   const [retry, setRetry] = useState(0);
   const [routePlanOpen, setRoutePlanOpen] = useState(false);
+  const [reportPickerOpen, setReportPickerOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [liveLegs, setLiveLegs] = useState<{ legs: PlannedLeg[]; updatedAt: number; requestId: string } | null>(null);
   const savingRef = useRef(false);
@@ -104,17 +105,22 @@ export default function ActiveNavigationScreen() {
   const onState = ({ nativeEvent: event }: { nativeEvent: StateEvent }) => {
     if (event.requestId !== request?.id || event.stopId !== active?.id) return;
     if (event.state === "reportCondition") {
-      ActionSheetIOS.showActionSheetWithOptions({
-        title: "Report a Condition",
-        options: [...QUICK_OPERATIONS_REPORTS.map((report) => report.label), "Cancel"],
-        cancelButtonIndex: QUICK_OPERATIONS_REPORTS.length,
-      }, (index) => {
+      const openReport = (index: number) => {
         const report = QUICK_OPERATIONS_REPORTS[index];
         if (report) router.push({
           pathname: "/navigation-operations/compose",
           params: { quickDraft: "1", quickReport: report.id },
         } as never);
-      });
+      };
+      if (Platform.OS === "ios") {
+        ActionSheetIOS.showActionSheetWithOptions({
+          title: "Report a Condition",
+          options: [...QUICK_OPERATIONS_REPORTS.map((report) => report.label), "Cancel"],
+          cancelButtonIndex: QUICK_OPERATIONS_REPORTS.length,
+        }, openReport);
+      } else {
+        setReportPickerOpen(true);
+      }
       return;
     }
     if (event.state === "closed") { router.back(); return; }
@@ -143,6 +149,22 @@ export default function ActiveNavigationScreen() {
   return (
     <SafeAreaView edges={["top"]} style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
+      {Platform.OS === "android" ? (
+        <Modal transparent visible={reportPickerOpen} onRequestClose={() => setReportPickerOpen(false)}>
+          <View style={styles.reportBackdrop}>
+            <ScrollView bounces={false} style={[styles.reportCard, { backgroundColor: colors.surface }]} contentContainerStyle={styles.reportOptions}>
+              <Text accessibilityRole="header" style={[styles.title, { color: colors.textPrimary }]}>Report a Condition</Text>
+              {QUICK_OPERATIONS_REPORTS.map((report) => (
+                <AppButton key={report.id} onPress={() => {
+                  setReportPickerOpen(false);
+                  router.push({ pathname: "/navigation-operations/compose", params: { quickDraft: "1", quickReport: report.id } } as never);
+                }}>{report.label}</AppButton>
+              ))}
+              <AppButton variant="secondary" onPress={() => setReportPickerOpen(false)}>Cancel</AppButton>
+            </ScrollView>
+          </View>
+        </Modal>
+      ) : null}
       <RoutePlanSheet initialMode={planMode} visible={routePlanOpen} onClose={() => setRoutePlanOpen(false)} liveLegs={liveLegs} duringGuidance />
       {intelStop ? <NavigationStopIntel stop={intelStop} duringGuidance onClose={() => setIntelStop(null)} /> : null}
       <View style={styles.map}>
@@ -170,7 +192,9 @@ export default function ActiveNavigationScreen() {
           {route.execution.arrival?.stopId === active.id ? (
             <Text style={[styles.actionLabel, { color: colors.textPrimary, textAlign: "center" }]}>Arrived</Text>
           ) : liveLegs?.legs[0]?.stopId === active.id ? <View style={styles.metricsTarget}>
-            <RouteMetrics arrival={liveLegs.updatedAt + liveLegs.legs[0].seconds * 1000} {...liveLegs.legs[0]} />
+            {Platform.OS === "android"
+              ? <AndroidTripSummary arrival={liveLegs.updatedAt + liveLegs.legs[0].seconds * 1000} {...liveLegs.legs[0]} />
+              : <RouteMetrics arrival={liveLegs.updatedAt + liveLegs.legs[0].seconds * 1000} {...liveLegs.legs[0]} />}
           </View> : null}
         </Pressable>
         {panelOpen ? <ScrollView style={[styles.expandedControls, { maxHeight: height * 0.45 }]} contentContainerStyle={styles.expandedContent}>
@@ -215,6 +239,21 @@ export default function ActiveNavigationScreen() {
   );
 }
 
+function AndroidTripSummary({ arrival, seconds, meters }: { arrival: number; seconds: number; meters: number }) {
+  const { colors } = useAppTheme();
+  const minutes = Math.max(1, Math.ceil(seconds / 60));
+  const duration = seconds < 60 ? "<1 min" : minutes < 60
+    ? `${minutes} min`
+    : `${Math.floor(minutes / 60)} hr ${minutes % 60} min`;
+  const eta = new Date(arrival).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return <View style={styles.tripSummary}>
+    <Text style={[styles.tripDuration, { color: colors.textPrimary }]}>{duration}</Text>
+    <Text style={[styles.actionLabel, { color: colors.textSecondary }]}>
+      {(meters / 1609.344).toFixed(1)} mi · {eta} ETA
+    </Text>
+  </View>;
+}
+
 function NavigationAction({ icon, label, disabled, onPress }: {
   icon: AppIconName; label: string; disabled?: boolean; onPress: () => void;
 }) {
@@ -229,6 +268,11 @@ const styles = StyleSheet.create({
   screen: { flex: 1 }, map: { flex: 1 }, controls: { position: "absolute", left: 12, right: 12, padding: 12, gap: 4, borderRadius: 28, borderWidth: StyleSheet.hairlineWidth },
   emptyState: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8, padding: 24 },
   grabberTarget: { alignItems: "center", justifyContent: "center", minHeight: 44, paddingVertical: 6 },
+  reportBackdrop: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "rgba(0,0,0,0.65)" },
+  reportCard: { flexGrow: 0, borderRadius: 20 },
+  reportOptions: { padding: 20, gap: 12 },
+  tripSummary: { alignItems: "center", gap: 2, paddingTop: 4 },
+  tripDuration: { fontSize: 26, fontWeight: "700" },
   metricsTarget: { alignSelf: "stretch" },
   grabber: { width: 36, height: 4, borderRadius: 2 },
   business: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingVertical: 4, paddingHorizontal: 8 },

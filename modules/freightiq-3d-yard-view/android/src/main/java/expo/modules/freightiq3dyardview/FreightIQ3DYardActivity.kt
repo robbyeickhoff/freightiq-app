@@ -63,8 +63,10 @@ class FreightIQ3DYardActivity : AppCompatActivity(), OnMap3DViewReadyCallback {
     }
 
     val config = Map3DInitConfig.create(
-      centerLat = (stopLatitude + deliveryZoneLatitude) / 2.0,
-      centerLng = (stopLongitude + deliveryZoneLongitude) / 2.0,
+      centerLat = deliveryZoneLatitude,
+      centerLng = deliveryZoneLongitude,
+      tilt = 35.0,
+      range = 180.0,
       mapMode = Map3DMode.HYBRID
     )
     mapView = Map3DView(this, config)
@@ -183,23 +185,20 @@ class FreightIQ3DYardActivity : AppCompatActivity(), OnMap3DViewReadyCallback {
       content = deliveryZonePin
     })
 
-    val tilt = 35.0
-    val range = 520.0
-    val lookAheadMeters = range * kotlin.math.sin(Math.toRadians(tilt))
     map.flyCameraTo(flyToOptions {
       endCamera = camera {
         center = latLngAltitude {
-          latitude = deliveryZoneLatitude - lookAheadMeters / 111000.0
+          latitude = deliveryZoneLatitude
           longitude = deliveryZoneLongitude
-          altitude = 220.0
+          altitude = 0.0
         }
         heading = 0.0
-        this.tilt = tilt
-        this.range = range
+        tilt = 35.0
+        range = 180.0
         roll = 0.0
         altitudeMode = AltitudeMode.RELATIVE_TO_MESH
       }
-      durationInMillis = 350
+      durationInMillis = 0
     })
   }
 
