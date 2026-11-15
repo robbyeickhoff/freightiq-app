@@ -199,6 +199,9 @@ private final class DeliveryNavigationController: NavigationViewController {
   private var cameraStateSubscription: AnyCancellable?
   var onReportCondition: (() -> Void)?
   private let conditionButton = UIButton(type: .system)
+  private var lastHeadingUpBearing: CLLocationDirection?
+  private let orientationButton = UIButton(type: .system)
+  private var headingUp = UserDefaults.standard.object(forKey: "navigationHeadingUp") as? Bool ?? true
   private let overviewToggle = UIButton(type: .system)
   private let recenterButton = UIButton(type: .system)
   private var recenterBottom: NSLayoutConstraint?
@@ -207,7 +210,7 @@ private final class DeliveryNavigationController: NavigationViewController {
     super.viewDidLoad()
     guard let camera = navigationMapView?.navigationCamera else { return }
 
-    for button in [overviewToggle, recenterButton, conditionButton] {
+    for button in [overviewToggle, recenterButton, conditionButton, orientationButton] {
       button.translatesAutoresizingMaskIntoConstraints = false
       button.tintColor = .white
       button.backgroundColor = UIColor(red: 0.14, green: 0.22, blue: 0.31, alpha: 1)
@@ -223,7 +226,9 @@ private final class DeliveryNavigationController: NavigationViewController {
     conditionButton.addTarget(self, action: #selector(reportCondition), for: .touchUpInside)
     // The pinned Mapbox SDK orders its default controls as overview, mute, feedback.
     let middleButtons = navigationView.floatingButtons?.dropFirst().dropLast() ?? []
-    navigationView.floatingButtons = [overviewToggle] + Array(middleButtons) + [conditionButton]
+    orientationButton.addTarget(self, action: #selector(toggleOrientation), for: .touchUpInside)
+    applyOrientation()
+    navigationView.floatingButtons = [orientationButton, overviewToggle] + Array(middleButtons) + [conditionButton]
 
     recenterButton.setImage(UIImage(systemName: "location.fill"), for: .normal)
     recenterButton.accessibilityLabel = "Recenter on current location"
@@ -239,6 +244,51 @@ private final class DeliveryNavigationController: NavigationViewController {
     cameraStateSubscription = camera.cameraStates.sink { [weak self] state in
       self?.updateCameraControls(state)
     }
+  }
+
+  @objc private func toggleOrientation() {
+    if headingUp, let map = navigationMapView,
+       map.navigationCamera.currentCameraState == .following {
+      lastHeadingUpBearing = map.mapView.mapboxMap.cameraState.bearing
+    }
+    headingUp.toggle()
+    UserDefaults.standard.set(headingUp, forKey: "navigationHeadingUp")
+    applyOrientation()
+  }
+
+  private func applyOrientation() {
+    orientationButton.setImage(UIImage(systemName: headingUp ? "location.north.line" : "location.north.circle"), for: .normal)
+    orientationButton.accessibilityLabel = headingUp ? "Heading up. Switch to north up" : "North up. Switch to heading up"
+    guard let map = navigationMapView,
+          let source = map.navigationCamera.viewportDataSource as? MobileViewportDataSource else { return }
+    source.options.followingCameraOptions.bearingUpdatesAllowed = headingUp
+    let bearing = headingUp ? lastHeadingUpBearing : 0
+    if let bearing {
+      source.currentNavigationCameraOptions.followingCamera.bearing = bearing
+      if map.navigationCamera.currentCameraState == .following {
+        map.mapView.mapboxMap.setCamera(to: CameraOptions(bearing: bearing))
+      }
+    }
+  }
+
+  private func sizeExpandedDirections(_ banner: UIView) {
+    guard let top = children.compactMap({ $0 as? TopBannerViewController }).first,
+          top.isDisplayingSteps,
+          let steps = top.children.compactMap({ $0 as? StepsViewController }).first,
+          let table = steps.view.subviews.compactMap({ $0 as? UITableView }).first,
+          table.contentSize.height > 0 else { return }
+    let safeHeight = view.safeAreaLayoutGuide.layoutFrame.height
+    let headerHeight = steps.view.convert(CGPoint.zero, to: banner).y
+    let footerHeight = max(0, steps.view.bounds.height - table.bounds.height)
+    let desiredHeight = min(safeHeight / 2, headerHeight + table.contentSize.height + footerHeight)
+    // Mapbox 3.34.1 expands the top banner by tying its bottom to the host's bottom.
+    guard let fullHeight = view.constraints.first(where: {
+      $0.firstItem as? UIView === top.view && $0.secondItem as? UIView === view &&
+        $0.firstAttribute == .bottom && $0.secondAttribute == .bottom
+    }) else { return }
+    let topY = top.view.convert(CGPoint.zero, to: view).y
+    let offset = topY + desiredHeight - view.bounds.height
+    if abs(fullHeight.constant - offset) > 1 { fullHeight.constant = offset }
   }
 
   private func updateCameraControls(_ state: NavigationCameraState) {
@@ -266,6 +316,7 @@ private final class DeliveryNavigationController: NavigationViewController {
     let banner = navigationView.topBannerContainerView
     banner.layer.cornerRadius = 26
     banner.clipsToBounds = true
+    sizeExpandedDirections(banner)
     for constraint in navigationView.constraints where constraint.firstItem as? UIView === banner {
       switch constraint.firstAttribute {
       case .leading: constraint.constant = 12

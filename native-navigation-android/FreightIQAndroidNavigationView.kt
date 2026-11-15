@@ -1,6 +1,14 @@
 package expo.modules.freightiqnavigation
 
+import android.Manifest
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -127,11 +135,24 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     })
     setOnClickListener { showSteps(stepsScroll.visibility != VISIBLE) }
   }
-  private val guidance = LinearLayout(context).apply {
+  private val guidance = object : LinearLayout(context) {
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+      if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.UNSPECIFIED) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        return
+      }
+      val halfScreen = MeasureSpec.getSize(heightMeasureSpec) / 2
+      super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(halfScreen, MeasureSpec.AT_MOST))
+      // Keep the header readable even when large system text takes more space.
+      if (measuredHeight < guidanceToggle.measuredHeight) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+      }
+    }
+  }.apply {
     orientation = LinearLayout.VERTICAL
     background = roundedSurface(18)
     addView(guidanceToggle)
-    addView(stepsScroll, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, dp(250)))
+    addView(stepsScroll, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
   }
 
   private fun showSteps(expanded: Boolean) {
@@ -147,7 +168,30 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     tools.layoutParams = params
   }
 
+  private val preferences = context.getSharedPreferences("navigation", Context.MODE_PRIVATE)
+  private var headingUp = preferences.getBoolean("headingUp", true)
+  private var course = 0.0
   private var following = true
+
+  private fun updateFollowingCamera(recenter: Boolean = false) {
+    val position = lastPosition ?: return
+    val camera = CameraOptions.Builder().center(position).bearing(if (headingUp) course else 0.0)
+    if (recenter) camera.zoom(15.0)
+    map.mapboxMap.setCamera(camera.build())
+  }
+
+  private val orientationButton = mapButton("↑", "Map orientation") {
+    headingUp = !headingUp
+    preferences.edit().putBoolean("headingUp", headingUp).apply()
+    updateOrientationButton()
+    if (following) updateFollowingCamera()
+  }
+
+  private fun updateOrientationButton() {
+    orientationButton.text = if (headingUp) "↑" else "N"
+    orientationButton.contentDescription =
+      if (headingUp) "Heading up. Switch to north up" else "North up. Switch to heading up"
+  }
   private var lastPosition: Point? = null
   private var routePoints: List<Point> = emptyList()
 
@@ -162,9 +206,7 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     following = true
     overview.text = "↝"
     overview.contentDescription = "Route overview"
-    lastPosition?.let {
-      map.mapboxMap.setCamera(CameraOptions.Builder().center(it).zoom(15.0).build())
-    }
+    updateFollowingCamera(recenter = true)
   }
 
   private val overview = mapButton("↝", "Route overview") {
@@ -197,10 +239,50 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
   private var request: AndroidGuidanceRequest? = null
   private var activeRequest: AndroidGuidanceRequest? = null
   private var arrived = false
+  private var firstNearbyFix: Long? = null
+  private var lastNearbyFix: Long? = null
   private var requestedRouteId: Long? = null
   private val navigation by lazy {
     MapboxNavigationProvider.create(NavigationOptions.Builder(context.applicationContext).build())
   }
+  private val notificationManager = context.getSystemService(NotificationManager::class.java)
+  private var lastNotificationText: Pair<String, String>? = null
+
+  private fun publishTurnNotification(instruction: String, distance: String) {
+    if (instruction.isBlank() || arrived) return
+    if (Build.VERSION.SDK_INT >= 33 &&
+      context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+    ) return
+    if (lastNotificationText == (instruction to distance)) return
+    val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
+    launch.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+    val reopen = PendingIntent.getActivity(context, 0, launch, PendingIntent.FLAG_IMMUTABLE)
+    val channel = "freightiq_active_guidance"
+    notificationManager.createNotificationChannel(
+      NotificationChannel(channel, "Active navigation", NotificationManager.IMPORTANCE_LOW)
+    )
+    val notification = Notification.Builder(context, channel)
+      .setSmallIcon(android.R.drawable.ic_menu_directions)
+      .setContentTitle(instruction)
+      .setContentText(distance)
+      .setContentIntent(reopen)
+      .setOngoing(true)
+      .setOnlyAlertOnce(true)
+      .setVisibility(Notification.VISIBILITY_PUBLIC)
+      .setCategory(Notification.CATEGORY_NAVIGATION)
+    if (Build.VERSION.SDK_INT >= 36) {
+      notification.addExtras(android.os.Bundle().apply { putBoolean("android.requestPromotedOngoing", true) })
+      if (distance.isNotBlank()) notification.setShortCriticalText(distance)
+    }
+    notificationManager.notify(9201, notification.build())
+    lastNotificationText = instruction to distance
+  }
+
+  private fun clearTurnNotification() {
+    notificationManager.cancel(9201)
+    lastNotificationText = null
+  }
+
   private val progressObserver = RouteProgressObserver { progress ->
     val current = activeRequest ?: return@RouteProgressObserver
     val leg = progress.currentLegProgress ?: return@RouteProgressObserver
@@ -220,6 +302,7 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     val routeSteps = progress.navigationRoute.directionsRoute.legs()?.getOrNull(leg.legIndex)?.steps().orEmpty()
     val upcoming = step?.let { routeSteps.drop(it.stepIndex + 1) }.orEmpty()
     updateSteps(upcoming, step?.distanceRemaining?.toDouble())
+    publishTurnNotification(maneuver?.instruction().orEmpty(), turnDistance.text.toString())
     publishLegs(current, "progress", progress.navigationRoute, leg.durationRemaining, leg.distanceRemaining.toDouble())
   }
 
@@ -301,13 +384,36 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
 
   private val locationProvider = NavigationLocationProvider()
   private val locationObserver = object : LocationObserver {
-    override fun onNewRawLocation(rawLocation: Location) = Unit
+    override fun onNewRawLocation(rawLocation: Location) {
+      val destination = activeRequest?.stops?.firstOrNull() ?: return
+      if (arrived) return
+      val timestamp = rawLocation.timestamp
+      val position = Point.fromLngLat(rawLocation.longitude, rawLocation.latitude)
+      val target = Point.fromLngLat(destination.longitude, destination.latitude)
+      if (System.currentTimeMillis() - timestamp !in 0L..5_000L ||
+        (rawLocation.horizontalAccuracy ?: Double.NaN) !in 0.0..30.0 ||
+        (rawLocation.speed ?: Double.NaN) !in 0.0..2.0 ||
+        TurfMeasurement.distance(position, target, "meters") > 75.0
+      ) {
+        firstNearbyFix = null
+        lastNearbyFix = null
+        return
+      }
+      lastNearbyFix?.let { previous ->
+        if (timestamp <= previous) return
+        if (timestamp - previous > 5_000L) firstNearbyFix = null
+      }
+      val first = firstNearbyFix ?: timestamp.also { firstNearbyFix = it }
+      lastNearbyFix = timestamp
+      if (timestamp - first >= 5_000L) markArrival("arrivedNearby")
+    }
 
     override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
       val location = locationMatcherResult.enhancedLocation
       locationProvider.changePosition(location, locationMatcherResult.keyPoints)
       lastPosition = Point.fromLngLat(location.longitude, location.latitude)
-      if (following) map.mapboxMap.setCamera(CameraOptions.Builder().center(lastPosition).build())
+      location.bearing?.takeIf { it.isFinite() }?.let { course = it }
+      if (following) updateFollowingCamera()
     }
   }
 
@@ -317,11 +423,12 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     override fun onNextRouteLegStart(routeLegProgress: RouteLegProgress) = Unit
   }
 
-  private fun markArrival() {
+  private fun markArrival(state: String = "arrived") {
     val current = activeRequest ?: return
     if (arrived) return
     arrived = true
-    emit(current, "arrived")
+    clearTurnNotification()
+    emit(current, state)
   }
 
   private val routesObserver = RoutesObserver { result ->
@@ -351,6 +458,8 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     })
     tools.apply {
       orientation = LinearLayout.VERTICAL
+      updateOrientationButton()
+      addView(orientationButton, LinearLayout.LayoutParams(dp(52), dp(52)).apply { bottomMargin = dp(8) })
       addView(overview, LinearLayout.LayoutParams(dp(52), dp(52)))
       addView(mapButton("⚑", "Report a condition") {
         activeRequest?.let { emit(it, "reportCondition") }
@@ -438,6 +547,7 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
   private fun stop() {
     if (activeRequest == null) return
     activeRequest = null
+    clearTurnNotification()
     requestedRouteId?.let(navigation::cancelRouteRequest)
     requestedRouteId = null
     navigation.unregisterRouteProgressObserver(progressObserver)
@@ -483,13 +593,15 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
       }
       activeRequest = next
       arrived = false
+      firstNearbyFix = null
+      lastNearbyFix = null
       routePoints = emptyList()
+      course = 0.0
       lastPosition = origin.toPoint()
       followLocation()
       guidance.visibility = GONE
       showSteps(false)
       lines.deleteAll()
-      map.mapboxMap.setCamera(CameraOptions.Builder().center(origin.toPoint()).zoom(15.0).build())
       navigation.registerRouteProgressObserver(progressObserver)
       navigation.registerLocationObserver(locationObserver)
       navigation.registerArrivalObserver(arrivalObserver)
