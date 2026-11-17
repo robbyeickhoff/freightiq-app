@@ -41,6 +41,14 @@
         "EXPO_PUBLIC_FREIGHTIQ_STOP_RESTRICTION_TEST": "1"
       }
     },
+    "production-android-navigation": {
+      "extends": "production",
+      "environment": "production",
+      "env": {
+        "FREIGHTIQ_ANDROID_EMBEDDED_NAVIGATION": "1",
+        "EXPO_PUBLIC_FREIGHTIQ_STOP_RESTRICTION_TEST": "1"
+      }
+    },
     "production": {
       "autoIncrement": true,
       "android": {

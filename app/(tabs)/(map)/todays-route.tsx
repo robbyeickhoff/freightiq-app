@@ -1230,9 +1230,13 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
             else void launchStop(nextStop);
             return;
           }
-          const begin = () => void startExecution().then(() => {
-            if (hasEmbeddedNavigation) router.push("/active-navigation");
-          }).catch(showSaveError);
+          const begin = () => {
+            if (hasEmbeddedNavigation) {
+              router.push({ pathname: "/active-navigation", params: { previewStart: "1" } });
+            } else {
+              void startExecution().catch(showSaveError);
+            }
+          };
           const offer = () => void offerDrivingAlerts(begin);
           if (isStale) showStaleRouteAlert(offer); else offer();
         }}>{route.execution.status === "active" ? "Resume" : "Start Route"}</AppButton>

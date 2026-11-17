@@ -3,6 +3,7 @@ import * as Location from "expo-location";
 import { Redirect, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActionSheetIOS, Platform, ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, type ViewProps } from "react-native";
+import MapView, { Marker, Polyline } from "react-native-maps";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { OperationsDrivingAlertControl } from "@/components/operations-driving-alert-control";
 import { NavigationStopIntel } from "@/components/navigation-stop-intel";
@@ -20,28 +21,31 @@ import { orderedNavigationStops, routePlanSignature, type PlannedLeg, type Route
 
 type Request = {
   id: string; stopId: string; name: string; latitude: number; longitude: number;
-  originLatitude: number; originLongitude: number; dark: boolean;
+  originLatitude: number; originLongitude: number; dark: boolean; preview: boolean;
   restrictedRoad?: RouteCoordinate[]; exclusionPoints?: RouteCoordinate[];
   stops: { id: string; name: string; latitude: number; longitude: number }[];
 };
-type StateEvent = { state: string; requestId: string; stopId: string; message: string; legs: PlannedLeg[] };
+type RouteChoice = { index: number; seconds: number; meters: number; coordinates: RouteCoordinate[] };
+type StateEvent = { state: string; requestId: string; stopId: string; message: string; legs: PlannedLeg[]; choices?: RouteChoice[] };
 const NavigationView = hasEmbeddedNavigation
   ? requireNativeView<ViewProps & {
-      request: Request; dark: boolean; bottomInset: number; onState: (event: { nativeEvent: StateEvent }) => void;
+      request: Request; routeChoice: string; dark: boolean; bottomInset: number; onState: (event: { nativeEvent: StateEvent }) => void;
     }>(embeddedNavigationModule)
   : null;
 
 export default function ActiveNavigationScreen() {
   const router = useRouter();
-  const { fromLiveActivity } = useLocalSearchParams<{ fromLiveActivity?: string }>();
+  const { fromLiveActivity, previewStart } = useLocalSearchParams<{ fromLiveActivity?: string; previewStart?: string }>();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [panelHeight, setPanelHeight] = useState(180);
   const [intelStop, setIntelStop] = useState<TodayRouteStop | null>(null);
   const [planMode, setPlanMode] = useState<"route" | "search">("route");
-  const { route, isReady, userId, arrive, completeStop, skipActiveStop, endExecution } = useTodayRoute();
+  const { route, isReady, userId, arrive, completeStop, skipActiveStop, startExecution, endExecution } = useTodayRoute();
   const { colors, colorScheme } = useAppTheme();
-  const active = route.stops.find((s) => s.id === route.execution.activeStopId && s.status === "upcoming");
+  const [guidanceStarted, setGuidanceStarted] = useState(false);
+  const active = route.stops.find((stop) => stop.id === route.execution.activeStopId && stop.status === "upcoming")
+    ?? (previewStart === "1" && !guidanceStarted ? route.stops.find((stop) => stop.status === "upcoming") : undefined);
   const [request, setRequest] = useState<Request | null>(null);
   const [message, setMessage] = useState("Finding your location…");
   const [restrictionWarning, setRestrictionWarning] = useState("");
@@ -53,12 +57,16 @@ export default function ActiveNavigationScreen() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [liveLegs, setLiveLegs] = useState<{ legs: PlannedLeg[]; updatedAt: number; requestId: string } | null>(null);
   const savingRef = useRef(false);
+  const [choices, setChoices] = useState<RouteChoice[]>([]);
+  const [routeChoice, setRouteChoice] = useState("");
   const stops = useMemo(() => orderedNavigationStops(route), [route]);
   const activeKey = `${routePlanSignature(stops.slice(0, 24))}:${retry}`;
 
   useEffect(() => {
     let current = true;
     if (!active || !NavigationView || !isReady) return;
+    setChoices([]);
+    setRouteChoice("");
     setMessage("Finding your location…");
     setFailed(false);
     setRestrictionWarning("");
@@ -78,6 +86,7 @@ export default function ActiveNavigationScreen() {
           latitude: active.lat, longitude: active.lng,
           originLatitude: location.coords.latitude, originLongitude: location.coords.longitude,
           dark: colorScheme === "dark",
+          preview: fromLiveActivity !== "1" && !guidanceStarted,
           stops: stops.slice(0, 24).map((stop) => ({ id: stop.id, name: stop.name, latitude: stop.lat, longitude: stop.lng })),
         };
         setRequest(next);
@@ -93,7 +102,7 @@ export default function ActiveNavigationScreen() {
     return () => { current = false; };
     // Saved stop changes rebuild the ordered window. Theme updates are native props.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeKey, isReady, userId]);
+  }, [activeKey, isReady, userId, fromLiveActivity]);
 
   const save = async (action: () => Promise<void>) => {
     if (savingRef.current) return;
@@ -125,7 +134,15 @@ export default function ActiveNavigationScreen() {
       return;
     }
     if (event.state === "closed") { router.back(); return; }
-    if (event.state === "started") setMessage("");
+    if (event.state === "preview" && event.choices?.length) {
+      setChoices(event.choices);
+      setMessage("");
+    }
+    if (event.state === "started") {
+      setGuidanceStarted(true);
+      setChoices([]);
+      setMessage("");
+    }
     if (event.state === "restriction") setRestrictionWarning(event.message);
     if ((event.state === "started" || event.state === "progress") && event.legs?.length &&
         event.legs.every((leg, index) => leg.stopId === stops[index]?.id && Number.isFinite(leg.seconds) && leg.seconds >= 0 && Number.isFinite(leg.meters) && leg.meters >= 0)) {
@@ -134,7 +151,7 @@ export default function ActiveNavigationScreen() {
         ? previous
         : { legs: event.legs, updatedAt, requestId: event.requestId });
     }
-    if (event.state === "error") { setFailed(true); setMessage(event.message); }
+    if (event.state === "error") { setChoices([]); setFailed(true); setMessage(event.message); }
     // Native arrival may follow immediately after a completion write. Queue it in
     // the provider rather than dropping it behind the driver's tap guard.
     if (event.state === "arrived" || event.state === "arrivedNearby") {
@@ -169,12 +186,13 @@ export default function ActiveNavigationScreen() {
       <RoutePlanSheet initialMode={planMode} visible={routePlanOpen} onClose={() => setRoutePlanOpen(false)} liveLegs={liveLegs} duringGuidance />
       {intelStop ? <NavigationStopIntel stop={intelStop} duringGuidance onClose={() => setIntelStop(null)} /> : null}
       <View style={styles.map}>
-        {active && request && NavigationView ? <NavigationView style={styles.map} request={request} bottomInset={panelHeight + insets.bottom + 20} dark={colorScheme === "dark"} onState={onState} /> : null}
+        {active && request && NavigationView ? <NavigationView style={styles.map} request={request} routeChoice={routeChoice} bottomInset={panelHeight + insets.bottom + 20} dark={colorScheme === "dark"} onState={onState} /> : null}
         {message && active ? <View style={[styles.notice, { backgroundColor: colors.surface }]}>
           <Text style={{ color: colors.textPrimary }}>{message}</Text>
           {failed
             ? <AppButton variant="secondary" onPress={() => setRetry((value) => value + 1)}>Try Again</AppButton>
             : <ActivityIndicator color={colors.textPrimary} />}
+          {!guidanceStarted && <AppButton variant="secondary" onPress={() => router.back()}>Back to Route</AppButton>}
         </View> : null}
         {!isReady ? <ActivityIndicator style={styles.emptyState} color={colors.textPrimary} /> : null}
         {isReady && !active ? <View style={styles.emptyState}>
@@ -183,7 +201,20 @@ export default function ActiveNavigationScreen() {
         </View> : null}
         {!NavigationView && active ? <Text style={{ color: colors.textPrimary }}>Embedded navigation needs the new iPhone development build.</Text> : null}
       </View>
-      <View onLayout={(event) => setPanelHeight(event.nativeEvent.layout.height)} style={[styles.controls, { backgroundColor: colors.surface, borderColor: colors.border, bottom: Math.max(insets.bottom, 12) }]}>
+      {choices.length > 0 && request && active ? (
+        <RoutePreview
+          key={request.id}
+          choices={choices}
+          destination={stops[request.exclusionPoints?.length ? 0 : request.stops.length - 1] ?? active}
+          starting={busy || routeChoice !== ""}
+          onCancel={() => router.back()}
+          onStart={(index) => void save(async () => {
+            if (previewStart === "1" && route.execution.status !== "active") await startExecution();
+            setRouteChoice(request.id + "|" + index);
+          })}
+        />
+      ) : null}
+      {(!active || guidanceStarted || fromLiveActivity === "1") && <View onLayout={(event) => setPanelHeight(event.nativeEvent.layout.height)} style={[styles.controls, { backgroundColor: colors.surface, borderColor: colors.border, bottom: Math.max(insets.bottom, 12) }]}>
       {active ? <>
         {restrictionWarning ? <Text accessibilityLiveRegion="polite" style={[styles.actionLabel, { color: colors.accentStrong }]}>
           {restrictionWarning}
@@ -236,6 +267,84 @@ export default function ActiveNavigationScreen() {
           </View>
         </ScrollView> : null}
       </> : <AppButton onPress={() => router.back()}>Back</AppButton>}
+      </View>}
+    </SafeAreaView>
+  );
+}
+
+function RoutePreview({ choices, destination, starting, onCancel, onStart }: {
+  choices: RouteChoice[];
+  destination: TodayRouteStop;
+  starting: boolean;
+  onCancel: () => void;
+  onStart: (index: number) => void;
+}) {
+  const { colors, colorScheme } = useAppTheme();
+  const map = useRef<MapView>(null);
+  const [selected, setSelected] = useState(choices[0].index);
+  const [mapReady, setMapReady] = useState(false);
+  const [mapLaidOut, setMapLaidOut] = useState(false);
+  useEffect(() => {
+    if (!mapReady || !mapLaidOut) return;
+    map.current?.fitToCoordinates(
+      choices.flatMap((choice) => choice.coordinates),
+      { edgePadding: { top: 36, left: 36, right: 36, bottom: 36 }, animated: false },
+    );
+  }, [choices, mapLaidOut, mapReady]);
+  const fastest = Math.min(...choices.map((choice) => choice.seconds));
+  return (
+    <SafeAreaView edges={["bottom"]} style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]}>
+      <View style={styles.previewPanel}>
+        <Text accessibilityRole="header" style={[styles.title, { color: colors.textPrimary }]}>Route Preview</Text>
+        <Text style={{ color: colors.textSecondary }}>To {destination.name}</Text>
+      </View>
+      <MapView
+        ref={map}
+        style={styles.map}
+        userInterfaceStyle={colorScheme === "dark" ? "dark" : "light"}
+        onLayout={() => setMapLaidOut(true)}
+        onMapReady={() => setMapReady(true)}
+      >
+        {[...choices].sort((a, b) => Number(a.index === selected) - Number(b.index === selected)).map((choice) => (
+          <Polyline
+            key={choice.index}
+            coordinates={choice.coordinates}
+            strokeColor={choice.index === selected ? "#1679E5" : "#617B9A"}
+            strokeWidth={choice.index === selected ? 6 : 4}
+            tappable
+            onPress={() => { if (!starting) setSelected(choice.index); }}
+          />
+        ))}
+        <Marker coordinate={{ latitude: destination.lat, longitude: destination.lng }} title={destination.name} />
+      </MapView>
+      <View style={styles.previewPanel}>
+        {choices.map((choice, position) => {
+          const minutes = Math.max(1, Math.round(choice.seconds / 60));
+          const duration = minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} hr ${minutes % 60} min`;
+          return (
+            <Pressable
+              key={choice.index}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: selected === choice.index, disabled: starting }}
+              disabled={starting}
+              onPress={() => setSelected(choice.index)}
+              style={[styles.previewChoice, {
+                backgroundColor: colors.surface,
+                borderColor: selected === choice.index ? colors.accentStrong : colors.border,
+              }]}
+            >
+              <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>
+                {choices.length === 1 ? "Route" : `Route ${position + 1}`} · {duration}
+                {choices.length > 1 && choice.seconds === fastest ? " · Fastest" : ""}
+              </Text>
+              <Text style={{ color: colors.textSecondary }}>{(choice.meters / 1609.344).toFixed(1)} mi</Text>
+            </Pressable>
+          );
+        })}
+        <AppButton disabled={starting} onPress={() => onStart(selected)}>
+          {starting ? "Starting Navigation…" : "Start Navigation"}
+        </AppButton>
+        <AppButton variant="secondary" onPress={onCancel}>Back to Route</AppButton>
       </View>
     </SafeAreaView>
   );
@@ -267,6 +376,8 @@ function NavigationAction({ icon, label, disabled, onPress }: {
 }
 
 const styles = StyleSheet.create({
+  previewPanel: { padding: 12, gap: 6 },
+  previewChoice: { padding: 10, gap: 2, borderWidth: 1, borderRadius: 12 },
   screen: { flex: 1 }, map: { flex: 1 }, controls: { position: "absolute", left: 12, right: 12, padding: 12, gap: 4, borderRadius: 28, borderWidth: StyleSheet.hairlineWidth },
   emptyState: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8, padding: 24 },
   grabberTarget: { alignItems: "center", justifyContent: "center", minHeight: 44, paddingVertical: 6 },

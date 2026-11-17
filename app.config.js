@@ -4,7 +4,7 @@ module.exports = ({ config }) => {
   const isDevelopment = process.env.APP_VARIANT === "development";
   const enableNavigation = process.env.FREIGHTIQ_EMBEDDED_NAVIGATION === "1";
   const enableAndroidNavigation =
-    isDevelopment && process.env.FREIGHTIQ_ANDROID_EMBEDDED_NAVIGATION === "1";
+    process.env.FREIGHTIQ_ANDROID_EMBEDDED_NAVIGATION === "1";
   const iosBundleIdentifier = isDevelopment
     ? "com.robbyeickhof.mfi.dev"
     : appJson.expo.ios.bundleIdentifier;

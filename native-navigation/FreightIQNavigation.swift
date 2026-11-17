@@ -148,6 +148,7 @@ struct FreightIQNavigationRequest: Record {
   @Field var originLatitude = 0.0
   @Field var originLongitude = 0.0
   @Field var dark = false
+  @Field var preview = false
   @Field var stops: [FreightIQNavigationStop] = []
   @Field var restrictedRoad: [FreightIQRoadCoordinate] = []
   @Field var exclusionPoints: [FreightIQRoadCoordinate] = []
@@ -179,6 +180,9 @@ class FreightIQNavigation: Module {
       Events("onState")
       Prop("request") { (view: FreightIQNavigationView, request: FreightIQNavigationRequest) in
         view.configure(request)
+      }
+      Prop("routeChoice") { (view: FreightIQNavigationView, choice: String) in
+        view.selectRoute(choice)
       }
       Prop("dark") { (view: FreightIQNavigationView, dark: Bool) in
         view.setAppearance(dark)
@@ -354,6 +358,7 @@ private final class DeliveryNavigationController: NavigationViewController {
 final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate {
   let onState = EventDispatcher()
   private var request: FreightIQNavigationRequest?
+  private var pendingRoutes: NavigationRoutes?
   private var task: Task<Void, Never>?
   private var controller: NavigationViewController?
   private var dark = false
@@ -419,6 +424,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
 
   private func calculate(_ next: FreightIQNavigationRequest) {
     task?.cancel()
+    pendingRoutes = nil
     liveActivity.end()
     isRerouting = false
     clearTurnNotification()
@@ -440,55 +446,33 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
         let coordinates = [CLLocationCoordinate2D(latitude: next.originLatitude, longitude: next.originLongitude)]
           + destinations.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
         let options = NavigationRouteOptions(coordinates: coordinates, profileIdentifier: .automobile)
+        options.includesAlternativeRoutes = next.preview
         if restricted { options.excludedLocations = next.exclusionPoints.map(\.coordinate) }
         StopRestrictionSession.shared.update(destination: restricted ? coordinates.last : nil,
                                              points: options.excludedLocations)
         let provider = Self.provider
         let routes = try await provider.routingProvider().calculateRoutes(options: options).value
         guard !Task.isCancelled, let self, self.window != nil, self.request?.id == next.id else { return }
-        if self.controller != nil {
-          provider.tripSession().startActiveGuidance(with: routes, startLegIndex: 0)
-          self.guidanceId = next.id
-          self.liveActivity.start()
-          self.emit("started", next, legs: self.legEstimates(routes.mainRoute.route, next))
-          self.reportRestriction(routes.mainRoute.route, next)
-          return
+        if next.preview {
+          let candidates = [routes.mainRoute.route] + routes.alternativeRoutes.map(\.route)
+          let choices: [[String: Any]] = candidates.enumerated().compactMap { index, route in
+            guard let coordinates = route.shape?.coordinates, coordinates.count > 1 else { return nil }
+            if restricted, !StopRestrictionSession.warning(
+              for: route, road: LineString(next.restrictedRoad.map(\.coordinate)),
+              exclusionPoints: next.exclusionPoints.map(\.coordinate)
+            ).isEmpty { return nil }
+            return ["index": index, "seconds": route.expectedTravelTime, "meters": route.distance,
+                    "coordinates": coordinates.map { ["latitude": $0.latitude, "longitude": $0.longitude] }]
+          }
+          guard !choices.isEmpty else {
+            self.emit("error", next, message: "No route is available with the current road restrictions.")
+            return
+          }
+          self.pendingRoutes = routes
+          self.onState(["state": "preview", "requestId": next.id, "stopId": next.stopId, "choices": choices])
+        } else {
+          self.startGuidance(routes, next)
         }
-        let navigation = DeliveryNavigationController(navigationRoutes: routes, navigationOptions: NavigationOptions(
-          mapboxNavigation: provider.mapboxNavigation,
-          voiceController: provider.routeVoiceController,
-          eventsManager: provider.eventsManager(),
-          styles: [DayStyle(), NightStyle()],
-          predictiveCacheManager: provider.predictiveCacheManager
-        ))
-        navigation.delegate = self
-        navigation.sendsNotifications = false
-        navigation.bottomOcclusion = self.bottomInset
-        navigation.onReportCondition = { [weak self] in
-          guard let self, let request = self.request, request.id == self.guidanceId else { return }
-          self.emit("reportCondition", request)
-        }
-        navigation.showsReportFeedback = false
-        navigation.navigationView.bottomBannerContainerView.isHidden = true
-        navigation.automaticallyAdjustsStyleForTimeOfDay = false
-        navigation.overrideUserInterfaceStyle = self.dark ? .dark : .light
-        navigation.styleManager?.applyStyle(type: self.dark ? .night : .day)
-        guard let parent = self.reactViewController() else {
-          self.emit("error", next, message: "Navigation could not open. Return to your route and try again.")
-          return
-        }
-        parent.addChild(navigation)
-        self.addSubview(navigation.view)
-        navigation.view.frame = self.bounds
-        navigation.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        // Center on the route origin while the navigation camera waits for its first location update.
-        navigation.navigationMapView?.mapView.mapboxMap.setCamera(to: CameraOptions(center: coordinates[0], zoom: 15))
-        navigation.didMove(toParent: parent)
-        self.controller = navigation
-        self.guidanceId = next.id
-        self.liveActivity.start()
-        self.emit("started", next, legs: self.legEstimates(routes.mainRoute.route, next))
-        self.reportRestriction(routes.mainRoute.route, next)
       } catch {
         guard !Task.isCancelled, let self, self.request?.id == next.id else { return }
         self.emit("error", next, message: "Could not calculate directions. Your route is still saved. Check your connection and try again.")
@@ -496,7 +480,71 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
     }
   }
 
+  func selectRoute(_ choice: String) {
+    guard let next = request, let routes = pendingRoutes,
+          choice.hasPrefix(next.id + "|"),
+          let index = Int(choice.dropFirst(next.id.count + 1)), index >= 0 else { return }
+    pendingRoutes = nil
+    task = Task { @MainActor [weak self] in
+      let selected = index == 0 ? routes : await routes.selectingAlternativeRoute(at: index - 1)
+      guard !Task.isCancelled, let self, self.window != nil, self.request?.id == next.id else { return }
+      guard let selected else {
+        self.emit("error", next, message: "Could not open the selected route. Try again.")
+        return
+      }
+      self.startGuidance(selected, next)
+    }
+  }
+
+  private func startGuidance(_ routes: NavigationRoutes, _ next: FreightIQNavigationRequest) {
+    let provider = Self.provider
+    if self.controller != nil {
+      provider.tripSession().startActiveGuidance(with: routes, startLegIndex: 0)
+      self.guidanceId = next.id
+      self.liveActivity.start()
+      self.emit("started", next, legs: self.legEstimates(routes.mainRoute.route, next))
+      self.reportRestriction(routes.mainRoute.route, next)
+      return
+    }
+    let navigation = DeliveryNavigationController(navigationRoutes: routes, navigationOptions: NavigationOptions(
+      mapboxNavigation: provider.mapboxNavigation,
+      voiceController: provider.routeVoiceController,
+      eventsManager: provider.eventsManager(),
+      styles: [DayStyle(), NightStyle()],
+      predictiveCacheManager: provider.predictiveCacheManager
+    ))
+    navigation.delegate = self
+    navigation.sendsNotifications = false
+    navigation.bottomOcclusion = self.bottomInset
+    navigation.onReportCondition = { [weak self] in
+      guard let self, let request = self.request, request.id == self.guidanceId else { return }
+      self.emit("reportCondition", request)
+    }
+    navigation.showsReportFeedback = false
+    navigation.navigationView.bottomBannerContainerView.isHidden = true
+    navigation.automaticallyAdjustsStyleForTimeOfDay = false
+    navigation.overrideUserInterfaceStyle = self.dark ? .dark : .light
+    navigation.styleManager?.applyStyle(type: self.dark ? .night : .day)
+    guard let parent = self.reactViewController() else {
+      self.emit("error", next, message: "Navigation could not open. Return to your route and try again.")
+      return
+    }
+    parent.addChild(navigation)
+    self.addSubview(navigation.view)
+    navigation.view.frame = self.bounds
+    navigation.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    // Center on the route origin while the navigation camera waits for its first location update.
+    navigation.navigationMapView?.mapView.mapboxMap.setCamera(to: CameraOptions(center: CLLocationCoordinate2D(latitude: next.originLatitude, longitude: next.originLongitude), zoom: 15))
+    navigation.didMove(toParent: parent)
+    self.controller = navigation
+    self.guidanceId = next.id
+    self.liveActivity.start()
+    self.emit("started", next, legs: self.legEstimates(routes.mainRoute.route, next))
+    self.reportRestriction(routes.mainRoute.route, next)
+  }
+
   private func stop() {
+    pendingRoutes = nil
     liveActivity.end()
     if request?.hasRestriction == true { StopRestrictionSession.shared.update(destination: nil) }
     clearTurnNotification()

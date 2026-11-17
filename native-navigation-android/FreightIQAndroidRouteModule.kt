@@ -20,12 +20,12 @@ class AndroidRoutePoint : Record {
   }
 }
 
-internal fun androidRouteOptions(origin: AndroidRoutePoint, stops: List<AndroidRoutePoint>): RouteOptions {
+internal fun androidRouteOptions(origin: AndroidRoutePoint, stops: List<AndroidRoutePoint>, alternatives: Boolean = false): RouteOptions {
   require(stops.size in 1..24) { "Navigation requires between 1 and 24 stops." }
   return RouteOptions.builder()
     .applyDefaultNavigationOptions()
     .coordinatesList(listOf(origin.toPoint()) + stops.map { it.toPoint() })
-    .alternatives(false)
+    .alternatives(alternatives)
     .build()
 }
 
@@ -37,6 +37,9 @@ class FreightIQAndroidRouteModule : Module() {
       Events("onState")
       Prop("bottomInset") { view: FreightIQAndroidNavigationView, inset: Int ->
         view.updateBottomInset(inset)
+      }
+      Prop("routeChoice") { view: FreightIQAndroidNavigationView, choice: String ->
+        view.selectRoute(choice)
       }
       Prop("request") { view: FreightIQAndroidNavigationView, request: AndroidGuidanceRequest ->
         view.setRequest(request)

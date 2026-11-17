@@ -69,6 +69,7 @@ import expo.modules.kotlin.views.ExpoView
 class AndroidGuidanceRequest : Record {
   @Field var id: String = ""
   @Field var stopId: String = ""
+  @Field var preview: Boolean = false
   @Field var originLatitude: Double = Double.NaN
   @Field var originLongitude: Double = Double.NaN
   @Field var stops: List<AndroidGuidanceStop> = emptyList()
@@ -582,7 +583,26 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     super.onDetachedFromWindow()
   }
 
+  private var pendingRoutes = emptyList<NavigationRoute>()
+
+  fun selectRoute(choice: String) {
+    val request = activeRequest ?: return
+    val prefix = request.id + "|"
+    if (!choice.startsWith(prefix)) return
+    val index = choice.removePrefix(prefix).toIntOrNull() ?: return
+    val route = pendingRoutes.getOrNull(index) ?: return
+    pendingRoutes = emptyList()
+    startGuidance(request, route)
+  }
+
+  private fun startGuidance(request: AndroidGuidanceRequest, route: NavigationRoute) {
+    navigation.setNavigationRoutes(listOf(route))
+    navigation.startTripSession()
+    publishLegs(request, "started", route)
+  }
+
   private fun stop() {
+    pendingRoutes = emptyList()
     if (activeRequest == null) return
     activeRequest = null
     currentRoad.text = null
@@ -624,7 +644,7 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
         val point = it.toPoint()
         "point(${point.longitude()} ${point.latitude()})"
       }
-      val baseOptions = androidRouteOptions(origin, routeStops)
+      val baseOptions = androidRouteOptions(origin, routeStops, next.preview)
       val options = if (restricted) baseOptions.toBuilder().exclude(exclusions).build() else baseOptions
       if (restricted) {
         navigation.setRerouteOptionsAdapter(object : RerouteOptionsAdapter {
@@ -664,14 +684,32 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
             emit(next, "error", "No directions found. Try again.")
             return
           }
-          if (conflictsWithRestriction(next, route)) {
+          if (!next.preview && conflictsWithRestriction(next, route)) {
             stop()
             emit(next, "error", "No route was found that avoids the marked road section.")
             return
           }
-          navigation.setNavigationRoutes(listOf(route))
-          navigation.startTripSession()
-          publishLegs(next, "started", route)
+          if (!next.preview) {
+            startGuidance(next, route)
+            return
+          }
+          pendingRoutes = routes.filterNot { conflictsWithRestriction(next, it) }
+          val choices = pendingRoutes.mapIndexedNotNull { index, candidate ->
+            val directions = candidate.directionsRoute
+            val geometry = directions.geometry() ?: return@mapIndexedNotNull null
+            val coordinates = LineString.fromPolyline(geometry, 6).coordinates()
+            if (coordinates.size < 2) return@mapIndexedNotNull null
+            mapOf(
+              "index" to index, "seconds" to directions.duration(), "meters" to directions.distance(),
+              "coordinates" to coordinates.map { mapOf("latitude" to it.latitude(), "longitude" to it.longitude()) },
+            )
+          }
+          if (choices.isEmpty()) {
+            stop()
+            emit(next, "error", "No route is available with the current road restrictions.")
+            return
+          }
+          onState(mapOf("requestId" to next.id, "stopId" to next.stopId, "state" to "preview", "choices" to choices))
         }
       })
     } catch (error: Exception) {
