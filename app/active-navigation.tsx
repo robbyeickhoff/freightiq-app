@@ -36,6 +36,9 @@ const NavigationView = hasEmbeddedNavigation
 export default function ActiveNavigationScreen() {
   const router = useRouter();
   const { fromLiveActivity, previewStart } = useLocalSearchParams<{ fromLiveActivity?: string; previewStart?: string }>();
+  // The Live Activity should focus an existing screen. If it creates one,
+  // there is no live screen to resume.
+  const [openedByStaleActivity] = useState(() => fromLiveActivity === "1");
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [panelHeight, setPanelHeight] = useState(180);
@@ -64,7 +67,7 @@ export default function ActiveNavigationScreen() {
 
   useEffect(() => {
     let current = true;
-    if (!active || !NavigationView || !isReady) return;
+    if (openedByStaleActivity || !active || !NavigationView || !isReady) return;
     setChoices([]);
     setRouteChoice("");
     setMessage("Finding your location…");
@@ -102,7 +105,7 @@ export default function ActiveNavigationScreen() {
     return () => { current = false; };
     // Saved stop changes rebuild the ordered window. Theme updates are native props.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeKey, isReady, userId]);
+  }, [activeKey, isReady, userId, openedByStaleActivity]);
 
   const save = async (action: () => Promise<void>) => {
     if (savingRef.current) return;
@@ -160,7 +163,7 @@ export default function ActiveNavigationScreen() {
       });
     }
   };
-  if (fromLiveActivity === "1" && isReady && (!active || route.execution.status !== "active")) {
+  if (openedByStaleActivity && isReady) {
     return <Redirect href="/(tabs)/route" />;
   }
 
