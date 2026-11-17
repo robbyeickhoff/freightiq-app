@@ -134,11 +134,11 @@ export default function ActiveNavigationScreen() {
       return;
     }
     if (event.state === "closed") { router.back(); return; }
-    if (event.state === "preview" && event.choices?.length) {
+    if (event.state === "preview" && !guidanceStarted && !routeChoice && event.choices?.length) {
       setChoices(event.choices);
       setMessage("");
     }
-    if (event.state === "started") {
+    if (event.state === "started" || event.state === "progress") {
       setGuidanceStarted(true);
       setChoices([]);
       setMessage("");
@@ -200,20 +200,22 @@ export default function ActiveNavigationScreen() {
           <Text style={{ color: colors.textSecondary }}>Navigation has ended.</Text>
         </View> : null}
         {!NavigationView && active ? <Text style={{ color: colors.textPrimary }}>Embedded navigation needs the new iPhone development build.</Text> : null}
+        {!guidanceStarted && !routeChoice && choices.length > 0 && request && active ? (
+          <RoutePreview
+            key={request.id}
+            choices={choices}
+            destination={stops[request.exclusionPoints?.length ? 0 : request.stops.length - 1] ?? active}
+            starting={busy}
+            onCancel={() => router.back()}
+            onStart={(index) => void save(async () => {
+              if (previewStart === "1" && route.execution.status !== "active") await startExecution();
+              setChoices([]);
+              setMessage("Starting navigation…");
+              setRouteChoice(request.id + "|" + index);
+            })}
+          />
+        ) : null}
       </View>
-      {choices.length > 0 && request && active ? (
-        <RoutePreview
-          key={request.id}
-          choices={choices}
-          destination={stops[request.exclusionPoints?.length ? 0 : request.stops.length - 1] ?? active}
-          starting={busy || routeChoice !== ""}
-          onCancel={() => router.back()}
-          onStart={(index) => void save(async () => {
-            if (previewStart === "1" && route.execution.status !== "active") await startExecution();
-            setRouteChoice(request.id + "|" + index);
-          })}
-        />
-      ) : null}
       {(!active || guidanceStarted || fromLiveActivity === "1") && <View onLayout={(event) => setPanelHeight(event.nativeEvent.layout.height)} style={[styles.controls, { backgroundColor: colors.surface, borderColor: colors.border, bottom: Math.max(insets.bottom, 12) }]}>
       {active ? <>
         {restrictionWarning ? <Text accessibilityLiveRegion="polite" style={[styles.actionLabel, { color: colors.accentStrong }]}>
