@@ -453,6 +453,51 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     }
   }
 
+  async function offerDrivingAlerts(continueRoute: () => void) {
+    if (!userId) {
+      continueRoute();
+      return;
+    }
+    let alertsActive = false;
+    try {
+      alertsActive = (await drivingAlertStatus(userId)).active;
+    } catch {
+      // Route startup must remain available when alert status cannot be read.
+    }
+    if (!alertsActive) {
+      Alert.alert(
+        "Driving Alerts for this route?",
+        "Get nearby-condition notifications while you use another app. Your location stays on this phone. This optional session uses more battery and can be stopped in FreightIQ.",
+        [
+          { text: "Continue Without Alerts", onPress: () => continueRoute() },
+          {
+            text: "Start Driving Alerts",
+            onPress: () =>
+              void (async () => {
+                try {
+                  await startDrivingAlerts(userId, "route");
+                  continueRoute();
+                } catch (error) {
+                  const reason =
+                    error instanceof Error ? error.message : "Check permissions in Settings.";
+                  await recordDrivingFailure(userId, reason);
+                  Alert.alert("Driving Alerts unavailable", reason, [
+                    { text: "Stay Here" },
+                    {
+                      text: "Continue Without Alerts",
+                      onPress: () => continueRoute(),
+                    },
+                  ]);
+                }
+              })(),
+          },
+        ],
+      );
+      return;
+    }
+    continueRoute();
+  }
+
   async function launchStop(stop: TodayRouteStop, staleResolved = false, alertChoiceMade = false) {
     if (navigationLaunching) return;
     if (unavailableStopIds.has(stop.id)) {
@@ -467,6 +512,11 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
       return;
     }
 
+    if (!alertChoiceMade && route.execution.status !== "active") {
+      await offerDrivingAlerts(() => void launchStop(stop, true, true));
+      return;
+    }
+
     if (hasEmbeddedNavigation) {
       setNavigationLaunching(true);
       try {
@@ -474,38 +524,6 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
         router.push("/active-navigation");
       } catch { showSaveError(); }
       finally { setNavigationLaunching(false); }
-      return;
-    }
-
-    if (userId && !alertChoiceMade && !(await drivingAlertStatus(userId)).active) {
-      Alert.alert(
-        "Driving Alerts for this route?",
-        "Get nearby-condition notifications while you use another app. Your location stays on this phone. This optional session uses more battery and can be stopped in FreightIQ.",
-        [
-          { text: "Continue Without Alerts", onPress: () => void launchStop(stop, true, true) },
-          {
-            text: "Start Driving Alerts",
-            onPress: () =>
-              void (async () => {
-                try {
-                  await startDrivingAlerts(userId, "route");
-                  void launchStop(stop, true, true);
-                } catch (error) {
-                  const reason =
-                    error instanceof Error ? error.message : "Check permissions in Settings.";
-                  await recordDrivingFailure(userId, reason);
-                  Alert.alert("Driving Alerts unavailable", reason, [
-                    { text: "Stay Here" },
-                    {
-                      text: "Continue Without Alerts",
-                      onPress: () => void launchStop(stop, true, true),
-                    },
-                  ]);
-                }
-              })(),
-          },
-        ],
-      );
       return;
     }
 
@@ -1145,14 +1163,19 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
                       ]}
                       key={stop.id}
                     >
-                      <View style={styles.completedCopy}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityHint="Opens stop details to view or add Intel"
+                        onPress={() => openStop(stop)}
+                        style={styles.completedCopy}
+                      >
                         <Text style={[styles.completedName, { color: colors.textSecondary }]}>
                           {stop.name}
                         </Text>
                         <Text style={[styles.stopAddress, { color: colors.textSecondary }]}>
                           {compactAddress(stop.address)}
                         </Text>
-                      </View>
+                      </Pressable>
                       <AppButton
                         onPress={() => void completeStop(stop.id, false).catch(showSaveError)}
                         size="compact"
@@ -1210,7 +1233,8 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
           const begin = () => void startExecution().then(() => {
             if (hasEmbeddedNavigation) router.push("/active-navigation");
           }).catch(showSaveError);
-          if (isStale) showStaleRouteAlert(begin); else begin();
+          const offer = () => void offerDrivingAlerts(begin);
+          if (isStale) showStaleRouteAlert(offer); else offer();
         }}>{route.execution.status === "active" ? "Resume" : "Start Route"}</AppButton>
       </View> : null}
 

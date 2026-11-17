@@ -40,6 +40,8 @@ import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
 import com.mapbox.maps.plugin.annotation.annotations
+import com.mapbox.maps.plugin.annotation.generated.CircleAnnotationOptions
+import com.mapbox.maps.plugin.annotation.generated.createCircleAnnotationManager
 import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createPolylineAnnotationManager
 import com.mapbox.navigation.base.options.NavigationOptions
@@ -87,6 +89,18 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
   private val onState by EventDispatcher()
   private val map = MapView(context)
   private val lines = map.annotations.createPolylineAnnotationManager()
+  private val stopMarkers = map.annotations.createCircleAnnotationManager()
+  private val currentRoad = TextView(context).apply {
+    textSize = 17f
+    setTextColor(Color.WHITE)
+    gravity = Gravity.CENTER
+    maxLines = 1
+    ellipsize = android.text.TextUtils.TruncateAt.END
+    setPadding(dp(14), dp(7), dp(14), dp(7))
+    background = roundedSurface(16)
+    visibility = GONE
+  }
+
   private val maneuverArrow = TextView(context).apply {
     textSize = 36f
     gravity = Gravity.CENTER
@@ -166,6 +180,9 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     val params = tools.layoutParams as FrameLayout.LayoutParams
     params.bottomMargin = dp(inset)
     tools.layoutParams = params
+    val roadParams = currentRoad.layoutParams as FrameLayout.LayoutParams
+    roadParams.bottomMargin = dp(inset)
+    currentRoad.layoutParams = roadParams
   }
 
   private val preferences = context.getSharedPreferences("navigation", Context.MODE_PRIVATE)
@@ -409,6 +426,12 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     }
 
     override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
+      val roadName = locationMatcherResult.road?.components
+        ?.firstNotNullOfOrNull { it.text?.trim()?.takeIf(String::isNotEmpty) }
+      if (currentRoad.text.toString() != roadName.orEmpty()) {
+        currentRoad.text = roadName
+        currentRoad.visibility = if (roadName == null) GONE else VISIBLE
+      }
       val location = locationMatcherResult.enhancedLocation
       locationProvider.changePosition(location, locationMatcherResult.keyPoints)
       lastPosition = Point.fromLngLat(location.longitude, location.latitude)
@@ -433,6 +456,7 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
 
   private val routesObserver = RoutesObserver { result ->
     lines.deleteAll()
+    stopMarkers.deleteAll()
     val current = activeRequest ?: return@RoutesObserver
     val route = result.navigationRoutes.firstOrNull() ?: return@RoutesObserver
     if (conflictsWithRestriction(current, route)) {
@@ -440,6 +464,15 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
       emit(current, "error", "No route was found that avoids the marked road section.")
       return@RoutesObserver
     }
+    val legCount = route.directionsRoute.legs().orEmpty().size
+    stopMarkers.create(current.stops.take(legCount).map { stop ->
+      CircleAnnotationOptions()
+        .withPoint(Point.fromLngLat(stop.longitude, stop.latitude))
+        .withCircleRadius(7.0)
+        .withCircleColor("#3DB840")
+        .withCircleStrokeColor("#FFFFFF")
+        .withCircleStrokeWidth(2.0)
+    })
     val geometry = route.directionsRoute.geometry()
     if (geometry != null) {
       val points = com.mapbox.geojson.LineString.fromPolyline(geometry, 6).coordinates()
@@ -468,6 +501,11 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     container.addView(tools, FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM or Gravity.END).apply {
       bottomMargin = dp(128)
       marginEnd = dp(12)
+    })
+    container.addView(currentRoad, FrameLayout.LayoutParams(
+      LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+    ).apply {
+      setMargins(dp(72), 0, dp(72), dp(128))
     })
     map.location.setLocationProvider(locationProvider)
     map.location.updateSettings {
@@ -547,6 +585,9 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
   private fun stop() {
     if (activeRequest == null) return
     activeRequest = null
+    currentRoad.text = null
+    currentRoad.visibility = GONE
+    stopMarkers.deleteAll()
     clearTurnNotification()
     requestedRouteId?.let(navigation::cancelRouteRequest)
     requestedRouteId = null

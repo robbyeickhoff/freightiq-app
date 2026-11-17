@@ -276,7 +276,7 @@ export function addRouteStop(
   }
   return {
     route: updatedRoute(
-      { ...route, execution: draftExecution() },
+      { ...route, date: route.stops.length === 0 ? localDateKey(now) : route.date, execution: draftExecution() },
       [
         ...route.stops,
         added,

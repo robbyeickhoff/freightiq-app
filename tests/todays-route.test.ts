@@ -220,3 +220,13 @@ test("adding a stop after finishing the route leaves it ready to start", () => {
   assert.equal(route.execution.status, "finished");
   assert.equal(addRouteStop(route, stop("B"), later).route.execution.status, "draft");
 });
+
+test("the first stop on an empty earlier-day route starts today's route", () => {
+  const empty = emptyTodayRoute(morning);
+  const first = addRouteStop(empty, stop("A"), tomorrow).route;
+  assert.equal(first.date, emptyTodayRoute(tomorrow).date);
+  assert.equal(isRouteStale(first, tomorrow), false);
+  const second = addRouteStop(first, stop("B"), tomorrow).route;
+  assert.deepEqual(second.stops.map(({ id }) => id), ["A", "B"]);
+  assert.equal(isRouteStale(second, new Date("2026-08-25T08:00:00.000Z")), true);
+});

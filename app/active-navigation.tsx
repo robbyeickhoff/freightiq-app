@@ -4,6 +4,7 @@ import { Redirect, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActionSheetIOS, Platform, ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, type ViewProps } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { OperationsDrivingAlertControl } from "@/components/operations-driving-alert-control";
 import { NavigationStopIntel } from "@/components/navigation-stop-intel";
 import { RouteMetrics } from "@/components/route-metrics";
 import { AppIcon, type AppIconName } from "@/components/ui/app-icon";
@@ -210,6 +211,7 @@ export default function ActiveNavigationScreen() {
           </View>
           <View style={[styles.group, { backgroundColor: colors.background }]}>
             <NavigationAction icon="operations" label="Operations Board" onPress={() => router.push("/navigation-operations" as never)} />
+            <OperationsDrivingAlertControl origin="route" compact />
           </View>
           <View style={[styles.group, { backgroundColor: colors.background }]}>
             <NavigationAction icon="complete" label="Complete Stop" disabled={busy || !isReady} onPress={() => void save(() => completeStop(active.id, true))} />

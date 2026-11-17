@@ -329,6 +329,13 @@ private final class DeliveryNavigationController: NavigationViewController {
       padding.bottom = bottomOcclusion
       navigationMapView?.viewportPadding = padding
     }
+    let wayName = navigationView.wayNameView
+    for constraint in navigationView.constraints where constraint.firstItem === wayName {
+      if constraint.firstAttribute == .bottom,
+        constraint.secondItem === navigationView.bottomBannerContainerView {
+        constraint.constant = -bottomOcclusion
+      }
+    }
     recenterBottom?.constant = -(bottomOcclusion + 40)
     // Keep required map credits above FreightIQ's floating panel.
     navigationMapView?.mapView.ornaments.options.logo.margins.y = bottomOcclusion + 8
@@ -504,6 +511,27 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
       self.controller = nil
       Self.provider.tripSession().setToIdle()
     }
+  }
+
+  func navigationViewController(
+    _ navigationViewController: NavigationViewController,
+    waypointCircleLayerWithIdentifier identifier: String,
+    sourceIdentifier: String
+  ) -> CircleLayer? {
+    var layer = CircleLayer(id: identifier, source: sourceIdentifier)
+    let opacity = Exp(.switchCase) {
+      Exp(.any) { Exp(.get) { "waypointCompleted" } }
+      0
+      1
+    }
+    layer.circleColor = .constant(StyleColor(UIColor(red: 0.24, green: 0.72, blue: 0.25, alpha: 1)))
+    layer.circleRadius = .constant(7)
+    layer.circleStrokeColor = .constant(StyleColor(.white))
+    layer.circleStrokeWidth = .constant(2)
+    layer.circleOpacity = .expression(opacity)
+    layer.circleStrokeOpacity = .expression(opacity)
+    layer.circleEmissiveStrength = .constant(1)
+    return layer
   }
 
   func navigationViewController(_ navigationViewController: NavigationViewController, didArriveAt waypoint: Waypoint) {
