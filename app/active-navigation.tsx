@@ -86,7 +86,7 @@ export default function ActiveNavigationScreen() {
           latitude: active.lat, longitude: active.lng,
           originLatitude: location.coords.latitude, originLongitude: location.coords.longitude,
           dark: colorScheme === "dark",
-          preview: fromLiveActivity !== "1" && !guidanceStarted,
+          preview: !guidanceStarted,
           stops: stops.slice(0, 24).map((stop) => ({ id: stop.id, name: stop.name, latitude: stop.lat, longitude: stop.lng })),
         };
         setRequest(next);
@@ -102,7 +102,7 @@ export default function ActiveNavigationScreen() {
     return () => { current = false; };
     // Saved stop changes rebuild the ordered window. Theme updates are native props.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeKey, isReady, userId, fromLiveActivity]);
+  }, [activeKey, isReady, userId]);
 
   const save = async (action: () => Promise<void>) => {
     if (savingRef.current) return;
@@ -216,7 +216,7 @@ export default function ActiveNavigationScreen() {
           />
         ) : null}
       </View>
-      {(!active || guidanceStarted || fromLiveActivity === "1") && <View onLayout={(event) => setPanelHeight(event.nativeEvent.layout.height)} style={[styles.controls, { backgroundColor: colors.surface, borderColor: colors.border, bottom: Math.max(insets.bottom, 12) }]}>
+      {(!active || guidanceStarted) && <View onLayout={(event) => setPanelHeight(event.nativeEvent.layout.height)} style={[styles.controls, { backgroundColor: colors.surface, borderColor: colors.border, bottom: Math.max(insets.bottom, 12) }]}>
       {active ? <>
         {restrictionWarning ? <Text accessibilityLiveRegion="polite" style={[styles.actionLabel, { color: colors.accentStrong }]}>
           {restrictionWarning}

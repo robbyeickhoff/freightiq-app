@@ -464,6 +464,7 @@ function RootNavigator() {
         <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
         <Stack.Screen name="update-password" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="active-navigation" dangerouslySingular options={{ headerShown: false }} />
         <Stack.Screen name="navigation-operations" options={{ presentation: "transparentModal", headerShown: false }} />
         <Stack.Screen name="yard-view-3d" options={({ route }) => ({
           headerShown: false,
