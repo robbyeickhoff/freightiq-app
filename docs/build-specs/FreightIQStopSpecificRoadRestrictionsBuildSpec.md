@@ -37,15 +37,17 @@ aggregation, malformed-marking handling, stable automatic-import identity and ro
 pass 24 tests. TypeScript, focused
 lint, public/private database lint and both signed native development builds pass. Authenticated
 local HTTP create → guarded detail read → creator removal → empty read-back passes. Temporary
-HTTP fixtures were removed; transaction-only database fixtures roll back. Hosted schema and data
-are unchanged. Rob accepted the device changes and approved owner-only release preparation on
-November 18. Creator boundaries have two-account API coverage; moving approach-warning acceptance
-remains part of the owner field test. Production migration is a separate approval.
+HTTP fixtures were removed; transaction-only database fixtures roll back. After Rob’s separate
+deployment approval, hosted migration `20261118132025_shared_stop_road_sections` was applied. Production verification confirms private storage, creator write APIs, direct-table and
+anonymous denials, bounded geometry, and the exact additive guarded-read change. Existing 545 stops,
+544 Intel reports, their policy fingerprint and security-advisor baseline are unchanged. Rob accepted
+the device changes and approved owner-only release preparation on November 18. Creator boundaries have two-account API coverage; moving approach-warning acceptance
+remains part of the owner field test.
 
 Changed paths for this extension:
 
 - `docs/CurrentBuild.md` and this specification.
-- `supabase/migrations/20261118124229_shared_stop_road_sections.sql`.
+- `supabase/migrations/20261118132025_shared_stop_road_sections.sql`.
 - `supabase/tests/database/shared_stop_road_sections.sql`.
 - `utils/shared-road-section-data.ts` and `utils/shared-road-sections.ts`.
 - `utils/stop-road-restriction.ts` and `utils/stop-road-restriction-validation.ts`.

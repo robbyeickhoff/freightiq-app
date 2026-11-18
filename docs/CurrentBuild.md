@@ -13,7 +13,7 @@ answer one question:
 
 ## Current Objective
 
-### November 18 — shared stop road sections, local implementation
+### November 18 — shared stop road sections, owner field test
 
 Rob approved shared stop-specific road markings with creator-only editing/removal and independent
 sections from other drivers on both platforms. Follow the approved extension in
@@ -26,8 +26,13 @@ instructions/notification icon, advisory shared road markings with creator owner
 conversion of existing markings, and Route/Navigation Help Center guides. Verification: signed
 development builds on both phones, 54 database assertions, 24 focused mobile tests, TypeScript,
 focused lint and public/private database lint pass. Real moving approach-warning acceptance remains
-part of Rob's owner field test. Production shared-storage migration has separate approval pending;
-do not distribute to early testers. Build only from the verified pushed commit on clean-main.
+part of Rob's owner field test. Rob separately approved production migration
+`20261118132025_shared_stop_road_sections`; it is deployed and verified. Existing stop/Intel counts, policies and advisor baseline are unchanged.
+Owner candidates iOS 81 and Android 50 were built from verified pushed source commit
+`686a5fd0599d057fe9c6a193708440b71d78e60e`. iOS 81 is processed and ready in TestFlight,
+assigned only to Team (Expo), Internal, one tester. Android 50 is uploaded and submitted on
+Owner Field Test only (one-user email list); Google shows Changes in review with quick checks
+pending. Neither build was assigned to early testers. See ReleaseHistory.md for receipts.
 
 ### November 9 — internal authorization helper hardening deployed
 

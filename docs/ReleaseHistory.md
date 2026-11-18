@@ -6,6 +6,42 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-11-18 — Shared road markings and owner navigation field candidates
+
+Rob accepted the device changes and approved commit/push and production candidates only for his
+one-person groups. Source `686a5fd0599d057fe9c6a193708440b71d78e60e` was pushed before either
+build. Both downloaded packages passed production identity, bundled navigation/Help/shared-marking
+content and absence-of-local-test-configuration checks. iOS deep/strict signing and Android JAR
+signature verification passed. Local validation: 54 database assertions, 24 focused mobile tests,
+TypeScript, focused lint, public/private database lint and signed development builds on both phones.
+Moving approach-warning timing, Pixel upcoming-turn accuracy and background maneuver visibility
+remain owner field acceptance.
+
+- iOS 1.0.2 (81), EAS `5589e82e-b5e7-4169-aa57-e4e2089fef08`, profile
+  `production-road-restriction-test`; submission `12c86939-42f6-446e-8b73-e10ca4868ba5` finished.
+  App Store Connect confirms processed/ready, only Team (Expo), Internal, one tester, and zero
+  individual testers. What to Test notes were saved directly in App Store Connect.
+- Android 1.0.2 (50), EAS `af20f0fd-ded1-47dc-9739-738d25445c07`, profile
+  `production-android-navigation`. Google accepted the package and the release was saved/submitted
+  only to closed track Owner Field Test (`4697372655075776480`). Its selected email list contains
+  one owner; the ten-user Internal Testers list is unchecked. Publishing overview confirms Changes
+  in review, quick checks pending, full rollout within that track. Managed publishing is off;
+  Google approval and actual download availability remain pending. Early-tester alpha stays on 45.
+  Existing portrait hardware availability warning was explicitly acknowledged for this private
+  field candidate; supported-device comparison showed zero devices lost from 49. No app manifest
+  or security setting was changed during submission.
+
+Rob separately approved production shared storage. Hosted migration
+`20261118132025_shared_stop_road_sections` deployed successfully; the local filename was aligned to
+that hosted timestamp without changing SQL. Creator-only write APIs, anonymous/direct-table denials,
+bounded geometry and the additive guarded stop read were verified. Existing 545 stops, 544 Intel
+reports, stop/report policies and security-advisor baseline were preserved. No synthetic production
+rows were created. Release bookkeeping follows the immutable binary source commit and does not
+require rebuilding these packages.
+
+Package SHA-256: iOS `fffee6d2b924d9249fc9ed38dd07f7942044b15f7ef4505ae2d8b1a004f057f7`;
+Android `6e0dfda5abbb0e5af38c8fe2c4bf7a24f337057ed4076048828508ccc96b36f8`.
+
 ## 2026-11-09 — Internal authorization helper hardening
 
 Rob approved a narrow defense-in-depth correction after a live audit of the Supabase
