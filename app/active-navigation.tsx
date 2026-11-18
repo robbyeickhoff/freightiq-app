@@ -16,7 +16,7 @@ import { QUICK_OPERATIONS_REPORTS } from "@/utils/operations-board";
 import { embeddedNavigationModule, hasEmbeddedNavigation } from "@/utils/embedded-navigation";
 import { RoutePlanSheet } from "@/components/route-plan-sheet";
 import type { TodayRouteStop } from "@/utils/todays-route";
-import { readStopRoadRestriction } from "@/utils/stop-road-restriction";
+import { readNavigationRoadRestriction } from "@/utils/stop-road-restriction";
 import { orderedNavigationStops, routePlanSignature, type PlannedLeg, type RouteCoordinate } from "@/utils/route-plan";
 
 type Request = {
@@ -42,6 +42,11 @@ export default function ActiveNavigationScreen() {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [panelHeight, setPanelHeight] = useState(180);
+  const [panelHeaderHeight, setPanelHeaderHeight] = useState(44);
+  const expandedControlsMaxHeight = Math.max(
+    0,
+    height - insets.top - Math.max(insets.bottom, 12) - panelHeaderHeight - 40,
+  );
   const [intelStop, setIntelStop] = useState<TodayRouteStop | null>(null);
   const [planMode, setPlanMode] = useState<"route" | "search">("route");
   const { route, isReady, userId, arrive, completeStop, skipActiveStop, startExecution, endExecution } = useTodayRoute();
@@ -52,6 +57,8 @@ export default function ActiveNavigationScreen() {
   const [request, setRequest] = useState<Request | null>(null);
   const [message, setMessage] = useState("Finding your location…");
   const [restrictionWarning, setRestrictionWarning] = useState("");
+  const [restrictionNotice, setRestrictionNotice] = useState("");
+  const warnedRestrictionStops = useRef(new Set<string>());
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [retry, setRetry] = useState(0);
@@ -73,6 +80,7 @@ export default function ActiveNavigationScreen() {
     setMessage("Finding your location…");
     setFailed(false);
     setRestrictionWarning("");
+    setRestrictionNotice("");
     setLiveLegs(null);
     setPanelOpen(false);
     void (async () => {
@@ -80,8 +88,10 @@ export default function ActiveNavigationScreen() {
         const permission = await Location.requestForegroundPermissionsAsync();
         if (!permission.granted) throw new Error("Allow location access to start navigation.");
         const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-        const restriction = (__DEV__ || process.env.EXPO_PUBLIC_FREIGHTIQ_STOP_RESTRICTION_TEST === "1") && userId ? await readStopRoadRestriction(userId, active.id) : null;
+        if (!userId) throw new Error("Sign in before starting navigation so saved road restrictions can be checked.");
+        const { restriction, warning } = await readNavigationRoadRestriction(userId, active.id);
         if (!current) return;
+        setRestrictionNotice(warning);
         const next = {
           restrictedRoad: restriction?.coordinates ?? [],
           exclusionPoints: restriction?.exclusionPoints ?? [],
@@ -142,6 +152,10 @@ export default function ActiveNavigationScreen() {
       setMessage("");
     }
     if (event.state === "started" || event.state === "progress") {
+      if (restrictionNotice && !warnedRestrictionStops.current.has(event.stopId)) {
+        warnedRestrictionStops.current.add(event.stopId);
+        Alert.alert("Previously flagged road", restrictionNotice, [{ text: "OK" }]);
+      }
       setGuidanceStarted(true);
       setChoices([]);
       setMessage("");
@@ -221,10 +235,10 @@ export default function ActiveNavigationScreen() {
       </View>
       {(!active || guidanceStarted) && <View onLayout={(event) => setPanelHeight(event.nativeEvent.layout.height)} style={[styles.controls, { backgroundColor: colors.surface, borderColor: colors.border, bottom: Math.max(insets.bottom, 12) }]}>
       {active ? <>
-        {restrictionWarning ? <Text accessibilityLiveRegion="polite" style={[styles.actionLabel, { color: colors.accentStrong }]}>
-          {restrictionWarning}
+        {restrictionWarning ? <Text accessibilityLiveRegion="polite" style={{ color: colors.accentStrong, fontSize: 15, fontWeight: "600", textAlign: "center", paddingVertical: 6 }}>
+          ⚠ {restrictionWarning}
         </Text> : null}
-        <Pressable accessibilityRole="button" accessibilityLabel={panelOpen ? "Collapse navigation controls" : "Expand navigation controls"} accessibilityState={{ expanded: panelOpen }} onPress={() => setPanelOpen((open) => !open)} style={styles.grabberTarget}>
+        <Pressable onLayout={(event) => setPanelHeaderHeight(event.nativeEvent.layout.height)} accessibilityRole="button" accessibilityLabel={panelOpen ? "Collapse navigation controls" : "Expand navigation controls"} accessibilityState={{ expanded: panelOpen }} onPress={() => setPanelOpen((open) => !open)} style={styles.grabberTarget}>
           <View style={[styles.grabber, { backgroundColor: colors.textSecondary }]} />
           {route.execution.arrival?.stopId === active.id ? (
             <Text style={[styles.actionLabel, { color: colors.textPrimary, textAlign: "center" }]}>Arrived</Text>
@@ -234,7 +248,12 @@ export default function ActiveNavigationScreen() {
               : <RouteMetrics arrival={liveLegs.updatedAt + liveLegs.legs[0].seconds * 1000} {...liveLegs.legs[0]} />}
           </View> : null}
         </Pressable>
-        {panelOpen ? <ScrollView style={[styles.expandedControls, { maxHeight: height * 0.45 }]} contentContainerStyle={styles.expandedContent}>
+        {panelOpen ? <ScrollView
+          style={[styles.expandedControls, { maxHeight: expandedControlsMaxHeight }]}
+          contentContainerStyle={styles.expandedContent}
+          showsVerticalScrollIndicator
+          persistentScrollbar={Platform.OS === "android"}
+        >
           <Pressable onPress={() => setIntelStop(active)} accessibilityRole="button" accessibilityLabel={`View ${active.name} stop Intel`} style={styles.business}>
             <Text numberOfLines={2} style={[styles.title, { color: colors.textPrimary, flex: 1 }]}>{active.name}</Text>
             <View style={styles.intelAction}>
@@ -247,7 +266,7 @@ export default function ActiveNavigationScreen() {
           </View>
           <View style={[styles.group, { backgroundColor: colors.background }]}>
             <NavigationAction icon="operations" label="Operations Board" onPress={() => router.push("/navigation-operations" as never)} />
-            <OperationsDrivingAlertControl origin="route" compact />
+            <OperationsDrivingAlertControl origin="route" navigationRow />
           </View>
           <View style={[styles.group, { backgroundColor: colors.background }]}>
             <NavigationAction icon="complete" label="Complete Stop" disabled={busy || !isReady} onPress={() => void save(() => completeStop(active.id, true))} />

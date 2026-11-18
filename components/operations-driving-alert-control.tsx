@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   AppState,
   Linking,
@@ -14,6 +15,7 @@ import { useFocusEffect } from "expo-router";
 
 import { AppButton } from "@/components/ui/app-button";
 import { AppCard } from "@/components/ui/app-card";
+import { AppIcon } from "@/components/ui/app-icon";
 import { useAppTheme } from "@/context/theme-context";
 import { OPERATIONS_CATEGORIES, type OperationsCategory } from "@/utils/operations-board";
 import {
@@ -32,11 +34,13 @@ export function OperationsDrivingAlertControl({
   showCategories = false,
   compact = false,
   menuOnly = false,
+  navigationRow = false,
 }: {
   origin: "route" | "operations" | "settings";
   showCategories?: boolean;
   compact?: boolean;
   menuOnly?: boolean;
+  navigationRow?: boolean;
 }) {
   const { colors } = useAppTheme();
   const { width, fontScale } = useWindowDimensions();
@@ -110,6 +114,63 @@ export function OperationsDrivingAlertControl({
         },
       ],
     );
+  const toggleAlerts = () => {
+    if (!active || !userId) {
+      begin();
+      return;
+    }
+    void (async () => {
+      setBusy(true);
+      try {
+        await stopDrivingAlerts(userId);
+      } catch {
+        Alert.alert(
+          "Couldn’t stop alerts",
+          "Try again or turn off location access in device Settings.",
+        );
+      } finally {
+        setBusy(false);
+        await update();
+      }
+    })();
+  };
+  const settingsNeeded = !active && /permission|allow|enable|location services/i.test(status);
+
+  if (navigationRow) {
+    return <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={active ? "Stop Driving Alerts" : "Start Driving Alerts"}
+        accessibilityHint={status}
+        accessibilityState={{ disabled: busy, busy }}
+        disabled={busy}
+        onPress={toggleAlerts}
+        style={({ pressed }) => [
+          styles.navigationRow,
+          { borderTopColor: colors.border, backgroundColor: pressed ? colors.surface : colors.background },
+        ]}
+      >
+        <AppIcon name="drivingAlerts" active={active} color={colors.accentStrong} />
+        <View style={styles.copy}>
+          <Text style={[styles.navigationLabel, { color: colors.textPrimary }]}>Driving Alerts</Text>
+          {status !== "Active" && status !== "Off" ? (
+            <Text style={[styles.status, { color: colors.textSecondary }]}>{status}</Text>
+          ) : null}
+        </View>
+        {busy ? <ActivityIndicator color={colors.accentStrong} /> : (
+          <Text style={[styles.navigationCommand, { color: colors.accentStrong }]}>
+            {active ? "Stop Alerts" : "Start Alerts"}
+          </Text>
+        )}
+      </Pressable>
+      {settingsNeeded ? (
+        <AppButton size="compact" variant="tertiary" onPress={() => void Linking.openSettings()}>
+          Open Device Settings
+        </AppButton>
+      ) : null}
+    </>;
+  }
+
   const content = (
     <AppCard contentStyle={[styles.card, compact && styles.compactCard]}>
       <View style={[styles.row, stackCompact && styles.stackedRow]}>
@@ -125,29 +186,12 @@ export function OperationsDrivingAlertControl({
           size="compact"
           variant={active ? "secondary" : "primary"}
           loading={busy}
-          onPress={() =>
-            active && userId
-              ? void (async () => {
-                  setBusy(true);
-                  try {
-                    await stopDrivingAlerts(userId);
-                  } catch {
-                    Alert.alert(
-                      "Couldn’t stop alerts",
-                      "Try again or turn off location access in device Settings.",
-                    );
-                  } finally {
-                    setBusy(false);
-                    await update();
-                  }
-                })()
-              : begin()
-          }
+          onPress={toggleAlerts}
         >
           {active ? "Stop Alerts" : "Start Alerts"}
         </AppButton>
       </View>
-      {!active && /permission|allow|enable|location services/i.test(status) ? (
+      {settingsNeeded ? (
         <AppButton size="compact" variant="tertiary" onPress={() => void Linking.openSettings()}>
           Open Device Settings
         </AppButton>
@@ -196,6 +240,17 @@ export function OperationsDrivingAlertControl({
   </>;
 }
 const styles = StyleSheet.create({
+  navigationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    minHeight: 48,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  navigationLabel: { fontSize: 17, fontWeight: "500" },
+  navigationCommand: { maxWidth: "42%", textAlign: "right", fontSize: 15, fontWeight: "600" },
   card: { padding: 14, gap: 12 },
   compactCard: { paddingVertical: 8, paddingHorizontal: 12, gap: 8 },
   compactTitle: { fontSize: 15 },

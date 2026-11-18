@@ -1,10 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { RouteCoordinate } from "./route-plan";
+import { parseSavedRoadRestriction, roadRestrictionForNavigation } from "./stop-road-restriction-validation";
+import { cachedSharedRoadSections, listSharedRoadSections, localRoadRestrictionKey as key } from "./shared-road-sections";
+import { combineRoadSections } from "./shared-road-section-data";
 
 export type StopRoadRestriction = { road: string; coordinates: RouteCoordinate[]; exclusionPoints: RouteCoordinate[] };
-
-const key = (userId: string, stopId: string) =>
-  `freightiq:road-restriction:v1:${encodeURIComponent(userId)}:${encodeURIComponent(stopId)}`;
 
 export function saveStopRoadRestriction(userId: string, stopId: string, value: StopRoadRestriction | null) {
   return value ? AsyncStorage.setItem(key(userId, stopId), JSON.stringify(value)) : AsyncStorage.removeItem(key(userId, stopId));
@@ -12,7 +12,30 @@ export function saveStopRoadRestriction(userId: string, stopId: string, value: S
 
 export async function readStopRoadRestriction(userId: string, stopId: string): Promise<StopRoadRestriction | null> {
   const raw = await AsyncStorage.getItem(key(userId, stopId));
-  return raw ? JSON.parse(raw) : null;
+  return parseSavedRoadRestriction(raw);
+}
+
+export async function readNavigationRoadRestriction(userId: string, stopId: string) {
+  const local = await AsyncStorage.getItem(key(userId, stopId)).then(roadRestrictionForNavigation)
+    .catch(() => ({ restriction: null, warning: "The local road marking could not be checked." }));
+  let shared;
+  let unavailable = false;
+  try {
+    shared = await listSharedRoadSections(userId, stopId);
+  } catch {
+    unavailable = true;
+    shared = await cachedSharedRoadSections(userId, stopId).catch(() => null);
+  }
+  const restriction = combineRoadSections([...(shared ?? []), ...(local.restriction ? [local.restriction] : [])]);
+  const notices = [
+    restriction ? "A road section for this stop was previously flagged as restricted. We will try to avoid marked sections, but navigation may still route through them. Check the route and current road conditions." : "",
+    restriction && restriction.exclusionPoints.length > 50 ? "The route service cannot avoid all of these marked sections at once. Nearby warnings still cover all loaded markings." : "",
+    unavailable ? shared !== null
+      ? "Shared markings could not be refreshed. Saved markings may be out of date."
+      : "Shared road markings could not be checked. This route may use a previously flagged road, and nearby-road warnings may be unavailable." : "",
+    local.warning && !local.restriction ? local.warning : "",
+  ];
+  return { restriction, warning: notices.filter(Boolean).join("\n\n") };
 }
 
 type RoadIdentity = { name?: string; ref?: string };
@@ -25,7 +48,7 @@ const token = () => {
   return value;
 };
 
-function sameRoad(a: RoadIdentity, b: RoadIdentity) {
+export function sameRoad(a: RoadIdentity, b: RoadIdentity) {
   const refs = (value?: string) => value?.toUpperCase().split(";")
     .map((ref) => ref.trim().replace(/^(CR|CO|US|FR|SR|SH|HWY)\s+/, "")) ?? [];
   const aRefs = refs(a.ref);

@@ -65,6 +65,14 @@ export default function ProfileLayout() {
       />
       <Stack.Screen name="finding-stops" options={{ headerShown: true, title: "Finding Stops" }} />
       <Stack.Screen
+        name="build-a-route"
+        options={{ headerShown: true, title: "Build a Route" }}
+      />
+      <Stack.Screen
+        name="navigate-complete-stops"
+        options={{ headerShown: true, title: "Navigate and Complete Stops" }}
+      />
+      <Stack.Screen
         name="understanding-stop-intel"
         options={{ headerShown: true, title: "Understanding Stop Intel" }}
       />

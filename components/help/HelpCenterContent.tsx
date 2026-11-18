@@ -15,6 +15,7 @@ import { AppCard } from "@/components/ui/app-card";
 import { AppIcon, type AppIconName } from "@/components/ui/app-icon";
 import { Radius, Sizes, Spacing, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
+import { hasEmbeddedNavigation } from "@/utils/embedded-navigation";
 
 export type HelpCenterNavigationHandlers = {
   onPressGettingStarted: () => void;
@@ -24,6 +25,8 @@ export type HelpCenterNavigationHandlers = {
   onPressUsingTheMap: () => void;
   onPressOperationsBoard: () => void;
   onPressPrivacyAppLock: () => void;
+  onPressBuildRoute: () => void;
+  onPressNavigateCompleteStops: () => void;
 };
 
 type HelpCenterContentProps = {
@@ -40,6 +43,8 @@ const defaultNavigationHandlers: HelpCenterNavigationHandlers = {
   onPressUsingTheMap: () => router.push("/using-the-map"),
   onPressOperationsBoard: () => router.push("/operations-board"),
   onPressPrivacyAppLock: () => router.push("/privacy-app-lock"),
+  onPressBuildRoute: () => router.push("/build-a-route" as never),
+  onPressNavigateCompleteStops: () => router.push("/navigate-complete-stops" as never),
 };
 
 type GuideRowProps = {
@@ -149,6 +154,22 @@ export default function HelpCenterContent({ navigationHandlers }: HelpCenterCont
             subtitle="Search, browse, and create stops"
             title="Finding Stops"
           />
+          <GuideRow
+            accessibilityHint="Opens the Build a Route guide"
+            icon="route"
+            onPress={handlers.onPressBuildRoute}
+            subtitle="Add, order, and start today’s stops"
+            title="Build a Route"
+          />
+          {hasEmbeddedNavigation ? (
+            <GuideRow
+              accessibilityHint="Opens the Navigate and Complete Stops guide"
+              icon="navigation"
+              onPress={handlers.onPressNavigateCompleteStops}
+              subtitle="Arrive, complete, skip, and resume"
+              title="Navigate and Complete Stops"
+            />
+          ) : null}
           <GuideRow
             accessibilityHint="Opens the Understanding Stop Intel guide"
             icon="understandingIntel"

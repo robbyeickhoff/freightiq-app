@@ -1,0 +1,53 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select no_plan();
+insert into auth.users(id,email,created_at,updated_at) values
+ ('85000000-0000-4000-8000-000000000001','road-owner@example.invalid',now(),now()),
+ ('85000000-0000-4000-8000-000000000002','road-other@example.invalid',now(),now());
+insert into public.mfi_stops(id,name,address,lat,lng,user_id,moderation_status) values
+ ('shared-road-fixture','Road Test','Test address',37.86,-107.88,'85000000-0000-4000-8000-000000000001','visible'),
+ ('hidden-road-fixture','Hidden Test','Test address',37.86,-107.88,'85000000-0000-4000-8000-000000000001','hidden');
+select set_config('test.section','{"road":"63L","coordinates":[{"latitude":37.86,"longitude":-107.88},{"latitude":37.87,"longitude":-107.88}],"exclusionPoints":[{"latitude":37.865,"longitude":-107.88}]}',true);
+select set_config('request.method','POST',true);
+select set_config('request.headers','{}',true);
+select ok(not has_table_privilege('authenticated','private.stop_road_sections','select'),'no direct shared-table reads');
+select ok(not has_table_privilege('authenticated','private.stop_road_sections','insert,update,delete'),'no direct writes');
+select ok(not has_function_privilege('anon','public.save_stop_road_section_v1(text,uuid,integer,jsonb)','execute'),'anonymous saves denied');
+select ok(not has_function_privilege('authenticated','private.list_stop_road_sections(text)','execute'),'no unguarded reader');
+set local role authenticated;
+set local "request.jwt.claim.sub"='85000000-0000-4000-8000-000000000001';
+select is(public.save_stop_road_section_v1('shared-road-fixture','85000000-0000-4000-8000-000000000011',0,current_setting('test.section')::jsonb)->>'version','1','creator saves a section');
+select is(public.save_stop_road_section_v1('shared-road-fixture','85000000-0000-4000-8000-000000000011',0,current_setting('test.section')::jsonb)->>'version','1','lost-response retry is idempotent');
+select is(jsonb_array_length(public.read_freightiq_guarded_v1('stop_detail','{"p_stop_id":"shared-road-fixture"}')->'data'->0->'road_sections'),1,'guarded detail includes marking');
+select throws_ok($$select public.save_stop_road_section_v1('shared-road-fixture','85000000-0000-4000-8000-000000000013',0,current_setting('test.section')::jsonb || '{"creator_id":"85000000-0000-4000-8000-000000000002"}')$$,'22023','Choose a valid road section.','forged creator field rejected');
+select throws_ok($$select public.save_stop_road_section_v1('shared-road-fixture','85000000-0000-4000-8000-000000000013',0,current_setting('test.section')::jsonb || '{"exclusionPoints":[]}')$$,'22023','Choose a valid road section.','empty marking rejected');
+select throws_ok($$select public.save_stop_road_section_v1('shared-road-fixture','85000000-0000-4000-8000-000000000013',0,current_setting('test.section')::jsonb || '{"coordinates":[{"latitude":99,"longitude":-107}]}')$$,'22023','Choose a valid road section.','invalid geometry rejected');
+set local "request.jwt.claim.sub"='85000000-0000-4000-8000-000000000002';
+select is(public.read_freightiq_guarded_v1('stop_detail','{"p_stop_id":"shared-road-fixture"}')->'data'->0->'road_sections'->0->>'is_creator','false','other driver can read, without creator controls');
+select throws_ok($$select public.save_stop_road_section_v1('shared-road-fixture','85000000-0000-4000-8000-000000000011',1,current_setting('test.section')::jsonb)$$,'42501','Only the creator can change this road section.','cannot hijack another marking even with identical geometry');
+select throws_ok($$select public.remove_stop_road_section_v1('85000000-0000-4000-8000-000000000011',1)$$,'42501','Only the creator can remove this road section.','cannot remove another marking');
+select throws_ok($$select public.save_stop_road_section_v1('hidden-road-fixture','85000000-0000-4000-8000-000000000013',0,current_setting('test.section')::jsonb)$$,'42501','This stop is unavailable.','hidden-stop write denied');
+select is(public.save_stop_road_section_v1('shared-road-fixture','85000000-0000-4000-8000-000000000012',0,current_setting('test.section')::jsonb)->>'version','1','another driver can add an overlapping section');
+select is(jsonb_array_length(public.read_freightiq_guarded_v1('stop_detail','{"p_stop_id":"shared-road-fixture"}')->'data'->0->'road_sections'),2,'both independent markings are shared');
+select is(public.save_stop_road_section_v1('shared-road-fixture','85000000-0000-4000-8000-000000000012',1,current_setting('test.section')::jsonb || '{"road":"County Road 63L"}')->>'version','2','creator edits own section');
+select throws_ok($$select public.save_stop_road_section_v1('shared-road-fixture','85000000-0000-4000-8000-000000000012',1,current_setting('test.section')::jsonb)$$,'40001','This road section changed. Reopen it before saving.','stale edit cannot overwrite another device');
+select throws_ok($$select public.remove_stop_road_section_v1('85000000-0000-4000-8000-000000000012',1)$$,'40001','This road section changed. Reopen it before removing it.','stale removal rejected');
+select ok(public.remove_stop_road_section_v1('85000000-0000-4000-8000-000000000012',2),'creator removes own marking');
+select ok(public.remove_stop_road_section_v1('85000000-0000-4000-8000-000000000012',2),'removal retry idempotent');
+select is(jsonb_array_length(public.read_freightiq_guarded_v1('stop_detail','{"p_stop_id":"shared-road-fixture"}')->'data'->0->'road_sections'),1,'other creator marking survives removal');
+reset role;
+insert into public.blocked_contributors(blocking_user_id,blocked_user_id) values('85000000-0000-4000-8000-000000000002','85000000-0000-4000-8000-000000000001');
+set local role authenticated;
+select is(jsonb_array_length(public.read_freightiq_guarded_v1('stop_detail','{"p_stop_id":"shared-road-fixture"}')->'data'->0->'road_sections'),0,'blocked-contributor filter preserved');
+reset role;
+delete from public.blocked_contributors where blocking_user_id='85000000-0000-4000-8000-000000000002';
+insert into private.contributor_restrictions(user_id,reason,created_by) values('85000000-0000-4000-8000-000000000001','Test only','85000000-0000-4000-8000-000000000002');
+set local role authenticated;
+select is(jsonb_array_length(public.read_freightiq_guarded_v1('stop_detail','{"p_stop_id":"shared-road-fixture"}')->'data'->0->'road_sections'),0,'restricted contributor marking hidden from other drivers');
+set local "request.jwt.claim.sub"='85000000-0000-4000-8000-000000000001';
+select throws_ok($$select public.save_stop_road_section_v1('shared-road-fixture','85000000-0000-4000-8000-000000000013',0,current_setting('test.section')::jsonb)$$,'42501','Sign in with an account allowed to contribute.','restricted contributor cannot publish');
+select ok(public.remove_stop_road_section_v1('85000000-0000-4000-8000-000000000011',1),'creator may withdraw their section even if contribution access restricted');
+set local "request.jwt.claim.sub"='';
+select throws_ok($$select public.save_stop_road_section_v1('shared-road-fixture','85000000-0000-4000-8000-000000000013',0,current_setting('test.section')::jsonb)$$,'42501','Sign in with an account allowed to contribute.','null identity cannot publish');
+select * from finish();
+rollback;

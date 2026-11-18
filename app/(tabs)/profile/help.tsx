@@ -10,6 +10,9 @@ const navigationHandlers: HelpCenterNavigationHandlers = {
   onPressUsingTheMap: () => router.push("/(tabs)/profile/using-the-map"),
   onPressOperationsBoard: () => router.push("/(tabs)/profile/operations-board"),
   onPressPrivacyAppLock: () => router.push("/(tabs)/profile/privacy-app-lock"),
+  onPressBuildRoute: () => router.push("/(tabs)/profile/build-a-route" as never),
+  onPressNavigateCompleteStops: () =>
+    router.push("/(tabs)/profile/navigate-complete-stops" as never),
 };
 
 export default function ProfileHelpScreen() {

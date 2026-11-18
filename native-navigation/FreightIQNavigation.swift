@@ -62,12 +62,6 @@ struct FreightIQRoadCoordinate: Record {
 
 private final class StopRestrictionSession: @unchecked Sendable {
   static let shared = StopRestrictionSession()
-  static let enabled: Bool = {
-#if DEBUG
-    if ProcessInfo.processInfo.environment["FREIGHTIQ_STOP_RESTRICTION_TEST"] == "1" { return true }
-#endif
-    return (Bundle.main.object(forInfoDictionaryKey: "FreightIQStopRestrictionTest") as? Bool) == true
-  }()
   private let lock = NSLock()
   private var destination: CLLocationCoordinate2D?
   private var points: [CLLocationCoordinate2D] = []
@@ -90,7 +84,7 @@ private final class StopRestrictionSession: @unchecked Sendable {
   }
 
   func rerouteURL(_ url: String) -> String {
-    guard Self.enabled, var components = URLComponents(string: url),
+    guard var components = URLComponents(string: url),
           let pathCoordinates = components.path.split(separator: "/").last?.split(separator: ";"),
           pathCoordinates.count == 2, let last = pathCoordinates.last else { return url }
     let coordinate = last.split(separator: ",").compactMap { Double($0) }
@@ -107,6 +101,9 @@ private final class StopRestrictionSession: @unchecked Sendable {
   }
 
   static func warning(for route: Route, road: LineString, exclusionPoints: [CLLocationCoordinate2D], location: CLLocation? = nil) -> String {
+    guard let shape = route.shape, shape.coordinates.count >= 2 else {
+      return "The route could not be checked against the marked road section."
+    }
     if let location, (0...15).contains(location.horizontalAccuracy),
        let closest = road.closestCoordinate(to: location.coordinate),
        closest.index > 0, closest.index < road.coordinates.count - 1,
@@ -120,7 +117,7 @@ private final class StopRestrictionSession: @unchecked Sendable {
     // A route can pass the same junction on a different road. The editor
     // confirms these interior points are clear of neighboring roads.
     let crossesMarkedRoad = exclusionPoints.contains { coordinate in
-      guard let closest = route.shape?.closestCoordinate(to: coordinate) else { return false }
+      guard let closest = shape.closestCoordinate(to: coordinate) else { return true }
       return CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude).distance(
         from: CLLocation(latitude: closest.coordinate.latitude, longitude: closest.coordinate.longitude)
       ) <= 8
@@ -154,7 +151,14 @@ struct FreightIQNavigationRequest: Record {
   @Field var exclusionPoints: [FreightIQRoadCoordinate] = []
 
   var hasRestriction: Bool {
-    StopRestrictionSession.enabled && restrictedRoad.count >= 2 && (1...50).contains(exclusionPoints.count)
+    !restrictedRoad.isEmpty || !exclusionPoints.isEmpty
+  }
+
+  var validRestriction: Bool {
+    restrictedRoad.count >= 2 && (1...10000).contains(exclusionPoints.count)
+      && (restrictedRoad + exclusionPoints).allSatisfy {
+        $0.latitude.isFinite && abs($0.latitude) <= 90 && $0.longitude.isFinite && abs($0.longitude) <= 180
+      }
   }
 }
 
@@ -208,20 +212,31 @@ private final class DeliveryNavigationController: NavigationViewController {
   private var headingUp = UserDefaults.standard.object(forKey: "navigationHeadingUp") as? Bool ?? true
   private let overviewToggle = UIButton(type: .system)
   private let recenterButton = UIButton(type: .system)
-  private var recenterBottom: NSLayoutConstraint?
+  private var wayNameBottom: NSLayoutConstraint?
 
   override func viewDidLoad() {
     super.viewDidLoad()
-    guard let camera = navigationMapView?.navigationCamera else { return }
+    guard let navigationMapView else { return }
+    let camera = navigationMapView.navigationCamera
+
+    // Mapbox uses Resume's hidden state to decide when to show its road label.
+    for case let resume as ResumeButton in navigationView.subviews {
+      resume.alpha = 0
+      resume.isUserInteractionEnabled = false
+      resume.accessibilityElementsHidden = true
+    }
 
     for button in [overviewToggle, recenterButton, conditionButton, orientationButton] {
       button.translatesAutoresizingMaskIntoConstraints = false
       button.tintColor = .white
       button.backgroundColor = UIColor(red: 0.14, green: 0.22, blue: 0.31, alpha: 1)
       button.layer.cornerRadius = 25
+      let height = button.heightAnchor.constraint(equalToConstant: 50)
+      // The stack collapses the recenter button while the camera is following.
+      if button === recenterButton { height.priority = .defaultHigh }
       NSLayoutConstraint.activate([
         button.widthAnchor.constraint(equalToConstant: 50),
-        button.heightAnchor.constraint(equalToConstant: 50),
+        height,
       ])
     }
     overviewToggle.addTarget(self, action: #selector(toggleOverview), for: .touchUpInside)
@@ -232,18 +247,11 @@ private final class DeliveryNavigationController: NavigationViewController {
     let middleButtons = navigationView.floatingButtons?.dropFirst().dropLast() ?? []
     orientationButton.addTarget(self, action: #selector(toggleOrientation), for: .touchUpInside)
     applyOrientation()
-    navigationView.floatingButtons = [orientationButton, overviewToggle] + Array(middleButtons) + [conditionButton]
+    navigationView.floatingButtons = [orientationButton, overviewToggle] + Array(middleButtons) + [conditionButton, recenterButton]
 
     recenterButton.setImage(UIImage(systemName: "location.fill"), for: .normal)
     recenterButton.accessibilityLabel = "Recenter on current location"
     recenterButton.addTarget(self, action: #selector(followLocation), for: .touchUpInside)
-    navigationView.addSubview(recenterButton)
-    let bottom = recenterButton.bottomAnchor.constraint(equalTo: navigationView.bottomAnchor)
-    recenterBottom = bottom
-    NSLayoutConstraint.activate([
-      recenterButton.leadingAnchor.constraint(equalTo: navigationView.safeAreaLayoutGuide.leadingAnchor, constant: 12),
-      bottom,
-    ])
     updateCameraControls(camera.currentCameraState)
     cameraStateSubscription = camera.cameraStates.sink { [weak self] state in
       self?.updateCameraControls(state)
@@ -329,18 +337,25 @@ private final class DeliveryNavigationController: NavigationViewController {
       default: break
       }
     }
+    let wayName = navigationView.wayNameView
+    // Mapbox can rebuild its layout constraints when the size class changes.
+    for constraint in navigationView.constraints where constraint.firstItem === wayName
+      && constraint.firstAttribute == .bottom
+      && constraint.secondItem === navigationView.bottomBannerContainerView {
+      constraint.isActive = false
+    }
+    if wayNameBottom == nil {
+      let bottom = wayName.bottomAnchor.constraint(equalTo: navigationView.bottomAnchor)
+      bottom.constant = -bottomOcclusion
+      bottom.isActive = true
+      wayNameBottom = bottom
+    }
+    wayNameBottom?.constant = -bottomOcclusion
     if var padding = navigationMapView?.viewportPadding {
-      padding.bottom = bottomOcclusion
+      // Reserve the road label's height plus clearance below the location arrow.
+      padding.bottom = bottomOcclusion + wayName.bounds.height + 20
       navigationMapView?.viewportPadding = padding
     }
-    let wayName = navigationView.wayNameView
-    for constraint in navigationView.constraints where constraint.firstItem === wayName {
-      if constraint.firstAttribute == .bottom,
-        constraint.secondItem === navigationView.bottomBannerContainerView {
-        constraint.constant = -bottomOcclusion
-      }
-    }
-    recenterBottom?.constant = -(bottomOcclusion + 40)
     // Keep required map credits above FreightIQ's floating panel.
     navigationMapView?.mapView.ornaments.options.logo.margins.y = bottomOcclusion + 8
     // Group the map credits on the left, clear of the driving controls.
@@ -370,6 +385,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   private var alertMilestones = NavigationAlertMilestones()
   private var alertStep = ""
   private var isRerouting = false
+  private var lastRawLocation: CLLocation?
   private let liveActivity = NavigationLiveActivity()
   private let notificationId = "com.freightiq.navigation.maneuver"
   private static var provider: MapboxNavigationProvider { FreightIQOfflineRoute.shared.provider }
@@ -415,11 +431,20 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
     }
   }
 
-  private func reportRestriction(_ route: Route, _ request: FreightIQNavigationRequest, location: CLLocation? = nil) {
-    guard request.hasRestriction else { return }
-    let warning = StopRestrictionSession.warning(for: route, road: LineString(request.restrictedRoad.map(\.coordinate)),
-                                                 exclusionPoints: request.exclusionPoints.map(\.coordinate), location: location)
-    emit("restriction", request, message: warning)
+  private func reportRestriction(_ progress: RouteProgress, _ request: FreightIQNavigationRequest, location: CLLocation) {
+    guard request.validRestriction else { return }
+    let leg = progress.currentLegProgress
+    let upcoming = leg.currentStepProgress.distanceRemaining <= 500 ? leg.upcomingStep?.shape : nil
+    let turnsOntoSection = request.exclusionPoints.contains { point in
+      guard let closest = upcoming?.closestCoordinate(to: point.coordinate) else { return false }
+      return CLLocation(latitude: point.latitude, longitude: point.longitude).distance(
+        from: CLLocation(latitude: closest.coordinate.latitude, longitude: closest.coordinate.longitude)
+      ) <= 8
+    }
+    let nearSection = (0...30).contains(location.horizontalAccuracy) && request.restrictedRoad.contains { point in
+      CLLocation(latitude: point.latitude, longitude: point.longitude).distance(from: location) <= 75
+    }
+    emit("restriction", request, message: turnsOntoSection ? "Upcoming road was flagged restricted" : nearSection ? "Flagged road section nearby" : "")
   }
 
   private func calculate(_ next: FreightIQNavigationRequest) {
@@ -441,31 +466,42 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
           self?.emit("error", next, message: "Your route could not be opened. Return to your route and try again.")
           return
         }
-        let restricted = next.hasRestriction
+        let restricted = next.validRestriction
         let destinations = restricted ? Array(next.stops.prefix(1)) : next.stops
         let coordinates = [CLLocationCoordinate2D(latitude: next.originLatitude, longitude: next.originLongitude)]
           + destinations.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
         let options = NavigationRouteOptions(coordinates: coordinates, profileIdentifier: .automobile)
         options.includesAlternativeRoutes = next.preview
-        if restricted { options.excludedLocations = next.exclusionPoints.map(\.coordinate) }
+        if restricted { options.excludedLocations = next.exclusionPoints.prefix(50).map(\.coordinate) }
         StopRestrictionSession.shared.update(destination: restricted ? coordinates.last : nil,
                                              points: options.excludedLocations)
         let provider = Self.provider
-        let routes = try await provider.routingProvider().calculateRoutes(options: options).value
+        let routes: NavigationRoutes
+        do {
+          routes = try await provider.routingProvider().calculateRoutes(options: options).value
+        } catch {
+          guard restricted, !Task.isCancelled else { throw error }
+          // Restrictions advise the driver; a failed avoidance request must not prevent guidance.
+          options.excludedLocations = []
+          routes = try await provider.routingProvider().calculateRoutes(options: options).value
+        }
         guard !Task.isCancelled, let self, self.window != nil, self.request?.id == next.id else { return }
         if next.preview {
           let candidates = [routes.mainRoute.route] + routes.alternativeRoutes.map(\.route)
-          let choices: [[String: Any]] = candidates.enumerated().compactMap { index, route in
+          let ordered = candidates.enumerated().sorted { left, right in
+            guard restricted else { return left.offset < right.offset }
+            let road = LineString(next.restrictedRoad.map(\.coordinate))
+            let a = StopRestrictionSession.warning(for: left.element, road: road, exclusionPoints: next.exclusionPoints.map(\.coordinate)).isEmpty
+            let b = StopRestrictionSession.warning(for: right.element, road: road, exclusionPoints: next.exclusionPoints.map(\.coordinate)).isEmpty
+            return a == b ? left.offset < right.offset : a
+          }
+          let choices: [[String: Any]] = ordered.compactMap { index, route in
             guard let coordinates = route.shape?.coordinates, coordinates.count > 1 else { return nil }
-            if restricted, !StopRestrictionSession.warning(
-              for: route, road: LineString(next.restrictedRoad.map(\.coordinate)),
-              exclusionPoints: next.exclusionPoints.map(\.coordinate)
-            ).isEmpty { return nil }
             return ["index": index, "seconds": route.expectedTravelTime, "meters": route.distance,
                     "coordinates": coordinates.map { ["latitude": $0.latitude, "longitude": $0.longitude] }]
           }
           guard !choices.isEmpty else {
-            self.emit("error", next, message: "No route is available with the current road restrictions.")
+            self.emit("error", next, message: "No directions were found. Check your connection and try again.")
             return
           }
           self.pendingRoutes = routes
@@ -503,7 +539,6 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
       self.guidanceId = next.id
       self.liveActivity.start()
       self.emit("started", next, legs: self.legEstimates(routes.mainRoute.route, next))
-      self.reportRestriction(routes.mainRoute.route, next)
       return
     }
     let navigation = DeliveryNavigationController(navigationRoutes: routes, navigationOptions: NavigationOptions(
@@ -540,7 +575,6 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
     self.guidanceId = next.id
     self.liveActivity.start()
     self.emit("started", next, legs: self.legEstimates(routes.mainRoute.route, next))
-    self.reportRestriction(routes.mainRoute.route, next)
   }
 
   private func stop() {
@@ -596,6 +630,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
 
   func navigationViewController(_ navigationViewController: NavigationViewController, didUpdate progress: RouteProgress, with location: CLLocation, rawLocation: CLLocation) {
     guard let request, request.id == guidanceId else { return }
+    lastRawLocation = rawLocation
     let now = Date()
     if reportedArrivalStopId != request.stopId {
       let destination = CLLocation(latitude: request.latitude, longitude: request.longitude)
@@ -605,7 +640,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
     }
     guard now.timeIntervalSince(lastProgressAt) >= 5 else { return }
     lastProgressAt = now
-    reportRestriction(progress.route, request, location: rawLocation)
+    reportRestriction(progress, request, location: rawLocation)
     if !isRerouting, reportedArrivalStopId != request.stopId { updateLiveActivity(progress) }
     updateTurnNotification(progress)
     emit("progress", request, legs: legEstimates(progress.route, request, progress: progress))
@@ -627,6 +662,17 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   func navigationViewController(_ navigationViewController: NavigationViewController, didFailToRerouteWith error: Error) {
     guard navigationViewController === controller, isRerouting else { return }
     liveActivity.update(.init(instruction: "Guidance unavailable", arrow: "location.slash", distance: "", eta: nil))
+    guard let request, request.validRestriction, let location = lastRawLocation else { return }
+    task = Task { @MainActor [weak self] in
+      let options = NavigationRouteOptions(coordinates: [location.coordinate,
+        CLLocationCoordinate2D(latitude: request.latitude, longitude: request.longitude)], profileIdentifier: .automobile)
+      do {
+        let routes = try await Self.provider.routingProvider().calculateRoutes(options: options).value
+        guard let self, !Task.isCancelled, self.request?.id == request.id else { return }
+        self.isRerouting = false
+        self.startGuidance(routes, request)
+      } catch { /* Keep existing guidance available when the network cannot recalculate. */ }
+    }
   }
 
   private func updateLiveActivity(_ progress: RouteProgress) {
@@ -763,11 +809,9 @@ private final class FreightIQOfflineRoute {
     store = configuration.navigatorLocation.tileStore
     MapboxMapsOptions.tileStore = store
     var routingConfig = RoutingConfig(datasetProfileIdentifier: .automobile)
-    if StopRestrictionSession.enabled {
-      routingConfig.rerouteConfig.urlOptionsCustomization = .init(StopRestrictionSession.shared.rerouteURL)
-      routingConfig.fasterRouteDetectionConfig = nil
-      routingConfig.alternativeRoutesDetectionConfig = nil
-    }
+    routingConfig.rerouteConfig.urlOptionsCustomization = .init(StopRestrictionSession.shared.rerouteURL)
+    routingConfig.fasterRouteDetectionConfig = nil
+    routingConfig.alternativeRoutesDetectionConfig = nil
     provider = MapboxNavigationProvider(coreConfig: CoreConfig(
       routingConfig: routingConfig,
       multilegAdvancing: .manually { _ in false },

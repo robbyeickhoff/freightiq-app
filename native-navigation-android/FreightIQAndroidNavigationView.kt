@@ -21,6 +21,7 @@ import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.PuckBearing
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.Icon
 import android.widget.Button
 import android.widget.LinearLayout
 import com.mapbox.maps.EdgeInsets
@@ -36,6 +37,8 @@ import com.mapbox.geojson.LineString
 import com.mapbox.turf.TurfMeasurement
 import com.mapbox.turf.TurfMisc
 import com.mapbox.navigation.core.reroute.RerouteOptionsAdapter
+import com.mapbox.navigation.core.reroute.RerouteController
+import com.mapbox.navigation.core.reroute.RerouteState
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
@@ -264,14 +267,31 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     MapboxNavigationProvider.create(NavigationOptions.Builder(context.applicationContext).build())
   }
   private val notificationManager = context.getSystemService(NotificationManager::class.java)
-  private var lastNotificationText: Pair<String, String>? = null
+  private var lastNotificationContent: Triple<String, String, String>? = null
+  private val notificationArrows = mutableMapOf<String, Icon>()
 
-  private fun publishTurnNotification(instruction: String, distance: String) {
+  private fun notificationArrow(arrow: String): Icon = notificationArrows.getOrPut(arrow) {
+    val size = dp(24).coerceAtLeast(24)
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = Color.WHITE
+      typeface = Typeface.DEFAULT_BOLD
+      textAlign = Paint.Align.CENTER
+      textSize = size * 0.9f
+    }
+    val baseline = (size - paint.ascent() - paint.descent()) / 2
+    Canvas(bitmap).drawText(arrow, size / 2f, baseline, paint)
+    Icon.createWithBitmap(bitmap)
+  }
+
+  private fun publishTurnNotification(instruction: String, distance: String, maneuverArrow: String) {
     if (instruction.isBlank() || arrived) return
     if (Build.VERSION.SDK_INT >= 33 &&
       context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
     ) return
-    if (lastNotificationText == (instruction to distance)) return
+    val arrow = maneuverArrow.ifBlank { "↑" }
+    val content = Triple(instruction, distance, arrow)
+    if (lastNotificationContent == content) return
     val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
     launch.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
     val reopen = PendingIntent.getActivity(context, 0, launch, PendingIntent.FLAG_IMMUTABLE)
@@ -280,9 +300,9 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
       NotificationChannel(channel, "Active navigation", NotificationManager.IMPORTANCE_LOW)
     )
     val notification = Notification.Builder(context, channel)
-      .setSmallIcon(android.R.drawable.ic_menu_directions)
+      .setSmallIcon(notificationArrow(arrow))
       .setContentTitle(instruction)
-      .setContentText(distance)
+      .setContentText(distance.takeIf(String::isNotBlank)?.let { "In $it" })
       .setContentIntent(reopen)
       .setOngoing(true)
       .setOnlyAlertOnce(true)
@@ -290,15 +310,17 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
       .setCategory(Notification.CATEGORY_NAVIGATION)
     if (Build.VERSION.SDK_INT >= 36) {
       notification.addExtras(android.os.Bundle().apply { putBoolean("android.requestPromotedOngoing", true) })
-      if (distance.isNotBlank()) notification.setShortCriticalText(distance)
+      if (distance.isNotBlank()) {
+        notification.setShortCriticalText(distance.replace(".0 mi", " mi").replace(" ", ""))
+      }
     }
     notificationManager.notify(9201, notification.build())
-    lastNotificationText = instruction to distance
+    lastNotificationContent = content
   }
 
   private fun clearTurnNotification() {
     notificationManager.cancel(9201)
-    lastNotificationText = null
+    lastNotificationContent = null
   }
 
   private val progressObserver = RouteProgressObserver { progress ->
@@ -306,21 +328,42 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     val leg = progress.currentLegProgress ?: return@RouteProgressObserver
     if (leg.legIndex != 0) return@RouteProgressObserver
     val step = leg.currentStepProgress
-    val maneuver = step?.step?.maneuver()
+    val routeSteps = progress.navigationRoute.directionsRoute.legs()?.getOrNull(leg.legIndex)?.steps().orEmpty()
+    // A step's maneuver is at its start. Its remaining distance leads to the next step.
+    val nextStep = step?.let { routeSteps.getOrNull(it.stepIndex + 1) }
+    val guidanceStep = nextStep ?: step?.step?.takeIf { it.maneuver()?.type() == "arrive" }
+    val maneuver = guidanceStep?.maneuver()
     val arrow = maneuverIcon(maneuver)
     maneuverArrow.text = arrow
     maneuverArrow.visibility = if (arrow.isEmpty()) GONE else VISIBLE
     turnDistance.text = formatDistance(step?.distanceRemaining?.toDouble())
     turnDistance.visibility = if (turnDistance.text.isEmpty()) GONE else VISIBLE
-    instructions.text = step?.step?.let(::stepLabel).orEmpty()
+    instructions.text = guidanceStep?.let(::stepLabel).orEmpty()
     guidanceToggle.contentDescription = listOf(turnDistance.text, maneuver?.instruction())
       .filterNot { it.isNullOrBlank() }.joinToString(", ")
     guidance.visibility = if (instructions.text.isEmpty()) GONE else VISIBLE
 
-    val routeSteps = progress.navigationRoute.directionsRoute.legs()?.getOrNull(leg.legIndex)?.steps().orEmpty()
-    val upcoming = step?.let { routeSteps.drop(it.stepIndex + 1) }.orEmpty()
-    updateSteps(upcoming, step?.distanceRemaining?.toDouble())
-    publishTurnNotification(maneuver?.instruction().orEmpty(), turnDistance.text.toString())
+    val upcoming = step?.let { routeSteps.drop(it.stepIndex + 2) }.orEmpty()
+    updateSteps(upcoming, nextStep?.distance())
+    val upcomingPoints = if ((step?.distanceRemaining ?: Float.MAX_VALUE) <= 500f) {
+      nextStep?.geometry()?.let { LineString.fromPolyline(it, 6).coordinates() }.orEmpty()
+    } else emptyList()
+    val turnsOntoSection = upcomingPoints.size >= 2 && current.exclusionPoints.any {
+      val point = it.toPoint()
+      val closest = TurfMisc.nearestPointOnLine(point, upcomingPoints, "meters").geometry() as? Point
+      closest != null && TurfMeasurement.distance(point, closest, "meters") <= 8
+    }
+    val nearSection = lastPosition?.let { position -> current.restrictedRoad.any {
+      TurfMeasurement.distance(position, it.toPoint(), "meters") <= 75
+    } } == true
+    emit(current, "restriction", if (turnsOntoSection) "Upcoming road was flagged restricted"
+      else if (nearSection) "Flagged road section nearby" else "")
+    val instruction = maneuver?.instruction().orEmpty()
+    if (instruction.isBlank()) {
+      if (lastNotificationContent != null) clearTurnNotification()
+    } else {
+      publishTurnNotification(instruction, turnDistance.text.toString(), arrow)
+    }
     publishLegs(current, "progress", progress.navigationRoute, leg.durationRemaining, leg.distanceRemaining.toDouble())
   }
 
@@ -460,11 +503,6 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     stopMarkers.deleteAll()
     val current = activeRequest ?: return@RoutesObserver
     val route = result.navigationRoutes.firstOrNull() ?: return@RoutesObserver
-    if (conflictsWithRestriction(current, route)) {
-      stop()
-      emit(current, "error", "No route was found that avoids the marked road section.")
-      return@RoutesObserver
-    }
     val legCount = route.directionsRoute.legs().orEmpty().size
     stopMarkers.create(current.stops.take(legCount).map { stop ->
       CircleAnnotationOptions()
@@ -584,6 +622,26 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
   }
 
   private var pendingRoutes = emptyList<NavigationRoute>()
+  private var advisoryReroutePending = false
+  private val advisoryRerouteObserver = RerouteController.RerouteStateObserver { state ->
+    val current = activeRequest
+    val position = lastPosition
+    val stop = current?.stops?.firstOrNull()
+    if (state is RerouteState.Failed && current != null && position != null &&
+      stop != null && current.exclusionPoints.isNotEmpty() && !advisoryReroutePending) {
+      val origin = AndroidRoutePoint().apply { latitude = position.latitude(); longitude = position.longitude() }
+      val destination = AndroidRoutePoint().apply { latitude = stop.latitude; longitude = stop.longitude }
+      advisoryReroutePending = true
+      requestedRouteId = navigation.requestRoutes(androidRouteOptions(origin, listOf(destination), false), object : NavigationRouterCallback {
+        override fun onCanceled(routeOptions: RouteOptions, routerOrigin: String) { advisoryReroutePending = false }
+        override fun onFailure(reasons: List<RouterFailure>, routeOptions: RouteOptions) { advisoryReroutePending = false }
+        override fun onRoutesReady(routes: List<NavigationRoute>, routerOrigin: String) {
+          advisoryReroutePending = false
+          if (activeRequest === current) routes.firstOrNull()?.let { startGuidance(current, it) }
+        }
+      })
+    }
+  }
 
   fun selectRoute(choice: String) {
     val request = activeRequest ?: return
@@ -615,6 +673,8 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     navigation.unregisterLocationObserver(locationObserver)
     navigation.unregisterArrivalObserver(arrivalObserver)
     navigation.unregisterRoutesObserver(routesObserver)
+    navigation.getRerouteController()?.unregisterRerouteStateObserver(advisoryRerouteObserver)
+    advisoryReroutePending = false
     navigation.setRerouteOptionsAdapter(null)
     navigation.setArrivalController()
     navigation.stopTripSession()
@@ -623,11 +683,11 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
 
   private fun start(next: AndroidGuidanceRequest) {
     stop()
-    val restricted = next.restrictedRoad.isNotEmpty() || next.exclusionPoints.isNotEmpty()
-    if (restricted && (next.restrictedRoad.size < 2 || next.exclusionPoints.size !in 1..50)) {
-      emit(next, "error", "The saved road restriction is incomplete. Review it before starting navigation.")
-      return
-    }
+    val restricted = next.restrictedRoad.size >= 2 && next.exclusionPoints.size in 1..10000 &&
+      (next.restrictedRoad + next.exclusionPoints).any {
+        !it.latitude.isFinite() || kotlin.math.abs(it.latitude) > 90 ||
+          !it.longitude.isFinite() || kotlin.math.abs(it.longitude) > 180
+      }.not()
     val origin = AndroidRoutePoint().apply {
       latitude = next.originLatitude
       longitude = next.originLongitude
@@ -640,7 +700,7 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     }
     try {
       val routeStops = if (restricted) stops.take(1) else stops
-      val exclusions = next.exclusionPoints.joinToString(",") {
+      val exclusions = next.exclusionPoints.take(50).joinToString(",") {
         val point = it.toPoint()
         "point(${point.longitude()} ${point.latitude()})"
       }
@@ -667,33 +727,40 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
       navigation.registerLocationObserver(locationObserver)
       navigation.registerArrivalObserver(arrivalObserver)
       navigation.registerRoutesObserver(routesObserver)
+      navigation.getRerouteController()?.registerRerouteStateObserver(advisoryRerouteObserver)
       navigation.setArrivalController(object : ArrivalController {
         override fun navigateNextRouteLeg(routeLegProgress: RouteLegProgress): Boolean = false
       })
+      var retriedWithoutExclusions = false
       requestedRouteId = navigation.requestRoutes(options, object : NavigationRouterCallback {
         override fun onCanceled(routeOptions: RouteOptions, routerOrigin: String) = Unit
 
         override fun onFailure(reasons: List<RouterFailure>, routeOptions: RouteOptions) {
+          if (activeRequest === next && restricted && !retriedWithoutExclusions) {
+            retriedWithoutExclusions = true
+            requestedRouteId = navigation.requestRoutes(baseOptions, this)
+            return
+          }
           if (activeRequest === next) emit(next, "error", "Could not calculate directions. Try again.")
         }
 
         override fun onRoutesReady(routes: List<NavigationRoute>, routerOrigin: String) {
           if (activeRequest !== next) return
-          val route = routes.firstOrNull()
+          val route = routes.sortedBy { conflictsWithRestriction(next, it) }.firstOrNull()
           if (route == null) {
+            if (restricted && !retriedWithoutExclusions) {
+              retriedWithoutExclusions = true
+              requestedRouteId = navigation.requestRoutes(baseOptions, this)
+              return
+            }
             emit(next, "error", "No directions found. Try again.")
-            return
-          }
-          if (!next.preview && conflictsWithRestriction(next, route)) {
-            stop()
-            emit(next, "error", "No route was found that avoids the marked road section.")
             return
           }
           if (!next.preview) {
             startGuidance(next, route)
             return
           }
-          pendingRoutes = routes.filterNot { conflictsWithRestriction(next, it) }
+          pendingRoutes = routes.sortedBy { conflictsWithRestriction(next, it) }
           val choices = pendingRoutes.mapIndexedNotNull { index, candidate ->
             val directions = candidate.directionsRoute
             val geometry = directions.geometry() ?: return@mapIndexedNotNull null
@@ -706,7 +773,7 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
           }
           if (choices.isEmpty()) {
             stop()
-            emit(next, "error", "No route is available with the current road restrictions.")
+            emit(next, "error", "No directions were found. Check your connection and try again.")
             return
           }
           onState(mapOf("requestId" to next.id, "stopId" to next.stopId, "state" to "preview", "choices" to choices))

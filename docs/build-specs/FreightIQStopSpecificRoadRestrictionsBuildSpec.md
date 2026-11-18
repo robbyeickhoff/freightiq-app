@@ -4,6 +4,61 @@
 
 **Parent feature:** [Active Route Execution V1](FreightIQActiveRouteExecutionV1BuildSpec.md#20-deferred-enhancements)
 
+## November 18 approved extension — shared, creator-owned sections
+
+Rob approved sharing stop-specific markings across iOS and Android. Each section retains its
+creator; only that authenticated creator may change or remove it. Another driver may add a
+separate section, including an overlapping section. Removing one section preserves the others.
+This supersedes the original single local section scope below, not the stop-specific association.
+
+Implement private shared storage with server-enforced ownership and optimistic versions, bounded
+geometry, signed-in reads through the existing guarded stop-detail path, and no direct client table
+access. Preserve existing stop visibility, blocked/restricted contributor filtering, and read guards.
+Keep navigation advisory: prefer avoidance, warn once at startup, show a small nearby-road warning,
+and keep guidance available if avoidance cannot be honored. Consider every returned active section;
+the Mapbox exclusion limit must not suppress other sections' warnings. Cache successful reads for
+offline guidance with an explicit stale-data notice. Rob subsequently confirmed he is the only driver with existing phone-only markings and approved
+automatically syncing those existing markings. Keep a stable creator/stop/geometry import identity,
+preserve newer server versions, and remove the phone-only copy only after server and offline-cache
+confirmation. Failed imports retain the original marking. No draft label or extra sharing step.
+
+Acceptance: two independent accounts can add and read sections for the same stop; neither can
+edit/remove the other's section, including by direct API calls. Test stale writes, forged creator
+fields, signed-out access, invalid geometry, removed/hidden stops and contributor filtering. Verify
+two-phone reading, own edit/removal, another creator's read-only view, navigation aggregation and
+offline warnings. Local implementation/testing is approved; production migration, commit/push,
+builds and audience assignment retain their applicable separate gates.
+
+### Local implementation verification
+
+The local shared-section suite passes 27 creator/reader/geometry/ownership assertions; together
+with Intel field timestamps and internal-helper permissions, 54 database checks pass. The mobile
+aggregation, malformed-marking handling, stable automatic-import identity and route-state suites
+pass 24 tests. TypeScript, focused
+lint, public/private database lint and both signed native development builds pass. Authenticated
+local HTTP create → guarded detail read → creator removal → empty read-back passes. Temporary
+HTTP fixtures were removed; transaction-only database fixtures roll back. Hosted schema and data
+are unchanged. Rob accepted the device changes and approved owner-only release preparation on
+November 18. Creator boundaries have two-account API coverage; moving approach-warning acceptance
+remains part of the owner field test. Production migration is a separate approval.
+
+Changed paths for this extension:
+
+- `docs/CurrentBuild.md` and this specification.
+- `supabase/migrations/20261118124229_shared_stop_road_sections.sql`.
+- `supabase/tests/database/shared_stop_road_sections.sql`.
+- `utils/shared-road-section-data.ts` and `utils/shared-road-sections.ts`.
+- `utils/stop-road-restriction.ts` and `utils/stop-road-restriction-validation.ts`.
+- `tests/shared-road-section-data.test.ts`.
+- `components/stop-road-restriction-editor.tsx`.
+- `components/help/NavigateCompleteStopsContent.tsx`.
+- `native-navigation/FreightIQNavigation.swift`.
+- `native-navigation-android/FreightIQAndroidNavigationView.kt`.
+
+The server bounds each stop to 100 active sections and rejects excess creates explicitly. Native
+avoidance requests use at most 50 exclusion points; proximity warnings retain all loaded points,
+and startup explains when avoidance cannot include all points. Automatic conversion of Rob’s existing markings is approved; preserve the original on any failure.
+
 ## Objective
 
 Let a driver mark a road section they know is inaccessible when approaching a delivery stop.

@@ -13,6 +13,22 @@ answer one question:
 
 ## Current Objective
 
+### November 18 — shared stop road sections, local implementation
+
+Rob approved shared stop-specific road markings with creator-only editing/removal and independent
+sections from other drivers on both platforms. Follow the approved extension in
+[Stop-Specific Road Restrictions](build-specs/FreightIQStopSpecificRoadRestrictionsBuildSpec.md).
+Preserve advisory navigation and existing local drafts. Verify ownership through two-account API
+tests and physical-phone acceptance before production migration and owner build distribution.
+Rob accepted the device changes and approved commit/push and owner-only iOS/Android production
+builds on November 18. The candidate includes navigation controls, corrected Android upcoming-turn
+instructions/notification icon, advisory shared road markings with creator ownership, automatic
+conversion of existing markings, and Route/Navigation Help Center guides. Verification: signed
+development builds on both phones, 54 database assertions, 24 focused mobile tests, TypeScript,
+focused lint and public/private database lint pass. Real moving approach-warning acceptance remains
+part of Rob's owner field test. Production shared-storage migration has separate approval pending;
+do not distribute to early testers. Build only from the verified pushed commit on clean-main.
+
 ### November 9 — internal authorization helper hardening deployed
 
 The reviewed Supabase advisor follow-up found that authenticated clients did not need direct

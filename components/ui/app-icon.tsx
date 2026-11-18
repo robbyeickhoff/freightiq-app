@@ -28,6 +28,7 @@ const ICONS = {
   delete: { default: "delete-outline" },
   download: { default: "download-for-offline" },
   drag: { default: "drag-handle" },
+  drivingAlerts: { default: "notifications-none", active: "notifications-active" },
   incomplete: { default: "pending-actions" },
   passwordHidden: { default: "visibility-off" },
   passwordVisible: { default: "visibility" },
