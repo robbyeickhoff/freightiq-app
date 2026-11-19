@@ -230,3 +230,22 @@ test("the first stop on an empty earlier-day route starts today's route", () => 
   assert.deepEqual(second.stops.map(({ id }) => id), ["A", "B"]);
   assert.equal(isRouteStale(second, new Date("2026-08-25T08:00:00.000Z")), true);
 });
+
+
+test("address-only deliveries survive reload, reorder, complete and removal", () => {
+  const address = { ...stop("address:38,-107"), freightIqStop: false };
+  let route = addRouteStop(emptyTodayRoute(morning), stop("saved"), morning).route;
+  route = addRouteStop(route, address, morning).route;
+  route = parseTodayRoute(JSON.stringify(route))!;
+  assert.equal(route.stops[1].freightIqStop, false);
+  route = refreshRouteStopSnapshots(route, [{ ...stop("saved"), name: "Updated" }], later);
+  assert.equal(route.stops[1].freightIqStop, false);
+  route = moveUpcomingStop(route, address.id, -1, later);
+  route = startRouteExecution(route, later);
+  assert.equal(route.execution.activeStopId, address.id);
+  route = setRouteStopCompleted(route, address.id, true, later);
+  assert.equal(route.execution.activeStopId, "saved");
+  assert.equal(route.stops.find((item) => item.id === address.id)?.status, "completed");
+  route = removeRouteStop(route, address.id, later);
+  assert.equal(route.stops.length, 1);
+});

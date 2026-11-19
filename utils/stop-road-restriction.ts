@@ -19,21 +19,15 @@ export async function readNavigationRoadRestriction(userId: string, stopId: stri
   const local = await AsyncStorage.getItem(key(userId, stopId)).then(roadRestrictionForNavigation)
     .catch(() => ({ restriction: null, warning: "The local road marking could not be checked." }));
   let shared;
-  let unavailable = false;
   try {
     shared = await listSharedRoadSections(userId, stopId);
   } catch {
-    unavailable = true;
     shared = await cachedSharedRoadSections(userId, stopId).catch(() => null);
   }
   const restriction = combineRoadSections([...(shared ?? []), ...(local.restriction ? [local.restriction] : [])]);
   const notices = [
     restriction ? "A road section for this stop was previously flagged as restricted. We will try to avoid marked sections, but navigation may still route through them. Check the route and current road conditions." : "",
     restriction && restriction.exclusionPoints.length > 50 ? "The route service cannot avoid all of these marked sections at once. Nearby warnings still cover all loaded markings." : "",
-    unavailable ? shared !== null
-      ? "Shared markings could not be refreshed. Saved markings may be out of date."
-      : "Shared road markings could not be checked. This route may use a previously flagged road, and nearby-road warnings may be unavailable." : "",
-    local.warning && !local.restriction ? local.warning : "",
   ];
   return { restriction, warning: notices.filter(Boolean).join("\n\n") };
 }

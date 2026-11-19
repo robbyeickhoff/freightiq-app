@@ -13,6 +13,196 @@ answer one question:
 
 ## Current Objective
 
+### November 19 — owner accepted / publishing approved
+
+Rob accepted the development-phone flows, retained End/Resume preview behavior, and approved
+commit/push plus production builds for his owner-only testing groups. Final TypeScript and 32
+focused navigation/route regression tests pass; scoped lint has no errors and the known map
+callback dependency warning. Native development builds compiled and were installed earlier today.
+This acceptance supersedes the pending UI-review notes below. Missed-turn recovery and routing
+consistency remain owner driving tests in the production candidates. Preserve the unrelated dirty
+bot/scrape-protection specification. Publish only this navigation/map package plus the already
+approved Apple SDK maintenance reminder; no new database change. Build with existing iOS
+production-road-restriction-test and Android production-android-navigation profiles. Distribute only
+to the one-person Team (Expo) TestFlight group and Google Play Owner Field Test, after verifying
+live audience settings; no early-tester or public rollout.
+
+### November 19 — map type control during address inspection
+
+Keep a compact street/satellite toggle visible above the preview card while inspecting a selected
+address or stop. It changes only the existing map type, retaining selection, zoom and card state.
+Updated map screen; TypeScript/scoped lint checks pass with the existing dependency warning.
+Physical review pending; uncommitted.
+
+### November 19 — searched addresses can join the daily route
+
+Approved three compact searched-address actions (stacked full-width after physical feedback showed
+three columns truncated the labels): Create Stop, Navigate and Add to Route; removed
+Edit Name and empty shared-Intel metadata. The searched-address action shows disabled Added to Route
+when its coordinate ID is already in today's persisted route (including completed entries); removing
+it restores Add to Route. Earlier-day routes do not show Added. Add to Route saves a coordinate-based address ID and
+`freightIqStop: false` in the existing private local daily-route storage, without creating a shared
+stop. The flag survives reload. Existing insertion order, duplicate protection, reordering, Complete,
+Skip and Remove apply. Saved-stop refreshes exclude address entries; shared Intel/restriction reads
+are skipped for those entries. Returning from a route address opens the searched-address card.
+Changed the map and daily-route screens, active navigation, route-plan sheet, daily-route model and
+focused tests. No backend/schema/native changes. TypeScript and regression checks pass; physical
+acceptance of the three actions/address lifecycle is pending. Uncommitted; no production build.
+
+### November 19 — final local regression pass / phone walkthrough pending
+
+Both physical phones are connected. The latest combined direct-navigation, failed-reroute,
+marking-notice, alert-status, route-plan and daily-route suite passes (30 tests); TypeScript passes.
+Scoped lint has zero errors and the existing map callback dependency warning. Native iOS and Android
+View Steps development builds compiled successfully and were installed earlier this morning.
+Rob confirmed the left-side Details close button works. Awaiting both-phone direct-navigation
+walkthrough before marking development-device acceptance complete. Driving missed-turn recovery
+and route-choice consistency remain owner field tests. No commit/push or new production builds yet.
+
+### November 19 — approved preview and steps visual cleanup
+
+Simplified the shared preview to a compact destination header and rounded bottom panel with
+time/distance, Start Navigation and a quiet return action. Tapping the route card opens Details
+over the preview: safe-area spacing, a 44-point close target on the left (clear of the development gear), grouped rows, turn symbols, bold
+distances and secondary instructions. Each maneuver's displayed distance now comes from the
+preceding step in the same leg (distance before the maneuver); each leg starts with an origin row.
+Updated `app/active-navigation.tsx`; no native payload or production configuration change.
+TypeScript, scoped lint and the 29 existing navigation/route regression tests pass. Visual acceptance
+on both physical phones remains pending. Uncommitted; no production build or upload.
+
+### November 19 — map navigation is independent of Today’s Route (local correction)
+
+Rob found Navigate on a searched-address preview persisted a generated UUID into Today’s Route,
+where guarded stop reads correctly could not find a matching FreightIQ row. Map-card Navigate now
+passes a validated one-destination request to active navigation without adding/activating/reordering
+Today’s Route. Saved FreightIQ destinations still load their Intel/restrictions; unsaved addresses
+skip that lookup. Starting, arriving and ending a direct trip do not mutate the daily route. Preview
+cancel/loading return is Back to Map. Direct guidance hides daily-route Complete/Skip/Add/View Route
+controls and unsaved-address Intel; End returns to the map. Existing test entries added by the old
+behavior are not automatically deleted; remove them explicitly once.
+
+The time/distance card now selects that candidate and opens its steps. Removed the third View Steps
+button and the Route prefix before duration. Back to Preview preserves selection. This supersedes
+the initial button placement. Shared UI applies to both platforms; existing native payload already
+provides per-candidate steps, so no additional native rebuild is required for these refinements.
+Changed `app/(tabs)/(map)/index.tsx`, `app/active-navigation.tsx`, `utils/direct-navigation.ts`,
+`tests/direct-navigation.test.mjs`, this record and Active Route Execution specification.
+Direct-navigation, startup-failure and marking-notice regressions pass (7 tests); TypeScript and
+scoped lint pass with the pre-existing map dependency warning. Phone flow acceptance remains pending.
+No production build, commit or push.
+
+### November 19 — saved Ridgway local test destination
+
+Added `local-nav-campbell-ridgway`, named 101 Campbell Lane (Local Test), only to the existing local
+Docker database using the normal create-stop API under the fictional phone-test account. Coordinates
+38.151186,-107.753118 match the prior Mapbox address lookup. Authenticated guarded route-stop read
+returns the saved destination. No production data change. Search Campbell and use this saved result
+instead of the earlier unsaved address result to inspect the same trip's steps on both Dev apps.
+
+### November 19 — single route navigation control (local correction)
+
+Rob found an upcoming-card Navigate control that looked active but was disabled for an unavailable
+stop, and preferred the bottom Start/Resume control. Removed the duplicate Navigate actions from
+upcoming list cards and the route-map next-stop card on both platforms. Bottom Start Route/Resume
+remains the sole navigation entry on this screen; Complete, remove and stop inspection remain.
+The screenshot's unavailable-stop status comes from a missing result in the route-stop read, not a
+navigation-button handler failure; its precise stop/account/environment cause is not yet confirmed.
+Changed `app/(tabs)/(map)/todays-route.tsx` and this record. No production build, commit or push.
+
+### November 19 — View Steps before navigation (local implementation)
+
+Rob approved View Steps on both route previews. Each native route choice now includes its own
+ordered Mapbox instructions, distances and leg indices. Shared preview UI opens a scrollable steps
+screen for the selected route; Back to Preview and Android system Back preserve selection. Viewing
+steps never chooses a native route, starts guidance or alters stop order. Multi-stop lists identify
+leg boundaries. Missing steps use an inline empty state, not a popup. Only Start Navigation applies
+the selected native route. Changed `app/active-navigation.tsx`,
+`native-navigation/FreightIQNavigation.swift`,
+`native-navigation-android/FreightIQAndroidNavigationView.kt`, this record and Active Route Execution
+specification. Both native development builds, TypeScript, focused lint and whitespace checks pass.
+Updated development apps are installed on both physical phones. View Steps content, alternate-route
+switching, Back to Preview selection preservation and subsequent Start acceptance remain Rob’s
+on-phone check. No production build, commit or push yet.
+
+### November 19 — owner navigation candidate verification in progress
+
+Scope remains November 18 field fixes: consistent traffic-aware native requests, failed-reroute
+recovery on both phones, and no navigation interruption for failed optional marking/alert-status
+checks. All 29 focused Node/Swift regression tests, TypeScript, focused ESLint and whitespace checks
+pass. Both native Debug builds pass; signed iPhone Dev app and Pixel debug APK installed on the
+connected physical phones. Existing local Supabase is healthy; fresh Metro on port 8081 explicitly
+uses local-test mode and LAN endpoint 192.168.1.160:54321. No production database change.
+Physical preview → start guidance → expanded controls → End/Resume acceptance is pending Rob's
+check (screen viewing works, remote tap controls currently fail). Real missed-turn driving remains
+owner field acceptance. Commit/push and owner-only replacement builds have not started. Preserve
+unrelated Bot Scrape Protection specification edits. The Apple SDK maintenance task remains deferred.
+
+### November 18 — navigation warning audit (local correction)
+
+Reviewed active guidance, native iOS/Android restriction/error paths, route startup, route plan,
+Driving Alerts controls and app-level notification response handling for background-check failures
+that could create misleading popups. One additional case: failed Driving Alerts status reads were
+being treated as inactive and generated the start-alerts offer. Route startup now continues quietly
+when that status is unknown. Known inactive alerts still get the owner-requested offer. Actual
+loaded marking advisories, failed route/arrival saves, explicit action errors and destructive-action
+confirmations remain; route-calculation failures use the existing retry screen. No other equivalent
+failed-background-check hazard popup was found in these inspected navigation paths.
+Changed `app/(tabs)/(map)/todays-route.tsx`, this record, and added
+`tests/navigation-alert-status-failure.test.mjs`. No production build, commit or push.
+
+### November 18 — no navigation warning for failed marking lookup (local correction)
+
+Rob explicitly requested no popup or status message solely because road markings could not be
+checked. Navigation continues normally. Only successfully loaded saved markings generate startup
+advisories; cached markings still apply when available. Shared-read failures, empty cache and
+unreadable local markings do not manufacture a restricted-road notice. The common navigation
+screen also guards the alert with an actual loaded restriction. This replaces the intermediate
+wording-only change. No backend, production build, commit or push.
+Changed `app/active-navigation.tsx`, `utils/stop-road-restriction.ts`, regression
+`tests/navigation-road-marking-notice.test.mjs`, and this status record. Phone acceptance remains
+pending the next owner builds.
+
+### November 18 — iPhone missed-turn rerouting investigation
+
+Rob reported iOS 81 getting stuck/repeatedly recalculating after continuing on US 50 instead of
+turning onto G50 toward 101 Campbell Lane. End Navigation and a fresh start recovered. This is
+separate from the already implemented local traffic-profile alignment.
+Inspection of the shipped source and pinned Mapbox UIKit callback confirms a recovery defect:
+`willRerouteFrom` sets `isRerouting = true`; `didFailToRerouteWith` does not reset it and only
+attempts a fresh route when `request.validRestriction` is true. An unrestricted request therefore
+returns without recovery; progress continues but Live Activity updates remain suppressed until a
+later successful reroute or restart. Mapbox's pinned SDK does deliver Failed events to that callback.
+The restriction URL customizer returns the URL untouched when there are no active exclusion points.
+This establishes a failed-reroute handling gap, not the cause of Mapbox's original failure or proof
+of the exact G50 road-choice sequence. No device trace of the field incident is available.
+Local correction: failed iOS reroutes clear the busy state and both platforms attempt one
+fresh route from a recent raw GPS fix, including unrestricted routes. Ordinary recovery preserves
+all requested remaining stops; restricted recovery keeps its existing one-leg advisory behavior.
+Only one fallback runs at a time. A stopped/changed session or successful SDK reroute invalidates
+older fallback results. iPhone Live Activity/turn notifications no longer resume stale instructions
+while recovery is unresolved. Mapbox's normal off-route detection remains enabled.
+The production Swift callbacks run in a controlled-router regression harness covering ordinary and
+restricted routes, network failure, duplicate callbacks, stale GPS, end-navigation and SDK-success
+races. Both local native compilations passed (iOS Debug and Android Kotlin), along with all 12 focused
+recovery/route/navigation tests and diff whitespace checks.
+Changed implementation: `native-navigation/FreightIQNavigation.swift`,
+`native-navigation-android/FreightIQAndroidNavigationView.kt`; regression:
+`tests/ios-reroute-recovery.test.mjs`; documentation: this file and
+`docs/build-specs/FreightIQActiveRouteExecutionV1BuildSpec.md`. No production build, commit or push
+requested. Physical
+missed-turn/network-recovery acceptance on both phones remains pending the next owner builds.
+
+### November 18 — consistent native navigation routing (local change)
+
+Rob chose dependable, consistent routing without combining standard/traffic profile results.
+Both native platforms now explicitly request traffic-aware driving. iOS initial routing, advisory
+rerouting and navigator dataset are aligned; Android's existing traffic-aware default is explicit.
+Existing preview alternatives, selected-route handoff and FreightIQ stop order are preserved.
+Swift syntax parsing, 17 existing route/navigation tests and diff whitespace checks pass.
+These edits are local and are not included in iOS 81 / Android 50. Native build/device acceptance,
+commit/push and replacement distribution remain pending. Current live yard-to-Campbell Lane API
+checks returned one option per profile, with no G50 detour; that did not reproduce the morning drive.
+
 ### November 18 — shared stop road sections, owner field test
 
 Rob approved shared stop-specific road markings with creator-only editing/removal and independent

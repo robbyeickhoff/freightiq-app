@@ -544,6 +544,15 @@ Maintain a reliable, maintainable, and well-engineered codebase while continuing
 
 #### Expo & Dependencies
 
+- [ ] **Before April 2027: update iOS production builds to Xcode 27 / iOS 27 SDK or newer.**
+      Apple accepted Build 81 but sent advisory ITMS-90725 because it used the iOS 26.5 SDK.
+      Rob deferred this maintenance on November 18 to preserve the current routing/navigation
+      field-test focus. Revisit by February 2027, verify current Apple/Expo requirements, pin a
+      supported build image, and verify the finished package plus physical-iPhone launch,
+      navigation and Live Activity behavior before owner-only TestFlight distribution.
+      This is deferred maintenance, not authorization to change or release a build.
+      References: https://developer.apple.com/app-store/submitting/ and
+      https://docs.expo.dev/build-reference/infrastructure/.
 - [x] Complete the approved isolated Expo SDK 54 to SDK 57 upgrade and physical iPhone/Pixel
       acceptance defined in
       [FreightIQExpoSDK57UpgradeBuildSpec.md](build-specs/FreightIQExpoSDK57UpgradeBuildSpec.md).

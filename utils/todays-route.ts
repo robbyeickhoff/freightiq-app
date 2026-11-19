@@ -8,6 +8,7 @@ export type TodayRouteStopStatus = "upcoming" | "completed";
 export type TodayRouteStop = {
   address: string;
   completedAt: string | null;
+  freightIqStop?: boolean;
   id: string;
   lat: number;
   lng: number;
@@ -72,7 +73,7 @@ function restoreExecution(value: unknown, stops: TodayRouteStop[]): RouteExecuti
   };
 }
 
-export type RouteStopInput = Pick<TodayRouteStop, "address" | "id" | "lat" | "lng" | "name">;
+export type RouteStopInput = Pick<TodayRouteStop, "address" | "id" | "lat" | "lng" | "name" | "freightIqStop">;
 
 export type AddRouteStopResult =
   | { route: TodayRoute; status: "added" }
@@ -120,6 +121,7 @@ function sanitizeStop(value: unknown): TodayRouteStop | null {
     address: typeof stop.address === "string" ? stop.address : "",
     completedAt:
       stop.status === "completed" && typeof stop.completedAt === "string" ? stop.completedAt : null,
+    ...(stop.freightIqStop === false ? { freightIqStop: false } : {}),
     id: stop.id,
     lat: stop.lat,
     lng: stop.lng,

@@ -113,7 +113,7 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, duringGuidance = fa
         renderItem={({ item: stop, getIndex, drag, isActive }) => { const index = (getIndex() ?? 0) + (pinnedStop ? 1 : 0); const current = stop.id === route.execution.activeStopId;
           return <View style={[styles.stop, { borderBottomColor: colors.textSecondary, opacity: isActive ? 0.6 : 1 }]}>
           {current ? <Text style={{ color: colors.accentStrong, fontWeight: "700" }}>CURRENT STOP</Text> : null}
-          <Pressable disabled={editing} accessibilityRole="button" accessibilityLabel={`View ${stop.name} stop Intel`} onPress={() => setIntelStop(stop)}>
+          <Pressable disabled={editing || stop.freightIqStop === false} accessibilityRole="button" accessibilityLabel={`View ${stop.name} stop Intel`} onPress={() => setIntelStop(stop)}>
           <Text style={[styles.name, { color: colors.textPrimary }]}>{index + 1}. {stop.name}</Text>
           <Text style={{ color: colors.textSecondary }}>{stop.address
             .replace(/,?\s+United States\s*$/i, "")

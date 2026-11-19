@@ -35,6 +35,7 @@ import { Elevation, Typography } from "@/constants/theme";
 import { useNavigationPreference } from "@/context/navigation-preference-context";
 import { useAppTheme } from "@/context/theme-context";
 import { useTodayRoute } from "@/context/todays-route-context";
+import { localDateKey } from "@/utils/todays-route";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { recordFoundingDriverActivity } from "@/utils/founding-driver-activity";
 import {
@@ -594,7 +595,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
   const router = useRouter();
   const { colorScheme, colors } = useAppTheme();
   const { navigationPreference } = useNavigationPreference();
-  const { addStop, carryForward, navigateToStop, route: todayRoute, startFresh } = useTodayRoute();
+  const { addStop, carryForward, route: todayRoute, startFresh } = useTodayRoute();
   const { fontScale, height: windowHeight } = useWindowDimensions();
   const safeAreaInsets = useSafeAreaInsets();
   const reduceMotionEnabled = useReducedMotion();
@@ -2244,6 +2245,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
   }
 
   openCollectionStopRef.current = (stop) => {
+    if (stop.id === "temp-search-result") setTempSearchPin(stop);
     setPins((previous) => mergePinsById(previous, [stop]));
     jumpToStop(stop, { skipNearbyChoice: true });
   };
@@ -2949,12 +2951,12 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
     if (hasEmbeddedNavigation) {
       setNavigationLaunching(true);
       try {
-        await navigateToStop({
-          id: selectedStop.id === "temp-search-result" ? Crypto.randomUUID() : selectedStop.id,
+        router.push({ pathname: "/active-navigation", params: { direct: JSON.stringify({
+          id: selectedStop.id === "temp-search-result" ? `direct:${selectedStop.lat},${selectedStop.lng}` : selectedStop.id,
           name: selectedStop.name, address: selectedStop.address ?? "",
           lat: selectedStop.lat, lng: selectedStop.lng,
-        });
-        router.push("/active-navigation");
+          freightIqStop: selectedStop.id !== "temp-search-result",
+        }) } });
       } catch (error) {
         Alert.alert("Couldn’t start navigation", error instanceof Error ? error.message : "Please try again.");
       } finally { setNavigationLaunching(false); }
@@ -2988,11 +2990,12 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
   }
 
   async function addSelectedStopToRoute(target = selectedStop) {
-    if (!target || target.id === "temp-search-result") return;
+    if (!target) return;
 
     const stop = {
       address: target.address ?? "",
-      id: target.id,
+      id: target.id === "temp-search-result" ? `address:${target.lat},${target.lng}` : target.id,
+      ...(target.id === "temp-search-result" ? { freightIqStop: false } : {}),
       lat: target.lat,
       lng: target.lng,
       name: target.name,
@@ -3039,7 +3042,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
       }
       if (result === "added") {
         if (routeAddMode) {
-          onRouteStopAdded?.(target.id);
+          onRouteStopAdded?.(stop.id);
           dismissPreviewCard();
           setQuery("");
           requestAnimationFrame(() => searchInputRef.current?.focus());
@@ -3194,6 +3197,9 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
     !!selectedStop && confirmedDeliveryZoneStopIdsRef.current.has(selectedStop.id);
   const showSelectedStopMarker =
     !showStopLayer && !!selectedStop && selectedStop.id !== "temp-search-result";
+  const selectedAddressAdded = selectedStop?.id === "temp-search-result" &&
+    todayRoute.date === localDateKey() && todayRoute.stops.some((stop) =>
+      stop.id === `address:${selectedStop.lat},${selectedStop.lng}`);
   const PREVIEW_COLLAPSED_Y = 165;
 
   function openStopNearMapPress(coordinate: { latitude: number; longitude: number }) {
@@ -4075,21 +4081,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
             ) : (
               <>
                 {selectedStop?.id === "temp-search-result" ? (
-                  <View style={styles.previewMetaBlock}>
-                    <Text style={[styles.previewMetaLine, { color: colors.textSecondary }]}>
-                      Delivery Zone: {selectedEntrance ? "Saved" : "None"}
-                    </Text>
-
-                    {selectedReportStats.deliveryType ? (
-                      <Text style={[styles.previewMetaLine, { color: colors.textSecondary }]}>
-                        Delivery Type: {selectedReportStats.deliveryType}
-                      </Text>
-                    ) : null}
-
-                    <Text style={[styles.previewMetaLine, { color: colors.textSecondary }]}>
-                      Driver Reports: {selectedReportStats.count}
-                    </Text>
-                  </View>
+                  null
                 ) : (
                   <View style={styles.previewOperationalSummary}>
                     <View
@@ -4218,43 +4210,11 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
                 ) : null}
 
                 {selectedStop?.id === "temp-search-result" ? (
-                  <>
-                    <AppButton fullWidth onPress={startDropAtCenter}>
-                      Create Stop Here
-                    </AppButton>
-
-                    <View style={styles.previewSecondaryRow}>
-                      <AppButton
-                        onPress={navToStop}
-                        loading={navigationLaunching}
-                        maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
-                        size="compact"
-                        style={styles.previewSecondaryBtn}
-                        variant="secondary"
-                      >
-                        Navigate
-                      </AppButton>
-
-                      <AppButton
-                        onPress={() => {
-                          prepareCreatePinLocation();
-                          setNewPinName("");
-                          setNewPinAddress(formatNewStopAddress(tempSearchPin));
-                          setNewPinCity("");
-                          setNewPinStateCode("");
-                          setNewPinCityUnknown(false);
-                          setNewPinLocalityEditing(true);
-                          setNewPinOpen(true);
-                        }}
-                        maxFontSizeMultiplier={usesAccessibilityLayout ? 1.8 : undefined}
-                        size="compact"
-                        style={styles.previewSecondaryBtn}
-                        variant="secondary"
-                      >
-                        Edit Name
-                      </AppButton>
-                    </View>
-                  </>
+                  <View style={{ gap: 8 }}>
+                    <AppButton onPress={startDropAtCenter} size="compact" fullWidth variant="secondary">Create Stop</AppButton>
+                    <AppButton onPress={navToStop} loading={navigationLaunching} size="compact" fullWidth variant="secondary">Navigate</AppButton>
+                    <AppButton disabled={selectedAddressAdded} onPress={() => void addSelectedStopToRoute()} size="compact" fullWidth>{selectedAddressAdded ? "Added to Route" : "Add to Route"}</AppButton>
+                  </View>
                 ) : (
                   <>
                     <AppCard clipContent contentStyle={styles.previewDetailList}>
@@ -4563,6 +4523,22 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
               Dismiss
             </AppButton>
           </View>
+        </View>
+      ) : null}
+
+      {showPreview ? (
+        <View style={{ position: "absolute", top: 150, right: 16 }}>
+          <AppCard clipContent elevation="floating">
+            <AppButton
+              accessibilityLabel={mapType === "standard" ? "Switch to satellite map" : "Switch to standard map"}
+              onPress={() => setMapType((previous) => previous === "standard" ? "hybrid" : "standard")}
+              size="icon"
+              style={styles.mapControlIconButton}
+              variant="tertiary"
+            >
+              <AppIcon name={mapType === "standard" ? "satellite" : "map"} color={colors.textPrimary} size={26} />
+            </AppButton>
+          </AppCard>
         </View>
       ) : null}
 

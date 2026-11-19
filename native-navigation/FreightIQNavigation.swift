@@ -385,6 +385,9 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   private var alertMilestones = NavigationAlertMilestones()
   private var alertStep = ""
   private var isRerouting = false
+  private var rerouteFailed = false
+  private var rerouteRecoveryID = UUID()
+  private var rerouteRecovery: Task<Void, Never>?
   private var lastRawLocation: CLLocation?
   private let liveActivity = NavigationLiveActivity()
   private let notificationId = "com.freightiq.navigation.maneuver"
@@ -449,9 +452,13 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
 
   private func calculate(_ next: FreightIQNavigationRequest) {
     task?.cancel()
+    rerouteRecoveryID = UUID()
+    rerouteRecovery?.cancel()
+    rerouteRecovery = nil
     pendingRoutes = nil
     liveActivity.end()
     isRerouting = false
+    rerouteFailed = false
     clearTurnNotification()
     arrivalProximity = NavigationArrivalProximity()
     lastProgressAt = .distantPast
@@ -470,7 +477,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
         let destinations = restricted ? Array(next.stops.prefix(1)) : next.stops
         let coordinates = [CLLocationCoordinate2D(latitude: next.originLatitude, longitude: next.originLongitude)]
           + destinations.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
-        let options = NavigationRouteOptions(coordinates: coordinates, profileIdentifier: .automobile)
+        let options = NavigationRouteOptions(coordinates: coordinates, profileIdentifier: .automobileAvoidingTraffic)
         options.includesAlternativeRoutes = next.preview
         if restricted { options.excludedLocations = next.exclusionPoints.prefix(50).map(\.coordinate) }
         StopRestrictionSession.shared.update(destination: restricted ? coordinates.last : nil,
@@ -498,7 +505,12 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
           let choices: [[String: Any]] = ordered.compactMap { index, route in
             guard let coordinates = route.shape?.coordinates, coordinates.count > 1 else { return nil }
             return ["index": index, "seconds": route.expectedTravelTime, "meters": route.distance,
-                    "coordinates": coordinates.map { ["latitude": $0.latitude, "longitude": $0.longitude] }]
+                    "coordinates": coordinates.map { ["latitude": $0.latitude, "longitude": $0.longitude] },
+                    "steps": route.legs.enumerated().flatMap { legIndex, leg in
+                      leg.steps.map { step -> [String: Any] in
+                        ["instruction": step.instructions, "meters": step.distance, "legIndex": legIndex]
+                      }
+                    }]
           }
           guard !choices.isEmpty else {
             self.emit("error", next, message: "No directions were found. Check your connection and try again.")
@@ -533,6 +545,8 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   }
 
   private func startGuidance(_ routes: NavigationRoutes, _ next: FreightIQNavigationRequest) {
+    isRerouting = false
+    rerouteFailed = false
     let provider = Self.provider
     if self.controller != nil {
       provider.tripSession().startActiveGuidance(with: routes, startLegIndex: 0)
@@ -578,6 +592,10 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   }
 
   private func stop() {
+    rerouteRecoveryID = UUID()
+    rerouteRecovery?.cancel()
+    rerouteRecovery = nil
+    isRerouting = false
     pendingRoutes = nil
     liveActivity.end()
     if request?.hasRestriction == true { StopRestrictionSession.shared.update(destination: nil) }
@@ -641,7 +659,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
     guard now.timeIntervalSince(lastProgressAt) >= 5 else { return }
     lastProgressAt = now
     reportRestriction(progress, request, location: rawLocation)
-    if !isRerouting, reportedArrivalStopId != request.stopId { updateLiveActivity(progress) }
+    if !isRerouting, !rerouteFailed, reportedArrivalStopId != request.stopId { updateLiveActivity(progress) }
     updateTurnNotification(progress)
     emit("progress", request, legs: legEstimates(progress.route, request, progress: progress))
   }
@@ -650,28 +668,56 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
     guard navigationViewController === controller, let request, request.id == guidanceId,
           reportedArrivalStopId != request.stopId else { return }
     isRerouting = true
+    clearTurnNotification()
     liveActivity.update(.init(instruction: "Rerouting…", arrow: "location.fill", distance: "", eta: nil))
   }
 
   func navigationViewController(_ navigationViewController: NavigationViewController, didRerouteAlong route: Route) {
     guard navigationViewController === controller else { return }
     isRerouting = false
+    rerouteFailed = false
+    rerouteRecoveryID = UUID()
+    rerouteRecovery?.cancel()
+    rerouteRecovery = nil
     lastProgressAt = .distantPast
   }
 
   func navigationViewController(_ navigationViewController: NavigationViewController, didFailToRerouteWith error: Error) {
-    guard navigationViewController === controller, isRerouting else { return }
-    liveActivity.update(.init(instruction: "Guidance unavailable", arrow: "location.slash", distance: "", eta: nil))
-    guard let request, request.validRestriction, let location = lastRawLocation else { return }
-    task = Task { @MainActor [weak self] in
-      let options = NavigationRouteOptions(coordinates: [location.coordinate,
-        CLLocationCoordinate2D(latitude: request.latitude, longitude: request.longitude)], profileIdentifier: .automobile)
+    guard navigationViewController === controller, let request, request.id == guidanceId else { return }
+    // A failed attempt is terminal, even if no restricted road is involved.
+    isRerouting = false
+    rerouteFailed = true
+    lastProgressAt = .distantPast
+    clearTurnNotification()
+    liveActivity.update(.init(instruction: "Unable to update route", arrow: "location.fill", distance: "", eta: nil))
+    guard rerouteRecovery == nil, let location = lastRawLocation,
+          (0...15).contains(-location.timestamp.timeIntervalSinceNow),
+          location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 100 else { return }
+    // Native legs advance only after FreightIQ Complete/Skip supplies a new request.
+    // Preserve every remaining stop on ordinary routes; restricted requests cover one leg.
+    let stops = request.validRestriction ? Array(request.stops.prefix(1)) : request.stops
+    guard !stops.isEmpty else { return }
+    liveActivity.update(.init(instruction: "Recalculating route…", arrow: "location.fill", distance: "", eta: nil))
+    let recoveryID = UUID()
+    rerouteRecoveryID = recoveryID
+    rerouteRecovery = Task { @MainActor [weak self] in
+      defer { if self?.rerouteRecoveryID == recoveryID { self?.rerouteRecovery = nil } }
+      let coordinates = [location.coordinate] + stops.map {
+        CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+      }
+      let options = NavigationRouteOptions(coordinates: coordinates, profileIdentifier: .automobileAvoidingTraffic)
+      options.includesAlternativeRoutes = false
       do {
         let routes = try await Self.provider.routingProvider().calculateRoutes(options: options).value
-        guard let self, !Task.isCancelled, self.request?.id == request.id else { return }
-        self.isRerouting = false
+        guard !Task.isCancelled, let self, self.window != nil,
+              self.request?.id == request.id, self.guidanceId == request.id,
+              self.rerouteRecoveryID == recoveryID else { return }
         self.startGuidance(routes, request)
-      } catch { /* Keep existing guidance available when the network cannot recalculate. */ }
+      } catch {
+        guard !Task.isCancelled, let self, self.request?.id == request.id else { return }
+        self.liveActivity.update(.init(instruction: "Unable to update route", arrow: "location.slash", distance: "", eta: nil))
+        // Leave Mapbox's normal off-route recovery active for subsequent location updates.
+      }
     }
   }
 
@@ -708,6 +754,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   }
 
   private func updateTurnNotification(_ progress: RouteProgress) {
+    guard !isRerouting, !rerouteFailed else { clearTurnNotification(); return }
     guard UIApplication.shared.applicationState == .background else {
       clearTurnNotification()
       return
@@ -808,7 +855,7 @@ private final class FreightIQOfflineRoute {
     }
     store = configuration.navigatorLocation.tileStore
     MapboxMapsOptions.tileStore = store
-    var routingConfig = RoutingConfig(datasetProfileIdentifier: .automobile)
+    var routingConfig = RoutingConfig(datasetProfileIdentifier: .automobileAvoidingTraffic)
     routingConfig.rerouteConfig.urlOptionsCustomization = .init(StopRestrictionSession.shared.rerouteURL)
     routingConfig.fasterRouteDetectionConfig = nil
     routingConfig.alternativeRoutesDetectionConfig = nil

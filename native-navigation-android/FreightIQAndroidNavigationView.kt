@@ -446,6 +446,10 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
   private val locationProvider = NavigationLocationProvider()
   private val locationObserver = object : LocationObserver {
     override fun onNewRawLocation(rawLocation: Location) {
+      if ((rawLocation.horizontalAccuracy ?: Double.NaN) in 0.0..100.0) {
+        rawReroutePosition = Point.fromLngLat(rawLocation.longitude, rawLocation.latitude)
+        rawRerouteTimestamp = rawLocation.timestamp
+      }
       val destination = activeRequest?.stops?.firstOrNull() ?: return
       if (arrived) return
       val timestamp = rawLocation.timestamp
@@ -499,6 +503,13 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
   }
 
   private val routesObserver = RoutesObserver { result ->
+    // An SDK reroute that succeeds wins over an older fresh-route recovery.
+    if (result.navigationRoutes.isNotEmpty() && advisoryReroutePending) {
+      recoveryGeneration++
+      advisoryReroutePending = false
+      requestedRouteId?.let(navigation::cancelRouteRequest)
+      requestedRouteId = null
+    }
     lines.deleteAll()
     stopMarkers.deleteAll()
     val current = activeRequest ?: return@RoutesObserver
@@ -622,22 +633,31 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
   }
 
   private var pendingRoutes = emptyList<NavigationRoute>()
+  private var rawReroutePosition: Point? = null
+  private var rawRerouteTimestamp = 0L
+  private var recoveryGeneration = 0L
   private var advisoryReroutePending = false
   private val advisoryRerouteObserver = RerouteController.RerouteStateObserver { state ->
     val current = activeRequest
-    val position = lastPosition
-    val stop = current?.stops?.firstOrNull()
+    val position = rawReroutePosition
+    val stops = current?.stops.orEmpty()
     if (state is RerouteState.Failed && current != null && position != null &&
-      stop != null && current.exclusionPoints.isNotEmpty() && !advisoryReroutePending) {
+      stops.isNotEmpty() && System.currentTimeMillis() - rawRerouteTimestamp in 0L..15_000L &&
+      !arrived && !advisoryReroutePending) {
       val origin = AndroidRoutePoint().apply { latitude = position.latitude(); longitude = position.longitude() }
-      val destination = AndroidRoutePoint().apply { latitude = stop.latitude; longitude = stop.longitude }
+      val remaining = if (current.exclusionPoints.isNotEmpty()) stops.take(1) else stops
+      val destinations = remaining.map { stop ->
+        AndroidRoutePoint().apply { latitude = stop.latitude; longitude = stop.longitude }
+      }
       advisoryReroutePending = true
-      requestedRouteId = navigation.requestRoutes(androidRouteOptions(origin, listOf(destination), false), object : NavigationRouterCallback {
-        override fun onCanceled(routeOptions: RouteOptions, routerOrigin: String) { advisoryReroutePending = false }
-        override fun onFailure(reasons: List<RouterFailure>, routeOptions: RouteOptions) { advisoryReroutePending = false }
+      val generation = ++recoveryGeneration
+      requestedRouteId = navigation.requestRoutes(androidRouteOptions(origin, destinations, false), object : NavigationRouterCallback {
+        override fun onCanceled(routeOptions: RouteOptions, routerOrigin: String) { if (activeRequest === current && recoveryGeneration == generation) advisoryReroutePending = false }
+        override fun onFailure(reasons: List<RouterFailure>, routeOptions: RouteOptions) { if (activeRequest === current && recoveryGeneration == generation) advisoryReroutePending = false }
         override fun onRoutesReady(routes: List<NavigationRoute>, routerOrigin: String) {
+          if (activeRequest !== current || recoveryGeneration != generation) return
           advisoryReroutePending = false
-          if (activeRequest === current) routes.firstOrNull()?.let { startGuidance(current, it) }
+          routes.firstOrNull()?.let { startGuidance(current, it) }
         }
       })
     }
@@ -663,6 +683,9 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     pendingRoutes = emptyList()
     if (activeRequest == null) return
     activeRequest = null
+    recoveryGeneration++
+    rawReroutePosition = null
+    rawRerouteTimestamp = 0L
     currentRoad.text = null
     currentRoad.visibility = GONE
     stopMarkers.deleteAll()
@@ -769,6 +792,12 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
             mapOf(
               "index" to index, "seconds" to directions.duration(), "meters" to directions.distance(),
               "coordinates" to coordinates.map { mapOf("latitude" to it.latitude(), "longitude" to it.longitude()) },
+              "steps" to directions.legs().orEmpty().flatMapIndexed { legIndex, leg ->
+                leg.steps().orEmpty().map { step ->
+                  mapOf("instruction" to step.maneuver()?.instruction().orEmpty(),
+                    "meters" to (step.distance() ?: 0.0), "legIndex" to legIndex)
+                }
+              },
             )
           }
           if (choices.isEmpty()) {

@@ -156,8 +156,17 @@ Official Mapbox documentation was rechecked on October 28, 2026.
   navigation-camera behavior, and voice instructions.
 - Standard automobile routing accepts up to 25 coordinates including the origin, allowing current
   position plus up to 24 FreightIQ stops in one request.
-- Traffic-profile requests accept materially fewer coordinates and are not the full-workday V1
-  contract.
+- November 18 consistency decision: both native platforms explicitly use traffic-aware driving
+  for preview, guidance and rerouting. Current Directions documentation supports up to 25 input
+  coordinates for both driving profiles; retain the origin-plus-24-stops request limit. Ask for
+  alternatives in preview and show only those returned; do not combine routing profiles.
+  This supersedes the earlier lower traffic-profile limit assumption.
+- November 18 missed-turn recovery: keep SDK off-route detection enabled. After an SDK reroute
+  failure, both platforms may attempt one fresh route at a time from recent raw GPS, preserving
+  remaining FreightIQ stop order. Clear terminal busy state, reject stale-session results and let
+  a successful SDK reroute supersede the fallback. Restricted sections remain advisory; a failed
+  avoidance calculation may recover without exclusions. Verify missed-turn and network recovery
+  on both physical platforms before installed-build acceptance.
 - Route progress exposes route, leg, and step information, including current-leg distance and time.
 - Android supports arrival/next-leg events and a custom arrival controller so FreightIQ can prevent
   automatic advancement.
@@ -385,6 +394,14 @@ separate manifest-import contract supplies that identity safely.
 - Request Mapbox road routes without allowing Mapbox to reorder stops.
 - Show the primary road route and reasonable alternatives with time/distance differences.
 - Make clear that an alternative changes roads, not stop order.
+- November 19: tap the time/distance card to select and view steps for that route on both platforms, using that
+  candidate's Mapbox instructions and distances in route/leg order. Returning from the scrollable
+  steps screen retains selection; reviewing steps never starts navigation or changes stop order.
+  No additional routing request is required.
+- Map-card Navigate opens a standalone destination preview and returns Back to Map, without adding
+  to or changing Today’s Route. Daily-route actions remain confined to the explicit route flow.
+  Unsaved address destinations do not require a FreightIQ stop record. Existing saved routes remain
+  unchanged by direct-trip start, arrival, cancellation or End Navigation.
 - Present one clear **Start Route** action.
 
 ## 9. Active Navigation UX

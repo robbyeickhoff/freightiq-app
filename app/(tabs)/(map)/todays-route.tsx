@@ -261,7 +261,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
   }, [isTab, navigation]);
 
   useEffect(() => {
-    const ids = route.stops.map((stop) => stop.id);
+    const ids = route.stops.filter((stop) => stop.freightIqStop !== false).map((stop) => stop.id);
     if (ids.length === 0) {
       setUnavailableStopIds(new Set());
       setRouteReadError(null);
@@ -311,7 +311,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
   }, [nextStopId]);
 
   useEffect(() => {
-    if (!nextStopExpanded || !nextStopId) return;
+    if (!nextStopExpanded || !nextStopId || nextStop?.freightIqStop === false) return;
 
     let active = true;
     setNextStopIntelStatus("loading");
@@ -338,7 +338,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     return () => {
       active = false;
     };
-  }, [nextStopExpanded, nextStopId]);
+  }, [nextStopExpanded, nextStop?.freightIqStop, nextStopId]);
   const overviewMarkers = useMemo(
     () => buildRouteOverviewMarkers(route.stops, unavailableStopIds),
     [route.stops, unavailableStopIds],
@@ -462,7 +462,9 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
     try {
       alertsActive = (await drivingAlertStatus(userId)).active;
     } catch {
-      // Route startup must remain available when alert status cannot be read.
+      // An unknown status is not evidence alerts are off. Do not interrupt navigation.
+      continueRoute();
+      return;
     }
     if (!alertsActive) {
       Alert.alert(
@@ -587,7 +589,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
       params: {
         collectionOpenAt: String(Date.now()),
         collectionStopAddress: stop.address,
-        collectionStopId: stop.id,
+        collectionStopId: stop.freightIqStop === false ? "temp-search-result" : stop.id,
         collectionStopLat: String(stop.lat),
         collectionStopLng: String(stop.lng),
         collectionStopName: stop.name,
@@ -686,21 +688,6 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
             </View>
 
             <View style={[styles.actionRow, usesAccessibilityLayout && styles.actionStack]}>
-              <AppButton
-                disabled={unavailableStopIds.has(item.id)}
-                loading={navigationLaunching}
-                onPress={() => void launchStop(item)}
-                size="compact"
-                style={styles.actionButton}
-                variant="tertiary"
-              >
-                <View style={styles.routeActionContent}>
-                  <AppIcon name="navigation" color={colors.accentStrong} size={20} />
-                  <Text style={[styles.routeActionLabel, { color: colors.accentStrong }]}>
-                    Navigate
-                  </Text>
-                </View>
-              </AppButton>
               <AppButton
                 onPress={() => void completeStop(item.id, true).catch(showSaveError)}
                 size="compact"
@@ -1007,6 +994,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
                     accessibilityRole="button"
                     accessibilityState={{ expanded: nextStopExpanded }}
                     hitSlop={6}
+                    disabled={nextStop?.freightIqStop === false}
                     onPress={() => setNextStopExpanded((expanded) => !expanded)}
                     style={({ pressed }) => [
                       styles.nextStopDisclosure,
@@ -1107,22 +1095,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
               </View>
             ) : null}
 
-            {nextStop ? (
-              <AppButton
-                fullWidth
-                loading={navigationLaunching}
-                onPress={() => void launchStop(nextStop)}
-                size="compact"
-                variant="primary"
-              >
-                <View style={styles.routeActionContent}>
-                  <AppIcon name="navigation" color={colors.textOnAccent} size={20} />
-                  <Text style={[styles.routeActionLabel, { color: colors.textOnAccent }]}>
-                    Navigate
-                  </Text>
-                </View>
-              </AppButton>
-            ) : null}
+
           </View>
         </View>
       ) : (
