@@ -13,6 +13,37 @@ answer one question:
 
 ## Current Objective
 
+### November 19 — owner production candidates delivered / Android review pending
+
+Source commit `d9afa5747a80470dd0f4758b14f51ac6b166c79a` is pushed to `clean-main`.
+Only unrelated bot/scrape specification work was excluded. iOS 1.0.2 (82), EAS build
+`9e7162c2-cdee-499a-bca1-fb9d3b8f3ca2`, finished; the IPA confirms production bundle ID,
+build 82 and the production database endpoint, with no local-test server endpoint. Submission
+`954f1dd4-b785-4672-bbfd-8fdb0e845333` succeeded; Apple processing completed. Build detail confirms only Team (Expo), Internal, 1 tester;
+What to Test notes saved directly in App Store Connect.
+Android 1.0.2 (51), EAS build `da5a2e2b-cbac-45a3-9c8c-5a67ea820d2f`, finished from the
+same commit. The AAB includes the production database endpoint and no local-test server endpoint;
+SHA-256 `b8b26dd7bd969a18fcf8a997d5d2b6a8ee6cb5d8b6fc275e9763a208536aa679`.
+The exact AAB was uploaded to Owner Field Test as release 51 (1.0.2) – Owner navigation field test.
+Only build 51 is included; previous build 50 excluded. Release notes saved and rollout set to 100%
+of the existing one-person closed-track audience. Submitted successfully: Publishing overview shows
+Changes in review with automated checks still running. This is not yet proof of Play availability.
+Google's nonblocking missing deobfuscation-file warning was reviewed. A pre-review compatibility
+notice for existing android.hardware.screen.portrait was deferred using Proceed anyway, with the
+reason that this is an owner-only supported-Pixel test and supported-device counts did not decline.
+Review the portrait hardware requirement separately before broader device support; no manifest
+changes were made in this release. iPhone 82 is ready in the one-person internal group; physical
+installed-production driving
+acceptance on both platforms is still pending. Rollback references remain iOS 81 / Android 50.
+Confirmation screenshots: /tmp/fiq-owner-nov19-ios-confirmation.jpg and
+/tmp/fiq-owner-nov19-android-confirmation.jpg. Both use the existing production navigation profiles. Initial Android local config
+resolution needed the existing public Mapbox token passed to the CLI process; no token/config
+changes were saved. The first iOS submission attempt with What to Test was rejected by Expo's
+Enterprise-only changelog gate before scheduling; the standard submission succeeded, and notes
+were saved in App Store Connect. Live audience check: Team (Expo) is an internal group with
+one tester; Owner Field Test has its one-person list selected, Internal Testers (10) unchecked.
+No external TestFlight assignment, alpha update, public release or new database change.
+
 ### November 19 — owner accepted / publishing approved
 
 Rob accepted the development-phone flows, retained End/Resume preview behavior, and approved
