@@ -13,6 +13,47 @@ answer one question:
 
 ## Current Objective
 
+### November 20 — owner candidates delivered / Pixel review pending
+
+Source 4b93d1d73bd3c6dfae20bfe64c2b619d089ac1b0 remains the immutable source of iOS 83 and
+Android 52. iPhone is processed and assigned only to Team (Expo), Internal, 1 tester, with saved
+field notes. Android 52 finished and passed production identity/database, standalone JS, native
+offline support, disabled-debugging and signature checks; SHA256
+787da364089ad9bdda1a1c7a4400e192eb1e2207da3c793c83c65840b57ef4c1.
+The exact AAB was uploaded to Owner Field Test as 52 (1.0.2) – Owner offline navigation test,
+only build 52 included and prior 51 excluded, rollout 100% of the existing one-person audience.
+Live tester list confirmed Owner Field Test (1) selected and Internal Testers (10) unchecked.
+Final submission dialog confirmed one change. Google Publishing overview now shows Changes in
+review with automated checks still running (up to 14 minutes at observation). This is not yet proof
+of Play availability. Existing informational background-location declaration was not edited.
+Supported device counts are unchanged; the known portrait feature notice was deferred using the
+same owner-supported-Pixel rationale as build 51. No manifest or compatibility change was added.
+The deobfuscation-file warning remains nonblocking. No alpha/internal/public track or external
+TestFlight group changed. Rollback builds remain iOS 82 / Android 51. Release records follow the
+binary source and do not require rebuilding. Release bookkeeping records this handoff;
+physical standalone offline relaunch, missed-turn/reroute and offline next-stop field checks remain.
+
+### November 20 — pushed source / iPhone owner build ready / Android building
+
+Source 4b93d1d73bd3c6dfae20bfe64c2b619d089ac1b0 is pushed and synchronized on clean-main.
+Only unrelated bot/scrape and training specs remain outside the commit. Final TypeScript/scoped
+lint and 41 focused checks pass. Both EAS archive inspections excluded docs/backend/test fixtures
+and local DB overrides and matched the committed app/native files.
+iOS 1.0.2 (83), EAS 279363f9-ffcd-4caa-8860-161e0f34ff45, finished using the existing
+production-road-restriction-test profile. Downloaded IPA confirms production identity/database,
+standalone JS, navigation/offline content, disabled debugging and valid deep/strict signature.
+SHA256 f31835763d1f84b0edc1f043d537687ac5e4673f5cfbd422346820385965e055.
+Submission 826b8e1d-2a81-4c3b-99d2-96407cfcc047 completed. Live App Store Connect confirms
+processing complete, field notes saved and Group (1): Team (Expo), Internal, 1 tester; no external
+or individual testers. An initially stale zero-group view refreshed to the assignment created by
+the submission; no external group was selected.
+Android 1.0.2 (52), EAS 2f0cbb14-dc05-4f36-86ef-5fd573b91cd6, remains building under
+production-android-navigation. Live Owner Field Test track confirms its 1-person list selected,
+Internal Testers (10) unchecked; prior build 51 is available. A pre-existing unsent background-location
+App content declaration was observed and left untouched; inspect final review scope before sending.
+Android finished-package validation/upload and final release record remain pending. No production
+backend change or broader release. Standalone offline relaunch and driving checks remain owner work.
+
 ### November 20 — owner acceptance / commit, push and owner builds approved
 
 Rob confirmed End navigation and Start/new trip worked and that route selection versus Steps was

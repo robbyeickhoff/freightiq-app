@@ -6,6 +6,41 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-11-20 — Lightweight offline navigation owner candidates
+
+Rob accepted both-phone development flows and explicitly approved commit/push before new
+owner-only production builds. Source `4b93d1d73bd3c6dfae20bfe64c2b619d089ac1b0` is pushed
+on clean-main. TypeScript/scoped lint and 41 focused checks pass. Source archives excluded
+unrelated bot/scrape/training specifications, backend fixtures and local database overrides.
+
+- iOS 1.0.2 (83), EAS `279363f9-ffcd-4caa-8860-161e0f34ff45`, profile
+  `production-road-restriction-test`; submission `826b8e1d-2a81-4c3b-99d2-96407cfcc047`
+  completed. App Store Connect confirms processed build, saved field notes and only Team (Expo),
+  Internal, 1 tester. No external or individual testers. Proof:
+  `/tmp/fiq-owner-nov20-ios-confirmation.jpg`.
+- Android 1.0.2 (52), EAS `2f0cbb14-dc05-4f36-86ef-5fd573b91cd6`, profile
+  `production-android-navigation`, finished. The exact package was uploaded to the existing Owner Field
+  Test track with only code 52 included, code 51 excluded and rollout at 100% of the existing
+  one-person list. Internal Testers (10) is unchecked. Final confirmation submitted exactly one
+  change; Publishing overview shows Changes in review and automated checks still running (up to
+  14 minutes at observation). Play availability is pending; no broader track was updated.
+  Supported-device counts are unchanged. The existing portrait hardware notice was deferred with
+  the same owner-Pixel rationale as build 51; manifest unchanged. Missing deobfuscation mapping is
+  a nonblocking warning. Existing background-location declaration was left untouched.
+
+Both downloaded packages confirm production identity/database, standalone JS and offline code,
+no local test endpoint, disabled debugging, and valid signatures. iOS SHA256:
+`f31835763d1f84b0edc1f043d537687ac5e4673f5cfbd422346820385965e055`; Android SHA256:
+`787da364089ad9bdda1a1c7a4400e192eb1e2207da3c793c83c65840b57ef4c1`.
+
+The field package includes road-following 5 km offline coverage, lightweight day/night street maps,
+Android offline downloads, Intel-return recovery and separate route-selection/Steps targets. Pixel
+saved region reduced from about 425 MB to 85 MB; iPhone repeat download was about four seconds.
+Both phones passed airplane-mode map/directions while Dev stayed open. Standalone offline cold
+relaunch, real missed-turn rerouting and next-stop progression offline remain owner field checks.
+Rollback references are iOS 82 / Android 51. No backend/schema/credential change or public release.
+Release bookkeeping does not change the immutable binary source or require a rebuild.
+
 ## 2026-11-18 — Shared road markings and owner navigation field candidates
 
 Rob accepted the device changes and approved commit/push and production candidates only for his
