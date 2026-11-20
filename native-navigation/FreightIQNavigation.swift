@@ -169,8 +169,8 @@ class FreightIQNavigation: Module {
     AsyncFunction("offlineRouteCoverage") { (promise: Promise) in
       FreightIQOfflineRoute.shared.coverage(promise)
     }.runOnQueue(.main)
-    AsyncFunction("downloadOfflineRoute") { (bounds: [Double], promise: Promise) in
-      FreightIQOfflineRoute.shared.download(bounds, promise: promise) { [weak self] fraction in
+    AsyncFunction("downloadOfflineRoute") { (bounds: [Double], geometryJSON: String, promise: Promise) in
+      FreightIQOfflineRoute.shared.download(bounds, geometryJSON: geometryJSON, promise: promise) { [weak self] fraction in
         self?.sendEvent("onOfflineDownloadProgress", ["fraction": fraction])
       }
     }.runOnQueue(.main)
@@ -532,6 +532,8 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
     guard let next = request, let routes = pendingRoutes,
           choice.hasPrefix(next.id + "|"),
           let index = Int(choice.dropFirst(next.id.count + 1)), index >= 0 else { return }
+    // The selection survives temporary removal of this view from its window.
+    request?.preview = false
     pendingRoutes = nil
     task = Task { @MainActor [weak self] in
       let selected = index == 0 ? routes : await routes.selectingAlternativeRoute(at: index - 1)
@@ -545,6 +547,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   }
 
   private func startGuidance(_ routes: NavigationRoutes, _ next: FreightIQNavigationRequest) {
+    if request?.id == next.id { request?.preview = false }
     isRerouting = false
     rerouteFailed = false
     let provider = Self.provider
@@ -649,6 +652,11 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   func navigationViewController(_ navigationViewController: NavigationViewController, didUpdate progress: RouteProgress, with location: CLLocation, rawLocation: CLLocation) {
     guard let request, request.id == guidanceId else { return }
     lastRawLocation = rawLocation
+    if rawLocation.horizontalAccuracy >= 0, rawLocation.horizontalAccuracy <= 100,
+       (0...15).contains(-rawLocation.timestamp.timeIntervalSinceNow) {
+      self.request?.originLatitude = rawLocation.coordinate.latitude
+      self.request?.originLongitude = rawLocation.coordinate.longitude
+    }
     let now = Date()
     if reportedArrivalStopId != request.stopId {
       let destination = CLLocation(latitude: request.latitude, longitude: request.longitude)
@@ -830,6 +838,10 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
 
 // All state changes run on the main queue. The same tile store serves downloads,
 // the on-device router and the navigation map.
+private final class OfflineRouteException: GenericException<String>, @unchecked Sendable {
+  override var reason: String { param }
+}
+
 private final class FreightIQOfflineRoute {
   static let shared = FreightIQOfflineRoute()
   let provider: MapboxNavigationProvider
@@ -884,7 +896,12 @@ private final class FreightIQOfflineRoute {
             region.completedResourceCount == region.requiredResourceCount
       else { promise.resolve(nil); return }
       self.checkStyles { complete in
-        promise.resolve(complete && self.saved?.id == saved.id ? saved.bounds : nil)
+        let record = self.defaults.dictionary(forKey: self.readyKey)
+        let coverage: Any
+        if let geometryJSON = record?["geometryJSON"] as? String {
+          coverage = ["bounds": saved.bounds, "geometryJSON": geometryJSON]
+        } else { coverage = saved.bounds }
+        promise.resolve(complete && self.saved?.id == saved.id ? coverage : nil)
       }
     }
   }
@@ -901,61 +918,121 @@ private final class FreightIQOfflineRoute {
     }
   }
 
-  func download(_ bounds: [Double], promise: Promise, progress: @escaping (Double) -> Void) {
-    guard cancelDownload == nil, !removing else { promise.reject("BUSY", "Wait for the current offline action to finish."); return }
+  func download(_ bounds: [Double], geometryJSON: String? = nil, promise: Promise, progress: @escaping (Double) -> Void) {
+    guard cancelDownload == nil, !removing else { promise.reject(OfflineRouteException("Wait for the current offline action to finish.")); return }
     guard bounds.count == 4, bounds.allSatisfy(\.isFinite),
           (-180...180).contains(bounds[0]), (-180...180).contains(bounds[2]),
           (-85...85).contains(bounds[1]), (-85...85).contains(bounds[3]),
           bounds[0] < bounds[2], bounds[1] < bounds[3]
-    else { promise.reject("COVERAGE", "Could not prepare offline coverage for this route."); return }
+    else { promise.reject(OfflineRouteException("Could not prepare offline coverage for this route.")); return }
     let (west, south, east, north) = (bounds[0], bounds[1], bounds[2], bounds[3])
     let ring = [(west, south), (east, south), (east, north), (west, north), (west, south)]
       .map { CLLocationCoordinate2D(latitude: $0.1, longitude: $0.0) }
+    let geometry: Turf.Geometry
+    if let geometryJSON {
+      guard let data = geometryJSON.data(using: .utf8), let decoded = try? JSONDecoder().decode(Turf.Geometry.self, from: data) else {
+        promise.reject(OfflineRouteException("Could not prepare offline road coverage.")); return
+      }
+      switch decoded {
+      case .polygon, .multiPolygon: geometry = decoded
+      default: promise.reject(OfflineRouteException("Could not prepare offline road coverage.")); return
+      }
+    } else { geometry = Polygon([ring]).geometry }
     let mapDescriptors = styles.map { style in
       manager.createTilesetDescriptor(for: TilesetDescriptorOptions(
-        styleURI: style, zoomRange: 6...16, tilesets: nil,
-        stylePackOptions: StylePackLoadOptions(glyphsRasterizationMode: nil)
+        styleURI: style, zoomRange: 6...14, tilesets: nil,
+        stylePackOptions: nil
       ))
     }
     guard let options = TileRegionLoadOptions(
-      geometry: Polygon([ring]).geometry,
+      geometry: geometry,
       descriptors: [provider.getLatestNavigationTilesetDescriptor()] + mapDescriptors,
       metadata: nil, acceptExpired: false, networkRestriction: .none
-    ) else { promise.reject("COVERAGE", "Could not prepare offline coverage for this route."); return }
+    ) else { promise.reject(OfflineRouteException("Could not prepare offline coverage for this route.")); return }
 
+    guard let styleOptions = StylePackLoadOptions(glyphsRasterizationMode: .ideographsRasterizedLocally) else {
+      promise.reject(OfflineRouteException("Could not prepare offline map resources.")); return
+    }
     let id = "freightiq-route-" + UUID().uuidString
     cancelled = false
     defaults.set(id, forKey: pendingKey)
-    let operation = store.loadTileRegion(forId: id, loadOptions: options, progress: { state in
-      guard state.requiredResourceCount > 0 else { return }
-      let fraction = Double(state.completedResourceCount) / Double(state.requiredResourceCount)
-      DispatchQueue.main.async {
-        if self.defaults.string(forKey: self.pendingKey) == id { progress(fraction) }
+    // Finish both styles explicitly before declaring the map and road data ready.
+    // Descriptor resolution alone must not be the readiness signal.
+    var downloads: [Cancelable] = []
+    cancelDownload = { downloads.forEach { $0.cancel() } }
+    let group = DispatchGroup()
+    var styleFailed = false
+    for style in styles {
+      group.enter()
+      let download = manager.loadStylePack(for: style,
+        loadOptions: styleOptions,
+        progress: { _ in }, completion: { result in
+          DispatchQueue.main.async {
+            if case .failure = result { styleFailed = true }
+            group.leave()
+          }
+        })
+      downloads.append(download)
+    }
+    group.notify(queue: .main) {
+      guard !self.cancelled, !styleFailed else {
+        self.defaults.set("map-resources", forKey: "FreightIQOfflineRoute.lastFailure")
+        self.finishDownload(id, bounds: bounds, geometryJSON: geometryJSON, ready: false, promise: promise,
+          message: self.cancelled ? "Offline download cancelled." : "Offline map resources could not be downloaded. Check your connection and try again.")
+        return
       }
-    }, completion: { result in
-      DispatchQueue.main.async {
-        guard let region = try? result.get(), region.requiredResourceCount > 0,
-              region.completedResourceCount == region.requiredResourceCount else {
-          self.finishDownload(id, bounds: bounds, ready: false, promise: promise)
-          return
+      progress(0.1)
+      let operation = self.store.loadTileRegion(forId: id, loadOptions: options, progress: { state in
+        guard state.requiredResourceCount > 0 else { return }
+        let fraction = Double(state.completedResourceCount) / Double(state.requiredResourceCount)
+        DispatchQueue.main.async {
+          if self.defaults.string(forKey: self.pendingKey) == id { progress(0.1 + 0.9 * fraction) }
         }
-        self.checkStyles { ready in
-          self.finishDownload(id, bounds: bounds, ready: ready, promise: promise)
+      }, completion: { result in
+        DispatchQueue.main.async {
+          switch result {
+          case .failure(let error):
+            let message: String
+            switch error as? MapboxMaps.TileRegionError {
+            case .diskFull?: message = "Not enough storage for this offline route. Free up space and try again."
+            case .tileCountExceeded?: message = "This offline area exceeds the map provider’s download limit. Try a smaller route."
+            case .canceled?: message = "Offline download cancelled."
+            default: message = "Offline road data could not be downloaded. Check your connection and try again."
+            }
+            self.defaults.set(message, forKey: "FreightIQOfflineRoute.lastFailure")
+            self.finishDownload(id, bounds: bounds, geometryJSON: geometryJSON, ready: false, promise: promise, message: message)
+          case .success(let region):
+            guard region.requiredResourceCount > 0,
+                  region.completedResourceCount == region.requiredResourceCount else {
+              self.finishDownload(id, bounds: bounds, geometryJSON: geometryJSON, ready: false, promise: promise,
+                message: "Offline road data is incomplete. Please try the download again.")
+              return
+            }
+            self.checkStyles { ready in
+              self.finishDownload(id, bounds: bounds, geometryJSON: geometryJSON, ready: ready, promise: promise,
+                message: "Offline map resources could not be verified. Please try again.")
+            }
+          }
         }
-      }
-    })
-    cancelDownload = { operation.cancel() }
+      })
+      downloads.append(operation)
+    }
   }
 
-  private func finishDownload(_ id: String, bounds: [Double], ready: Bool, promise: Promise) {
+  private func finishDownload(_ id: String, bounds: [Double], geometryJSON: String? = nil, ready: Bool, promise: Promise,
+                              message: String = "Offline download did not finish. Please try again.") {
+    guard defaults.string(forKey: pendingKey) == id else { return }
     defer { cancelDownload = nil; defaults.removeObject(forKey: pendingKey) }
     guard ready, !cancelled, defaults.string(forKey: pendingKey) == id else {
       store.removeTileRegion(forId: id)
-      promise.reject("DOWNLOAD", "Offline download did not finish. Check your connection and try again.")
+      promise.reject(OfflineRouteException(cancelled ? "Offline download cancelled." : message))
       return
     }
+    defaults.removeObject(forKey: "FreightIQOfflineRoute.lastFailure")
     let previous = saved?.id
-    defaults.set(["id": id, "bounds": bounds], forKey: readyKey)
+    var record: [String: Any] = ["id": id, "bounds": bounds]
+    if let geometryJSON { record["geometryJSON"] = geometryJSON }
+    defaults.set(record, forKey: readyKey)
     if let previous { store.removeTileRegion(forId: previous) }
     promise.resolve(nil)
   }
@@ -967,7 +1044,7 @@ private final class FreightIQOfflineRoute {
   }
 
   func remove(_ promise: Promise) {
-    guard cancelDownload == nil, !removing else { promise.reject("BUSY", "Wait for the current offline action to finish."); return }
+    guard cancelDownload == nil, !removing else { promise.reject(OfflineRouteException("Wait for the current offline action to finish.")); return }
     guard let saved else { promise.resolve(nil); return }
     removing = true
     store.removeRegion(forId: saved.id) { result in
@@ -978,7 +1055,7 @@ private final class FreightIQOfflineRoute {
           self.defaults.removeObject(forKey: self.readyKey)
           promise.resolve(nil)
         case .failure:
-          promise.reject("REMOVE", "Could not remove the offline download.")
+          promise.reject(OfflineRouteException("Could not remove the offline download."))
         }
       }
     }

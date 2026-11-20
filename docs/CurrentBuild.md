@@ -13,6 +13,172 @@ answer one question:
 
 ## Current Objective
 
+### November 20 — owner acceptance / commit, push and owner builds approved
+
+Rob confirmed End navigation and Start/new trip worked and that route selection versus Steps was
+already checked earlier today. Both phones passed Intel edit/save/route/Resume and open-app
+airplane-mode maps/directions with the lightweight downloads. Rob approved new production builds
+for his owner testing and explicitly instructed commit and push first. Include only this tested
+navigation/offline package, preserving unrelated bot/scrape and training specifications.
+Final checks and scoped diff review precede direct clean-main commit/push. Owner-only candidates
+use existing iOS production-road-restriction-test / Android production-android-navigation profiles.
+Standalone offline cold relaunch, driving missed-turn rerouting, next-stop progression offline,
+and download cancel/update failure recovery remain field checks; do not claim them passed.
+No schema, credential or backend changes. No broader tester or public release.
+
+### November 20 — both-phone lightweight offline acceptance
+
+Rob reports the replacement download completed super fast on Pixel and in about four seconds on
+iPhone. He then confirmed both phones passed starting navigation with the app left open, airplane
+mode enabled and Wi-Fi disabled: the new street map and turn directions appear. Pixel's installed
+region was verified complete at about 85 MB versus 425 MB before the style correction. Both-phone
+Intel edit/save/route/Resume and Pixel Start Route transition also passed earlier today.
+These are stationary open-app tests. Standalone offline force-close/relaunch, actual missed-turn
+rerouting and next-stop progression offline remain unverified. All 41 focused checks pass and the
+latest Pixel Dev build is installed; iPhone already used the matching Light/Dark styles. Changes
+remain uncommitted. Production builds remain explicitly on hold; no commit/push or release.
+
+### November 20 — lightweight Pixel download accepted for speed
+
+Rob reported the same Pixel route finished super fast. Read-only store verification confirms the
+replacement region complete at 83/83 resources, 85,167,959 bytes versus 425,384,553 previously
+(about 80% smaller). Both Light/Dark style packs are complete. Region includes about 20.9 MB
+routing, 9.4 MB streets and 54.9 MB vector terrain; no terrain DEM appears in its referenced tiles.
+This verifies installed region size, not bytes transferred on a clean device: previously downloaded
+routing data can be reused. iPhone repeat download and both-phone new-style airplane-mode visual
+checks remain pending. No standalone cold-start/driving reroute acceptance or production release.
+
+### November 20 — approved lightweight street-map parity
+
+Rob confirmed Pixel started map and turn guidance with airplane mode on and Wi-Fi disabled.
+ADB connectivity inspection confirmed no default internet network; USB reverse exposes only the
+Metro port 8081. This is an offline-start/map pass while Dev remains open, not a standalone cold
+relaunch or driving reroute pass. Both phones have passed the corresponding open-app offline check.
+Rob approved removing heavy terrain downloads. Installed iOS SDK source confirms DayStyle and
+NightStyle already use Light/Dark and match its offline descriptors. No iPhone code change needed.
+Verified the live Mapbox Light v11/Dark v11 style documents use vector sources only, with no
+terrain, raster DEM or satellite source. Pixel navigation now loads those same street styles,
+honors the existing dark prop, and downloads both styles. Routing descriptor, zoom 6–14 and 5 km
+corridor remain unchanged. Changed the Android navigation view, route module, offline helper and
+existing offline spec/this record. Pixel Dev build compiles and is installed; all 41 focused
+checks pass and diff whitespace check passes. Physical readability, speed,
+ready-state and airplane-mode retest pending. Uncommitted; no production build or publishing.
+
+### November 20 — Pixel download completes / terrain dominates size
+
+Rob confirmed the max-zoom-14 corridor download completed but remains slow. Read-only inspection
+of the Pixel's Mapbox store found the ready region complete (390/390 resources, 425,384,553 bytes).
+Tile totals show terrain DEM about 369.7 MB, terrain vector about 28.5 MB, streets about 6.2 MB,
+and routing about 20.9 MB. Terrain elevation alone is roughly 87% of the region payload. Android
+uses Standard (not Satellite); iPhone offline descriptors currently use Light/Dark. A simpler 2D
+street style matching the actual navigation renderer is the next recommendation; no style change
+has been implemented or accepted. Preserve the completed region for airplane-mode visual/routing
+verification. Pixel cold-start and rerouting remain unverified; production hold remains.
+
+### November 20 — approved road-following offline coverage / device retest pending
+
+Rob reported a very slow iPhone download and Pixel tile-count-limit failure for the same saved
+Campbell Lane / Xcel Ophir stops. iPhone completed and started map/directions in airplane mode
+without closing Dev. That is not a cold-start pass: the Metro-dependent Dev app cannot relaunch
+without its server; standalone offline relaunch remains pending. Rob accepted Intel save/return/
+resume on both phones, and Pixel's loading-transition correction.
+Rob approved replacing the enclosing rectangle with coverage following the actual ordered roads;
+stop selection remains deferred. Shared Turf buffer uses the existing 5 km margin, passes the same
+polygon/multipolygon to both native loaders, and stores its shape for accurate Ready checks.
+Existing rectangular downloads remain readable. Previous ready regions survive replacement
+failure. Geometry tests cover bends, loops/holes, duplicate points and the CR63L detour.
+Both native Dev builds compile and are installed on their physical phones. TypeScript/scoped lint
+and all 41 focused checks pass. New dependencies are @turf/buffer and @turf/helpers. Changed the shared download control, new
+utils/offline-route-corridor.ts, both native bridges/loaders, package manifests, focused tests and
+this existing offline specification. Pixel repeated the same tile-count-limit failure after corridor installation. Read-only store
+inspection found no ready region, only seven cached routing tiles and ample disk space. Added the
+native failure type/message to Dev logging to identify the rejection; diagnostic build compiles.
+Next diagnostic retry confirmed exact provider rejection: 780 Maps tile packs requested against
+750 allowed. With no old ready region or disk-pressure evidence, removed the building-detail map
+tier from both native descriptors (max zoom 16 -> 14); navigation descriptor and 5 km corridor are
+unchanged. This follows Mapbox's documented town/road versus building-detail tile-pack ranges.
+Both replacement Dev builds compile and are installed; all 41 focused tests pass. Device
+download/visual/rerouting acceptance pending; uncommitted.
+Production builds remain on hold. Leave unrelated bot/scrape and training specs untouched.
+
+### November 20 — preview loading transition
+
+Rob confirmed Pixel Start Route no longer throws, but briefly displays the native map before route
+choices are ready. The shared screen now covers the native view with the themed loading background
+until preview choices arrive (and while starting guidance), retaining existing loading text and Back.
+Native calculation remains mounted. Changed `app/active-navigation.tsx` and this record; device
+transition acceptance pending. No production build or publishing.
+
+### November 20 — Pixel Start Route storage initialization failure
+
+Physical Pixel retry captured the exact cause: Mapbox Common 24.35 throws an Error from
+`TileStore.create(path)` while constructing the navigation view. The new Android offline helper
+used that deprecated overload. Replaced it with checked `setRootPath(path)` followed by `create()`,
+retaining the same directory and shared map/navigation store. Android development build and all
+38 focused regression checks pass. Updated Pixel Dev app installed successfully; Start Route retest pending.
+Changed `native-navigation-android/FreightIQOfflineRoute.kt` and this record; uncommitted.
+Production builds remain on hold. This is not yet offline-download acceptance.
+
+### November 19 — separate route selection and Steps actions
+
+Rob clarified that choosing a preview route must not automatically open its steps. Each candidate
+now has sibling tap targets: time/distance selects the route; Steps opens that candidate's details
+without changing the selected navigation route. Closing Details retains the prior selection; Start
+uses that selection. Map-line selection remains unchanged. Shared UI applies to both platforms.
+Changed `app/active-navigation.tsx` and this record. TypeScript/scoped lint and 38 focused regression
+tests pass. Both-phone tap-target/selection acceptance pending; uncommitted. Production-build hold
+remains in effect. This supersedes the earlier whole-card-opens-Steps decision.
+
+### November 19 — black navigation view after Intel / approved local correction
+
+Rob reported iPhone 82 returned to a black native map with the React ETA card still visible after
+editing/saving Intel and resuming; force-close/relaunch recovered. Source investigation found a
+matching lifecycle path on both platforms: detachment stops the native view, reattachment recalculates
+using the original preview request, while the JS screen already in guidance ignores preview events.
+Rob approved the correction. A selected/started native request now retains preview=false across
+reattachment; genuinely new request IDs still respect preview. Valid recent GPS updates retain the
+latest origin for recovery. iPhone records selection before asynchronous alternative selection so
+an intervening detach cannot reset the driver's choice to an ignored preview. The JS screen shows
+Restoring navigation while guidance rebuilds, without adding a popup. Explicit End teardown stays.
+Changed `native-navigation/FreightIQNavigation.swift`,
+`native-navigation-android/FreightIQAndroidNavigationView.kt`, `app/active-navigation.tsx`,
+`tests/navigation-view-reattach.test.mjs`, and this record, alongside the pending offline work.
+Both native development builds compile; TypeScript/scoped lint pass and all 38 focused regression
+tests pass. The test executes production iOS configure/selection/reattachment code and confirms a
+new trip still previews; JS restoring-state handler is also executed. This verifies the code path,
+not a physical reproduction of the reported incident. Both-phone Intel edit/save/resume and End/new
+trip acceptance remain pending because the phones are away. No new production builds, commit/push,
+backend or credentials changes; the user's production-build hold remains in effect.
+
+### November 19 — offline download field failure / approved Android parity
+
+Rob reported iPhone 82 failed Download with `DOWNLOAD: undefined reason` and Pixel has no control.
+Confirmed Android was explicitly excluded by the offline specification and UI platform guard; the
+Android native module exposed no download methods. Rob approved fixing iPhone and adding parity.
+Added Android map/routing shared TileStore, download/progress/cancel/remove/coverage bridge and
+persistent ready/pending state, preserving the previous region on failure. Enabled the shared UI.
+iPhone now downloads both day/night style packs explicitly before the tile region, uses local
+ideograph rasterization, distinguishes map/road/storage/limit failures, and uses an Expo exception
+with a real reason. The old implementation swallowed the Mapbox failure; its generic Promise reject
+created the Swift-source/undefined-reason text. The field download's exact underlying Mapbox cause
+cannot be recovered from that screenshot and has not been reproduced. Do not call it resolved yet.
+Installed SDK confirms descriptors with stylePackOptions can implicitly load styles; absence of an
+explicit loadStylePack call alone was not proof of the failure. New sequence makes completion and
+failure stages explicit. A shared message formatter removes native implementation details.
+Both native development builds compile; TypeScript, scoped lint and 36 regression tests pass.
+Changed paths: `components/offline-route-download.tsx`, `utils/offline-download-message.ts`,
+`native-navigation/FreightIQNavigation.swift`, `native-navigation-android/FreightIQOfflineRoute.kt`,
+`native-navigation-android/FreightIQAndroidRouteModule.kt`,
+`native-navigation-android/FreightIQAndroidNavigationView.kt`,
+`tests/offline-native-download.test.mjs`, `tests/offline-download-message.test.ts`,
+`docs/build-specs/FreightIQOfflineRouteDownloadV1BuildSpec.md`, and this record.
+Controlled production Swift callback tests cover success,
+map/tile/incomplete failure, cancellation, busy rejection and preserving the previous ready region.
+Real download, airplane-mode full restart, start/resume/reroute/next stop, cancel/update/remove and
+large rural-route download tests remain pending on both phones; neither device is connected now.
+No new production build, commit/push, database or credential change. Leave unrelated bot/scrape
+specification work untouched. Scope is governed by Offline Route Download V1 specification.
+
 ### November 19 — owner production candidates delivered / Android review pending
 
 Source commit `d9afa5747a80470dd0f4758b14f51ac6b166c79a` is pushed to `clean-main`.

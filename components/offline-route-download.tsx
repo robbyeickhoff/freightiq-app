@@ -7,19 +7,23 @@ import { AppState, Platform, Text, View } from "react-native";
 import { AppButton } from "@/components/ui/app-button";
 import { AppIcon } from "@/components/ui/app-icon";
 import { useAppTheme } from "@/context/theme-context";
-import { containsOfflineStop, offlineRouteBounds, type OfflineRouteBounds } from "@/utils/offline-route-coverage";
+import type { OfflineRouteBounds } from "@/utils/offline-route-coverage";
+import { containsOfflinePoint, offlineRouteCorridor, type OfflineCoverage } from "@/utils/offline-route-corridor";
+import { offlineDownloadMessage } from "@/utils/offline-download-message";
 import { calculateRoutePlan } from "@/utils/route-plan";
 import type { TodayRouteStop } from "@/utils/todays-route";
 
 type OfflineNavigation = {
   addListener(event: "onOfflineDownloadProgress", listener: (event: { fraction: number }) => void): { remove(): void };
-  offlineRouteCoverage(): Promise<OfflineRouteBounds | null>;
-  downloadOfflineRoute(bounds: OfflineRouteBounds): Promise<void>;
+  offlineRouteCoverage(): Promise<OfflineCoverage | null>;
+  downloadOfflineRoute(bounds: OfflineRouteBounds, geometryJSON: string): Promise<void>;
   cancelOfflineRouteDownload(): Promise<void>;
   removeOfflineRoute(): Promise<void>;
 };
 
-const navigation = Platform.OS === "ios" ? requireOptionalNativeModule<OfflineNavigation>("FreightIQNavigation") : null;
+const navigation = (Platform.OS === "ios" || Platform.OS === "android")
+  ? requireOptionalNativeModule<OfflineNavigation>(Platform.OS === "android" ? "FreightIQAndroidRouteModule" : "FreightIQNavigation")
+  : null;
 
 export function OfflineRouteDownload({ stops, enabled }: { stops: TodayRouteStop[]; enabled: boolean }) {
   if (!navigation?.offlineRouteCoverage) return null;
@@ -32,13 +36,13 @@ function OfflineRouteControl({ native, stops, enabled }: {
   enabled: boolean;
 }) {
   const { colors } = useAppTheme();
-  const [coverage, setCoverage] = useState<OfflineRouteBounds | null>(null);
+  const [coverage, setCoverage] = useState<OfflineCoverage | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const operation = useRef<AbortController | null>(null);
-  const ready = enabled && stops.length > 0 && coverage && stops.every((stop) => containsOfflineStop(coverage, { latitude: stop.lat, longitude: stop.lng }));
+  const ready = enabled && stops.length > 0 && coverage && stops.every((stop) => containsOfflinePoint(coverage, { latitude: stop.lat, longitude: stop.lng }));
   const canDownload = enabled && stops.length > 0;
 
   useEffect(() => {
@@ -89,18 +93,16 @@ function OfflineRouteControl({ native, stops, enabled }: {
       ]);
       const plan = await calculateRoutePlan(location.coords, stops, Constants.expoConfig?.extra?.mapboxPublicToken ?? "", controller.signal);
       if (controller.signal.aborted) throw new Error("Route preparation cancelled.");
-      const bounds = offlineRouteBounds([location.coords, ...plan.coordinates, ...stops.map((stop) => ({
-        latitude: stop.lat, longitude: stop.lng,
-      }))]);
-      if (!bounds) throw new Error("This route covers too much area for one offline download.");
+      const corridor = offlineRouteCorridor(plan.coordinates);
+      if (!corridor) throw new Error("This route covers too much area for one offline download.");
       clearTimeout(timeout);
-      await native.downloadOfflineRoute(bounds);
+      await native.downloadOfflineRoute(corridor.bounds, corridor.geometryJSON);
       const installed = await native.offlineRouteCoverage();
       setCoverage(installed);
       if (!installed) throw new Error("Offline download could not be verified. Please try again.");
     } catch (error) {
       if (timedOut) setMessage("Route preparation timed out. Please try again.");
-      else if (!controller.signal.aborted) setMessage(error instanceof Error ? error.message : "Could not download. Please try again.");
+      else if (!controller.signal.aborted) setMessage(offlineDownloadMessage(error));
     } finally {
       clearTimeout(timeout);
       operation.current = null;

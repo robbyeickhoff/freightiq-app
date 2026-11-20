@@ -4,6 +4,8 @@ import com.mapbox.geojson.Point
 import com.mapbox.api.directions.v5.DirectionsCriteria
 import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.navigation.base.extensions.applyDefaultNavigationOptions
+import expo.modules.kotlin.Promise
+import expo.modules.kotlin.functions.Queues
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.kotlin.records.Field
@@ -34,8 +36,26 @@ class FreightIQAndroidRouteModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("FreightIQAndroidRouteModule")
     Constant("available") { true }
+    Events("onOfflineDownloadProgress")
+    AsyncFunction("offlineRouteCoverage") { promise: Promise ->
+      FreightIQOfflineRoute.get(requireNotNull(appContext.reactContext)).coverage(promise)
+    }.runOnQueue(Queues.MAIN)
+    AsyncFunction("downloadOfflineRoute") { bounds: List<Double>, geometryJSON: String, promise: Promise ->
+      FreightIQOfflineRoute.get(requireNotNull(appContext.reactContext)).download(bounds, geometryJSON, promise) { fraction ->
+        sendEvent("onOfflineDownloadProgress", mapOf("fraction" to fraction))
+      }
+    }.runOnQueue(Queues.MAIN)
+    AsyncFunction("cancelOfflineRouteDownload") {
+      FreightIQOfflineRoute.get(requireNotNull(appContext.reactContext)).cancel()
+    }.runOnQueue(Queues.MAIN)
+    AsyncFunction("removeOfflineRoute") { promise: Promise ->
+      FreightIQOfflineRoute.get(requireNotNull(appContext.reactContext)).remove(promise)
+    }.runOnQueue(Queues.MAIN)
     View(FreightIQAndroidNavigationView::class) {
       Events("onState")
+      Prop("dark") { view: FreightIQAndroidNavigationView, dark: Boolean ->
+        view.setDark(dark)
+      }
       Prop("bottomInset") { view: FreightIQAndroidNavigationView, inset: Int ->
         view.updateBottomInset(inset)
       }

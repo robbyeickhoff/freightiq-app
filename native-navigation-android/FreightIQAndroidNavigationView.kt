@@ -6,6 +6,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
+import android.content.res.Configuration
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -47,11 +48,9 @@ import com.mapbox.maps.plugin.annotation.generated.CircleAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createCircleAnnotationManager
 import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createPolylineAnnotationManager
-import com.mapbox.navigation.base.options.NavigationOptions
 import com.mapbox.navigation.base.route.NavigationRoute
 import com.mapbox.navigation.base.route.NavigationRouterCallback
 import com.mapbox.navigation.base.route.RouterFailure
-import com.mapbox.navigation.core.MapboxNavigationProvider
 import com.mapbox.navigation.core.trip.session.RouteProgressObserver
 import com.mapbox.common.location.Location
 import com.mapbox.maps.plugin.locationcomponent.location
@@ -91,7 +90,9 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
   override val shouldUseAndroidLayout = true
   private val container = FrameLayout(context)
   private val onState by EventDispatcher()
+  private val offline = FreightIQOfflineRoute.get(context)
   private val map = MapView(context)
+  private var darkMap = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
   private val lines = map.annotations.createPolylineAnnotationManager()
   private val stopMarkers = map.annotations.createCircleAnnotationManager()
   private val currentRoad = TextView(context).apply {
@@ -264,7 +265,7 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
   private var lastNearbyFix: Long? = null
   private var requestedRouteId: Long? = null
   private val navigation by lazy {
-    MapboxNavigationProvider.create(NavigationOptions.Builder(context.applicationContext).build())
+    offline.navigation
   }
   private val notificationManager = context.getSystemService(NotificationManager::class.java)
   private var lastNotificationContent: Triple<String, String, String>? = null
@@ -449,6 +450,10 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
       if ((rawLocation.horizontalAccuracy ?: Double.NaN) in 0.0..100.0) {
         rawReroutePosition = Point.fromLngLat(rawLocation.longitude, rawLocation.latitude)
         rawRerouteTimestamp = rawLocation.timestamp
+        if (System.currentTimeMillis() - rawLocation.timestamp in 0L..15_000L) {
+          activeRequest?.originLatitude = rawLocation.latitude
+          activeRequest?.originLongitude = rawLocation.longitude
+        }
       }
       val destination = activeRequest?.stops?.firstOrNull() ?: return
       if (arrived) return
@@ -582,7 +587,13 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
       }
       false
     }
-    map.mapboxMap.loadStyle(Style.STANDARD)
+    map.mapboxMap.loadStyle(if (darkMap) Style.DARK else Style.LIGHT)
+  }
+
+  fun setDark(value: Boolean) {
+    if (darkMap == value) return
+    darkMap = value
+    map.mapboxMap.loadStyle(if (darkMap) Style.DARK else Style.LIGHT)
   }
 
   private fun pauseFollowing() {
@@ -674,6 +685,8 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
   }
 
   private fun startGuidance(request: AndroidGuidanceRequest, route: NavigationRoute) {
+    // Reattaching an already-started trip must restore guidance, not reopen preview.
+    request.preview = false
     navigation.setNavigationRoutes(listOf(route))
     navigation.startTripSession()
     publishLegs(request, "started", route)

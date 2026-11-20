@@ -159,6 +159,10 @@ export default function ActiveNavigationScreen() {
       return;
     }
     if (event.state === "closed") { router.back(); return; }
+    if (event.state === "loading" && guidanceStarted) {
+      setFailed(false);
+      setMessage("Restoring navigation…");
+    }
     if (event.state === "preview" && !guidanceStarted && !routeChoice && event.choices?.length) {
       setChoices(event.choices);
       setMessage("");
@@ -217,6 +221,9 @@ export default function ActiveNavigationScreen() {
       {intelStop ? <NavigationStopIntel stop={intelStop} duringGuidance onClose={() => setIntelStop(null)} /> : null}
       <View style={styles.map}>
         {active && request && NavigationView ? <NavigationView style={styles.map} request={request} routeChoice={routeChoice} bottomInset={panelHeight + insets.bottom + 20} dark={colorScheme === "dark"} onState={onState} /> : null}
+        {active && !guidanceStarted && choices.length === 0 ? (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
+        ) : null}
         {message && active ? <View style={[styles.notice, { backgroundColor: colors.surface }]}>
           <Text style={{ color: colors.textPrimary }}>{message}</Text>
           {failed
@@ -327,12 +334,12 @@ function RoutePreview({ choices, destination, starting, backLabel, onCancel, onS
   const map = useRef<MapView>(null);
   const [selected, setSelected] = useState(choices[0].index);
   const [stepsOpen, setStepsOpen] = useState(false);
-  const selectedPosition = Math.max(0, choices.findIndex((choice) => choice.index === selected));
-  const selectedRoute = choices[selectedPosition];
-  const steps = useMemo(() => selectedRoute.steps?.filter((step) =>
+  const [stepsRouteIndex, setStepsRouteIndex] = useState(choices[0].index);
+  const stepsRoute = choices.find((choice) => choice.index === stepsRouteIndex) ?? choices[0];
+  const steps = useMemo(() => stepsRoute.steps?.filter((step) =>
     typeof step.instruction === "string" && step.instruction.trim() &&
     Number.isFinite(step.meters) && step.meters >= 0 &&
-    Number.isInteger(step.legIndex) && step.legIndex >= 0) ?? [], [selectedRoute]);
+    Number.isInteger(step.legIndex) && step.legIndex >= 0) ?? [], [stepsRoute]);
   const multipleStops = steps.some((step) => step.legIndex > 0);
   const [mapReady, setMapReady] = useState(false);
   const [mapLaidOut, setMapLaidOut] = useState(false);
@@ -375,24 +382,36 @@ function RoutePreview({ choices, destination, starting, backLabel, onCancel, onS
           const minutes = Math.max(1, Math.round(choice.seconds / 60));
           const duration = minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} hr ${minutes % 60} min`;
           return (
-            <Pressable
-              key={choice.index}
-              accessibilityRole="button"
-              accessibilityLabel={`${Math.max(1, Math.round(choice.seconds / 60))} minutes, ${(choice.meters / 1609.344).toFixed(1)} miles. View steps`}
-              accessibilityState={{ selected: selected === choice.index, disabled: starting }}
-              disabled={starting}
-              onPress={() => { setSelected(choice.index); setStepsOpen(true); }}
-              style={[styles.previewChoice, {
-                backgroundColor: colors.surface,
-                borderColor: selected === choice.index ? colors.accentStrong : colors.border,
-              }]}
-            >
-              <Text style={[styles.previewDuration, { color: colors.textPrimary }]}>
-                {duration}
-                {choices.length > 1 && choice.seconds === fastest ? " · Fastest" : ""}
-              </Text>
-              <View style={styles.choiceDetails}><Text style={{ color: colors.textSecondary }}>{(choice.meters / 1609.344).toFixed(1)} mi</Text><View style={styles.stepsHint}><Text style={{ color: colors.accentStrong, fontSize: 13 }}>Steps</Text><AppIcon name="chevronRight" size={18} color={colors.accentStrong} /></View></View>
-            </Pressable>
+            <View key={choice.index} style={[styles.previewChoice, {
+              backgroundColor: colors.surface,
+              borderColor: selected === choice.index ? colors.accentStrong : colors.border,
+            }]}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Select route: ${duration}, ${(choice.meters / 1609.344).toFixed(1)} miles`}
+                accessibilityState={{ selected: selected === choice.index, disabled: starting }}
+                disabled={starting}
+                onPress={() => setSelected(choice.index)}
+                style={styles.routeSelection}
+              >
+                <Text style={[styles.previewDuration, { color: colors.textPrimary }]}>
+                  {duration}
+                  {choices.length > 1 && choice.seconds === fastest ? " · Fastest" : ""}
+                </Text>
+                <Text style={{ color: colors.textSecondary }}>{(choice.meters / 1609.344).toFixed(1)} mi</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`View steps: ${duration}, ${(choice.meters / 1609.344).toFixed(1)} miles`}
+                accessibilityState={{ disabled: starting }}
+                disabled={starting}
+                onPress={() => { setStepsRouteIndex(choice.index); setStepsOpen(true); }}
+                style={styles.stepsAction}
+              >
+                <Text style={{ color: colors.accentStrong, fontSize: 15, fontWeight: "600" }}>Steps</Text>
+                <AppIcon name="chevronRight" size={18} color={colors.accentStrong} />
+              </Pressable>
+            </View>
           );
         })}
         <AppButton disabled={starting} onPress={() => onStart(selected)}>
@@ -474,10 +493,10 @@ const styles = StyleSheet.create({
   previewHeader: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
   destinationTitle: { flex: 1, fontSize: 17, fontWeight: "600" },
   previewSheet: { paddingHorizontal: 16, paddingTop: 10, gap: 8, borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -18 },
-  previewChoice: { padding: 14, gap: 4, borderWidth: 1, borderRadius: 18 },
+  previewChoice: { flexDirection: "row", alignItems: "stretch", borderWidth: 1, borderRadius: 18, overflow: "hidden" },
+  routeSelection: { flex: 1, padding: 14, gap: 4, justifyContent: "center" },
   previewDuration: { fontSize: 23, fontWeight: "700" },
-  choiceDetails: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  stepsHint: { flexDirection: "row", alignItems: "center" },
+  stepsAction: { flexDirection: "row", alignItems: "center", justifyContent: "center", minHeight: 44, paddingHorizontal: 14 },
   previewBack: { minHeight: 44, alignItems: "center", justifyContent: "center" },
   stepsBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "flex-end" },
   stepsSheet: { flex: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: "hidden" },
