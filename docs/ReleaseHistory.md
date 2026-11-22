@@ -6,6 +6,45 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-11-22 — Navigation guidance polish owner candidates
+
+Rob accepted both-phone development checks and approved owner production builds for Monday
+November 23. Accepted source `68f889bec2ab120967c918c7f9231dcde27dd4e3` was committed and
+pushed before building. TypeScript/scoped lint and 44 focused checks pass. Build archives exclude
+unrelated bot/scrape/training specifications, backend/test fixtures and local overrides.
+
+- iOS 1.0.2 (84), EAS `783775b6-7986-479f-b377-6de12712ceba`, profile
+  `production-road-restriction-test`, finished. Submission
+  `f1fa35db-245a-4735-b344-95e589520bde` succeeded. App Store Connect confirms processed build,
+  saved Monday field notes, only Team (Expo), Internal, 1 tester and zero individual testers.
+  Owner TestFlight access is ready. Proof: `/tmp/fiq-owner-nov22-ios-confirmation.jpg`.
+- Android 1.0.2 (53), EAS `fbd42d44-e375-4e5e-9c5d-38dcd3e59226`, profile
+  `production-android-navigation`, finished. Exact downloaded AAB uploaded to existing closed
+  Owner Field Test track `4697372655075776480`. Only code 53 included, 52 excluded; rollout
+  100% within the existing one-person audience. Internal Testers (10) remains unchecked. Final
+  confirmation submitted exactly one owner-release change; Publishing overview shows Changes
+  in review, quick checks pending (up to 14 minutes at observation). Approval and actual Play
+  download availability are pending. Supported devices unchanged: 11,922 phones, 6,209 tablets,
+  zero devices lost across form factors. Existing portrait hardware notice deferred with verified
+  owner-Pixel rationale; manifest unchanged. Missing deobfuscation mapping remains nonblocking.
+  Proof: `/tmp/fiq-owner-nov22-android-confirmation.jpg`.
+
+Both packages verify production identity/database, standalone bundled app, offline/native feedback
+content, no local test endpoint and disabled debugging. iOS deep/strict codesign and Android JAR
+signature verification pass. SHA256 iOS:
+`1f77766d51d52dfd6d61e7ca5fcc03baeb3e177e42a5091114e7817dc0bee3dd`;
+Android: `c504fc2c93b456051545318649d6ff94a49cbd9971e2959ffa0e14636e5b504c`.
+
+Includes road-first banner/expanded rows with corrected iPhone arrow association, Pixel hierarchy,
+street-only address, bottom-card Mapbox feedback, Dev Live Activity suppression and production
+cleanup, and selected iPhone route preservation through native view reattachment. Startup reentry
+crash corrected. No G50 avoidance rule; route identity retained rather than recalculated on return.
+Both phones passed the accepted stationary flows. Actual Mapbox submission intentionally deferred
+to a real missing/wrong speed limit. Production activity/tap cleanup, genuine reroute/weak signal,
+offline cold relaunch and next-stop progression remain field acceptance. Rollback references are
+iOS 83 / Android 52. No public release, broader tester distribution, backend or credential change.
+Release bookkeeping follows immutable binary source and does not require rebuilding.
+
 ## 2026-11-20 — Lightweight offline navigation owner candidates
 
 Rob accepted both-phone development flows and explicitly approved commit/push before new

@@ -13,6 +13,31 @@ answer one question:
 
 ## Current Objective
 
+### November 22 — owner production candidates submitted
+
+Accepted source `68f889bec2ab120967c918c7f9231dcde27dd4e3` is committed and pushed to clean-main.
+TypeScript, scoped lint and 44 focused checks pass. Both cloud builds finished; downloaded packages
+passed production identity/database, standalone JS, absence of local test configuration, disabled
+debugging and signature checks. Source archives preserved unrelated bot/scrape and training work.
+
+- iOS 1.0.2 (84), EAS `783775b6-7986-479f-b377-6de12712ceba`, profile
+  `production-road-restriction-test`; submission `f1fa35db-245a-4735-b344-95e589520bde`
+  succeeded. App Store Connect confirms processed build, saved Monday test notes, only Team
+  (Expo), Internal, 1 tester and zero individual testers. Ready for owner TestFlight installation.
+- Android 1.0.2 (53), EAS `fbd42d44-e375-4e5e-9c5d-38dcd3e59226`, profile
+  `production-android-navigation`; exact AAB uploaded and submitted to existing one-person
+  Owner Field Test track only. Code 53 included, 52 excluded; full rollout within that track.
+  Publishing overview confirms Changes in review, quick checks still running. Google approval
+  and actual download availability remain pending. Supported-device counts unchanged, zero lost.
+  Existing portrait notice deferred for the verified owner Pixel; missing deobfuscation mapping
+  remains a nonblocking warning. No manifest/security/audience expansion.
+
+Real Mapbox report submission, production Dynamic Island cleanup/tap, genuine missed-turn and
+weak-signal/offline recovery, offline cold relaunch and next-stop progression remain Monday field
+checks. Stationary Dev acceptance is not a substitute. No backend/schema/credentials change or
+public release. Full IDs, package hashes and proof paths are in ReleaseHistory.md. Release receipt
+bookkeeping does not change immutable binary source or require rebuilding these packages.
+
 ### November 22 — owner acceptance and owner production builds approved
 
 Owner confirms both phones passed street-address card, Mapbox report menu/cancel, road-first
