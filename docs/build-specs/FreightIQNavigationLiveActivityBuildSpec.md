@@ -35,3 +35,18 @@ already installed Dev activity requires running the updated Dev app once. Produc
 another installed app's activity. Verify updated Dev startup clears its old card, Dev guidance
 creates none, and production guidance/tap/End Navigation still work. Native build and physical
 acceptance remain pending; no release authorized by this correction alone.
+
+## November 22 — Dev launcher cleanup follow-up
+
+Owner reports an Island item still opens Dev's connection screen after both-phone acceptance.
+Connected process inspection shows Dev navigation widget extension still running; this does not
+establish when the activity was created. Found cleanup only on Expo module creation and guidance
+start, neither guaranteed in the launcher without Metro. Run the existing variant-guarded cleanup
+from native AppDelegate launch, before JavaScript. Set NSSupportsLiveActivities false for Dev in
+the config plugin; keep true for production. Existing navigation creation guard remains. Verify
+Dev cold launch at connection screen clears its old activity, then Dev navigation creates none,
+and regular build 84 still opens its own navigation. Production candidates unchanged.
+
+Native Dev build and install pass; owner confirms the Island is gone and approves commit/push.
+Plugin regression checks cover variant capabilities, pre-JavaScript launch placement, idempotence
+and missing launch anchor. Existing activity lifecycle checks pass. No replacement production build.

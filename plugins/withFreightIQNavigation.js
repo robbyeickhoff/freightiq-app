@@ -1,11 +1,11 @@
-const { withInfoPlist, withXcodeProject } = require("@expo/config-plugins");
+const { withInfoPlist, withXcodeProject, withAppDelegate } = require("@expo/config-plugins");
 
 const addNavigationActivityTarget = require("./addNavigationActivityTarget");
 
 // Opt-in native integration until owner acceptance; production keeps its current behavior.
 module.exports = function withFreightIQNavigation(config) {
   config = withInfoPlist(config, (mod) => {
-    mod.modResults.NSSupportsLiveActivities = true;
+    mod.modResults.NSSupportsLiveActivities = !mod.ios.bundleIdentifier?.endsWith(".dev");
     mod.modResults.MBXAccessToken = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
     if (process.env.FREIGHTIQ_STOP_RESTRICTION_TEST === "1") {
       mod.modResults.FreightIQStopRestrictionTest = true;
@@ -15,6 +15,19 @@ module.exports = function withFreightIQNavigation(config) {
     mod.modResults.UIBackgroundModes = [...new Set([
       ...(mod.modResults.UIBackgroundModes ?? []), "location", "audio",
     ])];
+    return mod;
+  });
+  config = withAppDelegate(config, (mod) => {
+    // This must run before Metro/JavaScript: opening an old card can land in the
+    // Dev launcher without ever constructing FreightIQNavigation's Expo module.
+    const cleanup = "    NavigationLiveActivity.clearDevelopmentActivities()";
+    if (!mod.modResults.contents.includes(cleanup)) {
+      const launch = "    let delegate = ReactNativeDelegate()";
+      if (!mod.modResults.contents.includes(launch)) {
+        throw new Error("Navigation activity cleanup: AppDelegate launch anchor missing");
+      }
+      mod.modResults.contents = mod.modResults.contents.replace(launch, `${cleanup}\n${launch}`);
+    }
     return mod;
   });
   return withXcodeProject(config, (mod) => {

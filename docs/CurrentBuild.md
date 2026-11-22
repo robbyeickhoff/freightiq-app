@@ -13,6 +13,19 @@ answer one question:
 
 ## Current Objective
 
+### November 22 — Dev launcher Island follow-up
+
+Owner reports an Island item opens Dev launcher, where long press does not expand. Process list
+shows Dev navigation widget extension running. Creation source/time not established. Found Dev
+Live Activities capability still enabled and existing cleanup only runs on Expo navigation module
+creation/guidance startup, not guaranteed at disconnected launcher. Plugin now disables Dev's
+capability and adds variant-guarded cleanup to native AppDelegate launch before JavaScript.
+Equivalent generated local iOS files updated for native build. Plugin capability/launch/idempotence
+and lifecycle checks pass. Native build passes; replacement Dev installed successfully and its
+Info.plist confirms NSSupportsLiveActivities false. Owner confirms the Island is gone after
+opening updated Dev and approves commit/push. Subsequent Dev guidance/no-recurrence remains
+a normal regression check. Production candidates unchanged; unrelated specifications preserved.
+
 ### November 22 — owner production candidates submitted
 
 Accepted source `68f889bec2ab120967c918c7f9231dcde27dd4e3` is committed and pushed to clean-main.
