@@ -9,6 +9,29 @@ import MapboxNavigationCore
 import MapboxNavigationUIKit
 import UserNotifications
 
+func navigationRoadKey(_ value: String) -> String {
+  value.lowercased().replacingOccurrences(of: "¾", with: "3/4")
+    .replacingOccurrences(of: "½", with: "1/2").replacingOccurrences(of: "¼", with: "1/4")
+    .replacingOccurrences(of: #"\b(road|rd|highway|hwy)\b"#, with: "", options: .regularExpression)
+    .filter { $0.isLetter || $0.isNumber }
+}
+
+// Road identity outranks a signposted city. Ramp destination refs are a fallback,
+// never a reason to substitute the current road or an unrelated later step.
+func navigationRoadTitle(names: [String]?, codes: [String]?, destinationCodes: [String]?) -> String? {
+  // Local numbered roads should keep their readable name rather than a duplicate shield.
+  if let name = names?.first, let code = codes?.first,
+     navigationRoadKey(name) == navigationRoadKey(code), !navigationRoadKey(name).isEmpty {
+    return name.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+  for values in [codes, names, destinationCodes] {
+    let text = (values ?? []).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+      .filter { !$0.isEmpty }.joined(separator: " / ")
+    if !text.isEmpty { return text }
+  }
+  return nil
+}
+
 // Distance milestones, with a cooldown, rather than only the SDK's final
 // spoken instruction. Skipped milestones never produce a burst of old alerts.
 struct NavigationAlertMilestones {
@@ -165,6 +188,9 @@ struct FreightIQNavigationRequest: Record {
 class FreightIQNavigation: Module {
   func definition() -> ModuleDefinition {
     Name("FreightIQNavigation")
+    OnCreate {
+      Task { @MainActor in NavigationLiveActivity.clearDevelopmentActivities() }
+    }
     Events("onOfflineDownloadProgress")
     AsyncFunction("offlineRouteCoverage") { (promise: Promise) in
       FreightIQOfflineRoute.shared.coverage(promise)
@@ -188,6 +214,9 @@ class FreightIQNavigation: Module {
       Prop("routeChoice") { (view: FreightIQNavigationView, choice: String) in
         view.selectRoute(choice)
       }
+      Prop("feedbackRequest") { (view: FreightIQNavigationView, value: Int) in
+        view.reportMapIssue(value)
+      }
       Prop("dark") { (view: FreightIQNavigationView, dark: Bool) in
         view.setAppearance(dark)
       }
@@ -196,6 +225,36 @@ class FreightIQNavigation: Module {
       }
     }
   }
+}
+
+// Keep Mapbox's row selection, sizing and distance behavior; customize only row text.
+private final class NavigationStepsDelegate: NSObject, UITableViewDelegate {
+  weak var original: UITableViewDelegate?
+  var format: ((UITableViewCell, IndexPath) -> Void)?
+
+  override func responds(to selector: Selector!) -> Bool {
+    super.responds(to: selector) || original?.responds(to: selector) == true
+  }
+  override func forwardingTarget(for selector: Selector!) -> Any? {
+    original?.responds(to: selector) == true ? original : super.forwardingTarget(for: selector)
+  }
+  func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+    original?.tableView?(tableView, willDisplay: cell, forRowAt: indexPath)
+    format?(cell, indexPath)
+  }
+}
+
+// The SDK builds list rows from step i's visual instructions, which describe i+1.
+// Preserve its arrows/distances and resolve the road from that SAME visual maneuver.
+// Current leg rows start at currentStep+1, so their road targets start at currentStep+2.
+// Later leg rows start at depart, so their road targets start at index 1.
+func navigationListSections<T>(_ legs: [[T]], legIndex: Int, stepIndex: Int) -> [[T]] {
+  guard legs.indices.contains(legIndex) else { return [] }
+  var sections: [[T]] = []
+  let remaining = Array(legs[legIndex].dropFirst(max(0, stepIndex + 2)))
+  if !remaining.isEmpty { sections.append(remaining) }
+  for leg in legs.dropFirst(legIndex + 1) { sections.append(Array(leg.dropFirst())) }
+  return sections
 }
 
 // The SDK normally dismisses itself at its final destination. Arrival is only a
@@ -283,12 +342,47 @@ private final class DeliveryNavigationController: NavigationViewController {
     }
   }
 
+  private var stepsDelegate: NavigationStepsDelegate?
+  var stepsProgress: (() -> RouteProgress?)?
+
+  private func formatDirectionRow(_ cell: UITableViewCell, at index: IndexPath) {
+    guard let progress = stepsProgress?() else { return }
+    let sections = navigationListSections(progress.navigationRoutes.mainRoute.route.legs.map(\.steps),
+      legIndex: progress.legIndex, stepIndex: progress.currentLegProgress.stepIndex)
+    guard sections.indices.contains(index.section), sections[index.section].indices.contains(index.row),
+          let row = cell.subviews.compactMap({ $0 as? StepInstructionsView }).first else { return }
+    let step = sections[index.section][index.row]
+    guard step.maneuverType != .arrive,
+          let road = navigationRoadTitle(names: step.exitNames ?? step.names, codes: step.codes,
+                                         destinationCodes: step.destinationCodes) else { return }
+    row.primaryLabel.numberOfLines = 2
+    row.primaryLabel.attributedText = NSAttributedString(string: road, attributes: [
+      .font: row.primaryLabel.font ?? UIFont.boldSystemFont(ofSize: 26),
+      .foregroundColor: row.primaryLabel.textColor ?? UIColor.label
+    ])
+    var details = (step.destinations ?? []).filter { navigationRoadKey($0) != navigationRoadKey(road) }
+    if let exits = step.exitCodes, !exits.isEmpty { details.insert("Exit " + exits.joined(separator: " / "), at: 0) }
+    row.secondaryLabel.attributedText = NSAttributedString(string: details.joined(separator: " · "), attributes: [
+      .font: UIFont.systemFont(ofSize: 16), .foregroundColor: row.secondaryLabel.textColor ?? UIColor.secondaryLabel
+    ])
+  }
+
   private func sizeExpandedDirections(_ banner: UIView) {
     guard let top = children.compactMap({ $0 as? TopBannerViewController }).first,
           top.isDisplayingSteps,
           let steps = top.children.compactMap({ $0 as? StepsViewController }).first,
           let table = steps.view.subviews.compactMap({ $0 as? UITableView }).first,
           table.contentSize.height > 0 else { return }
+    if table.delegate !== stepsDelegate {
+      let proxy = NavigationStepsDelegate()
+      proxy.original = table.delegate
+      proxy.format = { [weak self] cell, index in self?.formatDirectionRow(cell, at: index) }
+      stepsDelegate = proxy
+      table.delegate = proxy
+    }
+    for cell in table.visibleCells {
+      if let index = table.indexPath(for: cell) { formatDirectionRow(cell, at: index) }
+    }
     let safeHeight = view.safeAreaLayoutGuide.layoutFrame.height
     let headerHeight = steps.view.convert(CGPoint.zero, to: banner).y
     let footerHeight = max(0, steps.view.bounds.height - table.bounds.height)
@@ -374,6 +468,9 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   let onState = EventDispatcher()
   private var request: FreightIQNavigationRequest?
   private var pendingRoutes: NavigationRoutes?
+  private var selectedRoutes: NavigationRoutes?
+  private var isStartingGuidance = false
+  private var pendingSelection: (routes: NavigationRoutes, index: Int)?
   private var task: Task<Void, Never>?
   private var controller: NavigationViewController?
   private var dark = false
@@ -396,6 +493,8 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   func configure(_ next: FreightIQNavigationRequest) {
     guard next.id != request?.id else { return }
     if next.stopId != request?.stopId { reportedArrivalStopId = nil }
+    selectedRoutes = nil
+    pendingSelection = nil
     request = next
     if window != nil { calculate(next) }
   }
@@ -413,10 +512,19 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
 
   override func didMoveToWindow() {
     super.didMoveToWindow()
+    // Loading Mapbox's controller can synchronously trigger another window callback.
+    // Reconcile the final window state when that single startup has finished.
+    guard !isStartingGuidance else { return }
     if window == nil {
       stop()
     } else if controller == nil, let request {
-      calculate(request)
+      if !request.preview, let selectedRoutes {
+        startGuidance(selectedRoutes, request)
+      } else if !request.preview, pendingSelection != nil {
+        resumeSelection(request)
+      } else {
+        calculate(request)
+      }
     }
   }
 
@@ -534,9 +642,16 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
           let index = Int(choice.dropFirst(next.id.count + 1)), index >= 0 else { return }
     // The selection survives temporary removal of this view from its window.
     request?.preview = false
+    pendingSelection = (routes, index)
     pendingRoutes = nil
+    resumeSelection(next)
+  }
+
+  private func resumeSelection(_ next: FreightIQNavigationRequest) {
+    guard let selection = pendingSelection else { return }
+    task?.cancel()
     task = Task { @MainActor [weak self] in
-      let selected = index == 0 ? routes : await routes.selectingAlternativeRoute(at: index - 1)
+      let selected = selection.index == 0 ? selection.routes : await selection.routes.selectingAlternativeRoute(at: selection.index - 1)
       guard !Task.isCancelled, let self, self.window != nil, self.request?.id == next.id else { return }
       guard let selected else {
         self.emit("error", next, message: "Could not open the selected route. Try again.")
@@ -547,7 +662,15 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
   }
 
   private func startGuidance(_ routes: NavigationRoutes, _ next: FreightIQNavigationRequest) {
+    guard !isStartingGuidance else { return }
+    isStartingGuidance = true
+    defer {
+      isStartingGuidance = false
+      if window == nil { stop() }
+    }
     if request?.id == next.id { request?.preview = false }
+    selectedRoutes = routes
+    pendingSelection = nil
     isRerouting = false
     rerouteFailed = false
     let provider = Self.provider
@@ -571,6 +694,10 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
     navigation.onReportCondition = { [weak self] in
       guard let self, let request = self.request, request.id == self.guidanceId else { return }
       self.emit("reportCondition", request)
+    }
+    navigation.stepsProgress = { [weak self] in
+      guard self?.guidanceId != nil else { return nil }
+      return Self.provider.mapboxNavigation.navigation().currentRouteProgress?.routeProgress
     }
     navigation.showsReportFeedback = false
     navigation.navigationView.bottomBannerContainerView.isHidden = true
@@ -651,6 +778,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
 
   func navigationViewController(_ navigationViewController: NavigationViewController, didUpdate progress: RouteProgress, with location: CLLocation, rawLocation: CLLocation) {
     guard let request, request.id == guidanceId else { return }
+    selectedRoutes = progress.navigationRoutes
     lastRawLocation = rawLocation
     if rawLocation.horizontalAccuracy >= 0, rawLocation.horizontalAccuracy <= 100,
        (0...15).contains(-rawLocation.timestamp.timeIntervalSinceNow) {
@@ -727,6 +855,98 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
         // Leave Mapbox's normal off-route recovery active for subsequent location updates.
       }
     }
+  }
+
+  private var lastFeedbackRequest = 0
+  private var feedbackOpen = false
+
+  func reportMapIssue(_ value: Int) {
+    guard value > lastFeedbackRequest else { return }
+    lastFeedbackRequest = value
+    guard !feedbackOpen, guidanceId != nil,
+          let map = controller?.navigationMapView?.mapView,
+          let presenter = reactViewController(), presenter.presentedViewController == nil else { return }
+    feedbackOpen = true
+    let capturedRequest = guidanceId
+    // Render only Mapbox content, excluding the React route/Intel cards above it.
+    guard let image = try? map.snapshot() else {
+      feedbackOpen = false
+      let notice = UIAlertController(title: "Feedback unavailable", message: "Unable to capture the navigation map. Please try again.", preferredStyle: .alert)
+      notice.addAction(UIAlertAction(title: "OK", style: .default))
+      presenter.present(notice, animated: true)
+      return
+    }
+    Task { @MainActor [weak self, weak presenter] in
+      guard let self else { return }
+      let manager = Self.provider.eventsManager()
+      guard let feedback = await manager.createFeedback(screenshotOption: .custom(image)),
+            let presenter, self.window != nil, self.guidanceId == capturedRequest else {
+        self.feedbackOpen = false
+        if let presenter, self.window != nil, self.guidanceId == capturedRequest {
+          let notice = UIAlertController(title: "Feedback unavailable", message: "Mapbox could not prepare the report. Please try again with an active navigation session.", preferredStyle: .alert)
+          notice.addAction(UIAlertAction(title: "OK", style: .default))
+          presenter.present(notice, animated: true)
+        }
+        return
+      }
+      let categories: [(String, ActiveNavigationFeedbackType)] = [
+        ("Missing Speed Limit", .missingSpeedLimit), ("Wrong Speed Limit", .wrongSpeedLimit),
+        ("Other Map / Navigation Issue", .other)
+      ]
+      let menu = UIAlertController(title: "Report a Map Issue", message: "Send map feedback to Mapbox, separate from FreightIQ reports.", preferredStyle: .alert)
+      for (title, type) in categories {
+        menu.addAction(UIAlertAction(title: title, style: .default) { [weak self, weak presenter] _ in
+          guard let self, let presenter else { return }
+          let form = UIAlertController(title: title,
+            message: "Shares the captured navigation map, location and navigation context with Mapbox. Notes are optional. Map corrections are reviewed by Mapbox.", preferredStyle: .alert)
+          form.addTextField { $0.placeholder = "Optional details / posted speed limit" }
+          form.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in self.feedbackOpen = false })
+          form.addAction(UIAlertAction(title: "Send to Mapbox", style: .default) { [weak self, weak form, weak presenter] _ in
+            let notes = form?.textFields?.first?.text.map { String($0.prefix(2000)) }
+            Task { @MainActor in
+              let result = await manager.sendActiveNavigationFeedback(feedback, type: type, description: notes, source: .user)
+              self?.feedbackOpen = false
+              guard let presenter, presenter.view.window != nil else { return }
+              let notice = UIAlertController(title: result == nil ? "Feedback unavailable" : "Feedback submitted",
+                message: result == nil ? "Mapbox could not accept this report. Please try again when connected." : "Handed to Mapbox for processing. A map correction is not immediate or guaranteed.", preferredStyle: .alert)
+              notice.addAction(UIAlertAction(title: "OK", style: .default))
+              presenter.present(notice, animated: true)
+            }
+          })
+          presenter.present(form, animated: true)
+        })
+      }
+      menu.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in self.feedbackOpen = false })
+      presenter.present(menu, animated: true)
+    }
+  }
+
+  func label(_ label: InstructionLabel, willPresent instruction: VisualInstruction,
+             as presented: NSAttributedString) -> NSAttributedString? {
+    // Only customize the live primary banner, not lane guidance or the steps list.
+    guard let banner = label.superview as? InstructionsBannerView,
+          label === banner.primaryLabel,
+          let progress = Self.provider.mapboxNavigation.navigation().currentRouteProgress?.routeProgress,
+          let step = progress.currentLegProgress.upcomingStep,
+          step.maneuverType != .arrive,
+          let road = navigationRoadTitle(names: step.exitNames ?? step.names, codes: step.codes,
+                                         destinationCodes: step.destinationCodes) else { return nil }
+    // Do not repeat the SDK primary text: it can contain both a road name and its shield.
+    var details = (step.destinations ?? []).filter {
+      !navigationRoadKey($0).isEmpty && navigationRoadKey($0) != navigationRoadKey(road)
+    }
+    if let exits = step.exitCodes, !exits.isEmpty { details.insert("Exit " + exits.joined(separator: " / "), at: 0) }
+    let detail = details.joined(separator: " · ")
+    let showDetail = !detail.isEmpty
+    label.numberOfLines = 2
+    var attributes = presented.length > 0 ? presented.attributes(at: 0, effectiveRange: nil) : [:]
+    attributes[.font] = label.font ?? UIFont.boldSystemFont(ofSize: 30)
+    let result = NSMutableAttributedString(string: road, attributes: attributes)
+    if showDetail {
+      attributes[.font] = UIFont.systemFont(ofSize: 17)
+      result.append(NSAttributedString(string: "\n" + detail, attributes: attributes))
+    }
+    return result
   }
 
   private func updateLiveActivity(_ progress: RouteProgress) {

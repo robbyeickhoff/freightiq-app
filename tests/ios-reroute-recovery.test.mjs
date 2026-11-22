@@ -8,7 +8,7 @@ import { execFileSync } from 'node:child_process';
 test('iPhone failed-reroute recovery preserves stops and rejects stale work', { skip: process.platform !== 'darwin' }, () => {
   const source = readFileSync(new URL('../native-navigation/FreightIQNavigation.swift', import.meta.url), 'utf8');
   const begin = source.indexOf('  func navigationViewController(_ navigationViewController: NavigationViewController, didRerouteAlong route: Route)');
-  const end = source.indexOf('  private func updateLiveActivity', begin);
+  const end = source.indexOf('  private var lastFeedbackRequest', begin);
   if (begin < 0 || end < 0) throw new Error('Production recovery callbacks not found');
   const folder = mkdtempSync(join(tmpdir(), 'freightiq-reroute-'));
   const swift = `

@@ -107,7 +107,8 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
   }
 
   private val maneuverArrow = TextView(context).apply {
-    textSize = 36f
+    textSize = 42f
+    setTypeface(typeface, Typeface.BOLD)
     gravity = Gravity.CENTER
     setTextColor(Color.WHITE)
     importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
@@ -127,8 +128,8 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     addView(maneuverArrow, LinearLayout.LayoutParams(dp(54), LayoutParams.WRAP_CONTENT))
     addView(LinearLayout(context).apply {
       orientation = LinearLayout.VERTICAL
-      addView(turnDistance)
       addView(instructions)
+      addView(turnDistance)
     }, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
   }
   private val stepRows = LinearLayout(context).apply {
@@ -339,7 +340,12 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     maneuverArrow.visibility = if (arrow.isEmpty()) GONE else VISIBLE
     turnDistance.text = formatDistance(step?.distanceRemaining?.toDouble())
     turnDistance.visibility = if (turnDistance.text.isEmpty()) GONE else VISIBLE
-    instructions.text = guidanceStep?.let(::stepLabel).orEmpty()
+    val turnLabel = guidanceStep?.let(::stepLabel).orEmpty()
+    instructions.text = android.text.SpannableString(turnLabel).apply {
+      val detailStart = turnLabel.indexOf('\n')
+      if (detailStart >= 0) setSpan(android.text.style.RelativeSizeSpan(0.72f), detailStart + 1,
+        length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+    }
     guidanceToggle.contentDescription = listOf(turnDistance.text, maneuver?.instruction())
       .filterNot { it.isNullOrBlank() }.joinToString(", ")
     guidance.visibility = if (instructions.text.isEmpty()) GONE else VISIBLE
@@ -384,15 +390,83 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     }
   }
 
+  private var lastFeedbackRequest = 0
+  private var feedbackOpen = false
+
+  @OptIn(com.mapbox.navigation.base.ExperimentalPreviewMapboxNavigationAPI::class)
+  fun reportMapIssue(value: Int) {
+    if (value <= lastFeedbackRequest) return
+    lastFeedbackRequest = value
+    val activity = appContext.currentActivity ?: return
+    if (feedbackOpen || activeRequest == null || !isAttachedToWindow) return
+    feedbackOpen = true
+    val metadata = try { navigation.provideFeedbackMetadataWrapper() } catch (_: Exception) {
+      feedbackOpen = false
+      android.app.AlertDialog.Builder(activity).setTitle("Feedback unavailable")
+        .setMessage("Mapbox feedback requires an active navigation session with telemetry enabled.")
+        .setPositiveButton("OK", null).show()
+      return
+    }
+    // MapView snapshot excludes FreightIQ's route and Intel cards.
+    map.snapshot { bitmap ->
+      activity.runOnUiThread {
+        if (bitmap == null || !isAttachedToWindow || activity.isFinishing) {
+          feedbackOpen = false
+          return@runOnUiThread
+        }
+        val choices = arrayOf("Missing Speed Limit", "Wrong Speed Limit", "Other Map / Navigation Issue")
+        android.app.AlertDialog.Builder(activity).setTitle("Report a Map Issue")
+          .setItems(choices) { _, index ->
+            val notes = android.widget.EditText(activity).apply {
+              hint = "Optional details / posted speed limit"
+              maxLines = 4
+              setPadding(dp(20), dp(8), dp(20), dp(8))
+            }
+            android.app.AlertDialog.Builder(activity).setTitle(choices[index])
+              .setMessage("Shares the captured map, location and navigation context with Mapbox, separate from FreightIQ reports.")
+              .setView(notes)
+              .setNegativeButton("Cancel") { _, _ -> feedbackOpen = false }
+              .setOnCancelListener { feedbackOpen = false }
+              .setPositiveButton("Send to Mapbox") { _, _ ->
+                try {
+                  val event = com.mapbox.navigation.core.telemetry.events.FeedbackEvent
+                  val speed = index < 2
+                  val report = com.mapbox.navigation.core.telemetry.UserFeedback.Builder(
+                    if (speed) event.INCORRECT_VISUAL else event.OTHER_ISSUE,
+                    choices[index] + ": " + notes.text.toString().take(2000)
+                  ).screenshot(bitmap).feedbackMetadata(metadata.get())
+                  if (speed) report.feedbackSubTypes(listOf(event.INCORRECT_SPEED_LIMIT))
+                  navigation.postUserFeedback(report.build())
+                  android.app.AlertDialog.Builder(activity).setTitle("Feedback submitted")
+                    .setMessage("Handed to Mapbox for processing. Delivery and map corrections are not confirmed by this screen.")
+                    .setPositiveButton("OK", null).show()
+                } catch (_: Exception) {
+                  android.app.AlertDialog.Builder(activity).setTitle("Feedback unavailable")
+                    .setMessage("Unable to submit this report. Please try again when connected.")
+                    .setPositiveButton("OK", null).show()
+                } finally { feedbackOpen = false }
+              }.show()
+          }.setNegativeButton("Cancel") { _, _ -> feedbackOpen = false }
+          .setOnCancelListener { feedbackOpen = false }.show()
+      }
+    }
+  }
+
   private fun stepLabel(step: LegStep): String {
     val maneuver = step.maneuver()
     val instruction = maneuver?.instruction().orEmpty()
-    val road = step.name().orEmpty().ifBlank { step.ref().orEmpty() }
-    // Keep full wording where an arrow alone would lose an exit or other qualifier.
-    if (maneuver?.type() !in setOf("turn", "depart", "continue", "new name") ||
-      maneuverIcon(maneuver).isEmpty() || road.isBlank()
-    ) return instruction.ifBlank { road }
-    return if (maneuver?.modifier() == "uturn") "$road · if permitted" else road
+    val road = step.ref().orEmpty().ifBlank { step.name().orEmpty() }
+    if (maneuver?.type() == "arrive" || road.isBlank()) return instruction.ifBlank { road }
+    val details = mutableListOf<String>()
+    step.exits()?.takeIf { it.isNotBlank() }?.let { details.add("Exit $it") }
+    step.destinations()?.takeIf { it.isNotBlank() && !it.equals(road, ignoreCase = true) }
+      ?.let { details.add("Toward $it") }
+    if (maneuver?.modifier() == "uturn") details.add("U-turn if permitted")
+    // Keep roundabout exit sequencing when supplied by the maneuver instruction.
+    if (maneuver?.type() in setOf("roundabout", "rotary", "exit roundabout", "exit rotary"))
+      details.add(instruction)
+    return if (details.isEmpty()) road else "$road\n${details.joinToString(" · ")}"
+
   }
 
   private fun formatDistance(meters: Double?): String = when {

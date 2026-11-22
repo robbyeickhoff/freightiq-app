@@ -53,6 +53,9 @@ class FreightIQAndroidRouteModule : Module() {
     }.runOnQueue(Queues.MAIN)
     View(FreightIQAndroidNavigationView::class) {
       Events("onState")
+      Prop("feedbackRequest") { view: FreightIQAndroidNavigationView, value: Int ->
+        view.reportMapIssue(value)
+      }
       Prop("dark") { view: FreightIQAndroidNavigationView, dark: Boolean ->
         view.setDark(dark)
       }

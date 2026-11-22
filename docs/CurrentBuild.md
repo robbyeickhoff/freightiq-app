@@ -13,6 +13,186 @@ answer one question:
 
 ## Current Objective
 
+### November 22 — owner acceptance and owner production builds approved
+
+Owner confirms both phones passed street-address card, Mapbox report menu/cancel, road-first
+banner/expanded directions, Intel save/route/Resume and End/restart. iPhone Dev creates no Live
+Activity. Corrected iPhone row/arrow mapping and selected highway route preservation both pass;
+Start no longer crashes or silently switches to G50. Pixel route and expanded banner pass unchanged.
+Mapbox real submission explicitly deferred to a real missing/wrong speed limit in new owner builds.
+Owner approved production candidates for Monday November 23 work testing, lifting the build hold.
+Final source review, TypeScript/scoped lint and 44 focused checks pass; latest native Dev compiles
+and physical acceptance recorded above. Commit/push this accepted package, then use existing
+production-road-restriction-test and production-android-navigation profiles. Distribution stays
+Team (Expo) internal 1 tester / Owner Field Test 1 tester. Preserve unrelated bot/scrape and training
+specifications. No backend/schema/credentials change. True offline cold restart, missed-turn/weak
+signal recovery and production Live Activity cleanup remain field acceptance, not claimed passed.
+
+
+### November 22 — iPhone startup reentrancy crash correction
+
+Owner reports crash on Start Navigation after selected-route preservation. Downloaded crash
+FreightIQDev-2026-11-22-075359.ips confirms stack overflow/excessive recursion; triggered stack
+contains startGuidance → Mapbox setupNavigation/viewDidLoad → didMoveToWindow → startGuidance.
+Selected-route resume synchronously reentered during Mapbox controller construction. Guard startup
+with isStartingGuidance and reconcile final detached state after construction. Lifecycle regression
+now simulates attached/detached callbacks while controller is still nil, retains route identity and
+checks no replacement calculation. Recovery harness extraction bounded to callbacks (new feedback
+and banner methods were incorrectly swept into its prior broad source range). Ten focused checks
+pass. Native build passes; install/physical Start + selected-route acceptance pending. Crash artifact
+/tmp/fiq-nov22-start-crash.ips. Only iPhone Swift, focused test harnesses and this record changed for
+this fix; Pixel untouched. Uncommitted, no production builds/commit/push.
+
+
+### November 22 — selected iPhone route preserved on reattachment
+
+Second device trace identifies calculate-live-return as the replacement caller, not failed-reroute
+recovery: request pixel-nav-fictional-4:1795358835103 previews/selects/starts 205401m highway route,
+then calculate-live-return starts 202233m G50 route. Native view reattachment called calculate with
+preview=false, causing a different route request. Correction retains chosen NavigationRoutes and
+in-flight alternative choice for the same request; reattachment resumes those routes instead of
+recalculating. New request clears cache. Live progress updates cached routes to preserve genuine
+SDK reroutes; missed-turn recovery unchanged. No G50 rule or Android edit. Swift lifecycle harness
+now verifies highway identity, no non-preview recalculation, in-flight alternative preservation and
+new-request reset. Four focused regressions pass. Native compilation/install and owner highway
+preview-to-live/Intel-return checks pending. Temporary capture source removed, traces in /tmp.
+Uncommitted; no production builds/commit/push.
+
+
+### November 22 — G50 route replacement captured
+
+Device trace confirms preview-0, initial start-guidance and first progress identical at 205398m/
+8668s using US50/Gunnison River Drive. Same request later starts guidance again at 202230m/8536s
+with G50/G Road/Confluence; subsequent progress matches that replacement. This is an actual route
+replacement, not merely row text. Initial trace did not identify caller. A second diagnostic build
+adds selection / calculate-live-return / failed-reroute-recovery stages to distinguish lifecycle
+recalculation from fallback. No routing changes made. Temporary instrumentation removed from
+repository after compile; clean source snapshot /tmp/fiq-g50-clean-source.swift. Trace saved
+/tmp/fiq-g50-route-trace.jsonl. Native build passes; repeat owner flow pending. Pixel unchanged;
+no production builds, commit or push.
+
+
+### November 22 — preview/live G50 discrepancy under investigation
+
+Owner confirms corrected iPhone expanded arrow/name pairing passes. Both phones have same stop
+order and fastest selection. iPhone preview Steps uses highway/Gunnison River Drive while live
+expanded instructions include G50/G Road; Pixel stays highway. No G50 exclusion requested or added.
+Inspection shows selected NavigationRoutes handed directly into UIKit and proactive faster/alternate
+detection already disabled. This does not yet establish changed geometry versus SDK route-model/
+visual-instruction differences. A temporary DEBUG capture build is installed on iPhone to record
+preview candidates, selected start route and progress route, including maneuver coordinates/names/
+visual/static instructions. Diagnostic source snapshot saved only in /tmp, temporary instrumentation
+removed from repository immediately after build/install. Owner repeat preview/start required before
+reading app-container trace. No routing setting, Pixel change, commit/push or production build.
+
+
+### November 22 — correct iPhone expanded maneuver/road offset
+
+Owner screenshot exposed regression in previous row-format follow-up: compact left/Aberdeen was
+correct, but expanded right-arrow/Bismarck row was relabeled Aberdeen. Pixel explicitly passes;
+no Android changes for this correction. Pinned SDK RouteStep documentation confirms visual
+instructions on step i describe maneuver i+1. Original row mapping incorrectly used source step i.
+Corrected list target offset for current and future legs, preserved SDK arrows/distances and arrival
+rows, and removed secondary text read from the target's next-turn visual instructions. Regression
+now includes Joalan depart → Aberdeen left → Bismarck right → D1/2 left and leg transitions. Four
+focused checks pass. Native build/install/exact screenshot retest pending; no production build,
+commit or push. Prior expanded-list acceptance is withdrawn until corrected phone verification.
+
+
+### November 22 — expanded iPhone direction rows follow-up
+
+Owner confirms first address/report menu checks passed iPhone and Pixel, and Pixel expanded top
+banner is correct. iPhone expanded list still shows a destination city (Delta) instead of US 50.
+Scoped correction only on iPhone: retain Mapbox table datasource/selection/distance behavior via
+forwarding delegate and format each StepInstructionsView row from its own route maneuver. Same
+road/reference formatter as live banner, with city/exit/secondary details smaller. No private SDK
+properties or Android edits. Regression covers remaining/current and later-leg row mapping so
+future rows never borrow the immediate next road. Four focused checks pass. Native compile,
+replacement Dev install and exact owner retest pending. Production builds on hold; uncommitted.
+
+
+### November 22 — both-phone Dev acceptance started
+
+Owner returned to Mac and requested testing all pending navigation improvements. Both physical
+phones are connected. Refreshed iPhone Dev native build and Pixel debug APK build pass; both
+installed successfully and launched with the local Metro development-client URL. Metro process
+3018 is development, both embedded-navigation flags enabled, LOCAL_TEST_MODE true and local
+Supabase at 192.168.1.160:54321; local services healthy. Eight focused regressions pass. Physical
+screen/flow acceptance has not yet been reported. Test street-address card, road-first/no-duplicate
+turn banners, Pixel hierarchy, bottom-card Mapbox reporting/cancel and Intel/Resume regression;
+iPhone Dev creates no Live Activity. Production cleanup acceptance stays pending; production
+builds remain on hold. No commit, push, backend change or report submission.
+
+
+### November 20 — Mapbox feedback in expanded navigation card
+
+Owner approved Report a Map Issue at the very bottom of the expanded card on both phones after
+inspection found iOS attribution-menu extension restricted. Existing information menu/Improve
+this map and credits stay intact, no floating bubble. Shared JS triggers native feedback via a
+monotonic view prop. Native snapshots capture only Mapbox content; metadata captured before
+category/notes UI. Missing Speed Limit, Wrong Speed Limit and Other Map / Navigation Issue offer
+optional notes and explicit Send to Mapbox; Cancel sends nothing. iOS uses distinct speed categories;
+Android's pinned public preview UserFeedback API uses incorrect-speed subtype and explicit missing/
+wrong label in description. Android metadata exceptions honor disabled telemetry; no setting changes.
+Submission UI says SDK handoff, not confirmed backend receipt or instant correction. No production
+reports sent during verification. Files: active-navigation screen, both native views, Android native
+module, existing feedback spec and this record. Both native compilations, TypeScript and scoped lint
+pass; all eight focused regressions pass after final source review. Physical UI/capture/cancel/submission
+acceptance awaits owner's return to Mac. Changes uncommitted; production builds remain on hold.
+
+
+### November 20 — duplicate road/shield follow-up
+
+Owner screenshot shows 29 3/4 Road plus equivalent 29¾ shield. iPhone now prefers the readable
+name for equivalent numeric references, normalizing fraction forms for comparison. Secondary text
+uses structured destinations/exit codes instead of repeating SDK primary text containing the same
+road/shield. Pixel likewise avoids repeating the full ordinary turn sentence below the road and
+keeps structured exit/destination details and U-turn/roundabout qualifiers. Fraction regression
+passes. Native recompile and phone visual acceptance pending. Uncommitted; production hold remains.
+
+### November 20 — Pixel maneuver hierarchy polish
+
+Owner confirms installed Pixel already shows US 50 and requests road first, distance below,
+and a prominent bold turn arrow. Native guidance header now places the large bold instruction
+above the smaller distance and increases/bolds the adjacent maneuver arrow. Same upcoming step
+and distance source; no routing change. Physical layout acceptance pending; no production builds.
+
+
+### November 20 — road-first live turn banners
+
+Owner requested the upcoming road/highway be prominent rather than only a signposted city.
+iPhone uses the supported visual-instruction delegate for the live primary label only, reading the
+upcoming maneuver's highway reference/road name (roundabout exit name where supplied), with
+signposted instruction in smaller text. Ramp destination reference is a fallback when road identity
+is absent; never borrow the current road. Pixel now puts reference/name first for exits and ramps
+as well as ordinary turns, preserving maneuver wording below in smaller text. Arrival/no-road data
+keeps SDK instructions. No routing, arrow, distance or voice changes. Changes are in both native
+navigation views, new road-title regression test and this record. Four focused Swift/return checks
+pass; Android native Kotlin compilation passes. iOS native build passes, device acceptance
+pending. Original field turn's exact response has not been captured. No release; production builds
+remain on hold. Preserve other pending navigation polish and unrelated specs.
+
+### November 20 — expanded navigation street-address polish
+
+Owner requested the street number/name directly below the business name in the expanded live
+navigation card. Shared iPhone/Android screen now shows the first comma/newline-delimited address
+line in secondary text, wrapping as needed, and omits an empty address. Full stored address is
+unchanged. Only app/active-navigation.tsx and this record changed for this correction. Physical
+layout acceptance pending; uncommitted, production builds remain on hold.
+
+### November 20 — Dynamic Island Dev interference correction
+
+Owner explicitly requested a code fix for simultaneous Dev and production navigation activities.
+Live Activities now start only in production. Dev module creation clears its own previous activities;
+Dev guidance cannot create replacements. End Navigation clears all activities for that app, including
+orphaned sessions, using a captured list so asynchronous cleanup preserves new guidance. Failed
+activity creation remains retryable. Updated native helper/module, existing Live Activity spec and
+new lifecycle regression check. Swift harness checks pass, as do the two navigation-return checks.
+Physical updated-Dev cleanup and production Live Activity acceptance/native build remain pending.
+Already installed Dev cannot be cleaned by production due to separate app ownership. Uncommitted;
+no build, commit, push or distribution. Unrelated bot/scrape and training specs remain untouched.
+
+
 ### November 20 — owner candidates delivered / Pixel review pending
 
 Source 4b93d1d73bd3c6dfae20bfe64c2b619d089ac1b0 remains the immutable source of iOS 83 and

@@ -22,3 +22,16 @@ Use the initiating app variant's URL scheme and verify the navigation session on
 - Tap both surfaces and verify the initiating build and correct guidance session open. Repeat with a podcast playing.
 - Verify arrival, advancing to the next stop, ending navigation, disabled Live Activities, and reopening after interruption. Confirm existing turn alerts still work.
 - Review the native diff and build results before physical acceptance. Production build and distribution require their separate release steps.
+
+## November 20 — production-only activity correction
+
+Owner reported Dev and production navigation activities competing during field work and explicitly
+requested a code fix. Navigation Live Activities are now production-only. Dev keeps embedded
+guidance but does not create Dynamic Island or Lock Screen navigation cards; module startup and
+attempted guidance startup clear activities belonging to Dev. Production End Navigation clears all
+of its navigation activities, including activities no longer held by the current controller.
+Activity creation failure remains retryable. Each app can only clean up its own activities; the
+already installed Dev activity requires running the updated Dev app once. Production cannot remove
+another installed app's activity. Verify updated Dev startup clears its old card, Dev guidance
+creates none, and production guidance/tap/End Navigation still work. Native build and physical
+acceptance remain pending; no release authorized by this correction alone.

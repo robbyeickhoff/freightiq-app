@@ -23,10 +23,16 @@ test('selected iPhone guidance survives native detach/reattach without reopening
 import Foundation
 @MainActor class ExpoView { var window: Bool? = true; func didMoveToWindow() {} }
 struct FreightIQNavigationRequest { var id: String; var stopId = "stop"; var preview = true }
-struct NavigationRoutes { func selectingAlternativeRoute(at index: Int) async -> NavigationRoutes? { self } }
+struct NavigationRoutes {
+  var identity = "highway"
+  func selectingAlternativeRoute(at index: Int) async -> NavigationRoutes? { .init(identity: "alternative-" + String(index)) }
+}
 @MainActor class Harness: ExpoView {
   var request: FreightIQNavigationRequest?; var controller: Bool?
   var reportedArrivalStopId: String?; var pendingRoutes: NavigationRoutes?
+  var selectedRoutes: NavigationRoutes?
+  var isStartingGuidance = false
+  var pendingSelection: (routes: NavigationRoutes, index: Int)?
   var task: Task<Void, Never>?; var isRerouting = false; var rerouteFailed = false
   var calculatedPreviews: [Bool] = []; var started = 0
   func emit(_ state: String, _ request: FreightIQNavigationRequest, message: String) {}
@@ -36,6 +42,9 @@ ${configure}
 ${lifecycle}
 ${select}
 ${started}
+    // UIKit/Mapbox can reenter while the controller is still being constructed.
+    didMoveToWindow()
+    window = nil; didMoveToWindow(); window = true; didMoveToWindow()
     controller = true; started += 1
   }
 }
@@ -50,15 +59,23 @@ ${started}
     h.selectRoute("one|0"); await h.task?.value
     precondition(h.started == 1 && h.request?.preview == false)
     h.window = nil; h.didMoveToWindow(); h.window = true; h.didMoveToWindow()
-    precondition(h.calculatedPreviews.last == false, "Returning guidance must not reopen preview")
+    precondition(h.calculatedPreviews.allSatisfy { $0 }, "Returning guidance must not calculate a replacement road route")
+    precondition(h.selectedRoutes?.identity == "highway", "Preserve the selected highway route")
     h.configure(.init(id: "one"))
     precondition(h.request?.preview == false, "Repeated old props cannot reset selected state")
     h.configure(.init(id: "two"))
     precondition(h.calculatedPreviews.last == true, "A genuinely new trip still shows preview")
     h.pendingRoutes = NavigationRoutes(); h.selectRoute("two|0")
     h.window = nil; h.didMoveToWindow(); h.window = true; h.didMoveToWindow()
-    precondition(h.calculatedPreviews.last == false, "Selection survives detachment before async start finishes")
     await h.task?.value
+    precondition(h.calculatedPreviews.allSatisfy { $0 }, "In-flight selection must not calculate replacement roads")
+    h.configure(.init(id: "three"))
+    precondition(h.selectedRoutes == nil, "New trip must clear previous choice")
+    h.pendingRoutes = NavigationRoutes(); h.selectRoute("three|2")
+    h.window = nil; h.didMoveToWindow(); h.window = true; h.didMoveToWindow()
+    await h.task?.value
+    precondition(h.selectedRoutes?.identity == "alternative-1", "Detachment must preserve chosen alternative")
+    precondition(h.calculatedPreviews.allSatisfy { $0 }, "Alternative selection must never silently recalculate")
     print("Guidance return checks passed")
   }
 }

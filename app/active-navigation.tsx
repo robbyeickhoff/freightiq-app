@@ -32,7 +32,7 @@ type RouteChoice = { index: number; seconds: number; meters: number; coordinates
 type StateEvent = { state: string; requestId: string; stopId: string; message: string; legs: PlannedLeg[]; choices?: RouteChoice[] };
 const NavigationView = hasEmbeddedNavigation
   ? requireNativeView<ViewProps & {
-      request: Request; routeChoice: string; dark: boolean; bottomInset: number; onState: (event: { nativeEvent: StateEvent }) => void;
+      request: Request; routeChoice: string; feedbackRequest: number; dark: boolean; bottomInset: number; onState: (event: { nativeEvent: StateEvent }) => void;
     }>(embeddedNavigationModule)
   : null;
 
@@ -74,11 +74,13 @@ export default function ActiveNavigationScreen() {
   const [routePlanOpen, setRoutePlanOpen] = useState(false);
   const [reportPickerOpen, setReportPickerOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [feedbackRequest, setFeedbackRequest] = useState(0);
   const [liveLegs, setLiveLegs] = useState<{ legs: PlannedLeg[]; updatedAt: number; requestId: string } | null>(null);
   const savingRef = useRef(false);
   const [choices, setChoices] = useState<RouteChoice[]>([]);
   const [routeChoice, setRouteChoice] = useState("");
   const stops = useMemo(() => directStop ? [directStop] : orderedNavigationStops(route), [route, directStop]);
+  const activeStreetAddress = active?.address.split(/[,\n]/, 1)[0].trim() ?? "";
   const activeKey = `${routePlanSignature(stops.slice(0, 24))}:${retry}`;
 
   useEffect(() => {
@@ -220,7 +222,7 @@ export default function ActiveNavigationScreen() {
       <RoutePlanSheet initialMode={planMode} visible={routePlanOpen} onClose={() => setRoutePlanOpen(false)} liveLegs={liveLegs} duringGuidance />
       {intelStop ? <NavigationStopIntel stop={intelStop} duringGuidance onClose={() => setIntelStop(null)} /> : null}
       <View style={styles.map}>
-        {active && request && NavigationView ? <NavigationView style={styles.map} request={request} routeChoice={routeChoice} bottomInset={panelHeight + insets.bottom + 20} dark={colorScheme === "dark"} onState={onState} /> : null}
+        {active && request && NavigationView ? <NavigationView style={styles.map} request={request} routeChoice={routeChoice} feedbackRequest={feedbackRequest} bottomInset={panelHeight + insets.bottom + 20} dark={colorScheme === "dark"} onState={onState} /> : null}
         {active && !guidanceStarted && choices.length === 0 ? (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
         ) : null}
@@ -282,6 +284,9 @@ export default function ActiveNavigationScreen() {
               <AppIcon name="chevronRight" color={colors.accentStrong} size={20} />
             </View>}
           </Pressable>
+          {activeStreetAddress ? <Text style={[styles.streetAddress, { color: colors.textSecondary }]}>
+            {activeStreetAddress}
+          </Text> : null}
           {!directDestination && <View style={styles.toolbar}>
             <AppButton size="compact" variant="tertiary" onPress={() => { setPlanMode("route"); setRoutePlanOpen(true); }}>View Route</AppButton>
           </View>}
@@ -313,6 +318,9 @@ export default function ActiveNavigationScreen() {
             >
               <AppIcon name="close" color={colors.danger} /><Text style={[styles.actionLabel, { color: colors.danger }]}>End Navigation</Text>
             </Pressable>
+          </View>
+          <View style={[styles.group, { backgroundColor: colors.background }]}>
+            <NavigationAction icon="map" label="Report a Map Issue" onPress={() => setFeedbackRequest((value) => value + 1)} />
           </View>
         </ScrollView> : null}
       </> : <AppButton onPress={() => router.back()}>Back</AppButton>}
@@ -519,6 +527,7 @@ const styles = StyleSheet.create({
   metricsTarget: { alignSelf: "stretch" },
   grabber: { width: 36, height: 4, borderRadius: 2 },
   business: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingVertical: 4, paddingHorizontal: 8 },
+  streetAddress: { fontSize: 16, lineHeight: 22, paddingHorizontal: 8 },
   intelAction: { flexDirection: "row", alignItems: "center", flexShrink: 0, gap: 2 },
   intelLabel: { fontSize: 15, fontWeight: "600" },
   expandedControls: { flexGrow: 0 },
