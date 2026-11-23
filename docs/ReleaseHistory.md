@@ -6,6 +6,31 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-11-22 — Stationary course filter owner iPhone candidate
+
+Owner approved permanent iOS low-speed course filtering, commit/push and an owner-only iPhone
+candidate for Monday November 23. Source `94b77f215d01e7f8ba3941e4f7997294238a745d` is pushed
+to clean-main. Raw coordinates, accuracy, speed and timestamp remain unchanged; course is omitted
+below 1.5m/s or unknown speed. Mapbox rerouting stays enabled. No G50 avoidance or map restriction.
+Stationary and cold-start Dev captures recorded zero reroutes; genuine moving missed-turn,
+low-speed maneuver and weak-signal/offline recovery remain owner field acceptance.
+
+- iOS 1.0.2 (85), EAS `fae77543-6a63-493a-9147-f1186cc78421`, profile
+  `production-road-restriction-test`, finished. Submission
+  `ef1fce20-3ee5-4af2-892d-b9006562cd4e` succeeded. Apple build
+  `24a3bb21-80dd-48e3-9941-44167a38a970` is processed with saved Monday test notes and only
+  Team (Expo), Internal, 1 tester; zero individual testers. Ready for owner TestFlight installation.
+- Native Debug build, TypeScript and 16 focused checks pass. Source archive matches reviewed
+  permanent source and excludes unrelated/local-test material. Downloaded IPA verifies production
+  identity/database, standalone bundle, disabled debugging, production entitlements and deep/strict
+  codesign. Permanent native input is present; temporary diagnostic writers absent. SHA256:
+  `03ced38fcdedbae30f4c366f9143e9e0569d991892d704da270f91d75467daa9`.
+- Clean permanent Dev binary installed. Owner's remaining Island opens regular FreightIQ;
+  no further Dev suppression change was made. Production navigation activity remains enabled.
+
+Proof: `/tmp/fiq-owner-ios85-confirmation.jpg`. iOS 84 is the rollback reference. Pixel 53 and
+all broader audiences are unchanged. Unrelated bot/scrape and training specifications preserved.
+
 ## 2026-11-22 — Navigation guidance polish owner candidates
 
 Rob accepted both-phone development checks and approved owner production builds for Monday

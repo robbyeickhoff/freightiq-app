@@ -33,7 +33,16 @@ Permanent source contains no temporary diagnostic writers, capture data or warmu
 regressions verify speed boundary, unknown speed/course, original moving objects and retained fix
 metadata. Native build, TypeScript, 16 focused checks and production archive inspection pass;
 archive matches reviewed source and excludes local configuration, diagnostic writers and unrelated
-files. Source review complete; commit/push precedes owner iPhone build.
+files. Source review complete; committed/pushed as `94b77f215d01e7f8ba3941e4f7997294238a745d`.
+iOS 1.0.2 (85), EAS `fae77543-6a63-493a-9147-f1186cc78421`, finished; submission
+`ef1fce20-3ee5-4af2-892d-b9006562cd4e` succeeded. App Store Connect confirms processed
+build `24a3bb21-80dd-48e3-9941-44167a38a970`, saved Monday field notes, only Team (Expo),
+Internal, 1 tester and zero individual testers. Owner TestFlight installation is ready.
+Package signature, production identity/database and absence of local endpoint/diagnostic writers
+pass. SHA256 `03ced38fcdedbae30f4c366f9143e9e0569d991892d704da270f91d75467daa9`.
+Clean permanent Dev binary also installed. Remaining Island identified by owner as regular
+FreightIQ, not Dev; production navigation activity is intentionally retained. No additional code
+change made for that report. Proof: `/tmp/fiq-owner-ios85-confirmation.jpg`.
 Keep existing production-road-restriction-test profile and Team (Expo), Internal, 1 tester only.
 Pixel 53 and broader distribution unchanged. Preserve unrelated bot/scrape and training files.
 Diagnostic receipts stay private under /tmp; no backend/schema/credential changes.
