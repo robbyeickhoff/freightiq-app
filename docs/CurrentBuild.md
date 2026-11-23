@@ -29,6 +29,17 @@ Physical production force-close/Island-tap plus warm-navigation return remain ve
 Owner now approves commit/push and a new owner-only iPhone production candidate for work today.
 Not included in build 85. Use the existing production-road-restriction-test profile and only
 Team (Expo), Internal, 1 tester; no Android build or broader distribution.
+Source `85522574eeaad97056dc6d9158ff267147273ee6` committed and pushed. iOS 1.0.2 (86),
+EAS `d6510357-c889-426a-8dda-a2784bc6959e`, finished; submission
+`e1695ede-4b99-47eb-a58b-449a3ee58628` succeeded. Apple processed build
+`7e76c905-a204-449c-9ca2-c79f80318ff8`; saved field notes, only Team (Expo), Internal,
+1 tester and zero individual testers verified. Ready for owner TestFlight installation.
+Archive matches source, excludes local endpoints/unrelated work. IPA production identity/database,
+standalone bundle, activity component, production entitlements and deep/strict signing checks pass.
+Release method names are optimized/stripped; launch wiring verified in source/plugin tests rather
+than claimed from binary symbols. SHA256:
+`dc067fc4e73e82a53c66cc1fa6fb9be1318458000461447faa4e62cabfd05d24`.
+Proof: `/tmp/fiq-owner-ios86-confirmation.jpg`. Phone acceptance remains pending. Pixel 53 unchanged.
 Preserve unrelated bot/scrape and training specifications.
 
 ### November 22 — stationary course filter approved for owner iPhone field build

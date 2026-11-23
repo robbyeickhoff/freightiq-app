@@ -6,6 +6,31 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-11-23 — Navigation Island cold-launch recovery owner candidate
+
+Owner approves commit/push and production iPhone testing at work. Source
+`85522574eeaad97056dc6d9158ff267147273ee6` pushed to clean-main. Clear prior-process navigation
+activities on native launch in both variants; normalize initial navigation Island links to normal
+startup, preserving warm navigation and unrelated links. Fix targets abandoned activities and
+black-screen cold launch. It does not guarantee removal when iOS force-kills the host process.
+
+- iOS 1.0.2 (86), EAS `d6510357-c889-426a-8dda-a2784bc6959e`, profile
+  `production-road-restriction-test`, finished. Submission
+  `e1695ede-4b99-47eb-a58b-449a3ee58628` succeeded. Apple build
+  `7e76c905-a204-449c-9ca2-c79f80318ff8` processed; test notes saved. Only Team (Expo),
+  Internal, 1 tester and zero individual testers confirmed. Ready for owner TestFlight installation.
+- TypeScript, four focused link/lifecycle/plugin tests and unsigned native Debug compilation pass.
+  Archive matches source and excludes unrelated specifications/local configuration. Downloaded IPA
+  verifies production identity/database, standalone bundle, activity component, production entitlements
+  and deep/strict signature. Release method names optimized/stripped; native wiring verified through
+  reviewed source/plugin tests. SHA256:
+  `dc067fc4e73e82a53c66cc1fa6fb9be1318458000461447faa4e62cabfd05d24`.
+- Physical acceptance pending: warm Island return to guidance, force-close/leftover-Island tap,
+  normal app-icon cold launch cleanup, End Navigation dismissal; continue build 85 driving checks.
+
+Proof: `/tmp/fiq-owner-ios86-confirmation.jpg`. Rollback reference iOS 85. Pixel 53 and broader
+audiences unchanged. Unrelated bot/scrape and training work preserved; no backend/config changes.
+
 ## 2026-11-22 — Stationary course filter owner iPhone candidate
 
 Owner approved permanent iOS low-speed course filtering, commit/push and an owner-only iPhone
