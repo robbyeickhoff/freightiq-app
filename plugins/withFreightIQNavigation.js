@@ -18,9 +18,12 @@ module.exports = function withFreightIQNavigation(config) {
     return mod;
   });
   config = withAppDelegate(config, (mod) => {
-    // This must run before Metro/JavaScript: opening an old card can land in the
-    // Dev launcher without ever constructing FreightIQNavigation's Expo module.
-    const cleanup = "    NavigationLiveActivity.clearDevelopmentActivities()";
+    // Cold launch has no native guidance session, in either production or Dev.
+    // Migrate the previous Dev-only hook and keep prebuild idempotent.
+    const cleanup = "    NavigationLiveActivity.clearActivitiesOnLaunch()";
+    mod.modResults.contents = mod.modResults.contents.replace(
+      "    NavigationLiveActivity.clearDevelopmentActivities()", cleanup,
+    );
     if (!mod.modResults.contents.includes(cleanup)) {
       const launch = "    let delegate = ReactNativeDelegate()";
       if (!mod.modResults.contents.includes(launch)) {

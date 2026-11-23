@@ -46,7 +46,12 @@ test('Dev disables Live Activities and cleans them before JavaScript launch', ()
   mods.withAppDelegate(mod);
   mods.withAppDelegate(mod);
   const contents = mod.modResults.contents;
-  assert.equal(contents.split('NavigationLiveActivity.clearDevelopmentActivities()').length - 1, 1);
-  assert(contents.indexOf('clearDevelopmentActivities()') < contents.indexOf('let delegate = ReactNativeDelegate()'));
+  assert.equal(contents.split('NavigationLiveActivity.clearActivitiesOnLaunch()').length - 1, 1);
+  assert(contents.indexOf('clearActivitiesOnLaunch()') < contents.indexOf('let delegate = ReactNativeDelegate()'));
+  const legacy = { modResults: { contents: contents.replace(
+    'clearActivitiesOnLaunch()', 'clearDevelopmentActivities()',
+  ) } };
+  mods.withAppDelegate(legacy);
+  assert.equal(legacy.modResults.contents, contents);
   assert.throws(() => mods.withAppDelegate({ modResults: { contents: 'unexpected template' } }));
 });

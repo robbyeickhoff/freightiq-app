@@ -12,6 +12,12 @@ final class NavigationLiveActivity {
     Bundle.main.bundleIdentifier?.hasSuffix(".dev") == true
   }
 
+  // A fresh process cannot own a surviving native guidance session.
+  // Clear prior-process cards before React or any new guidance can start.
+  static func clearActivitiesOnLaunch() {
+    dismiss(Activity<NavigationActivityAttributes>.activities)
+  }
+
   static func clearDevelopmentActivities() {
     guard isDevelopmentBuild else { return }
     dismiss(Activity<NavigationActivityAttributes>.activities)

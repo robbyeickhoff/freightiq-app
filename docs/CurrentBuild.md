@@ -13,6 +13,24 @@ answer one question:
 
 ## Current Objective
 
+### November 23 — production stale Island / cold-link recovery correction
+
+Owner reports build 85 retains a crossed navigation-arrow Island after closing FreightIQ and
+its tap opens a black screen. Inspection finds production orphan cleanup only on guidance start,
+while cold Live Activity links enter active-navigation and its redirect can race the startup cover.
+Engineering / Direct Codex Edit: clear prior-process navigation activities in AppDelegate launch
+for both variants; normalize only initial navigation Live Activity links to normal startup before
+router mount. Warm links and unrelated deep links remain unchanged. Keep Dev suppression and
+production guidance activities. No route/GPS/rerouting changes. This does not promise execution
+after iOS kills a process: old cards are explicitly ended when the app next launches.
+
+TypeScript, four focused link/lifecycle/plugin checks and unsigned native Debug compilation pass.
+Physical production force-close/Island-tap plus warm-navigation return remain verification gates.
+Owner now approves commit/push and a new owner-only iPhone production candidate for work today.
+Not included in build 85. Use the existing production-road-restriction-test profile and only
+Team (Expo), Internal, 1 tester; no Android build or broader distribution.
+Preserve unrelated bot/scrape and training specifications.
+
 ### November 22 — stationary course filter approved for owner iPhone field build
 
 Owner approves making the tested low-speed course filter permanent, commit/push and a new
