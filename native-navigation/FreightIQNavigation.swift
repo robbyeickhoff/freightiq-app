@@ -1,5 +1,6 @@
 internal import ExpoModulesCore
 import class Combine.AnyCancellable
+import class Combine.PassthroughSubject
 import CoreLocation
 import MapboxCommon
 @_spi(ExperimentalMapboxAPI) import MapboxDirections
@@ -241,6 +242,58 @@ private final class NavigationStepsDelegate: NSObject, UITableViewDelegate {
   func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
     original?.tableView?(tableView, willDisplay: cell, forRowAt: indexPath)
     format?(cell, indexPath)
+  }
+}
+
+// Course is direction of travel, not the phone's compass heading. Near-zero
+// speed can produce noisy course values that make a stationary start look off-route.
+func navigationLocationWithoutStationaryCourse(_ raw: CLLocation) -> CLLocation {
+  guard raw.speed < 1.5 else { return raw }
+  guard raw.course >= 0 else { return raw }
+  if let source = raw.sourceInformation {
+    return CLLocation(coordinate: raw.coordinate, altitude: raw.altitude,
+      horizontalAccuracy: raw.horizontalAccuracy, verticalAccuracy: raw.verticalAccuracy,
+      course: -1, courseAccuracy: -1, speed: raw.speed, speedAccuracy: raw.speedAccuracy,
+      timestamp: raw.timestamp, sourceInfo: source)
+  }
+  return CLLocation(coordinate: raw.coordinate, altitude: raw.altitude,
+    horizontalAccuracy: raw.horizontalAccuracy, verticalAccuracy: raw.verticalAccuracy,
+    course: -1, courseAccuracy: -1, speed: raw.speed, speedAccuracy: raw.speedAccuracy,
+    timestamp: raw.timestamp)
+}
+
+private final class FreightIQNavigationLocationInput: NSObject, CLLocationManagerDelegate {
+  private let manager = CLLocationManager()
+  private let locations = PassthroughSubject<CLLocation, Never>()
+  private let headings = PassthroughSubject<CLHeading, Never>()
+
+  override init() {
+    super.init()
+    manager.requestWhenInUseAuthorization()
+    let modes = Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String] ?? []
+    manager.allowsBackgroundLocationUpdates = modes.contains("location")
+    manager.delegate = self
+  }
+
+  func locationManager(_ manager: CLLocationManager, didUpdateLocations values: [CLLocation]) {
+    guard let raw = values.last else { return }
+    locations.send(navigationLocationWithoutStationaryCourse(raw))
+  }
+
+  func locationManager(_ manager: CLLocationManager, didUpdateHeading heading: CLHeading) {
+    headings.send(heading)
+  }
+
+  static func make() -> LocationClient {
+    assert(Thread.isMainThread)
+    let input = FreightIQNavigationLocationInput()
+    return LocationClient(
+      locations: input.locations.eraseToAnyPublisher(), headings: input.headings.eraseToAnyPublisher(),
+      startUpdatingLocation: { input.manager.startUpdatingLocation() },
+      stopUpdatingLocation: { input.manager.stopUpdatingLocation() },
+      startUpdatingHeading: { input.manager.startUpdatingHeading() },
+      stopUpdatingHeading: { input.manager.stopUpdatingHeading() }
+    )
   }
 }
 
@@ -1093,6 +1146,7 @@ private final class FreightIQOfflineRoute {
     routingConfig.alternativeRoutesDetectionConfig = nil
     provider = MapboxNavigationProvider(coreConfig: CoreConfig(
       routingConfig: routingConfig,
+      locationSource: .custom(FreightIQNavigationLocationInput.make()),
       multilegAdvancing: .manually { _ in false },
       tilestoreConfig: configuration
     ))

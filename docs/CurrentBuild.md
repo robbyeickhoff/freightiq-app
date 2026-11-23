@@ -13,6 +13,31 @@ answer one question:
 
 ## Current Objective
 
+### November 22 — stationary course filter approved for owner iPhone field build
+
+Owner approves making the tested low-speed course filter permanent, commit/push and a new
+owner-only iPhone production candidate for Monday November 23. Engineering / Direct Codex Edit;
+scoped correction only to iOS location input. Omit course/courseAccuracy below 1.5m/s or unknown
+speed; retain coordinates, altitude, accuracy, speed, timestamp and source metadata. Moving fixes
+at/above threshold pass through unchanged. Preserve compass updates, background-location mode
+and start/stop lifecycle. Mapbox rerouting remains enabled; no G50 avoidance rule or map restriction.
+
+Evidence: baseline reports stationary SDK deviation with ~1m displacement inside ~6m uncertainty
+and noisy course/speed; preview warmup trial did not eliminate it and is not promoted. Course
+trial captures zero reroutes over 151 fixes/135.8s, then cold-start End/force-close/reopen/start
+passes with zero reroutes over 418 fixes/390.6s, exact live route length unchanged. These are
+stationary acceptance only. Genuine moving missed-turn, low-speed maneuver and weak-signal/
+offline recovery remain tomorrow's owner field checks, explicitly accepted as pending.
+
+Permanent source contains no temporary diagnostic writers, capture data or warmup change. Focused
+regressions verify speed boundary, unknown speed/course, original moving objects and retained fix
+metadata. Native build, TypeScript, 16 focused checks and production archive inspection pass;
+archive matches reviewed source and excludes local configuration, diagnostic writers and unrelated
+files. Source review complete; commit/push precedes owner iPhone build.
+Keep existing production-road-restriction-test profile and Team (Expo), Internal, 1 tester only.
+Pixel 53 and broader distribution unchanged. Preserve unrelated bot/scrape and training files.
+Diagnostic receipts stay private under /tmp; no backend/schema/credential changes.
+
 ### November 22 — Dev launcher Island follow-up
 
 Owner reports an Island item opens Dev launcher, where long press does not expand. Process list
