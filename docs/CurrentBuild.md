@@ -13,14 +13,24 @@ answer one question:
 
 ## Current Objective
 
+### November 24 — owner candidates delivered; Pixel review pending
+
+Source `bc0d0e4568af04346a02b84440654cd1d8b51880` pushed and local matches origin/clean-main.
+iPhone 1.0.2 (87) finished, downloaded/verified, uploaded and processed; owner field notes saved.
+Fresh App Store Connect view confirms only Team (Expo), Internal, 1 tester and zero individual
+or external testers; ready for owner TestFlight installation. Pixel 1.0.2 (54) finished,
+downloaded/verified and submitted
+to existing one-person Owner Field Test only; Google review/availability pending. Full IDs and
+verification/remaining gates in ReleaseHistory.md. No broader distribution or unrelated-spec changes.
+
 ### November 24 — owner approves publishing all yesterday/today fixes
 
 Owner explicitly approves commit, push and both production candidates to existing owner-only
 TestFlight Team (Expo) / Google Play Owner Field Test groups. Include nearby/partial address search,
 confirmed-locality retry, Dev iPhone alerts cleanup, connector title/clipping, locked-note dark theme,
 and Android preview-control spacing. Preserve unrelated bot/scrape and training specifications.
-Twenty-eight focused checks, TypeScript and diff check pass; scoped lint has one existing unrelated
-hook warning. Dev alerts passed physical acceptance; final search and remaining polish acceptance
+Twenty-eight focused checks, TypeScript and diff check pass; scoped lint has three existing
+warnings (one map hook dependency and two unused stop variables). Dev alerts passed physical acceptance; final search and remaining polish acceptance
 remain owner field testing, explicitly not reported as passed. Use established production navigation
 profiles; no public/broader release, backend deployment or credential/platform reconfiguration.
 

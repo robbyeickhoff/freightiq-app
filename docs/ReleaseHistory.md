@@ -6,6 +6,47 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-11-24 — Nearby search and navigation field-polish owner candidates
+
+Owner explicitly approves commit/push of yesterday/today fixes and production builds for existing
+owner-only groups. Source `bc0d0e4568af04346a02b84440654cd1d8b51880` is pushed on clean-main.
+Includes nearby-first unified saved/place results; partial address variations with prefix filtering;
+confirmed-city retry when coordinate-only local address suggestions are empty; iPhone Dev Driving
+Alerts background cleanup; unnamed connector destination label and banner clipping correction;
+locked personal note dark theme; Pixel preview satellite-control spacing and scrolling.
+
+Twenty-eight focused regressions and TypeScript pass; scoped lint zero errors/three existing
+warnings. Exact phone-center live search: 240 returns Grand Junction, 240 S nearby South addresses,
+240 S Mahone only Telluride Mahoney Drive. Retrieval verified. Dev alerts physically accepted;
+final search/polish, actual missed turn, offline/weak signal and Mapbox feedback remain field tests.
+No road-specific G50 exclusion, backend deployment, credentials/configuration change or public release.
+Unrelated bot/scrape/training specifications preserved and excluded from both archives.
+
+- iOS 1.0.2 (87), EAS `10b4d3f8-db6d-475f-ad1e-63982ee7244a`, profile
+  `production-road-restriction-test`, finished. Exact IPA passed production identity/database,
+  standalone bundle, navigation activity extension, no local endpoints, production entitlements
+  and strict/deep signing checks. Submission `ef6fc799-d9eb-43c2-af01-005e2b23dbd1` succeeded;
+  Apple build `d5f8e84f-d1d8-455e-95cb-e29dd0a7a723` processed and owner field notes saved.
+  After a temporary disabled internal-group state, fresh console verification confirms Group (1):
+  Team (Expo), Internal, 1 tester; Individual Testers (0), no external groups. Owner TestFlight
+  installation is ready. Group settings/audience were not changed to resolve the delay. SHA256 `eba8ff553d3746e845dfa44184ebebdec48109a30eb27c4e68bab09c35ebc295`.
+- Android 1.0.2 (54), EAS `f6bc76b6-4802-404e-b1b5-4b080e6a9056`, profile
+  `production-android-navigation`, finished. Exact AAB passed production identity/database,
+  standalone bundle, absent local endpoints, disabled debugging and JAR signing verification.
+  SHA256 `92319a0d883d4402f43bdaaeb0df0b191da83b9b0d3a54ec3347c62806321ecf`.
+  Existing Owner Field Test track `4697372655075776480` verified with one-person list selected;
+  Internal Testers (10) unchecked. Release 9 includes code 54 only; code 53 excluded, full rollout
+  within the owner track. Saved notes and exactly one owner-release change submitted. Publishing
+  overview confirms Changes in review, quick checks running (up to 14 minutes at observation).
+  Google approval/download availability pending. Supported devices unchanged within live review:
+  11,871 phones, 6,209 tablets, zero lost in any form factor. Existing portrait declaration notice
+  deferred using supported-owner-Pixel rationale; manifest unchanged. Mapping warning nonblocking.
+
+Local Android config initially omitted existing .env Mapbox public token; explicit command-local
+.env loading resolved it without source/cloud changes. EAS automated changelog requires Enterprise,
+so scheduling with notes failed without a submission; ordinary EAS submission succeeded and test
+notes were saved in App Store Connect. No plan/key/permission changes. Rollback iOS 86 / Android 53.
+
 ## 2026-11-23 — Navigation Island cold-launch recovery owner candidate
 
 Owner approves commit/push and production iPhone testing at work. Source
