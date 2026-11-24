@@ -4,6 +4,7 @@ export async function readMapboxCoordinateLocality(
   token: string,
   latitude: number,
   longitude: number,
+  signal?: AbortSignal,
 ): Promise<ConfirmedStopLocality | null> {
   if (!token || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
   const response = await fetch(
@@ -12,7 +13,7 @@ export async function readMapboxCoordinateLocality(
       `&latitude=${encodeURIComponent(String(latitude))}` +
       `&access_token=${encodeURIComponent(token)}` +
       `&country=US,CA&language=en&limit=5`,
-    { headers: { Accept: "application/json" } },
+    { headers: { Accept: "application/json" }, signal },
   );
   if (!response.ok) return null;
   const json = await response.json();

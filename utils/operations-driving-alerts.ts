@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
+import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
-import { DeviceEventEmitter, Platform } from "react-native";
+import { AppState, DeviceEventEmitter, Platform } from "react-native";
 
 import {
   OPERATIONS_CATEGORIES,
@@ -23,6 +24,34 @@ import {
   type AlertCoordinate,
   type AlertEncounter,
 } from "./operations-driving-alert-evaluation";
+
+// A separate installed Dev app must not keep alert tracking alive after testing.
+const isIPhoneDev = () => Platform.OS === "ios" &&
+  Constants.expoConfig?.ios?.bundleIdentifier === "com.robbyeickhof.mfi.dev";
+let devAlertGeneration = 0;
+let devAlertCleanup: Promise<void> = Promise.resolve();
+
+export function installDevDrivingAlertCleanup() {
+  if (!isIPhoneDev()) return () => {};
+  const cleanup = () => {
+    devAlertGeneration += 1; // Invalidate a Start Alerts still awaiting permissions/network.
+    devAlertCleanup = devAlertCleanup.then(stopDevDrivingAlerts, stopDevDrivingAlerts);
+    void devAlertCleanup.catch(() => undefined);
+  };
+  cleanup(); // Reconcile tasks registered by a prior Dev session.
+  const subscription = AppState.addEventListener("change", state => {
+    if (state === "background") cleanup();
+  });
+  return () => subscription.remove();
+}
+
+async function stopDevDrivingAlerts() {
+  const owner = await AsyncStorage.getItem(POINTER);
+  if (owner) await stopDrivingAlerts(owner, "Dev alerts stopped when leaving the app");
+  else if (await Location.hasStartedLocationUpdatesAsync(DRIVING_TASK)) {
+    await Location.stopLocationUpdatesAsync(DRIVING_TASK);
+  }
+}
 
 export const DRIVING_TASK = "freightiq-operations-driving-alerts";
 const POINTER = "mfi:driving-alerts:active-account:v1";
@@ -343,6 +372,10 @@ export async function drivingAlertStatus(id: string): Promise<{ label: string; a
 }
 
 export async function startDrivingAlerts(id: string, origin: Session["origin"]) {
+  const generation = devAlertGeneration;
+  const devStartCancelled = () => isIPhoneDev() &&
+    (generation !== devAlertGeneration || AppState.currentState !== "active");
+  if (isIPhoneDev()) await devAlertCleanup;
   const { data: auth } = await supabase.auth.getSession();
   if (auth.session?.user.id !== id) throw new Error("Sign in to start Driving Alerts.");
   if (!(await Location.hasServicesEnabledAsync()))
@@ -368,8 +401,10 @@ export async function startDrivingAlerts(id: string, origin: Session["origin"]) 
     throw new Error("Allow background location in device Settings to use Driving Alerts.");
   if (!(await refreshDrivingSnapshot(id, true)))
     throw new Error("Current conditions could not be loaded. Try again online.");
+  if (devStartCancelled()) throw new Error("Return to Dev and tap Start Alerts again.");
   const old = await AsyncStorage.getItem(POINTER);
   if (old) await stopDrivingAlerts(old);
+  if (devStartCancelled()) throw new Error("Return to Dev and tap Start Alerts again.");
   try {
     await Location.startLocationUpdatesAsync(DRIVING_TASK, {
       accuracy: Location.Accuracy.Balanced,
@@ -384,6 +419,10 @@ export async function startDrivingAlerts(id: string, origin: Session["origin"]) 
         killServiceOnDestroy: true,
       },
     });
+    if (devStartCancelled()) {
+      await Location.stopLocationUpdatesAsync(DRIVING_TASK);
+      throw new Error("Dev alerts stopped when leaving the app.");
+    }
     await serialized(async () => {
       const state = await read(id);
       state.session = { startedAt: Date.now(), origin };
@@ -391,6 +430,10 @@ export async function startDrivingAlerts(id: string, origin: Session["origin"]) 
       await write(id, state);
       await AsyncStorage.setItem(POINTER, id);
     });
+    if (devStartCancelled()) {
+      await stopDrivingAlerts(id, "Dev alerts stopped when leaving the app");
+      throw new Error("Dev alerts stopped when leaving the app.");
+    }
   } catch (error) {
     if (await Location.hasStartedLocationUpdatesAsync(DRIVING_TASK).catch(() => false))
       await Location.stopLocationUpdatesAsync(DRIVING_TASK).catch(() => undefined);

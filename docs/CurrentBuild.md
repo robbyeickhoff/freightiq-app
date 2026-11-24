@@ -13,6 +13,190 @@ answer one question:
 
 ## Current Objective
 
+### November 24 — owner approves publishing all yesterday/today fixes
+
+Owner explicitly approves commit, push and both production candidates to existing owner-only
+TestFlight Team (Expo) / Google Play Owner Field Test groups. Include nearby/partial address search,
+confirmed-locality retry, Dev iPhone alerts cleanup, connector title/clipping, locked-note dark theme,
+and Android preview-control spacing. Preserve unrelated bot/scrape and training specifications.
+Twenty-eight focused checks, TypeScript and diff check pass; scoped lint has one existing unrelated
+hook warning. Dev alerts passed physical acceptance; final search and remaining polish acceptance
+remain owner field testing, explicitly not reported as passed. Use established production navigation
+profiles; no public/broader release, backend deployment or credential/platform reconfiguration.
+
+### November 24 — confirmed-locality fallback for empty nearby address searches
+
+Direct Codex Edit within approved nearby-search scope. Coordinate-only Mapbox suggests can return
+zero addresses for a short number. If local address suggestions are empty, reverse-resolve the
+phone/map center with existing Mapbox reverse service, retry using documented near=city,state,country,
+keep the original query, bounds, session and cancellation. Cache confirmed locality up to five
+minutes within 5km. Successful primary and explicitly targeted-town searches do not retry;
+optional lookup failures preserve primary results. No guessed compass directions/new provider.
+Partial street queries now discard unrelated fuzzy primary addresses before nearby ranking.
+
+Live exact-phone-center helper verification: 240 returns 2403 Riverside Parkway, Grand Junction;
+selected result retrieves valid coordinates. 240 S returns nearby South addresses; 240 S Mahone
+returns only 240 Mahoney Drive, Telluride. Mapbox coverage is not exhaustive; numeric prefix
+completions can include longer house numbers. Twenty-eight regression tests pass, TypeScript
+passes, scoped lint zero errors/one existing unrelated hook warning; diff whitespace check passes.
+Temporary diagnostics removed. Final phone acceptance and remaining yesterday polish checks
+pending. No commit/push/build yet. Unrelated bot/training specifications must remain excluded.
+
+### November 24 — phone capture exposes bare-number provider limitation
+
+Owner selects All and enters 240: no results. Temporary Dev request capture confirms actual
+phone center 39.07319,-108.48105, token present, discovery enabled, HTTP 200 with zero Mapbox
+suggestions. Replayed exact center/bounds: address-only returns zero even without bbox;
+unfiltered/unbounded returns Virginia/Florida/New York. Earlier approximate-center test returning
+2403 Riverside Parkway did not establish phone acceptance. Do not call this fixed. Adding street
+text returns nearby addresses. Do not fabricate direction guesses for number-only searches.
+Temporary capture code removed. General nearby ranking and partial street changes remain;
+bare-number autocomplete unresolved. No commit/push/build.
+
+### November 24 — bare house-number nearby autocomplete correction
+
+Owner reports 240 still returns Virginia/Florida/New York. Bare house numbers now use the same
+regional bounds and address-only provider filter as directional address prefixes; no variation
+requests or hardcoded address. Live provider check for 240 near Grand Junction returns a local
+Grand Junction address (2403 Riverside Parkway), not nationwide matches. Seventeen helper/ranking
+tests pass. Phone acceptance pending; no commit/push/build.
+
+### November 24 — nearby-first unified location results and scope review
+
+Owner approves nearby relevance first, FreightIQ preference among nearby matches, farther places
+later, explicit town priority; asks to inspect Stops/Cities/Drivers. Direct Codex Edit: unify All's
+stops and places ahead of Cities/Drivers. Group by <=50km, <=200km, farther, unknown distance;
+within group FreightIQ first, then distance, text relevance, stable provider order. Target locality
+present in query outranks phone proximity when identifiable in returned context/address.
+Stops-only uses the same distance ordering, no three-stop display cap. Mapbox absent/null/negative
+distance is unknown (not zero); full addresses retained; numbered street queries request address
+results rather than city/postcode/POI suggestions. Existing retrieval/session/auth guards retained.
+
+Repository city/driver SQL inspected: exact name, prefix, fuzzy similarity, then deterministic
+name order; neither response contains coordinates. Those filters remain relevance-based and are
+not falsely presented as proximity sorting. No backend change/deploy. Ranking is over returned
+candidates, not a claim to exhaust all provider/database records.
+
+Sixteen address/ranking tests pass; TypeScript and scoped lint pass with one existing unrelated
+hook warning. Pending phone checks: All/Stops nearby order, saved-stop badge and selection,
+Cities/Drivers filters, distant explicit town, 240 S progressive typing and address-variation pin.
+No commit/push/build yet; preserve prior improvements and unrelated specifications.
+
+### November 24 — partial address fallback acceptance correction
+
+Owner further clarifies autocomplete should begin at 240 S and all map searches start nearby.
+Standalone compass abbreviations expand before provider lookup (S to South, not Street), with
+no direction removal before three street letters. Regional bounds apply to original partial
+address query as well as retries. All map search requests use a cached phone position no older
+than 120s/accuracy <=2000m when available and permitted; otherwise map center. No new permission
+prompt or GPS subscription. Explicit locality remains unrestricted. Existing place sorting is
+variation candidates first, then original name/address text tiers, distance within equal tiers when
+provider distance exists, otherwise provider order. Source sections remain separate.
+Eleven helper tests pass; partial phone acceptance remains pending.
+
+During both-phone checks, owner enters 240 S Mahoney / 240 South Mahoney before Dr and sees
+unrelated Mapbox suggestions. Owner approves extending fallback to this typing stage. Recognize
+house number + explicit compass direction + street fragment (minimum three letters), even before
+street suffix. For partial queries try directionless variation first; match exact house number and
+street-word prefix, retaining explicit comma-separated locality/ZIP constraints. Label candidates
+and preserve primary results/session/proximity/cancellation. At most two optional requests;
+no road/address-specific hardcoding or automatic pin selection.
+
+Owner retest then exposes unfinished-word rejection (Mahone) and distant primary prefix matches
+suppressing retries. Partial matching now accepts the incomplete last word; partial queries still
+try the directional variation even if a primary prefix matches elsewhere. Optional retries without
+an explicit locality use a roughly 200km map-centered bounding box to keep suggestions regional;
+queries with locality remain unrestricted. Original provider results remain below labelled matches.
+Ten focused tests pass. Live checks for Mah/Maho/Mahon/Mahone and spelled South recover Telluride
+first with Grand Junction map center. TypeScript and scoped lint pass (existing unrelated hook warning). Physical
+Dev retest remains pending; no production build or commit yet. Prior full-address test passed once
+owner typed Dr; Dev Driving Alerts background cleanup physically passed this morning. Remaining
+pending features and unrelated work preserved.
+
+### November 23 — Pixel preview satellite-control spacing
+
+Owner screenshot shows fixed top=150 map-style button overlapping expanded stop preview/close.
+Scoped map-layout correction for Android: anchor preview control below measured search input,
+measure control height, reserve 12px gap and cap preview height within actual map viewport above
+its bottom inset. Preview body scrolls when expanded so content remains reachable. Accessibility
+preview top and height reserve the same control space; route Add Stop uses its actual search top.
+iPhone control positioning unchanged. TypeScript and scoped lint pass (one existing unrelated hook
+warning). Physical Pixel expanded/collapsed, large text, satellite toggle/close and route-add
+inspection remain pending.
+No commit or builds; preserve accumulated changes and unrelated specifications.
+
+### November 23 — primary banner secondary-text clipping
+
+Owner screenshot shows I 70 plus Green River duplicated/clipped above lane guidance. SDK source
+sets primary numberOfLines=1 and baseline constraints when a secondary instruction exists.
+FreightIQ override forced two lines and appended destinations, duplicating SDK's secondary label.
+Scoped correction: preserve SDK primary line count; append optional destination detail only when
+SDK provides more than one primary line. Separate secondary instruction and lane guidance remain
+SDK-owned. Road-first title, connector label, arrow/distance unchanged. No route changes.
+Unsigned iPhone Debug compilation and existing road-title/step-association checks pass. Physical
+I 70/Green River plus long-road-name/lane-guidance inspection remains pending.
+No new builds; preserve accumulated changes and unrelated specifications.
+
+### November 23 — locked personal note theme polish
+
+Owner reports white locked-note editor while using dark mode. Scoped Direct Codex Edit: reuse
+existing stop-screen theme styles for the modal/safe area, keyboard-avoiding background, heading,
+card, label, input and helper text. Placeholder, selection and iOS keyboard colors follow theme.
+Create/edit share this editor. No note content, authentication, storage or privacy behavior changed.
+Physical light/dark create/edit and keyboard inspection remain pending. Hold production builds;
+leave accumulated navigation/search/Dev-alert and unrelated specification work intact.
+
+### November 23 — unnamed connector banner destination label
+
+Owner approves repeatable correction after direct Mapbox replay shows US 550 right turn onto
+unnamed 33.266m connector, then right onto County Road 17 / CR 17. Direct Codex Edit to iPhone
+primary banner only. Prefer the maneuver's own road metadata. If absent, an ordinary turn onto a
+positive-length unnamed connector of at most 75m may show "To [road]" from the immediately
+following non-arrival step in the same leg. No scanning farther steps, road-specific hardcoding,
+route changes or arrow/distance changes. Other missing-name situations keep SDK instructions.
+
+Swift resolver checks cover CR 17 plus unrelated Oak Street, named-road precedence, invalid/long
+lengths, non-turns, missing following name and arrival rejection. Existing expanded-row association
+checks and unsigned iPhone Debug compilation pass. Physical iPhone guidance acceptance remains pending.
+Hold production builds; leave address fallback, Dev-alert cleanup and unrelated work intact.
+
+### November 23 — iPhone Dev Driving Alerts background cleanup
+
+Owner identifies Start Alerts used in Dev before production; blue iOS location indicator opens
+Dev. Existing code requests its indicator and background task, independently of ActivityKit.
+Owner explicitly selects: stop Dev alerts when leaving Dev, preserve production background alerts.
+Direct Codex Edit: iPhone Dev bundle only; reconcile saved/orphan native alert tasks on UI launch,
+stop on background, clear saved session through existing stop flow, no automatic restart. Serialize
+Dev cleanup and invalidate in-flight starts so permissions/network/native-start/storage races cannot
+leave a late alert task alive. Inactive permission dialogs do not trigger background cleanup.
+Production iPhone and all Android variants retain their current background behavior. Native
+navigation GPS and ActivityKit untouched. This addresses Driving Alerts, not every possible source
+of a blue location indicator.
+
+Five focused lifecycle tests cover startup/background/orphan cleanup, late native Start, unchanged
+production and Android behavior. Physical Dev Start Alerts/background/return plus concurrent
+production-alert checks remain pending. Changed root layout and operations-driving-alerts utility;
+new tests/dev-driving-alert-lifecycle.test.cjs. No commit/push/build requested; hold production
+builds as directed. Pending address fallback and unrelated bot/scrape/training work preserved.
+
+### November 23 — address variation fallback
+
+Owner approves general map address-search fallback after Mapbox fails the full 240 South Mahoney
+Drive, Telluride address but returns 240 Mahoney Drive when South is omitted. Direct Codex Edit;
+map search only (also used by route Add Stop), no provider switch or stop-editor changes.
+Try original first. Only numbered street-address queries with a recognized suffix can retry, at
+most twice: expanded street abbreviations and omission of a leading compass direction. Retain
+house number, remaining street name, units and locality. Add only provider-returned matching
+number/street/locality candidates, deduplicate by Mapbox ID, preserve original results and label
+alternatives for driver confirmation. Same session/proximity/country and cancellation; optional
+fallback failure preserves primary results. No automatic pin selection or fabricated coordinates.
+
+Six focused tests, TypeScript and live provider replay pass: exact full address recovers Telluride
+240 Mahoney Drive as a labelled alternative. Scoped lint has zero errors and one existing unrelated
+hook warning. Physical iPhone/Pixel search/select/map-pin/route-add acceptance remains pending.
+Changed map screen, new utils/address-search.ts, tests/address-search.test.cjs and this record.
+Not committed/pushed/built. Preserve unrelated bot/scrape and training work.
+
 ### November 23 — production stale Island / cold-link recovery correction
 
 Owner reports build 85 retains a crossed navigation-arrow Island after closing FreightIQ and

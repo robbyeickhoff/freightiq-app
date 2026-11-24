@@ -360,6 +360,7 @@ export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMa
   const destructiveTextColor = colorScheme === "dark" ? "#f87171" : colors.danger;
   const contactActionTheme = { backgroundColor: colors.surface, borderColor: colors.border };
   const intelStyles = {
+    cardHelp: { ...styles.cardHelp, color: colors.textSecondary },
     removeContactText: { ...styles.removeContactText, color: destructiveTextColor },
     contactValidationText: { ...styles.contactValidationText, color: destructiveTextColor },
     additionalIntelScreen: { ...styles.additionalIntelScreen, backgroundColor: colors.background },
@@ -3779,38 +3780,41 @@ export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMa
             onRequestClose={closePrivateNote}
             visible={privateNoteOpen}
           >
-            <ModalSafeAreaScreen>
+            <ModalSafeAreaScreen style={intelStyles.additionalIntelScreen}>
               <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={styles.additionalIntelScreen}
+                style={intelStyles.additionalIntelScreen}
               >
                 <ScrollView
                   contentContainerStyle={styles.privateIntelEditorContent}
                   keyboardShouldPersistTaps="handled"
                 >
                   <View style={styles.additionalIntelHeader}>
-                    <Text style={styles.additionalIntelTitle}>Locked Personal Intel</Text>
-                    <Text style={styles.additionalIntelStopName}>{title}</Text>
-                    <Text style={styles.additionalIntelAddress}>
+                    <Text style={intelStyles.additionalIntelTitle}>Locked Personal Intel</Text>
+                    <Text style={intelStyles.additionalIntelStopName}>{title}</Text>
+                    <Text style={intelStyles.additionalIntelAddress}>
                       Private from other FreightIQ drivers
                     </Text>
                   </View>
 
-                  <View style={styles.card}>
-                    <Text style={styles.sectionLabel}>Personal note</Text>
+                  <View style={intelStyles.card}>
+                    <Text style={intelStyles.sectionLabel}>Personal note</Text>
                     <TextInput
                       autoCapitalize="sentences"
                       autoCorrect
                       maxLength={2000}
                       multiline
+                      keyboardAppearance={colorScheme === "dark" ? "dark" : "light"}
+                      placeholderTextColor={colors.textSecondary}
+                      selectionColor={colors.accent}
                       onChangeText={setPrivateNoteDraft}
                       placeholder="Gate code, where to check in, or another detail just for you"
-                      style={[styles.input, styles.privateIntelInput]}
+                      style={[intelStyles.input, styles.privateIntelInput]}
                       textAlignVertical="top"
                       value={privateNoteDraft}
                     />
-                    <Text style={styles.cardHelp}>{privateNoteDraft.length}/2000</Text>
-                    <Text style={styles.cardHelp}>
+                    <Text style={intelStyles.cardHelp}>{privateNoteDraft.length}/2000</Text>
+                    <Text style={intelStyles.cardHelp}>
                       This note is stored privately for your account. It is not end-to-end encrypted
                       and is never added to shared Driver Intel.
                     </Text>

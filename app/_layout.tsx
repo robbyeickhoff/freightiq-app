@@ -28,6 +28,7 @@ import {
 } from "@/utils/app-lock";
 import { supabase } from "@/utils/supabase";
 import {
+  installDevDrivingAlertCleanup,
   readDrivingAlerts,
   refreshDrivingSnapshot,
   selectedDrivingCondition,
@@ -242,6 +243,8 @@ function RootNavigator() {
       appLockBackgroundTimeoutRef.current = timeout;
     });
   }, []);
+
+  useEffect(() => installDevDrivingAlertCleanup(), []);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {

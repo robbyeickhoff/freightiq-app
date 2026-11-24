@@ -33,6 +33,17 @@ func navigationRoadTitle(names: [String]?, codes: [String]?, destinationCodes: [
   return nil
 }
 
+// Describe the destination of a short unnamed connector, not its own name.
+// Only inspect the immediately following maneuver in the same route leg.
+func navigationConnectorTitle(road: String?, meters: Double, followingRoad: String?,
+                              isConnectorTurn: Bool, followingIsArrival: Bool) -> String? {
+  if let road, !road.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return road }
+  guard isConnectorTurn, meters.isFinite, meters > 0, meters <= 75,
+        !followingIsArrival, let next = followingRoad?.trimmingCharacters(in: .whitespacesAndNewlines),
+        !next.isEmpty else { return nil }
+  return "To " + next
+}
+
 // Distance milestones, with a cooldown, rather than only the SDK's final
 // spoken instruction. Skipped milestones never produce a burst of old alerts.
 struct NavigationAlertMilestones {
@@ -981,17 +992,26 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
           label === banner.primaryLabel,
           let progress = Self.provider.mapboxNavigation.navigation().currentRouteProgress?.routeProgress,
           let step = progress.currentLegProgress.upcomingStep,
-          step.maneuverType != .arrive,
-          let road = navigationRoadTitle(names: step.exitNames ?? step.names, codes: step.codes,
-                                         destinationCodes: step.destinationCodes) else { return nil }
+          step.maneuverType != .arrive else { return nil }
+    let ownRoad = navigationRoadTitle(names: step.exitNames ?? step.names, codes: step.codes,
+                                      destinationCodes: step.destinationCodes)
+    let following = progress.currentLegProgress.followOnStep
+    let followingRoad = following.flatMap {
+      navigationRoadTitle(names: $0.exitNames ?? $0.names, codes: $0.codes,
+                          destinationCodes: $0.destinationCodes)
+    }
+    guard let road = navigationConnectorTitle(road: ownRoad, meters: step.distance,
+      followingRoad: followingRoad, isConnectorTurn: step.maneuverType == .turn,
+      followingIsArrival: following?.maneuverType == .arrive) else { return nil }
     // Do not repeat the SDK primary text: it can contain both a road name and its shield.
     var details = (step.destinations ?? []).filter {
       !navigationRoadKey($0).isEmpty && navigationRoadKey($0) != navigationRoadKey(road)
     }
     if let exits = step.exitCodes, !exits.isEmpty { details.insert("Exit " + exits.joined(separator: " / "), at: 0) }
     let detail = details.joined(separator: " · ")
-    let showDetail = !detail.isEmpty
-    label.numberOfLines = 2
+    // Mapbox sets one primary line when it has a separate secondary label.
+    // Do not override that layout or duplicate its secondary instruction.
+    let showDetail = !detail.isEmpty && label.numberOfLines > 1
     var attributes = presented.length > 0 ? presented.attributes(at: 0, effectiveRange: nil) : [:]
     attributes[.font] = label.font ?? UIFont.boldSystemFont(ofSize: 30)
     let result = NSMutableAttributedString(string: road, attributes: attributes)

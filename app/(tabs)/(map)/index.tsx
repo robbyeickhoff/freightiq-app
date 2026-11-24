@@ -1,3 +1,5 @@
+import { rankLocationSearchResults } from "@/utils/location-search-ranking";
+import { isLocalAddressPrefix, isStreetAddressQuery, searchNearbyAddressSuggestions, type AddressSuggestion } from "@/utils/address-search";
 import { hasEmbeddedNavigation } from "@/utils/embedded-navigation";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
@@ -114,6 +116,8 @@ type PlaceResult = {
   fullAddress: string;
   sessionToken: string;
   distanceMeters?: number;
+  locality?: string;
+  fallbackQuery?: string;
 };
 
 type FreightIqSearchRow = {
@@ -362,49 +366,6 @@ function formatNewStopAddress(pin: Pin | null) {
     }
   }
   return parts.join(",");
-}
-
-function normalizePlaceSearchText(value: string) {
-  return value.toLowerCase().replace(/\s+/g, " ").trim();
-}
-
-function placeSearchMatchTier(result: PlaceResult, query: string) {
-  const normalizedQuery = normalizePlaceSearchText(query);
-  const normalizedName = normalizePlaceSearchText(result.name);
-  const normalizedAddress = normalizePlaceSearchText(result.fullAddress);
-
-  if (!normalizedQuery) return 0;
-  if (normalizedName === normalizedQuery) return 4;
-  if (normalizedName.startsWith(normalizedQuery)) return 3;
-  if (normalizedName.includes(normalizedQuery)) return 2;
-  if (normalizedAddress.includes(normalizedQuery)) return 1;
-  return 0;
-}
-
-function orderPlaceResults(results: PlaceResult[], query: string) {
-  return results
-    .map((result, originalIndex) => ({
-      result,
-      originalIndex,
-      matchTier: placeSearchMatchTier(result, query),
-    }))
-    .sort((left, right) => {
-      if (left.matchTier !== right.matchTier) {
-        return right.matchTier - left.matchTier;
-      }
-
-      if (
-        left.matchTier > 0 &&
-        left.result.distanceMeters !== undefined &&
-        right.result.distanceMeters !== undefined &&
-        left.result.distanceMeters !== right.result.distanceMeters
-      ) {
-        return left.result.distanceMeters - right.result.distanceMeters;
-      }
-
-      return left.originalIndex - right.originalIndex;
-    })
-    .map(({ result }) => result);
 }
 
 function mergePinsById(existing: Pin[], incoming: Pin[]) {
@@ -747,18 +708,26 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
 
   const [query, setQuery] = useState("");
   const [searchInputHeight, setSearchInputHeight] = useState(48);
+  const [previewMapControlHeight, setPreviewMapControlHeight] = useState(64);
+  const previewMapControlTop = (routeAddMode ? 8 : MAP_SEARCH_TOP) + searchInputHeight + 8;
+  const androidPreviewMaxHeight = Math.max(0,
+    (mapLayout.height || windowHeight) - 92 - previewMapControlTop - previewMapControlHeight - 12,
+  );
   const accessibilityPreviewTop = Math.max(
     Math.max(safeAreaInsets.top, Platform.OS === "ios" ? 59 : 24) + 8,
-    MAP_SEARCH_TOP + searchInputHeight + 8,
+    Platform.OS === "android"
+      ? previewMapControlTop + previewMapControlHeight + 12
+      : MAP_SEARCH_TOP + searchInputHeight + 8,
   );
   const accessibilityPreviewScrollMaxHeight = Math.max(
-    240,
-    windowHeight - accessibilityPreviewTop - 92 - 24,
+    Platform.OS === "android" ? 0 : 240,
+    (Platform.OS === "android" ? mapLayout.height || windowHeight : windowHeight) - accessibilityPreviewTop - 92 - 24,
   );
   const [freightIqResults, setFreightIqResults] = useState<Pin[]>([]);
   const [cityResults, setCityResults] = useState<CitySearchRow[]>([]);
   const [driverResults, setDriverResults] = useState<DriverSearchRow[]>([]);
   const [results, setResults] = useState<PlaceResult[]>([]);
+  const [searchResultCenter, setSearchResultCenter] = useState({ latitude: region.latitude, longitude: region.longitude });
   const [searching, setSearching] = useState(false);
   const [searchScope, setSearchScope] = useState<SearchScope>("all");
   const [failedSearchSources, setFailedSearchSources] = useState<string[]>([]);
@@ -769,6 +738,9 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
   const clusterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMarkerPressAtRef = useRef(0);
   const lastRequestId = useRef(0);
+  const nearbySearchLocalityRef = useRef<{
+    latitude: number; longitude: number; resolvedAt: number; near: string | null;
+  } | null>(null);
   const mapboxSessionTokenRef = useRef<string | null>(null);
   const mapboxSessionStartedAtRef = useRef(0);
   const mapboxSessionSuggestCountRef = useRef(0);
@@ -2574,6 +2546,14 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
           latitude: region.latitude,
           longitude: region.longitude,
         };
+        const nearbyLocation = locationGranted
+          ? await Location.getLastKnownPositionAsync({ maxAge: 120_000, requiredAccuracy: 2000 }).catch(() => null)
+          : null;
+        if (nearbyLocation) {
+          searchCenter.latitude = nearbyLocation.coords.latitude;
+          searchCenter.longitude = nearbyLocation.coords.longitude;
+        }
+        if (abortController.signal.aborted || requestId !== lastRequestId.current) return;
         const searchRadiusMeters = searchRadiusMetersFromRegion(region);
         const sessionToken =
           searchScope === "all" && discoveryQueryReady && MAPBOX_TOKEN
@@ -2638,27 +2618,53 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
             return [];
 
           const proximity = `${searchCenter.longitude},${searchCenter.latitude}`;
-          const url =
-            `https://api.mapbox.com/search/searchbox/v1/suggest?` +
-            `q=${encodeURIComponent(q)}` +
-            `&access_token=${encodeURIComponent(MAPBOX_TOKEN)}` +
-            `&limit=8` +
-            `&language=en` +
-            `&country=US,CA` +
-            `&proximity=${encodeURIComponent(proximity)}` +
-            `&session_token=${encodeURIComponent(sessionToken)}`;
-
-          const response = await fetch(url, {
-            headers: { Accept: "application/json" },
-            signal: abortController.signal,
-          });
-
-          if (!response.ok) {
-            throw new Error(`Place search failed with status ${response.status}.`);
-          }
-
-          const json = await response.json();
-          const suggestions = Array.isArray(json?.suggestions) ? json.suggestions : [];
+          const suggestions = await searchNearbyAddressSuggestions(q, async (searchQuery, near) => {
+            // For an incomplete address without a town, focus optional retries
+            // within roughly 200km of the map. Explicit locality remains unrestricted.
+            const latitudeSpan = 200 / 111;
+            const longitudeSpan = Math.min(180, latitudeSpan / Math.max(0.01,
+              Math.cos(searchCenter.latitude * Math.PI / 180)));
+            const nearbyBounds = [
+              Math.max(-180, searchCenter.longitude - longitudeSpan),
+              Math.max(-90, searchCenter.latitude - latitudeSpan),
+              Math.min(180, searchCenter.longitude + longitudeSpan),
+              Math.min(90, searchCenter.latitude + latitudeSpan),
+            ].join(",");
+            const nearby = isLocalAddressPrefix(q)
+              ? `&bbox=${encodeURIComponent(nearbyBounds)}` : "";
+            const url =
+              `https://api.mapbox.com/search/searchbox/v1/suggest?` +
+              `q=${encodeURIComponent(searchQuery)}` +
+              `&access_token=${encodeURIComponent(MAPBOX_TOKEN)}` +
+              `&limit=8&language=en&country=US,CA` +
+              (isStreetAddressQuery(q) ? "&types=address" : "") +
+              `&proximity=${encodeURIComponent(proximity)}` +
+              `&session_token=${encodeURIComponent(sessionToken)}` + nearby +
+              (near ? `&near=${encodeURIComponent(near)}` : "");
+            const response = await fetch(url, {
+              headers: { Accept: "application/json" }, signal: abortController.signal,
+            });
+            if (!response.ok) throw new Error(`Place search failed with status ${response.status}.`);
+            const json = await response.json();
+            return (Array.isArray(json?.suggestions) ? json.suggestions : []).filter(
+              (item: unknown): item is AddressSuggestion => !!item && typeof item === "object" &&
+                typeof (item as AddressSuggestion).mapbox_id === "string" &&
+                typeof (item as AddressSuggestion).name === "string",
+            );
+          }, async () => {
+            const cached = nearbySearchLocalityRef.current;
+            if (cached && Date.now() - cached.resolvedAt < 300_000 &&
+              distanceMeters(searchCenter, cached) < 5_000) return cached.near;
+            const locality = await readMapboxCoordinateLocality(
+              MAPBOX_TOKEN, searchCenter.latitude, searchCenter.longitude, abortController.signal,
+            );
+            const near = locality
+              ? `${locality.city}, ${locality.stateCode}, ${locality.countryCode}` : null;
+            if (!abortController.signal.aborted) nearbySearchLocalityRef.current = {
+              ...searchCenter, resolvedAt: Date.now(), near,
+            };
+            return near;
+          }, abortController.signal);
 
           const mappedResults = suggestions
             .map((item: any) => {
@@ -2667,7 +2673,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
 
               const name = item?.name ?? item?.place_formatted ?? item?.full_address ?? "Unknown";
               const fullAddress =
-                item?.place_formatted ?? item?.full_address ?? item?.name ?? "Unknown";
+                item?.full_address ?? item?.place_formatted ?? item?.name ?? "Unknown";
 
               return {
                 id: mapboxId,
@@ -2675,20 +2681,23 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
                 name: String(name),
                 fullAddress: String(fullAddress),
                 sessionToken,
-                distanceMeters: Number.isFinite(Number(item?.distance))
-                  ? Number(item.distance)
+                locality: item.context?.place?.name ?? item.context?.locality?.name,
+                fallbackQuery: item.fallbackQuery,
+                distanceMeters: typeof item?.distance === "number" && Number.isFinite(item.distance) && item.distance >= 0
+                  ? item.distance
                   : undefined,
               };
             })
             .filter(Boolean) as PlaceResult[];
 
-          return orderPlaceResults(mappedResults, q);
+          return mappedResults;
         })();
 
         const [freightIqOutcome, cityOutcome, driverOutcome, placeOutcome] =
           await Promise.allSettled([freightIqRequest, cityRequest, driverRequest, placeRequest]);
 
         if (requestId !== lastRequestId.current) return;
+        setSearchResultCenter(searchCenter);
 
         const failedSources: string[] = [];
         const refused = [freightIqOutcome, cityOutcome, driverOutcome].find(
@@ -2759,7 +2768,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
       }
       abortController.abort();
     };
-  }, [endMapboxSearchSession, getMapboxSearchSessionToken, query, region, searchScope]);
+  }, [endMapboxSearchSession, getMapboxSearchSessionToken, query, region, searchScope, locationGranted]);
 
   async function selectResult(r: PlaceResult) {
     lastRequestId.current += 1;
@@ -2885,7 +2894,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
     if (searchScope === "cities") return "No FreightIQ cities match this search.";
     if (searchScope === "drivers") return "No contributing drivers match this search.";
     if (searchScope === "stops") return "No FreightIQ stops match this search.";
-    return "No FreightIQ results. Try a business, city, or driver name.";
+    return "No matches yet. Add a street name, business, or city.";
   }, [
     cityResults.length,
     driverResults.length,
@@ -2896,8 +2905,19 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
     searchScope,
     searching,
   ]);
-  const visibleFreightIqResults =
-    searchScope === "all" ? freightIqResults.slice(0, 3) : freightIqResults;
+  const rankedLocationResults = rankLocationSearchResults([
+    ...freightIqResults.map(stop => ({
+      source: "freightiq" as const, name: stop.name, address: stop.address,
+      locality: stop.address?.split(",")[1]?.trim(),
+      distanceMeters: distanceMeters(searchResultCenter, { latitude: stop.lat, longitude: stop.lng }),
+      stop, place: undefined,
+    })),
+    ...results.map(place => ({
+      source: "place" as const, name: place.name, address: place.fullAddress,
+      locality: place.locality, distanceMeters: place.distanceMeters,
+      place, stop: undefined,
+    })),
+  ], query);
 
   const showPreview = !!selectedStopId && !!selectedStop && previewVisible;
 
@@ -3840,37 +3860,33 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
             </Text>
 
             <ScrollView style={styles.resultsScroll} keyboardShouldPersistTaps="handled">
-              {freightIqResults.length > 0 ? (
-                <>
-                  <Text
-                    accessibilityRole="header"
-                    style={[styles.resultSectionLabel, { color: colors.textSecondary }]}
-                  >
-                    FreightIQ Stops
+              {rankedLocationResults.length > 0 ? <Text
+                accessibilityRole="header"
+                style={[styles.resultSectionLabel, { color: colors.textSecondary }]}
+              >Stops & Places</Text> : null}
+              {rankedLocationResults.map(result => {
+                const stop = result.stop, place = result.place;
+                return <Pressable
+                  key={stop ? `freightiq-${stop.id}` : `place-${place!.id}`}
+                  style={[styles.resultRow, { borderBottomColor: colors.border }]}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    if (stop) selectFreightIqSearchResult(stop);
+                    else if (place) void selectResult(place);
+                  }}
+                >
+                  <Text style={[styles.resultName, { color: colors.textPrimary }]} numberOfLines={1}>
+                    {result.name}
                   </Text>
-
-                  {visibleFreightIqResults.map((r) => (
-                    <Pressable
-                      key={`freightiq-${r.id}`}
-                      style={[styles.resultRow, { borderBottomColor: colors.border }]}
-                      onPress={() => selectFreightIqSearchResult(r)}
-                    >
-                      <Text
-                        style={[styles.resultName, { color: colors.textPrimary }]}
-                        numberOfLines={1}
-                      >
-                        {r.name}
-                      </Text>
-                      <Text
-                        style={[styles.resultAddr, { color: colors.textSecondary }]}
-                        numberOfLines={2}
-                      >
-                        {formatAddressForDisplay(r.address ?? "No address saved")}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </>
-              ) : null}
+                  <Text style={[styles.resultAddr, { color: colors.textSecondary }]} numberOfLines={2}>
+                    {formatAddressForDisplay(result.address ?? "No address saved")}
+                  </Text>
+                  {stop ? <Text style={[styles.resultAddr, { color: colors.accentStrong }]}>FreightIQ stop</Text> : null}
+                  {place?.fallbackQuery ? <Text style={[styles.resultAddr, { color: colors.textSecondary }]}>
+                    Address variation — confirm the address and map pin
+                  </Text> : null}
+                </Pressable>;
+              })}
 
               {cityResults.length > 0 ? (
                 <>
@@ -3959,37 +3975,6 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
                 </Text>
               ) : null}
 
-              {results.length > 0 ? (
-                <Text style={[styles.resultSectionLabel, { color: colors.textSecondary }]}>
-                  Nearby Places
-                </Text>
-              ) : null}
-
-              {results.map((r) => {
-                return (
-                  <Pressable
-                    key={r.id}
-                    style={[styles.resultRow, { borderBottomColor: colors.border }]}
-                    onPress={() => {
-                      Keyboard.dismiss();
-                      selectResult(r);
-                    }}
-                  >
-                    <Text
-                      style={[styles.resultName, { color: colors.textPrimary }]}
-                      numberOfLines={1}
-                    >
-                      {r.name}
-                    </Text>
-                    <Text
-                      style={[styles.resultAddr, { color: colors.textSecondary }]}
-                      numberOfLines={2}
-                    >
-                      {formatAddressForDisplay(r.fullAddress)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
             </ScrollView>
           </AppCard>
         )}
@@ -4002,6 +3987,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
             {
               backgroundColor: colors.surfaceElevated,
               borderColor: colors.border,
+              ...(Platform.OS === "android" ? { maxHeight: androidPreviewMaxHeight } : {}),
               bottom: usesAccessibilityLayout ? undefined : 92,
               top: usesAccessibilityLayout ? accessibilityPreviewTop : undefined,
               transform: [{ translateY: previewTranslateY }],
@@ -4037,8 +4023,8 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
           <ScrollView
             bounces={usesAccessibilityLayout}
             contentContainerStyle={styles.previewScrollContent}
-            scrollEnabled={usesAccessibilityLayout && !previewCollapsed}
-            showsVerticalScrollIndicator={usesAccessibilityLayout && !previewCollapsed}
+            scrollEnabled={(usesAccessibilityLayout || Platform.OS === "android") && !previewCollapsed}
+            showsVerticalScrollIndicator={(usesAccessibilityLayout || Platform.OS === "android") && !previewCollapsed}
             style={[
               styles.previewScroll,
               usesAccessibilityLayout ? { maxHeight: accessibilityPreviewScrollMaxHeight } : null,
@@ -4527,7 +4513,10 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
       ) : null}
 
       {showPreview ? (
-        <View style={{ position: "absolute", top: 150, right: 16 }}>
+        <View
+          onLayout={event => setPreviewMapControlHeight(event.nativeEvent.layout.height)}
+          style={{ position: "absolute", top: Platform.OS === "android" ? previewMapControlTop : 150, right: 16 }}
+        >
           <AppCard clipContent elevation="floating">
             <AppButton
               accessibilityLabel={mapType === "standard" ? "Switch to satellite map" : "Switch to standard map"}

@@ -16,6 +16,16 @@ precondition(navigationRoadTitle(names: ["Highway 50"], codes: ["US 50"], destin
 precondition(navigationRoadTitle(names: ["North River Road"], codes: nil, destinationCodes: nil) == "North River Road")
 precondition(navigationRoadTitle(names: [" "], codes: [], destinationCodes: ["I 70 West"]) == "I 70 West")
 precondition(navigationRoadTitle(names: nil, codes: nil, destinationCodes: nil) == nil)
+precondition(navigationConnectorTitle(road: nil, meters: 33.266, followingRoad: "CR 17", isConnectorTurn: true, followingIsArrival: false) == "To CR 17")
+precondition(navigationConnectorTitle(road: nil, meters: 40, followingRoad: "Oak Street", isConnectorTurn: true, followingIsArrival: false) == "To Oak Street")
+precondition(navigationConnectorTitle(road: "Main Street", meters: 33, followingRoad: "CR 17", isConnectorTurn: true, followingIsArrival: false) == "Main Street")
+for meters in [0.0, -1, 75.01, Double.infinity, Double.nan] {
+ precondition(navigationConnectorTitle(road: nil, meters: meters, followingRoad: "CR 17", isConnectorTurn: true, followingIsArrival: false) == nil)
+}
+precondition(navigationConnectorTitle(road: nil, meters: 33, followingRoad: nil, isConnectorTurn: true, followingIsArrival: false) == nil)
+precondition(navigationConnectorTitle(road: nil, meters: 33, followingRoad: "CR 17", isConnectorTurn: false, followingIsArrival: false) == nil)
+precondition(navigationConnectorTitle(road: nil, meters: 33, followingRoad: "Driveway", isConnectorTurn: true, followingIsArrival: true) == nil)
+
 precondition(navigationRoadTitle(names: nil, codes: ["US 50", "US 6"], destinationCodes: nil) == "US 50 / US 6")
 `);
     execFileSync('xcrun', ['swift', join(folder, 'Checks.swift')]);
