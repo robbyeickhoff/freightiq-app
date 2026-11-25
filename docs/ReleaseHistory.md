@@ -6,6 +6,39 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-11-25 — Address display abbreviations owner candidates
+
+Owner physically accepted refreshed iPhone and Pixel Dev builds and approved commit/push and
+production candidates for the existing owner-only groups. Source
+`5294fc3e851c9b7c1779316774168b47768ad662` pushed on clean-main. Abbreviates road types and
+N/S/E/W in address/road displays, including native guidance and address-only stop names.
+Business names, locality, original stored/editable addresses, routing and voice remain unchanged.
+Six focused tests, TypeScript, native Kotlin/Swift formatter cases, signed iPhone Debug build
+and Android Debug build pass. Both phones accepted. Unrelated bot/training specs preserved.
+Archive runtime files match the source commit; generated Dev projects, docs/backend/tests excluded.
+
+- iOS 1.0.2 (88), EAS `cba9b25b-e279-4957-9530-eb2e5cce36e3`, profile
+  `production-road-restriction-test`, finished. Exact IPA verifies production identity/database,
+  standalone bundle, absent local endpoints, activity extension and strict/deep signing with
+  production entitlements. SHA256 `bef51038daf06491c3a9085338836373b18d35c9bc8cb5c5783c1b6dcab97b3c`.
+  Submission `f6db39a0-0187-457e-8bb8-5b47b9a580ed` succeeded. Apple build
+  `c64558fd-124b-4fc5-9ec4-4069be3e3a7e` processed; field notes saved. Verified only
+  Team (Expo), Internal, 1 tester; zero individual or external groups. Ready in TestFlight.
+- Android 1.0.2 (55), EAS `10e172c6-a4d6-41f8-a676-e24f85ea6655`, profile
+  `production-android-navigation`, finished. Exact AAB verifies production identity/database,
+  standalone bundle, absent local endpoints, disabled debugging and JAR signing.
+  SHA256 `f45d990e15b4df766a8bea17a4277817cc662d5b6f7f9ecd9fc1636d94a68b81`.
+  Existing Owner Field Test audience verified: one-person owner list checked, Internal Testers (10)
+  unchecked. Exact code 55 included, previous code 54 excluded; 100% rollout within the owner
+  track only. Field notes saved. Publishing overview verifies exactly one change sent for review,
+  Closed testing — Owner Field Test, code 55, Changes in review. Quick checks running (up to
+  14 minutes at observation); Google approval/download availability pending. Supported device
+  counts unchanged: 11,898 phones, 6,213 tablets and zero lost across all listed form factors.
+  Only nonblocking deobfuscation-file warning.
+
+Production real-drive acceptance remains owner testing. Rollback iOS 87 / Android 54.
+No backend, credential, broader audience or public-release changes.
+
 ## 2026-11-24 — Nearby search and navigation field-polish owner candidates
 
 Owner explicitly approves commit/push of yesterday/today fixes and production builds for existing

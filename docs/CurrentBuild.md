@@ -13,6 +13,17 @@ answer one question:
 
 ## Current Objective
 
+### November 25 — abbreviation owner candidates delivered
+
+Both phones physically accepted refreshed Dev builds. Owner approved commit/push and production
+candidates. Source `5294fc3e851c9b7c1779316774168b47768ad662` pushed on clean-main.
+iPhone 1.0.2 (88) finished, exact IPA verified, uploaded/processed; field notes saved and only
+Team (Expo), Internal, 1 tester plus zero individual/external groups confirmed. Ready in TestFlight.
+Pixel 1.0.2 (55) finished, exact AAB verified and submitted to the existing one-person Owner Field
+Test track only; Publishing overview confirms code 55 / Changes in review. Google approval and
+installation availability pending. Full receipts in ReleaseHistory.md. Real-drive acceptance remains
+owner testing. Unrelated bot/scrape/training specs remain untouched and excluded from archives.
+
 ### November 24 — app-wide street-type display abbreviations
 
 Owner requests shorter road types across app displays, including live guidance and route list.
