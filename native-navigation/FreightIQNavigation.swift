@@ -10,6 +10,49 @@ import MapboxNavigationCore
 import MapboxNavigationUIKit
 import UserNotifications
 
+// Screen text only: preserve provider road identity, routing and voice instructions.
+private let displayedRoadTypes: [String: String] = [
+  "avenue": "Ave",
+  "boulevard": "Blvd",
+  "circle": "Cir",
+  "court": "Ct",
+  "crescent": "Cres",
+  "drive": "Dr",
+  "expressway": "Expy",
+  "freeway": "Fwy",
+  "highway": "Hwy",
+  "lane": "Ln",
+  "parkway": "Pkwy",
+  "place": "Pl",
+  "road": "Rd",
+  "square": "Sq",
+  "street": "St",
+  "terrace": "Ter",
+  "trail": "Trl",
+  "turnpike": "Tpke",
+  "alley": "Aly"
+]
+private let displayedRoadPattern = try! NSRegularExpression(pattern: #"\b(avenue|boulevard|circle|court|crescent|drive|expressway|freeway|highway|lane|parkway|place|road|square|street|terrace|trail|turnpike|alley)\b(?=(?:\s+\d+[\w/.-]*)?(?:\s+(?:North|South|East|West|Northeast|Northwest|Southeast|Southwest|NE|NW|SE|SW|N|S|E|W))?(?:\s+(?:Apt\.?|Apartment|Unit|Suite|Ste\.?|#)\s*[^,;\n]+)?\s*(?:$|[,;\n.]|\s/\s))"#, options: [.caseInsensitive])
+private let displayedDirectionPattern = try! NSRegularExpression(pattern: #"(^\s*(?:\d+[a-z]?(?:-\d+)?\s+)?|\bonto\s+|\bon\s+|\s/\s|\b(?:Ave|Blvd|Cir|Ct|Cres|Dr|Expy|Fwy|Hwy|Ln|Pkwy|Pl|Rd|Sq|St|Ter|Trl|Tpke|Aly|\d+)\s+)(North|South|East|West)\b(?=\s+\S|\s*(?:$|[,;.]))"#, options: [.caseInsensitive])
+func abbreviatedRoadText(_ value: String) -> String {
+  var result = value
+  for match in displayedRoadPattern.matches(in: value, range: NSRange(value.startIndex..., in: value)).reversed() {
+    let hasPrefix = !(value as NSString).substring(to: match.range.location).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    let numbered = (value as NSString).substring(from: NSMaxRange(match.range)).range(of: #"^\s+\d"#, options: .regularExpression) != nil
+    guard hasPrefix || numbered,
+          let range = Range(match.range, in: result),
+          let replacement = displayedRoadTypes[String(result[range]).lowercased()] else { continue }
+    result.replaceSubrange(range, with: replacement)
+  }
+  if result.range(of: #"^(North|South|East|West)$"#, options: [.regularExpression, .caseInsensitive]) != nil { return result }
+  let directions = result
+  for match in displayedDirectionPattern.matches(in: directions, range: NSRange(directions.startIndex..., in: directions)).reversed() {
+    guard let range = Range(match.range(at: 2), in: result) else { continue }
+    result.replaceSubrange(range, with: String(result[range].prefix(1)).uppercased())
+  }
+  return result
+}
+
 func navigationRoadKey(_ value: String) -> String {
   value.lowercased().replacingOccurrences(of: "¾", with: "3/4")
     .replacingOccurrences(of: "½", with: "1/2").replacingOccurrences(of: "¼", with: "1/4")
@@ -420,7 +463,7 @@ private final class DeliveryNavigationController: NavigationViewController {
           let road = navigationRoadTitle(names: step.exitNames ?? step.names, codes: step.codes,
                                          destinationCodes: step.destinationCodes) else { return }
     row.primaryLabel.numberOfLines = 2
-    row.primaryLabel.attributedText = NSAttributedString(string: road, attributes: [
+    row.primaryLabel.attributedText = NSAttributedString(string: abbreviatedRoadText(road), attributes: [
       .font: row.primaryLabel.font ?? UIFont.boldSystemFont(ofSize: 26),
       .foregroundColor: row.primaryLabel.textColor ?? UIColor.label
     ])
@@ -985,6 +1028,12 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
     }
   }
 
+  func navigationViewController(_ navigationViewController: NavigationViewController,
+                                roadNameAt location: CLLocation) -> String? {
+    guard let road = Self.provider.mapboxNavigation.navigation().currentLocationMatching?.roadName?.text else { return nil }
+    return abbreviatedRoadText(road)
+  }
+
   func label(_ label: InstructionLabel, willPresent instruction: VisualInstruction,
              as presented: NSAttributedString) -> NSAttributedString? {
     // Only customize the live primary banner, not lane guidance or the steps list.
@@ -1014,7 +1063,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
     let showDetail = !detail.isEmpty && label.numberOfLines > 1
     var attributes = presented.length > 0 ? presented.attributes(at: 0, effectiveRange: nil) : [:]
     attributes[.font] = label.font ?? UIFont.boldSystemFont(ofSize: 30)
-    let result = NSMutableAttributedString(string: road, attributes: attributes)
+    let result = NSMutableAttributedString(string: abbreviatedRoadText(road), attributes: attributes)
     if showDetail {
       attributes[.font] = UIFont.systemFont(ofSize: 17)
       result.append(NSAttributedString(string: "\n" + detail, attributes: attributes))
@@ -1043,7 +1092,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
     let seconds = leg.durationRemaining
     let eta = seconds.isFinite && seconds >= 0 ? Date().addingTimeInterval(seconds) : nil
     liveActivity.update(.init(
-      instruction: primary.text ?? "Continue",
+      instruction: abbreviatedRoadText(primary.text ?? "Continue"),
       arrow: arrow, distance: distance, eta: eta
     ))
   }
@@ -1099,7 +1148,7 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
       : "\(max(0, Int((meters / 0.3048 / 50).rounded()) * 50)) ft"
     let content = UNMutableNotificationContent()
     content.title = "\(words) · \(distance)"
-    content.body = primary.text ?? leg.upcomingStep?.instructions ?? "Upcoming maneuver"
+    content.body = abbreviatedRoadText(primary.text ?? leg.upcomingStep?.instructions ?? "Upcoming maneuver")
     let arrow = ManeuverView()
     arrow.frame = CGRect(x: 10, y: 10, width: 52, height: 52)
     arrow.visualInstruction = primary

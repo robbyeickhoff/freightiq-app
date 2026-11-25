@@ -1,3 +1,4 @@
+import { abbreviateAddress, displayStopName } from "@/utils/address-display";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { BottomTabNavigationProp } from "expo-router/js-tabs";
 import { useNavigation, type ParamListBase } from "expo-router/react-navigation";
@@ -78,7 +79,7 @@ function RouteOverviewMap({
 
 function compactAddress(address: string) {
   return (
-    address
+    abbreviateAddress(address)
       .replace(/,\s*United States$/i, "")
       .replace(/\s+United States$/i, "")
       .replace(/\bColorado\b/g, "CO")
@@ -662,7 +663,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
                 onPress={() => openStop(item)}
                 style={styles.stopCopy}
               >
-                <Text style={[styles.stopName, { color: colors.textPrimary }]}>{item.name}</Text>
+                <Text style={[styles.stopName, { color: colors.textPrimary }]}>{displayStopName(item.name)}</Text>
                 {route.execution.activeStopId === item.id ? (
                   <Text style={[styles.stopAddress, { color: colors.accentStrong }]}>
                     {route.execution.arrival ? "Arrived" : "Active stop"}
@@ -978,7 +979,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
                         numberOfLines={usesAccessibilityLayout ? 2 : 1}
                         style={[styles.nextStopName, { color: colors.textPrimary }]}
                       >
-                        {nextStop.name}
+                        {displayStopName(nextStop.name)}
                       </Text>
                       <Text
                         numberOfLines={usesAccessibilityLayout ? 2 : 1}
@@ -1143,7 +1144,7 @@ export function TodaysRouteScreen({ isTab = false }: { isTab?: boolean }) {
                         style={styles.completedCopy}
                       >
                         <Text style={[styles.completedName, { color: colors.textSecondary }]}>
-                          {stop.name}
+                          {displayStopName(stop.name)}
                         </Text>
                         <Text style={[styles.stopAddress, { color: colors.textSecondary }]}>
                           {compactAddress(stop.address)}

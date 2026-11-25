@@ -1,3 +1,4 @@
+import { abbreviateAddress, displayStopName } from "@/utils/address-display";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
@@ -46,7 +47,7 @@ function firstParam(value: string | string[] | undefined) {
 
 function compactAddress(address: string | null) {
   if (!address) return "No address saved";
-  return address
+  return abbreviateAddress(address)
     .replace(/,\s*United States$/i, "")
     .replace(/\s+United States$/i, "")
     .replace(/\bColorado\b/g, "CO")
@@ -251,7 +252,7 @@ export default function SearchCollectionScreen() {
           { borderBottomColor: colors.border, opacity: pressed ? 0.72 : 1 },
         ]}
       >
-        <Text style={[styles.stopName, { color: colors.textPrimary }]}>{item.name}</Text>
+        <Text style={[styles.stopName, { color: colors.textPrimary }]}>{displayStopName(item.name)}</Text>
         <Text style={[styles.stopAddress, { color: colors.textSecondary }]} numberOfLines={2}>
           {compactAddress(item.address)}
         </Text>
@@ -345,7 +346,7 @@ export default function SearchCollectionScreen() {
                 key={stop.id}
                 onPress={() => openStop(stop)}
                 pinColor={colors.accent}
-                title={stop.name}
+                title={displayStopName(stop.name)}
               />
             ))}
           </MapView>

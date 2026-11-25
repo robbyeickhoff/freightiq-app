@@ -1,3 +1,4 @@
+import { displayStopName } from "@/utils/address-display";
 import { operationsScreenPaths } from "@/utils/operations-screen-paths";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -1010,7 +1011,7 @@ export default function OperationsBoardScreen() {
                     }}
                   >
                     <Text style={{ color: colors.accentStrong, fontWeight: "700" }}>
-                      {categoryLabel(alert.category)} · {alert.stopName || alert.areaName}
+                      {categoryLabel(alert.category)} · {displayStopName(alert.stopName || alert.areaName)}
                     </Text>
                     <Text style={{ color: colors.textPrimary }}>{alert.message}</Text>
                     <Text style={{ color: colors.textSecondary }}>
@@ -1144,7 +1145,7 @@ export default function OperationsBoardScreen() {
               <Text style={[styles.message, { color: colors.textPrimary }]}>{item.message}</Text>
               {item.stop_id ? (
                 <Text style={{ color: colors.textSecondary }}>
-                  {item.stop_name || "Attached stop"}
+                  {displayStopName(item.stop_name || "Attached stop")}
                   {item.stop_address ? ` · ${operationsDisplayAddress(item.stop_address)}` : ""}
                 </Text>
               ) : null}

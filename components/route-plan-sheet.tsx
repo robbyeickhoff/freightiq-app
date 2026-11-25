@@ -1,3 +1,4 @@
+import { abbreviateAddress, displayStopName } from "@/utils/address-display";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import DraggableFlatList from "react-native-draggable-flatlist";
@@ -83,7 +84,7 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, duringGuidance = fa
         </View>
         <MapView ref={map} style={styles.map} userInterfaceStyle={colorScheme} onMapReady={fit} onLayout={fit}>
           <Polyline coordinates={plan.coordinates} strokeColor={colors.accentStrong} strokeWidth={5} />
-          {stops.map((stop, index) => <Marker key={stop.id} coordinate={{ latitude: stop.lat, longitude: stop.lng }} title={`${index + 1}. ${stop.name}`} pinColor={colors.accentStrong} />)}
+          {stops.map((stop, index) => <Marker key={stop.id} coordinate={{ latitude: stop.lat, longitude: stop.lng }} title={`${index + 1}. ${displayStopName(stop.name)}`} pinColor={colors.accentStrong} />)}
         </MapView>
       </> : null}
       {loading ? <View style={styles.summary}><ActivityIndicator color={colors.textPrimary} /><Text style={{ color: colors.textPrimary }}>Calculating the full route…</Text></View> : null}
@@ -93,8 +94,8 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, duringGuidance = fa
         <Text style={{ color: colors.accentStrong, fontWeight: "700" }}>CURRENT STOP</Text>
         <View style={styles.pinnedRow}>
           <View style={{ flex: 1, gap: 5 }}>
-            <Text style={[styles.name, { color: colors.textPrimary }]}>1. {pinnedStop.name}</Text>
-            <Text style={{ color: colors.textSecondary }}>{pinnedStop.address.replace(/,?\s+United States\s*$/i, "").replace(/\bColorado\b/gi, "CO").trim()}</Text>
+            <Text style={[styles.name, { color: colors.textPrimary }]}>1. {displayStopName(pinnedStop.name)}</Text>
+            <Text style={{ color: colors.textSecondary }}>{abbreviateAddress(pinnedStop.address).replace(/,?\s+United States\s*$/i, "").replace(/\bColorado\b/gi, "CO").trim()}</Text>
           </View>
           <AppButton size="icon" variant="tertiary" disabled={saving} accessibilityLabel={`Remove ${pinnedStop.name}`} onPress={() => Alert.alert("Remove stop?", `${pinnedStop.name} will be removed from today's route.`, [
             { text: "Cancel", style: "cancel" }, { text: "Remove", style: "destructive", onPress: () => void save(() => removeStop(pinnedStop.id)) },
@@ -114,8 +115,8 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, duringGuidance = fa
           return <View style={[styles.stop, { borderBottomColor: colors.textSecondary, opacity: isActive ? 0.6 : 1 }]}>
           {current ? <Text style={{ color: colors.accentStrong, fontWeight: "700" }}>CURRENT STOP</Text> : null}
           <Pressable disabled={editing || stop.freightIqStop === false} accessibilityRole="button" accessibilityLabel={`View ${stop.name} stop Intel`} onPress={() => setIntelStop(stop)}>
-          <Text style={[styles.name, { color: colors.textPrimary }]}>{index + 1}. {stop.name}</Text>
-          <Text style={{ color: colors.textSecondary }}>{stop.address
+          <Text style={[styles.name, { color: colors.textPrimary }]}>{index + 1}. {displayStopName(stop.name)}</Text>
+          <Text style={{ color: colors.textSecondary }}>{abbreviateAddress(stop.address)
             .replace(/,?\s+United States\s*$/i, "")
             .replace(/\bColorado\b/gi, "CO")
             .trim()}</Text>
@@ -145,7 +146,7 @@ export function RoutePlanSheet({ visible, onClose, liveLegs, duringGuidance = fa
         <AppButton disabled={loading || !stops.length} variant="secondary" onPress={refresh}>Refresh Estimates</AppButton>
         {completed.length ? <>
           <Text style={[styles.title, { color: colors.textPrimary }]}>Completed · {completed.length}</Text>
-          {completed.map((stop) => <Text key={stop.id} style={{ color: colors.textSecondary }}>✓ {stop.name}</Text>)}
+          {completed.map((stop) => <Text key={stop.id} style={{ color: colors.textSecondary }}>✓ {displayStopName(stop.name)}</Text>)}
         </> : null}
         </View>}
       />

@@ -1,3 +1,4 @@
+import { abbreviateAddress, displayStopName } from "@/utils/address-display";
 import Constants from "expo-constants";
 import * as Crypto from "expo-crypto";
 import { useEffect, useRef, useState } from "react";
@@ -260,7 +261,7 @@ export function MoveStopEditor({ stopId, name, onCancel, onBusyChange, onSaved }
         <Text style={{ color: colors.text }}>{name}</Text>
         {expected ? (
           <Text style={{ color: colors.textSecondary }}>
-            From: {expected.address || "Current map pin"}
+            From: {abbreviateAddress(expected.address || "Current map pin")}
           </Text>
         ) : null}
         {message ? (
@@ -292,7 +293,7 @@ export function MoveStopEditor({ stopId, name, onCancel, onBusyChange, onSaved }
             {results.map((result) => (
               <View key={result.mapbox_id}>
                 <MoveAction
-                  label={`${result.name}\n${result.full_address || result.place_formatted || ""}`}
+                  label={`${displayStopName(result.name)}\n${abbreviateAddress(result.full_address || result.place_formatted || "")}`}
                   onPress={() => void choose(result)}
                   disabled={busy}
                 />
@@ -300,7 +301,7 @@ export function MoveStopEditor({ stopId, name, onCancel, onBusyChange, onSaved }
             ))}
           </>
         ) : null}
-        {destination ? <Text style={{ color: colors.text }}>To: {destination.address}</Text> : null}
+        {destination ? <Text style={{ color: colors.text }}>To: {abbreviateAddress(destination.address)}</Text> : null}
         {destination && (step === "stop" || step === "dz") ? (
           <>
             <Text style={{ color: colors.text }}>

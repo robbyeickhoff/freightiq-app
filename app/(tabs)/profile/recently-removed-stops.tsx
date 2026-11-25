@@ -1,3 +1,4 @@
+import { abbreviateAddress, displayStopName } from "@/utils/address-display";
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -86,9 +87,9 @@ export default function RecentlyRemovedStopsScreen() {
           stops.map((stop) => (
             <AppCard key={stop.id} contentStyle={styles.card}>
               <View style={styles.copy}>
-                <Text style={[styles.title, { color: colors.textPrimary }]}>{stop.name}</Text>
+                <Text style={[styles.title, { color: colors.textPrimary }]}>{displayStopName(stop.name)}</Text>
                 {stop.address ? (
-                  <Text style={[styles.meta, { color: colors.textSecondary }]}>{stop.address}</Text>
+                  <Text style={[styles.meta, { color: colors.textSecondary }]}>{abbreviateAddress(stop.address)}</Text>
                 ) : null}
                 <Text style={[styles.meta, { color: colors.textSecondary }]}>
                   {recoveryLabel(stop.recovery_expires_at)}

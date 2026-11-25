@@ -1,3 +1,4 @@
+import { abbreviateAddress, displayStopName } from "@/utils/address-display";
 import { Modal, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -189,11 +190,11 @@ export function QuickIntelSheet({
             {!usesAccessibilityLayout ? (
               <>
                 <Text numberOfLines={1} style={[styles.stopName, { color: colors.textPrimary }]}>
-                  {stopName}
+                  {displayStopName(stopName)}
                 </Text>
                 {address ? (
                   <Text numberOfLines={2} style={[styles.address, { color: colors.textSecondary }]}>
-                    {address}
+                    {abbreviateAddress(address)}
                   </Text>
                 ) : null}
               </>
@@ -212,9 +213,9 @@ export function QuickIntelSheet({
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {usesAccessibilityLayout ? (
             <View style={styles.accessibilityStopContext}>
-              <Text style={[styles.stopName, { color: colors.textPrimary }]}>{stopName}</Text>
+              <Text style={[styles.stopName, { color: colors.textPrimary }]}>{displayStopName(stopName)}</Text>
               {address ? (
-                <Text style={[styles.address, { color: colors.textSecondary }]}>{address}</Text>
+                <Text style={[styles.address, { color: colors.textSecondary }]}>{abbreviateAddress(address)}</Text>
               ) : null}
             </View>
           ) : null}

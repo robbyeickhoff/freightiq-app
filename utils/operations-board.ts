@@ -1,3 +1,4 @@
+import { abbreviateAddress } from "@/utils/address-display";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { OperationsEncounterState } from "@/utils/operations-proximity";
 
@@ -137,7 +138,7 @@ export function areaForCoordinate(latitude: number, longitude: number) {
 }
 
 export function operationsDisplayAddress(address: string) {
-  return address.replace(/,?\s+United States(?: of America)?\s*$/i, "").trim();
+  return abbreviateAddress(address).replace(/,?\s+United States(?: of America)?\s*$/i, "").trim();
 }
 
 export function categoryLabel(category: string) {

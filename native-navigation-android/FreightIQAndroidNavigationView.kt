@@ -68,6 +68,42 @@ import expo.modules.kotlin.records.Record
 import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
 
+// Screen text only; never feed abbreviations back to Mapbox routing or voice.
+private val displayedRoadTypes = mapOf(
+  "avenue" to "Ave",
+  "boulevard" to "Blvd",
+  "circle" to "Cir",
+  "court" to "Ct",
+  "crescent" to "Cres",
+  "drive" to "Dr",
+  "expressway" to "Expy",
+  "freeway" to "Fwy",
+  "highway" to "Hwy",
+  "lane" to "Ln",
+  "parkway" to "Pkwy",
+  "place" to "Pl",
+  "road" to "Rd",
+  "square" to "Sq",
+  "street" to "St",
+  "terrace" to "Ter",
+  "trail" to "Trl",
+  "turnpike" to "Tpke",
+  "alley" to "Aly"
+)
+private val displayedRoadPattern = Regex("""\b(avenue|boulevard|circle|court|crescent|drive|expressway|freeway|highway|lane|parkway|place|road|square|street|terrace|trail|turnpike|alley)\b(?=(?:\s+\d+[\w/.-]*)?(?:\s+(?:North|South|East|West|Northeast|Northwest|Southeast|Southwest|NE|NW|SE|SW|N|S|E|W))?(?:\s+(?:Apt\.?|Apartment|Unit|Suite|Ste\.?|#)\s*[^,;\n]+)?\s*(?:$|[,;\n.]|\s/\s))""", RegexOption.IGNORE_CASE)
+private val displayedDirectionPattern = Regex("""(^\s*(?:\d+[a-z]?(?:-\d+)?\s+)?|\bonto\s+|\bon\s+|\s/\s|\b(?:Ave|Blvd|Cir|Ct|Cres|Dr|Expy|Fwy|Hwy|Ln|Pkwy|Pl|Rd|Sq|St|Ter|Trl|Tpke|Aly|\d+)\s+)(North|South|East|West)\b(?=\s+\S|\s*(?:$|[,;.]))""", RegexOption.IGNORE_CASE)
+internal fun abbreviatedRoadText(value: String): String {
+  val shortened = displayedRoadPattern.replace(value) { match ->
+    if (value.substring(0, match.range.first).isBlank() &&
+        value.substring(match.range.last + 1).trimStart().firstOrNull()?.isDigit() != true) match.value
+    else displayedRoadTypes[match.value.lowercase(java.util.Locale.ROOT)] ?: match.value
+  }
+  if (shortened.trim().matches(Regex("^(North|South|East|West)$", RegexOption.IGNORE_CASE))) return shortened
+  return displayedDirectionPattern.replace(shortened) { match ->
+    match.groupValues[1] + match.groupValues[2].take(1).uppercase(java.util.Locale.ROOT)
+  }
+}
+
 class AndroidGuidanceRequest : Record {
   @Field var id: String = ""
   @Field var stopId: String = ""
@@ -303,7 +339,7 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     )
     val notification = Notification.Builder(context, channel)
       .setSmallIcon(notificationArrow(arrow))
-      .setContentTitle(instruction)
+      .setContentTitle(abbreviatedRoadText(instruction))
       .setContentText(distance.takeIf(String::isNotBlank)?.let { "In $it" })
       .setContentIntent(reopen)
       .setOngoing(true)
@@ -340,7 +376,7 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     maneuverArrow.visibility = if (arrow.isEmpty()) GONE else VISIBLE
     turnDistance.text = formatDistance(step?.distanceRemaining?.toDouble())
     turnDistance.visibility = if (turnDistance.text.isEmpty()) GONE else VISIBLE
-    val turnLabel = guidanceStep?.let(::stepLabel).orEmpty()
+    val turnLabel = abbreviatedRoadText(guidanceStep?.let(::stepLabel).orEmpty())
     instructions.text = android.text.SpannableString(turnLabel).apply {
       val detailStart = turnLabel.indexOf('\n')
       if (detailStart >= 0) setSpan(android.text.style.RelativeSizeSpan(0.72f), detailStart + 1,
@@ -495,7 +531,7 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
             setTextColor(Color.WHITE)
           }, LinearLayout.LayoutParams(dp(64), LayoutParams.WRAP_CONTENT))
           addView(TextView(context).apply {
-            text = stepLabel(step)
+            text = abbreviatedRoadText(stepLabel(step))
             textSize = 20f
             setTextColor(Color.WHITE)
           }, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
@@ -555,8 +591,9 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
     override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
       val roadName = locationMatcherResult.road?.components
         ?.firstNotNullOfOrNull { it.text?.trim()?.takeIf(String::isNotEmpty) }
-      if (currentRoad.text.toString() != roadName.orEmpty()) {
-        currentRoad.text = roadName
+      val roadLabel = roadName?.let(::abbreviatedRoadText)
+      if (currentRoad.text.toString() != roadLabel.orEmpty()) {
+        currentRoad.text = roadLabel
         currentRoad.visibility = if (roadName == null) GONE else VISIBLE
       }
       val location = locationMatcherResult.enhancedLocation

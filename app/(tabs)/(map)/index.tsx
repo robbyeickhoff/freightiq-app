@@ -1,3 +1,4 @@
+import { abbreviateAddress, displayStopName } from "@/utils/address-display";
 import { rankLocationSearchResults } from "@/utils/location-search-ranking";
 import { isLocalAddressPrefix, isStreetAddressQuery, searchNearbyAddressSuggestions, type AddressSuggestion } from "@/utils/address-search";
 import { hasEmbeddedNavigation } from "@/utils/embedded-navigation";
@@ -344,7 +345,7 @@ function omitUnitedStatesSuffix(address: string) {
 }
 
 function formatAddressForDisplay(address: string) {
-  return omitUnitedStatesSuffix(address).replace(/\bColorado\b/g, "CO");
+  return abbreviateAddress(omitUnitedStatesSuffix(address).replace(/\bColorado\b/g, "CO"));
 }
 
 function formatNewStopAddress(pin: Pin | null) {
@@ -1810,7 +1811,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
       const snapshots = await readFreightIqOfflineSnapshots([selectedStop.id]);
       await saveOfflineStopSnapshots(userId, snapshots);
       await refreshOfflineStops();
-      Alert.alert("Saved offline", `${selectedStop.name} and its current Intel are saved.`);
+      Alert.alert("Saved offline", `${displayStopName(selectedStop.name)} and its current Intel are saved.`);
     } catch (error) {
       Alert.alert(
         "Could not save offline",
@@ -3611,8 +3612,8 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
                 longitude: tempSearchPin.lng,
               }}
               stopPropagation
-              title={tempSearchPin.name}
-              description={tempSearchPin.address ?? "Search result"}
+              title={displayStopName(tempSearchPin.name)}
+              description={abbreviateAddress(tempSearchPin.address ?? "Search result")}
               tracksViewChanges={
                 Platform.OS === "android" ? trackAndroidMarkerViewChanges : false
               }
@@ -3876,7 +3877,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
                   }}
                 >
                   <Text style={[styles.resultName, { color: colors.textPrimary }]} numberOfLines={1}>
-                    {result.name}
+                    {displayStopName(result.name)}
                   </Text>
                   <Text style={[styles.resultAddr, { color: colors.textSecondary }]} numberOfLines={2}>
                     {formatAddressForDisplay(result.address ?? "No address saved")}
@@ -4040,7 +4041,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
                   style={[styles.previewTitle, { color: colors.textPrimary }]}
                   numberOfLines={previewCollapsed ? 1 : usesAccessibilityLayout ? undefined : 1}
                 >
-                  {selectedStop?.name}
+                  {displayStopName(selectedStop?.name ?? "")}
                 </Text>
                 <Text
                   style={[styles.previewAddress, { color: colors.textSecondary }]}
@@ -4672,7 +4673,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
                   onPress={() => openNearbyStopChoice(stop)}
                 >
                   <Text style={styles.nearbyStopChoiceText} numberOfLines={1}>
-                    {stop.name}
+                    {displayStopName(stop.name)}
                   </Text>
                   <Text style={styles.previewAddress} numberOfLines={2}>
                     {formatAddressForDisplay(stop.address ?? "No address saved")}
@@ -4765,7 +4766,7 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
                   >
                     <View style={{ flex: 1, paddingRight: 12 }}>
                       <Text style={[styles.mapToolsSheetText, { color: colors.textPrimary }]}>
-                        {snapshot.stop.name}
+                        {displayStopName(snapshot.stop.name)}
                       </Text>
                       <Text style={[styles.mapToolsSecondaryText, { color: colors.textSecondary }]}>
                         Saved {new Date(snapshot.savedAt).toLocaleString()}

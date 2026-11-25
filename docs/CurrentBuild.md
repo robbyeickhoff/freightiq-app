@@ -13,6 +13,33 @@ answer one question:
 
 ## Current Objective
 
+### November 24 — app-wide street-type display abbreviations
+
+Owner requests shorter road types across app displays, including live guidance and route list.
+Engineering / Direct Codex Edit: shared display helper for common road types (Dr, St, Rd, Ave,
+Blvd, Pkwy, Ln, Ct, Cir, Ter, Trl, Hwy, Fwy, Expy, Tpke, Pl, Sq, Cres, Aly). Format first street
+line of full addresses; preserve locality, raw/editable addresses, search/routing data and spoken
+Mapbox guidance. Address-only stop names format for display; business names remain unchanged.
+Owner additionally approves N/S/E/W for directional street prefixes and suffixes across those
+same displays. Shared TypeScript and native Swift/Kotlin formatting now applies these directions;
+city names and business names remain intact. Standalone compass labels remain readable.
+Equivalent Swift/Kotlin vocabulary covers native turn/expanded steps/current-road labels, iOS
+Live Activity text and turn notifications. Provider basemap artwork/labels remain provider-owned.
+
+TypeScript passes; scoped lint zero errors/three existing warnings. Six display/navigation tests
+pass, including executed Swift cases and native table parity. Kotlin formatter compiled/executed
+against the same regression cases; unsigned iPhone Debug build succeeds. Physical iPhone and Pixel visual acceptance passed November 25 on refreshed native Dev builds.
+Owner approves commit, push and production builds for the established owner-only groups.
+Production packaging/distribution pending; unrelated bot/training specifications remain untouched.
+
+Changed files: utils/address-display.ts; tests/address-display.test.cjs;
+native-navigation/FreightIQNavigation.swift; native-navigation-android/FreightIQAndroidNavigationView.kt;
+utils/operations-board.ts; app/active-navigation.tsx; app/(tabs)/stop.tsx;
+app/(tabs)/(map)/index.tsx; app/(tabs)/(map)/todays-route.tsx; app/(tabs)/(map)/search-collection.tsx;
+app/(tabs)/(map)/operations.tsx; app/(tabs)/(map)/operations-compose.tsx;
+app/(tabs)/profile/recently-removed-stops.tsx; components/route-plan-sheet.tsx;
+components/quick-intel-sheet.tsx; components/move-stop-editor.tsx; docs/CurrentBuild.md.
+
 ### November 24 — owner candidates delivered; Pixel review pending
 
 Source `bc0d0e4568af04346a02b84440654cd1d8b51880` pushed and local matches origin/clean-main.

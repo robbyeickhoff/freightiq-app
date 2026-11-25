@@ -1,3 +1,4 @@
+import { abbreviateAddress, displayStopName } from "@/utils/address-display";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -612,7 +613,7 @@ export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMa
   const editAddressInputRef = useRef<TextInput | null>(null);
   const title = useMemo(() => currentStopName, [currentStopName]);
   const displayAddress = useMemo(
-    () => currentStopAddress.replace(", Colorado ", ", CO ").replace(", United States", ""),
+    () => abbreviateAddress(currentStopAddress).replace(", Colorado ", ", CO ").replace(", United States", ""),
     [currentStopAddress],
   );
   useEffect(() => {
@@ -2256,7 +2257,7 @@ export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMa
             canCancelContentTouches={true}
           >
             <View style={styles.header}>
-              <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+              <Text style={[styles.title, { color: colors.textPrimary }]}>{displayStopName(title)}</Text>
 
               {mergeMode ? (
                 <Text style={[styles.cardHelp, { color: colors.warning }]}>
@@ -3032,7 +3033,7 @@ export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMa
                 >
                   <View style={styles.additionalIntelHeader}>
                     <Text style={intelStyles.additionalIntelTitle}>Additional Driver Intel</Text>
-                    <Text style={intelStyles.additionalIntelStopName}>{title}</Text>
+                    <Text style={intelStyles.additionalIntelStopName}>{displayStopName(title)}</Text>
                     {currentStopAddress ? (
                       <Text style={intelStyles.additionalIntelAddress}>{displayAddress}</Text>
                     ) : null}
@@ -3588,7 +3589,7 @@ export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMa
                       <>
                         <View style={styles.additionalIntelHeader}>
                           <Text style={styles.additionalIntelTitle}>Manage Stop</Text>
-                          <Text style={styles.additionalIntelStopName}>{title}</Text>
+                          <Text style={styles.additionalIntelStopName}>{displayStopName(title)}</Text>
                           {currentStopAddress ? (
                             <Text style={styles.additionalIntelAddress}>{displayAddress}</Text>
                           ) : null}
@@ -3686,7 +3687,7 @@ export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMa
                       <>
                         <View style={styles.additionalIntelHeader}>
                           <Text style={styles.additionalIntelTitle}>Edit Business Name</Text>
-                          <Text style={styles.additionalIntelStopName}>{title}</Text>
+                          <Text style={styles.additionalIntelStopName}>{displayStopName(title)}</Text>
                           {currentStopAddress ? (
                             <Text style={styles.additionalIntelAddress}>{displayAddress}</Text>
                           ) : null}
@@ -3727,7 +3728,7 @@ export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMa
                       <>
                         <View style={styles.additionalIntelHeader}>
                           <Text style={styles.additionalIntelTitle}>Edit Address</Text>
-                          <Text style={styles.additionalIntelStopName}>{title}</Text>
+                          <Text style={styles.additionalIntelStopName}>{displayStopName(title)}</Text>
                           {currentStopAddress ? (
                             <Text style={styles.additionalIntelAddress}>{displayAddress}</Text>
                           ) : null}
@@ -3791,7 +3792,7 @@ export default function StopScreen({ embeddedStop, onEmbeddedClose, onEmbeddedMa
                 >
                   <View style={styles.additionalIntelHeader}>
                     <Text style={intelStyles.additionalIntelTitle}>Locked Personal Intel</Text>
-                    <Text style={intelStyles.additionalIntelStopName}>{title}</Text>
+                    <Text style={intelStyles.additionalIntelStopName}>{displayStopName(title)}</Text>
                     <Text style={intelStyles.additionalIntelAddress}>
                       Private from other FreightIQ drivers
                     </Text>

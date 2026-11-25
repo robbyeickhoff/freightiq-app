@@ -1,3 +1,4 @@
+import { displayStopName } from "@/utils/address-display";
 import { operationsScreenPaths } from "@/utils/operations-screen-paths";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -539,7 +540,7 @@ export default function OperationsComposeScreen() {
             <Text style={{ color: colors.textSecondary }}>{areaName}</Text>
             <Text style={{ color: colors.textSecondary }}>
               {stopName
-                ? `${stopName}${stopAddress ? ` · ${operationsDisplayAddress(stopAddress)}` : ""}`
+                ? `${displayStopName(stopName)}${stopAddress ? ` · ${operationsDisplayAddress(stopAddress)}` : ""}`
                 : latitude != null
                   ? "Map location selected"
                   : "Area-wide update"}
@@ -765,7 +766,7 @@ export default function OperationsComposeScreen() {
                     setLongitude(stop.lng);
                   }}
                 >
-                  {`${stop.name}${stop.address ? ` · ${operationsDisplayAddress(stop.address)}` : ""}`}
+                  {`${displayStopName(stop.name)}${stop.address ? ` · ${operationsDisplayAddress(stop.address)}` : ""}`}
                 </AppButton>
               ))}
               {searchedStops && !searchingStops && stopResults.length === 0 ? (

@@ -1,3 +1,4 @@
+import { abbreviateAddress, abbreviateRoadText, displayStopName } from "@/utils/address-display";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { requireNativeView } from "expo";
 import * as Location from "expo-location";
@@ -278,14 +279,14 @@ export default function ActiveNavigationScreen() {
           persistentScrollbar={Platform.OS === "android"}
         >
           <Pressable disabled={active.freightIqStop === false || (!!directDestination && !directDestination.freightIqStop)} onPress={() => setIntelStop(active)} accessibilityRole="button" accessibilityLabel={`View ${active.name} stop Intel`} style={styles.business}>
-            <Text numberOfLines={2} style={[styles.title, { color: colors.textPrimary, flex: 1 }]}>{active.name}</Text>
+            <Text numberOfLines={2} style={[styles.title, { color: colors.textPrimary, flex: 1 }]}>{displayStopName(active.name)}</Text>
             {active.freightIqStop !== false && (!directDestination || directDestination.freightIqStop) && <View style={styles.intelAction}>
               <Text style={[styles.intelLabel, { color: colors.accentStrong }]}>Stop Intel</Text>
               <AppIcon name="chevronRight" color={colors.accentStrong} size={20} />
             </View>}
           </Pressable>
           {activeStreetAddress ? <Text style={[styles.streetAddress, { color: colors.textSecondary }]}>
-            {activeStreetAddress}
+            {abbreviateAddress(activeStreetAddress)}
           </Text> : null}
           {!directDestination && <View style={styles.toolbar}>
             <AppButton size="compact" variant="tertiary" onPress={() => { setPlanMode("route"); setRoutePlanOpen(true); }}>View Route</AppButton>
@@ -382,7 +383,7 @@ function RoutePreview({ choices, destination, starting, backLabel, onCancel, onS
             onPress={() => { if (!starting) setSelected(choice.index); }}
           />
         ))}
-        <Marker coordinate={{ latitude: destination.lat, longitude: destination.lng }} title={destination.name} />
+        <Marker coordinate={{ latitude: destination.lat, longitude: destination.lng }} title={displayStopName(destination.name)} />
       </MapView>
       <View style={[styles.previewSheet, { backgroundColor: colors.background }]}>
         <View style={[styles.grabber, { backgroundColor: colors.border, alignSelf: "center", marginBottom: 4 }]} />
@@ -458,7 +459,7 @@ function RoutePreview({ choices, destination, starting, backLabel, onCancel, onS
                       <Text style={[styles.stepDistance, { color: colors.textPrimary }]}>
                         {firstInLeg ? (multipleStops ? `To stop ${item.legIndex + 1}` : "From My Location") : distance < 160.934 ? `${Math.max(10, Math.round(distance * 3.28084 / 10) * 10)} ft` : `${(distance / 1609.344).toFixed(1)} mi`}
                       </Text>
-                      <Text style={[styles.stepInstruction, { color: colors.textSecondary }]}>{item.instruction}</Text>
+                      <Text style={[styles.stepInstruction, { color: colors.textSecondary }]}>{abbreviateRoadText(item.instruction)}</Text>
                     </View>
                   </View>
                 );
