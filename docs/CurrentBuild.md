@@ -20,8 +20,13 @@ and Pixel navigation road names. Explicit approval to commit, push and create pr
 for established owner-only test groups. Seven focused checks, TypeScript, both native Dev builds
 and diff review pass. Include map search cleanup, road-name-first live/preview labels and consistent
 iPhone expanded-row styling. Preserve unrelated bot/scrape and training specifications. No backend,
-credential or broader audience changes. Production packaging and owner distribution pending;
-real-drive production acceptance remains owner testing.
+credential or broader audience changes. Source `0dd1eaa5fb1c16d48174078cf657b325912b4994` pushed on clean-main. iPhone 1.0.2 (89)
+finished, exact IPA verified, uploaded/processed; notes saved and only Team (Expo), Internal,
+1 tester plus zero individual/external testers confirmed. Ready in TestFlight. Pixel 1.0.2 (56)
+finished, exact AAB verified and submitted to established one-person Owner Field Test only.
+Publishing overview confirms code 56 / Changes in review; Google approval and download availability
+pending. Full receipts in ReleaseHistory.md. Production installation/real-drive acceptance remains
+owner testing.
 
 ### November 26 — expanded iPhone step readability
 

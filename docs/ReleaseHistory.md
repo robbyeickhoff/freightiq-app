@@ -6,6 +6,36 @@ This document preserves concise records of significant FreightIQ release candida
 operational lessons learned from them. Live EAS, TestFlight, and Google Play records remain the
 source of truth for current processing and distribution state.
 
+## 2026-11-26 — Road names and repeat-search owner candidates
+
+Owner accepts both-phone repeat-search and live road-name tests; iPhone expanded-step readability
+also accepted. Explicit commit/push and owner production approval. Source
+`0dd1eaa5fb1c16d48174078cf657b325912b4994` pushed on clean-main. Seven focused tests,
+TypeScript and signed native Dev builds pass. Production archive runtime files match source;
+generated Dev projects, docs/tests/backend and unrelated bot/training specifications excluded.
+
+- iOS 1.0.2 (89), EAS `c6c6fbc9-dcf5-460c-80f0-1b844dafd1d9`, established
+  `production-road-restriction-test` profile, finished. Exact IPA validates production bundle ID,
+  production database, standalone JS, no local endpoints, Live Activity extension and strict/deep
+  signature with production entitlements. SHA256
+  `3ba95b116eb46fe3f019ec56437d1df1e3ea58a42170f37e7f5bfd8b14f08f49`.
+  Submission `4c7b9811-91b3-461a-a8eb-3ddda7c8a8dd` succeeded; Apple build
+  `76093988-ed60-45f6-b966-0636e3b756be` processed. Notes saved. Verified only Team (Expo),
+  Internal, 1 tester and zero individual/external groups. Ready for owner TestFlight installation.
+- Android 1.0.2 (56), EAS `9a0a779e-3df3-4ddf-a54d-71b88a4b3215`, established
+  `production-android-navigation` profile, finished. Exact AAB validates production bundle ID,
+  production database, standalone JS, no local endpoints, debugging disabled and JAR signature.
+  SHA256 `eeb1590a51452e4bab11198838dd12c80a6bae882bf24e74a2dec606017af870`.
+  Existing Owner Field Test track verified with one-person list selected and ten-person Internal
+  Testers unchecked. Field notes saved; exact code 56 included and 55 excluded. Rollout is 100% within the owner
+  track only. Publishing overview confirms exactly one change sent, code 56 / Changes in review.
+  Quick checks (up to 14 minutes) and Google review/download availability pending. Device support
+  unchanged versus previous release: 11,895 phones, 6,219 tablets, zero lost across listed factors.
+  Only the existing nonblocking deobfuscation-file warning.
+
+Production physical installation/real-drive acceptance remains owner testing. Rollback iOS 88 /
+Android 55. No backend, credential or broader/public audience changes. Unrelated specs preserved.
+
 ## 2026-11-25 — Address display abbreviations owner candidates
 
 Owner physically accepted refreshed iPhone and Pixel Dev builds and approved commit/push and
