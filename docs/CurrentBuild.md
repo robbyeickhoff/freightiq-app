@@ -13,6 +13,63 @@ answer one question:
 
 ## Current Objective
 
+### November 26 — accepted fixes approved for owner production candidates
+
+Owner accepts repeat-search cleanup on both physical phones, iPhone road-name/readability fixes,
+and Pixel navigation road names. Explicit approval to commit, push and create production builds
+for established owner-only test groups. Seven focused checks, TypeScript, both native Dev builds
+and diff review pass. Include map search cleanup, road-name-first live/preview labels and consistent
+iPhone expanded-row styling. Preserve unrelated bot/scrape and training specifications. No backend,
+credential or broader audience changes. Production packaging and owner distribution pending;
+real-drive production acceptance remains owner testing.
+
+### November 26 — expanded iPhone step readability
+
+Owner confirms live Patterson Rd name, but screenshot shows some expanded rows in small black
+text against night background. Formatter captured transient UILabel defaults before SDK appearance.
+Use consistent 30pt medium scaled primary text and explicit active navigation day/night colors;
+secondary text also uses theme colors. SDK arrows, distances, row associations and routing unchanged.
+Seven focused checks pass; refreshed iPhone build compiled, installed and launched.
+Physical expanded-list scroll/reopen and day/night acceptance pending.
+Uncommitted; unrelated work preserved.
+
+### November 26 — physical testing and preview instruction consistency
+
+Repeat-search accepted on both physical phones using test stops. Updated Dev native builds
+installed on both. Owner screenshot then exposed preview Details still using provider instruction
+name/reference pairs. Preview steps now carry supplied road name and reference; display removes
+only that exact combined pair and applies existing abbreviations. Missing names retain provider
+instructions. No routing, voice or stored data changes. Seven focused checks and TypeScript pass.
+Refreshed iPhone and Pixel Dev builds compile, install and launch successfully.
+Physical preview/live road-name acceptance pending. Uncommitted;
+no production build or publishing requested. Unrelated specs preserved.
+
+
+### November 25 — new search clears the previous stop preview
+
+Owner reports overlapping search results and the old preview after selecting a stop and searching
+again. Direct Codex Edit: focusing the map search clears the prior selection/entrance, hides its
+preview, removes the temporary search pin and clears preview-return state without invoking
+close-card navigation. Editing text also clears any still-selected preview. Shared map screen
+covers iPhone and Pixel. Existing result selection still opens the newly selected stop.
+TypeScript passes; scoped lint has zero errors and one existing hook-dependency warning.
+Diff reviewed and whitespace check passes. Physical repeat-search acceptance pending.
+Uncommitted, no new builds requested.
+Unrelated specs and the separate pending road-name-first correction preserved.
+
+### November 25 — Mapbox road name always precedes references
+
+Owner approves the simpler rule: use Mapbox's supplied road name first on both platforms;
+use a reference only when the name is missing. iOS destination references remain a final fallback.
+Removed numeric/letter/highway exceptions. Native primary banners and expanded rows share the
+same selectors. iOS actual step names precede exit names. Existing screen abbreviations apply.
+Live Mapbox replays confirm North 1st Street / ref 26 and Patterson Road / ref F.
+Updated regressions require the supplied name even when references are US 50, I 70 or CO 141;
+missing/blank names still fall back without inventing a road name. Routing/voice unchanged.
+Six display/navigation tests and executed Kotlin road-title/display checks pass. Diff reviewed and
+whitespace check passes. Physical acceptance pending; uncommitted and not in iPhone 88 / Pixel 55.
+No production build, commit or push requested for this later correction; unrelated specs untouched.
+
 ### November 25 — abbreviation owner candidates delivered
 
 Both phones physically accepted refreshed Dev builds. Owner approved commit/push and production

@@ -1,4 +1,4 @@
-import { abbreviateAddress, abbreviateRoadText, displayStopName } from "@/utils/address-display";
+import { abbreviateAddress, abbreviateRoadText, displayPreviewInstruction, displayStopName } from "@/utils/address-display";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { requireNativeView } from "expo";
 import * as Location from "expo-location";
@@ -28,7 +28,7 @@ type Request = {
   restrictedRoad?: RouteCoordinate[]; exclusionPoints?: RouteCoordinate[];
   stops: { id: string; name: string; latitude: number; longitude: number }[];
 };
-type PreviewStep = { instruction: string; meters: number; legIndex: number };
+type PreviewStep = { roadName?: string; roadReference?: string; instruction: string; meters: number; legIndex: number };
 type RouteChoice = { index: number; seconds: number; meters: number; coordinates: RouteCoordinate[]; steps?: PreviewStep[] };
 type StateEvent = { state: string; requestId: string; stopId: string; message: string; legs: PlannedLeg[]; choices?: RouteChoice[] };
 const NavigationView = hasEmbeddedNavigation
@@ -459,7 +459,7 @@ function RoutePreview({ choices, destination, starting, backLabel, onCancel, onS
                       <Text style={[styles.stepDistance, { color: colors.textPrimary }]}>
                         {firstInLeg ? (multipleStops ? `To stop ${item.legIndex + 1}` : "From My Location") : distance < 160.934 ? `${Math.max(10, Math.round(distance * 3.28084 / 10) * 10)} ft` : `${(distance / 1609.344).toFixed(1)} mi`}
                       </Text>
-                      <Text style={[styles.stepInstruction, { color: colors.textSecondary }]}>{abbreviateRoadText(item.instruction)}</Text>
+                      <Text style={[styles.stepInstruction, { color: colors.textSecondary }]}>{displayPreviewInstruction(item.instruction, item.roadName, item.roadReference)}</Text>
                     </View>
                   </View>
                 );

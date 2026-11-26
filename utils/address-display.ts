@@ -29,3 +29,13 @@ export function abbreviateAddress(value: string): string {
 export function displayStopName(value: string): string {
   return /^\d+[a-z]?(?:-\d+)?\s/i.test(value) ? abbreviateAddress(value) : value;
 }
+
+// Remove only the supplied name/reference pair, preserving maneuver wording.
+export function displayPreviewInstruction(instruction: string, roadName?: string, roadReference?: string): string {
+  const name = roadName?.trim();
+  const reference = roadReference?.trim();
+  if (!name || !reference) return abbreviateRoadText(instruction);
+  const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pair = new RegExp(`${escape(name)}\\s*/\\s*${escape(reference)}(?=$|[.,;\\s])`, "gi");
+  return abbreviateRoadText(instruction.replace(pair, () => name));
+}

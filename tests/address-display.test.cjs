@@ -17,3 +17,11 @@ test('iPhone native formatter executes the same street and maneuver cases',{skip
  const source=fs.readFileSync('native-navigation/FreightIQNavigation.swift','utf8');const begin=source.indexOf('// Screen text only:');const end=source.indexOf('func navigationRoadKey(');const dir=fs.mkdtempSync(path.join(os.tmpdir(),'fiq-address-display-'));
  try{fs.writeFileSync(path.join(dir,'Checks.swift'),'import Foundation\n'+source.slice(begin,end)+cases.map(([input,expected])=>`precondition(abbreviatedRoadText(${JSON.stringify(input)}) == ${JSON.stringify(expected)})`).join('\n'));cp.execFileSync('xcrun',['swift',path.join(dir,'Checks.swift')])}finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
+test('preview instructions use road names without appended references',()=>{
+ const format=c.exports.displayPreviewInstruction;
+ assert.equal(format('Turn left onto Patterson Road/F.','Patterson Road','F'),'Turn left onto Patterson Rd.');
+ assert.equal(format('Turn right onto North 1st Street / 26.','North 1st Street','26'),'Turn right onto N 1st St.');
+ assert.equal(format('Turn right onto D 1/2 Road/D ½.','D 1/2 Road','D ½'),'Turn right onto D 1/2 Rd.');
+ assert.equal(format('Turn right onto US 50.', '', 'US 50'),'Turn right onto US 50.');
+ assert.equal(format('Turn left.','Patterson Road','F'),'Turn left.');
+});

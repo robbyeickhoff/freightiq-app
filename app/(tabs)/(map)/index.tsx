@@ -1875,6 +1875,14 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
     setDeliveryZoneInspectionSource(null);
   }
 
+  function prepareForNewSearch() {
+    // A new search replaces the old preview without triggering its return navigation.
+    clearSelection();
+    setPreviewVisible(false);
+    setTempSearchPin(null);
+    setRoutePreviewReturnView(null);
+  }
+
   function resetSelectedEntranceState() {
     selectedEntranceRequestIdRef.current += 1;
     setSelectedEntrance(null);
@@ -3679,9 +3687,15 @@ export default function HomeScreen({ routeAddMode = false, onRouteStopAdded, onR
           ref={searchInputRef}
           onLayout={(event) => setSearchInputHeight(event.nativeEvent.layout.height)}
           value={query}
-          onChangeText={setQuery}
+          onChangeText={(value) => {
+            if (selectedStopId || tempSearchPin) prepareForNewSearch();
+            setQuery(value);
+          }}
           onBlur={() => setSearchInputFocused(false)}
-          onFocus={() => setSearchInputFocused(true)}
+          onFocus={() => {
+            prepareForNewSearch();
+            setSearchInputFocused(true);
+          }}
           placeholder="Search stops, cities, or drivers…"
           placeholderTextColor={colors.disabled}
           selectionColor={colors.accent}

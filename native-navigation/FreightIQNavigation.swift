@@ -63,12 +63,7 @@ func navigationRoadKey(_ value: String) -> String {
 // Road identity outranks a signposted city. Ramp destination refs are a fallback,
 // never a reason to substitute the current road or an unrelated later step.
 func navigationRoadTitle(names: [String]?, codes: [String]?, destinationCodes: [String]?) -> String? {
-  // Local numbered roads should keep their readable name rather than a duplicate shield.
-  if let name = names?.first, let code = codes?.first,
-     navigationRoadKey(name) == navigationRoadKey(code), !navigationRoadKey(name).isEmpty {
-    return name.trimmingCharacters(in: .whitespacesAndNewlines)
-  }
-  for values in [codes, names, destinationCodes] {
+  for values in [names, codes, destinationCodes] {
     let text = (values ?? []).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
       .filter { !$0.isEmpty }.joined(separator: " / ")
     if !text.isEmpty { return text }
@@ -460,17 +455,23 @@ private final class DeliveryNavigationController: NavigationViewController {
           let row = cell.subviews.compactMap({ $0 as? StepInstructionsView }).first else { return }
     let step = sections[index.section][index.row]
     guard step.maneuverType != .arrive,
-          let road = navigationRoadTitle(names: step.exitNames ?? step.names, codes: step.codes,
+          let road = navigationRoadTitle(names: step.names ?? step.exitNames, codes: step.codes,
                                          destinationCodes: step.destinationCodes) else { return }
+    // Reused/new cells can still have UILabel defaults before SDK appearance runs.
+    // Use the active navigation theme rather than capturing those transient defaults.
+    let night = styleManager?.currentStyleType == .night
+    let primaryColor = night ? UIColor.white : UIColor(white: 0.098, alpha: 1)
+    let secondaryColor = night ? UIColor(white: 0.77, alpha: 1) : UIColor(white: 0.216, alpha: 1)
+    let primaryFont = UIFontMetrics.default.scaledFont(for: .systemFont(ofSize: 30, weight: .medium))
     row.primaryLabel.numberOfLines = 2
     row.primaryLabel.attributedText = NSAttributedString(string: abbreviatedRoadText(road), attributes: [
-      .font: row.primaryLabel.font ?? UIFont.boldSystemFont(ofSize: 26),
-      .foregroundColor: row.primaryLabel.textColor ?? UIColor.label
+      .font: primaryFont, .foregroundColor: primaryColor
     ])
     var details = (step.destinations ?? []).filter { navigationRoadKey($0) != navigationRoadKey(road) }
     if let exits = step.exitCodes, !exits.isEmpty { details.insert("Exit " + exits.joined(separator: " / "), at: 0) }
     row.secondaryLabel.attributedText = NSAttributedString(string: details.joined(separator: " · "), attributes: [
-      .font: UIFont.systemFont(ofSize: 16), .foregroundColor: row.secondaryLabel.textColor ?? UIColor.secondaryLabel
+      .font: UIFontMetrics.default.scaledFont(for: .systemFont(ofSize: 16)),
+      .foregroundColor: secondaryColor
     ])
   }
 
@@ -723,7 +724,9 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
                     "coordinates": coordinates.map { ["latitude": $0.latitude, "longitude": $0.longitude] },
                     "steps": route.legs.enumerated().flatMap { legIndex, leg in
                       leg.steps.map { step -> [String: Any] in
-                        ["instruction": step.instructions, "meters": step.distance, "legIndex": legIndex]
+                        ["instruction": step.instructions, "roadName": (step.names ?? []).joined(separator: " / "),
+                         "roadReference": (step.codes ?? []).joined(separator: " / "),
+                         "meters": step.distance, "legIndex": legIndex]
                       }
                     }]
           }
@@ -1042,11 +1045,11 @@ final class FreightIQNavigationView: ExpoView, NavigationViewControllerDelegate 
           let progress = Self.provider.mapboxNavigation.navigation().currentRouteProgress?.routeProgress,
           let step = progress.currentLegProgress.upcomingStep,
           step.maneuverType != .arrive else { return nil }
-    let ownRoad = navigationRoadTitle(names: step.exitNames ?? step.names, codes: step.codes,
+    let ownRoad = navigationRoadTitle(names: step.names ?? step.exitNames, codes: step.codes,
                                       destinationCodes: step.destinationCodes)
     let following = progress.currentLegProgress.followOnStep
     let followingRoad = following.flatMap {
-      navigationRoadTitle(names: $0.exitNames ?? $0.names, codes: $0.codes,
+      navigationRoadTitle(names: $0.names ?? $0.exitNames, codes: $0.codes,
                           destinationCodes: $0.destinationCodes)
     }
     guard let road = navigationConnectorTitle(road: ownRoad, meters: step.distance,

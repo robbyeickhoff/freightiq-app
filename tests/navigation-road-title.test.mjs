@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
-test('road title prefers highway reference, retains named streets, and never invents missing roads', { skip: process.platform !== 'darwin' }, () => {
+test('road title always prefers the provider road name and falls back only when missing', { skip: process.platform !== 'darwin' }, () => {
   const source = readFileSync(new URL('../native-navigation/FreightIQNavigation.swift', import.meta.url), 'utf8');
   const begin = source.indexOf('func navigationRoadKey(');
   const end = source.indexOf('// Distance milestones', begin);
@@ -12,7 +12,17 @@ test('road title prefers highway reference, retains named streets, and never inv
   try {
     writeFileSync(join(folder, 'Checks.swift'), 'import Foundation\n' + source.slice(begin, end) + `
 precondition(navigationRoadTitle(names: ["29 3/4 Road"], codes: ["29¾"], destinationCodes: nil) == "29 3/4 Road")
-precondition(navigationRoadTitle(names: ["Highway 50"], codes: ["US 50"], destinationCodes: nil) == "US 50")
+precondition(navigationRoadTitle(names: ["North 1st Street"], codes: ["26"], destinationCodes: nil) == "North 1st Street")
+precondition(navigationRoadTitle(names: ["Patterson Road"], codes: ["F"], destinationCodes: nil) == "Patterson Road")
+precondition(navigationRoadTitle(names: ["F Road"], codes: ["F"], destinationCodes: nil) == "F Road")
+precondition(navigationRoadTitle(names: ["Broadway"], codes: ["CO 141"], destinationCodes: nil) == "Broadway")
+precondition(navigationRoadTitle(names: [" ", "Patterson Road"], codes: ["F"], destinationCodes: nil) == "Patterson Road")
+precondition(navigationRoadTitle(names: nil, codes: ["F"], destinationCodes: nil) == "F")
+precondition(navigationRoadTitle(names: ["Oak Street"], codes: ["12.5"], destinationCodes: nil) == "Oak Street")
+precondition(navigationRoadTitle(names: ["Maple Avenue"], codes: ["12 West"], destinationCodes: nil) == "Maple Avenue")
+precondition(navigationRoadTitle(names: ["Broadway"], codes: ["I 70"], destinationCodes: nil) == "Broadway")
+precondition(navigationRoadTitle(names: nil, codes: ["26"], destinationCodes: nil) == "26")
+precondition(navigationRoadTitle(names: ["Highway 50"], codes: ["US 50"], destinationCodes: nil) == "Highway 50")
 precondition(navigationRoadTitle(names: ["North River Road"], codes: nil, destinationCodes: nil) == "North River Road")
 precondition(navigationRoadTitle(names: [" "], codes: [], destinationCodes: ["I 70 West"]) == "I 70 West")
 precondition(navigationRoadTitle(names: nil, codes: nil, destinationCodes: nil) == nil)

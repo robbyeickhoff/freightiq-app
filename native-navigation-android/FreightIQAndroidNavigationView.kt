@@ -104,6 +104,10 @@ internal fun abbreviatedRoadText(value: String): String {
   }
 }
 
+// Mapbox's road name always comes first; references only fill a missing name.
+internal fun navigationRoadTitle(name: String?, reference: String?): String =
+  name.orEmpty().trim().ifBlank { reference.orEmpty().trim() }
+
 class AndroidGuidanceRequest : Record {
   @Field var id: String = ""
   @Field var stopId: String = ""
@@ -491,7 +495,7 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
   private fun stepLabel(step: LegStep): String {
     val maneuver = step.maneuver()
     val instruction = maneuver?.instruction().orEmpty()
-    val road = step.ref().orEmpty().ifBlank { step.name().orEmpty() }
+    val road = navigationRoadTitle(step.name(), step.ref())
     if (maneuver?.type() == "arrive" || road.isBlank()) return instruction.ifBlank { road }
     val details = mutableListOf<String>()
     step.exits()?.takeIf { it.isNotBlank() }?.let { details.add("Exit $it") }
@@ -919,6 +923,7 @@ class FreightIQAndroidNavigationView(context: Context, appContext: AppContext) :
               "steps" to directions.legs().orEmpty().flatMapIndexed { legIndex, leg ->
                 leg.steps().orEmpty().map { step ->
                   mapOf("instruction" to step.maneuver()?.instruction().orEmpty(),
+                    "roadName" to step.name().orEmpty(), "roadReference" to step.ref().orEmpty(),
                     "meters" to (step.distance() ?: 0.0), "legIndex" to legIndex)
                 }
               },
